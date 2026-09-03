@@ -143,8 +143,28 @@ def parse_args() -> argparse.Namespace:
 
     # Legacy flat CLI overrides (still work, prefer --cfg-options for new usage)
     p.add_argument("--env", type=str)
-    p.add_argument("--backend", type=str,
-                   choices=["azure_openai", "codex", "codex_exec", "claude", "claude_chat", "claude_code_exec", "cursor", "cursor_exec", "copilot", "copilot_chat", "copilot_exec", "qwen", "qwen_chat", "minimax", "minimax_chat"])
+    p.add_argument(
+        "--backend",
+        type=str,
+        choices=[
+            "azure_openai",
+            "codex",
+            "codex_exec",
+            "claude",
+            "claude_chat",
+            "claude_code_exec",
+            "cursor",
+            "cursor_exec",
+            "copilot",
+            "copilot_chat",
+            "copilot_exec",
+            "qwen",
+            "qwen_chat",
+            "minimax",
+            "minimax_chat",
+            "openai_compatible",
+        ],
+    )
     p.add_argument("--optimizer_model", type=str)
     p.add_argument("--target_model", type=str)
     p.add_argument("--optimizer_backend", type=str)

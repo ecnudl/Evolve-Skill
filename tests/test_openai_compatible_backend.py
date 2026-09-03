@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from types import SimpleNamespace
 from typing import Any
 
@@ -10,6 +11,21 @@ import pytest
 import skillopt.model as model
 from skillopt.model import backend_config
 from skillopt.model import openai_compatible_backend as backend
+
+_CONFIG_SUFFIXES = (
+    "BASE_URL",
+    "API_KEY",
+    "MODEL",
+    "SESSION_ID",
+    "TEMPERATURE",
+    "TIMEOUT_SECONDS",
+    "MAX_TOKENS",
+)
+_CONFIG_ENV_KEYS = tuple(
+    f"{prefix}OPENAI_COMPATIBLE_{suffix}"
+    for prefix in ("", "OPTIMIZER_", "TARGET_")
+    for suffix in _CONFIG_SUFFIXES
+)
 
 
 class _CompletionRecorder:
@@ -34,6 +50,7 @@ def isolate_backend_state(monkeypatch: pytest.MonkeyPatch):
     target_backend = backend_config.get_target_backend()
     optimizer_config = vars(backend.OPTIMIZER_CONFIG).copy()
     target_config = vars(backend.TARGET_CONFIG).copy()
+    config_env = {key: os.environ.get(key) for key in _CONFIG_ENV_KEYS}
     backend.reset_token_tracker()
     yield
     backend.reset_token_tracker()
@@ -41,6 +58,11 @@ def isolate_backend_state(monkeypatch: pytest.MonkeyPatch):
     vars(backend.TARGET_CONFIG).update(target_config)
     backend_config.set_optimizer_backend(optimizer_backend)
     backend_config.set_target_backend(target_backend)
+    for key, value in config_env.items():
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value
     backend._reset_clients()
 
 
@@ -49,20 +71,70 @@ def test_configure_preserves_role_specific_values() -> None:
         base_url="https://shared.example/v1",
         api_key="shared-key",
         model="shared-model",
+        session_id="shared-session",
         optimizer_base_url="https://optimizer.example/v1",
         optimizer_api_key="optimizer-key",
         optimizer_model="optimizer-model",
+        optimizer_session_id="optimizer-session",
         target_base_url="https://target.example/v1",
         target_api_key="target-key",
         target_model="target-model",
+        target_session_id="target-session",
     )
 
     assert backend.OPTIMIZER_CONFIG.base_url == "https://optimizer.example/v1"
     assert backend.OPTIMIZER_CONFIG.api_key == "optimizer-key"
     assert backend.OPTIMIZER_CONFIG.deployment == "optimizer-model"
+    assert backend.OPTIMIZER_CONFIG.session_id == "optimizer-session"
     assert backend.TARGET_CONFIG.base_url == "https://target.example/v1"
     assert backend.TARGET_CONFIG.api_key == "target-key"
     assert backend.TARGET_CONFIG.deployment == "target-model"
+    assert backend.TARGET_CONFIG.session_id == "target-session"
+
+
+def test_session_id_environment_prefers_role_specific_value(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_COMPATIBLE_SESSION_ID", "shared-session")
+    monkeypatch.setenv(
+        "OPTIMIZER_OPENAI_COMPATIBLE_SESSION_ID",
+        "optimizer-session",
+    )
+    monkeypatch.delenv("TARGET_OPENAI_COMPATIBLE_SESSION_ID", raising=False)
+
+    assert backend._initial_config("optimizer").session_id == "optimizer-session"
+    assert backend._initial_config("target").session_id == "shared-session"
+
+
+def test_client_adds_session_header_only_when_configured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client_kwargs: list[dict[str, Any]] = []
+
+    def build_fake_client(**kwargs: Any) -> object:
+        client_kwargs.append(kwargs)
+        return object()
+
+    monkeypatch.setattr(backend, "OpenAI", build_fake_client)
+    config = backend.OpenAICompatibleConfig(
+        base_url="https://router.example/v1",
+        api_key="secret-key",
+        deployment="test-model",
+        session_id="agent-session",
+        timeout_seconds=30,
+        max_tokens=128,
+        temperature=None,
+    )
+
+    config_repr = repr(config)
+    backend._build_client(config)
+    config.session_id = ""
+    backend._build_client(config)
+
+    assert client_kwargs[0]["default_headers"] == {"X-Session-ID": "agent-session"}
+    assert "default_headers" not in client_kwargs[1]
+    assert "secret-key" not in config_repr
+    assert "agent-session" not in config_repr
 
 
 def test_optimizer_and_target_route_to_their_own_clients(monkeypatch: pytest.MonkeyPatch) -> None:

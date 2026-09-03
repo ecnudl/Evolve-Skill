@@ -65,6 +65,7 @@ export OPENAI_COMPATIBLE_BASE_URL="https://api.groq.com/openai/v1"
 export OPENAI_COMPATIBLE_API_KEY="gsk_..."
 export OPENAI_COMPATIBLE_MODEL="llama-3.3-70b-versatile"
 # Optional: OPENAI_COMPATIBLE_TEMPERATURE, _MAX_TOKENS, _TIMEOUT_SECONDS
+# Agent-only gateways may also require OPENAI_COMPATIBLE_SESSION_ID.
 ```
 
 For direct library use, `OPTIMIZER_BACKEND=openai_compatible` and/or
@@ -102,6 +103,12 @@ API. It records token usage through the shared tracker, supports provider tool
 calling through `chat_*_messages(..., tools=...)`, and exposes `count_tokens()`
 (tiktoken when available, with a character-based fallback). Provider-specific
 Responses API features are outside this backend's contract.
+
+When `OPENAI_COMPATIBLE_SESSION_ID` is set, the backend sends it as the
+`X-Session-ID` request header. The optimizer and target roles can override it
+with `OPTIMIZER_OPENAI_COMPATIBLE_SESSION_ID` and
+`TARGET_OPENAI_COMPATIBLE_SESSION_ID`. If it is unset, no session header is
+added.
 
 Only write a new backend when the provider is not compatible with this surface
 or requires behavior that cannot be expressed by its configuration.

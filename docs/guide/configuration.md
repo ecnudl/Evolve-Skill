@@ -69,8 +69,9 @@ MiniMax is served from region-specific hosts. Select one with
 resolves to `https://api.minimaxi.com/v1`. An explicit
 `model.minimax_base_url` or `MINIMAX_BASE_URL` overrides the region default.
 
-For a generic compatible provider, select the role backends explicitly rather
-than relying on a high-level shorthand:
+For a generic compatible provider, either use the high-level
+`--backend openai_compatible` CLI shorthand (which selects both roles) or set
+the role backends explicitly in YAML:
 
 ```yaml
 model:
@@ -199,6 +200,7 @@ Model credentials are loaded from environment variables:
 | `OPENAI_COMPATIBLE_BASE_URL` | `openai_compatible` | Generic Chat Completions base URL |
 | `OPENAI_COMPATIBLE_API_KEY` | `openai_compatible` | Provider API key; optional for local servers |
 | `OPENAI_COMPATIBLE_MODEL` | `openai_compatible` | Shared provider model ID for direct library use; train/eval YAML role models take precedence |
+| `OPENAI_COMPATIBLE_SESSION_ID` | `openai_compatible` | Optional value sent as `X-Session-ID` for agent-only gateways |
 | `CLAUDE_CLI_BIN` | `claude_chat` | Optional path to the `claude` executable; defaults to `claude` |
 | `ANTHROPIC_API_KEY` | `claude_chat` | Optional authentication method understood by the Claude CLI, not a direct SkillOpt API client |
 | `CURSOR_EXEC_PATH` | `cursor_exec` | Optional path to `cursor-agent`; defaults to `cursor-agent` |

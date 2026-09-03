@@ -233,6 +233,7 @@ overrides.
 | `BASE_URL` | `OPENAI_COMPATIBLE_BASE_URL`, `OPTIMIZER_OPENAI_COMPATIBLE_BASE_URL`, `TARGET_OPENAI_COMPATIBLE_BASE_URL` |
 | `API_KEY` | Corresponding shared/optimizer/target `*_API_KEY` names |
 | `MODEL` | Corresponding shared/optimizer/target `*_MODEL` names |
+| `SESSION_ID` | Optional shared/optimizer/target value sent as `X-Session-ID` |
 | `TEMPERATURE` | Corresponding shared/optimizer/target `*_TEMPERATURE` names |
 | `MAX_TOKENS` | Corresponding shared/optimizer/target `*_MAX_TOKENS` names |
 | `TIMEOUT_SECONDS` | Corresponding shared/optimizer/target `*_TIMEOUT_SECONDS` names |

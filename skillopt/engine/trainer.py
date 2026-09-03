@@ -331,25 +331,56 @@ def _build_longitudinal_pairs(
 
 # ── History / persistence helpers ─────────────────────────────────────────────
 
-_SECRET_KEYS = {
-    "azure_api_key",
-    "api_key",
-    "openai_api_key",
-}
+_SECRET_CONFIG_KEY_SUFFIXES = (
+    "apikey",
+    "accesstoken",
+    "refreshtoken",
+    "token",
+    "password",
+    "passwd",
+    "clientsecret",
+    "secret",
+    "secretkey",
+    "secretaccesskey",
+    "sharedaccesskey",
+    "privatekey",
+    "accountkey",
+)
 
 
-def _redact_value(val: str) -> str:
-    if len(val) <= 8:
-        return "*" * len(val)
-    return f"{val[:4]}...{val[-4:]}"
+def _is_secret_config_key(key: object) -> bool:
+    """Recognize credential fields without matching token-budget settings."""
+    if not isinstance(key, str):
+        return False
+    compact = re.sub(r"[^a-z0-9]", "", key.casefold())
+    return compact in {"pwd", "sig", "authorization"} or compact.endswith(
+        _SECRET_CONFIG_KEY_SUFFIXES
+    )
+
+
+def _redact_cfg_value(value: object) -> object:
+    if isinstance(value, dict):
+        return {
+            key: (
+                "[REDACTED]"
+                if _is_secret_config_key(key) and item not in (None, "")
+                else _redact_cfg_value(item)
+            )
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_redact_cfg_value(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_redact_cfg_value(item) for item in value)
+    return value
 
 
 def _redact_cfg(cfg: dict) -> dict:
-    redacted = dict(cfg)
-    for key in list(redacted):
-        if key.lower() in _SECRET_KEYS and redacted.get(key):
-            redacted[key] = _redact_value(str(redacted[key]))
+    """Return a recursively redacted copy safe for persisted run metadata."""
+    redacted = _redact_cfg_value(cfg)
+    assert isinstance(redacted, dict)
     return redacted
+
 
 def _load_history(out_root: str) -> list[dict]:
     path = os.path.join(out_root, "history.json")
@@ -805,21 +836,21 @@ class ReflACTTrainer:
             timeout_seconds=cfg.get("qwen_chat_timeout_seconds"),
             max_tokens=cfg.get("qwen_chat_max_tokens"),
             enable_thinking=cfg.get("qwen_chat_enable_thinking"),
-            thinking_mode=cfg.get("qwen_chat_thinking_mode"),
+            thinking_mode=cfg.get("qwen_chat_thinking_mode") or None,
             optimizer_base_url=cfg.get("optimizer_qwen_chat_base_url") or None,
             optimizer_api_key=cfg.get("optimizer_qwen_chat_api_key") or None,
             optimizer_temperature=cfg.get("optimizer_qwen_chat_temperature"),
             optimizer_timeout_seconds=cfg.get("optimizer_qwen_chat_timeout_seconds"),
             optimizer_max_tokens=cfg.get("optimizer_qwen_chat_max_tokens"),
             optimizer_enable_thinking=cfg.get("optimizer_qwen_chat_enable_thinking"),
-            optimizer_thinking_mode=cfg.get("optimizer_qwen_chat_thinking_mode"),
+            optimizer_thinking_mode=cfg.get("optimizer_qwen_chat_thinking_mode") or None,
             target_base_url=cfg.get("target_qwen_chat_base_url") or None,
             target_api_key=cfg.get("target_qwen_chat_api_key") or None,
             target_temperature=cfg.get("target_qwen_chat_temperature"),
             target_timeout_seconds=cfg.get("target_qwen_chat_timeout_seconds"),
             target_max_tokens=cfg.get("target_qwen_chat_max_tokens"),
             target_enable_thinking=cfg.get("target_qwen_chat_enable_thinking"),
-            target_thinking_mode=cfg.get("target_qwen_chat_thinking_mode"),
+            target_thinking_mode=cfg.get("target_qwen_chat_thinking_mode") or None,
         )
         configure_minimax_chat(
             region=cfg.get("minimax_region") or None,

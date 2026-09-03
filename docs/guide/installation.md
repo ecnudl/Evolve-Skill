@@ -154,7 +154,8 @@ OpenAI-compatible servers have three distinct entry points:
 
 1. The research engine's generic `openai_compatible` backend uses
    `OPENAI_COMPATIBLE_BASE_URL`, `OPENAI_COMPATIBLE_API_KEY`, and
-   `OPENAI_COMPATIBLE_MODEL`.
+   `OPENAI_COMPATIBLE_MODEL`. Agent-only gateways can additionally set
+   `OPENAI_COMPATIBLE_SESSION_ID`.
 2. The research `openai_chat` backend can use
    `AZURE_OPENAI_AUTH_MODE=openai_compatible` with
    `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_API_KEY`.

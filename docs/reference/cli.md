@@ -81,18 +81,39 @@ set for evaluation, `eval_only.py` creates a separate timestamped
 `outputs/eval_<env>_<model>_<timestamp>/` directory and writes
 `eval_summary.json` there; it does not modify the training run directory.
 
-For the generic OpenAI-compatible research backend, select the role backends
-explicitly:
+For the generic OpenAI-compatible research backend, the high-level shorthand
+selects both roles when their YAML values are still the default
+`openai_chat`. Explicit role-specific CLI/YAML choices take precedence:
 
 ```bash
 python scripts/train.py \
   --config configs/searchqa/default.yaml \
-  --cfg-options \
-    model.optimizer_backend=openai_compatible \
-    model.target_backend=openai_compatible \
-    model.optimizer=deepseek-chat \
-    model.target=deepseek-chat
+  --backend openai_compatible \
+  --optimizer_model deepseek-chat \
+  --target_model deepseek-chat
 ```
+
+For a mixed-backend run, continue to set `model.optimizer_backend` and
+`model.target_backend` independently with `--cfg-options`.
+
+The Qwen shorthand keeps the optimizer on `openai_chat` and selects
+`qwen_chat` for the target. The portable default is to leave thinking policy
+to the server:
+
+```bash
+skillopt-eval \
+  --config configs/searchqa/default.yaml \
+  --skill skills/my_skill.md \
+  --split valid_unseen \
+  --backend qwen \
+  --target_model qwen3.8-27b \
+  --qwen_chat_thinking_mode server_default
+```
+
+Set Qwen credentials with `QWEN_CHAT_BASE_URL` and `QWEN_CHAT_API_KEY` rather
+than placing the key on the command line. Use `disabled` only when the endpoint
+documents support for the corresponding `chat_template_kwargs`; strict hosted
+gateways may reject that provider-specific request field.
 
 To benchmark an installed, authenticated Cursor Agent through an environment
 that supports exec targets:

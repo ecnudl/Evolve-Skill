@@ -27,7 +27,7 @@ from __future__ import annotations
 import os
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from openai import OpenAI
@@ -49,11 +49,12 @@ _DEFAULT_BASE_URL = "https://api.openai.com/v1"
 @dataclass
 class OpenAICompatibleConfig:
     base_url: str
-    api_key: str
+    api_key: str = field(repr=False)
     deployment: str
     timeout_seconds: float
     max_tokens: int
     temperature: float | None
+    session_id: str | None = field(default=None, repr=False)
 
 
 def _parse_optional_float(value: Any) -> float | None:
@@ -89,6 +90,7 @@ def _initial_config(role: str) -> OpenAICompatibleConfig:
             or os.environ.get(deployment_env)
             or default_model_for_backend(BACKEND_NAME)
         ),
+        session_id=_role_env(role, "SESSION_ID", "").strip() or None,
         timeout_seconds=float(_role_env(role, "TIMEOUT_SECONDS", "300") or 300),
         max_tokens=_parse_int(_role_env(role, "MAX_TOKENS", "8000"), 8000),
         temperature=_parse_optional_float(_role_env(role, "TEMPERATURE", "")),
@@ -111,14 +113,17 @@ def _config_for(role: str) -> OpenAICompatibleConfig:
 
 
 def _build_client(config: OpenAICompatibleConfig) -> OpenAI:
-    return OpenAI(
-        base_url=config.base_url.rstrip("/") or _DEFAULT_BASE_URL,
+    client_kwargs: dict[str, Any] = {
+        "base_url": config.base_url.rstrip("/") or _DEFAULT_BASE_URL,
         # Some OpenAI-compatible servers (Ollama, vLLM, local proxies) do not
         # require an API key. The SDK still expects a non-empty string, so fall
         # back to a harmless placeholder when none is configured.
-        api_key=config.api_key or "dummy",
-        timeout=config.timeout_seconds,
-    )
+        "api_key": config.api_key or "dummy",
+        "timeout": config.timeout_seconds,
+    }
+    if config.session_id:
+        client_kwargs["default_headers"] = {"X-Session-ID": config.session_id}
+    return OpenAI(**client_kwargs)
 
 
 def _get_client(role: str) -> OpenAI:
@@ -335,6 +340,7 @@ def _update_config(
     base_url: str | None = None,
     api_key: str | None = None,
     deployment: str | None = None,
+    session_id: str | None = None,
     temperature: float | str | None = None,
     timeout_seconds: float | str | None = None,
     max_tokens: int | str | None = None,
@@ -349,6 +355,10 @@ def _update_config(
     if deployment is not None:
         config.deployment = str(deployment).strip() or config.deployment
         os.environ[f"{env_prefix}_OPENAI_COMPATIBLE_MODEL"] = config.deployment
+    if session_id is not None:
+        raw_session_id = str(session_id).strip()
+        config.session_id = raw_session_id or None
+        os.environ[f"{env_prefix}_OPENAI_COMPATIBLE_SESSION_ID"] = raw_session_id
     if temperature is not None:
         raw = str(temperature).strip()
         config.temperature = float(raw) if raw else None
@@ -366,20 +376,25 @@ def configure_openai_compatible(
     base_url: str | None = None,
     api_key: str | None = None,
     model: str | None = None,
+    session_id: str | None = None,
     temperature: float | str | None = None,
     timeout_seconds: float | str | None = None,
     max_tokens: int | str | None = None,
     optimizer_base_url: str | None = None,
     optimizer_api_key: str | None = None,
     optimizer_model: str | None = None,
+    optimizer_session_id: str | None = None,
     target_base_url: str | None = None,
     target_api_key: str | None = None,
     target_model: str | None = None,
+    target_session_id: str | None = None,
 ) -> None:
     """Configure the generic OpenAI-compatible backend at runtime.
 
     Shared values apply to both the optimizer and target roles; the
-    ``optimizer_*`` / ``target_*`` variants override them per role.
+    ``optimizer_*`` / ``target_*`` variants override them per role. A session
+    ID is sent as ``X-Session-ID`` and is useful only for gateways that require
+    an explicit agent-session marker.
     """
     with _config_lock:
         if base_url is not None:
@@ -388,6 +403,8 @@ def configure_openai_compatible(
             os.environ["OPENAI_COMPATIBLE_API_KEY"] = str(api_key).strip()
         if model is not None:
             os.environ["OPENAI_COMPATIBLE_MODEL"] = str(model).strip()
+        if session_id is not None:
+            os.environ["OPENAI_COMPATIBLE_SESSION_ID"] = str(session_id).strip()
         if temperature is not None:
             os.environ["OPENAI_COMPATIBLE_TEMPERATURE"] = str(temperature).strip()
         if timeout_seconds is not None:
@@ -400,6 +417,7 @@ def configure_openai_compatible(
             base_url=optimizer_base_url if optimizer_base_url is not None else base_url,
             api_key=optimizer_api_key if optimizer_api_key is not None else api_key,
             deployment=optimizer_model if optimizer_model is not None else model,
+            session_id=(optimizer_session_id if optimizer_session_id is not None else session_id),
             temperature=temperature,
             timeout_seconds=timeout_seconds,
             max_tokens=max_tokens,
@@ -410,6 +428,7 @@ def configure_openai_compatible(
             base_url=target_base_url if target_base_url is not None else base_url,
             api_key=target_api_key if target_api_key is not None else api_key,
             deployment=target_model if target_model is not None else model,
+            session_id=(target_session_id if target_session_id is not None else session_id),
             temperature=temperature,
             timeout_seconds=timeout_seconds,
             max_tokens=max_tokens,
