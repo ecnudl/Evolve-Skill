@@ -14,7 +14,9 @@
 
 ## 当前进展
 
-已实现跨域实验框架、验证器校准与反馈闭环、配对评测，以及带执行回执的断点恢复和离线审计。最新 V18 研究在 SearchQA 与 MBPP-sanitized 兼容子集上比较全文更新和分层 Skill。
+已实现跨域实验框架、验证器校准与反馈闭环、配对评测，以及带执行回执的断点恢复和离线审计。历史 V18 在 SearchQA 与 MBPP-sanitized 兼容子集上比较全文更新和分层 Skill。
+
+新主线聚焦 **Research 驱动的机制 Rubric 如何改善 Skill 验证与准入**。当前完成阶段一：严格区分公开验证证据与隐藏审计，支持固定产物的离线回放；尚未接入新的 Research 或 Skill 准入实验。见[主线说明与运行命令](docs/skill-validation-mainline.md)。
 
 目前仍是研究原型：已有局部学习收益，但尚未证明稳定的跨域泛化优势。Research 目前是限定来源的检索与引用核验，并非完整自主 DeepResearch；V18 本轮不新增 Research 干预，两个领域均参与开发，不属于未见领域测试。
 
@@ -24,6 +26,7 @@
 | --- | --- |
 | `skillopt/cross_domain/`、`skillopt/scope_evolution_v2/` | 跨域评测、范围门与负迁移分析 |
 | `skillopt/validator_pilot/`、`skillopt/coevolution*/` | 可执行验证、反馈、Skill／验证器进化与版本化实验 |
+| `skillopt/skill_validation/` | 新主线：条件化验证接口、证据隔离、固定产物离线回放 |
 | `scripts/`、`configs/`、`tests/` | 运行／审计入口、配置与回归测试 |
 | [研究索引](docs/research-overview.md) | 阅读顺序、实验边界与复现要求 |
 | [V18 协议](docs/coevolution-v18-protocol.md) | 最新实验设计、对照、预算与评价方式 |
@@ -37,6 +40,7 @@
 ```bash
 python -m pip install -e ".[dev,searchqa,cross-domain,validator-pilot]"
 python -m pytest -q tests/test_coevolution_v18_*.py
+python -m pytest -q tests/test_skill_validation_*.py
 ```
 
 上述测试使用合成数据和模拟接口，不需要 API Key。真实 Coding 执行当前依赖 macOS 的系统沙箱；不能把离线测试通过理解为其他平台已支持真实实验。
