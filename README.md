@@ -16,7 +16,7 @@
 
 已实现跨域实验框架、验证器校准与反馈闭环、配对评测，以及带执行回执的断点恢复和离线审计。历史 V18 在 SearchQA 与 MBPP-sanitized 兼容子集上比较全文更新和分层 Skill。
 
-新主线聚焦 **Research 驱动的机制 Rubric 如何改善 Skill 验证与准入**。当前完成阶段一：严格区分公开验证证据与隐藏审计，支持固定产物的离线回放；尚未接入新的 Research 或 Skill 准入实验。见[主线说明与运行命令](docs/skill-validation-mainline.md)。
+新主线聚焦 **Research 驱动的机制 Rubric 如何改善 Skill 验证与准入**。当前完成阶段一：严格区分公开验证证据与隐藏审计，支持固定产物的离线回放；尚未接入新的 Research 或 Skill 准入实验。见[主线说明与运行命令](docs/skill-validation-mainline.md)、[阶段一验收报告](docs/skill-validation-stage1-report-20260917.md)。
 
 目前仍是研究原型：已有局部学习收益，但尚未证明稳定的跨域泛化优势。Research 目前是限定来源的检索与引用核验，并非完整自主 DeepResearch；V18 本轮不新增 Research 干预，两个领域均参与开发，不属于未见领域测试。
 
