@@ -1,0 +1,36 @@
+{
+  "protocol_version": "scope-mvp-v1",
+  "model": "gpt-5.5",
+  "seed": 42,
+  "workers": 6,
+  "train_per_cell": 8,
+  "dev_per_cell": 8,
+  "validation_per_cell": 64,
+  "validation_partition": "alternating within each domain/mechanism/group: fit vs confirmation",
+  "test_per_cell": 24,
+  "test_repeats": 2,
+  "candidate_rounds": 2,
+  "edit_budgets": [4, 2],
+  "router_threshold": 0.75,
+  "shuffled_seed": 1701,
+  "gate": {
+    "confidence": 0.95,
+    "min_group_n": 16,
+    "min_positive_gain": 0.01,
+    "noninferiority_margin": 0.10,
+    "max_conditional_harm": 0.15,
+    "source_domains": ["coding"]
+  },
+  "notes": [
+    "Controlled synthetic hard-oracle diagnostic, NOT a public benchmark replication.",
+    "Two independently studied single-active-skill tracks, not multi-skill composition.",
+    "Generate candidates on coding train; choose current/selected candidate on coding dev only.",
+    "Calibration sees coding and spreadsheet; rule_reasoning is final domain holdout.",
+    "Content, routing threshold, partition seeds and gate margins frozen before test.",
+    "Primary pilot margins allow up to 10pp group noninferiority and 15% conditional harm UCB; not deployment-grade safety.",
+    "Report strict 5pp/10% sensitivity separately; never retune using test.",
+    "Three-arm outcome replay is a shared-draw offline policy estimate; no hidden-label routing.",
+    "Two target generation repeats do not constitute two training seeds.",
+    "No automatic Split or DeepResearch/Rubric in this MVP."
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "metadata": {
+    "kind": "illustrative_example",
+    "description": "User-provided explanatory scores, not benchmark observations or evidence of method efficacy.",
+    "normalization": "Illustrative percentage points divided by 100; higher is better."
+  },
+  "scores": {
+    "source_a": {"baseline": 0.60, "reference": 0.80, "candidate": 0.78},
+    "transfer_b": {"baseline": 0.70, "reference": 0.60, "candidate": 0.75},
+    "transfer_c": {"baseline": 0.70, "reference": 0.60, "candidate": 0.75}
+  },
+  "source_domains": ["source_a"]
+}

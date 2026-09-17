@@ -4,6 +4,15 @@ site_description: "SkillOpt: Agentic Skill Optimization via Reflective Training 
 repo_url: https://github.com/microsoft/SkillOpt
 repo_name: microsoft/SkillOpt
 
+# This site retains the upstream guide. Versioned research records are read
+# directly on GitHub; they may reference intentionally unpublished run assets.
+exclude_docs: |
+  coevolution*.md
+  cross-domain-*.md
+  experiment-report-*.md
+  research-overview.md
+  validator-*-protocol-*.md
+
 theme:
   name: material
   palette:

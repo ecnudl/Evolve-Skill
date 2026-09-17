@@ -1,114 +1,48 @@
-# SkillOpt: Executive Strategy for Self-Evolving Agent Skills
+# Evolve-Skill
 
-*Train agent skills like you train neural networks — with epochs, (mini-)batchsize, learning rates, and validation gates — but without touching model weights.*
+基于 [Microsoft SkillOpt v0.2.0](https://github.com/microsoft/SkillOpt/releases/tag/v0.2.0) 的研究分支，探索 **Cross-Domain Safe Skill Evolution：面向跨领域稳定性的 Skill 与验证器协同进化**。
 
-[![Project Page](https://img.shields.io/badge/Project%20Page-SkillOpt-8dbb3c)](https://microsoft.github.io/SkillOpt/) [![Paper](https://img.shields.io/badge/Paper-arXiv-b31b1b)](https://arxiv.org/abs/2605.23904) [![Project Video](https://img.shields.io/badge/Project%20Video-Watch%20Demo-ff0000)](https://youtu.be/JUBMDTCiM0M) [![PyPI](https://img.shields.io/badge/PyPI-skillopt-green.svg)](https://pypi.org/project/skillopt/) [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+我们不追求在每个 benchmark 上都拿最高分，而是希望 Skill 在改善部分任务的同时，尽量不损害其他领域的能力，降低过拟合和负迁移。
 
-<p align="center">
-  <a href="https://trendshift.io/repositories/38498?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-38498" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/38498" alt="microsoft%2FSkillOpt | Trendshift" width="250" height="55"/></a>
-  <a href="https://trendshift.io/repositories/38498?utm_source=trendshift-badge&utm_medium=badge&utm_campaign=badge-trendshift-38498" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/38498/weekly?language=Python" alt="microsoft%2FSkillOpt | Trendshift" width="250" height="55"/></a>
-</p>
+## 我们在做什么
 
-> 📖 **For installation, data preparation, training/eval commands, configuration, and framework internals, start with the versioned [SkillOpt documentation](https://github.com/microsoft/SkillOpt/blob/main/docs/index.md). A concise rendered overview is available in the [Documentation & Reproduction Guide](https://microsoft.github.io/SkillOpt/docs/guideline.html), and longer-form engineering analysis appears on the [Technical Blog](https://microsoft.github.io/SkillOpt/blog/). We also maintain a [Changelog](CHANGELOG.md) for released and unreleased changes.**
+- **Skill 进化**：利用任务执行证据和结构化反馈更新 Skill，比较全文更新与“共享核心＋领域局部规则”等表示。
+- **Skill 验证**：结合可执行检查、Coding Rubric 与受限资料检索，探索更有效的验证策略；新策略先独立校准，再用于反馈。
+- **协同与范围控制**：验证反馈指导下一轮 Skill 更新；候选经过独立验证门决定是否使用，证据不足时限制范围或回退到 No-Skill。
 
----
+开发、验证器校准、准入确认和最终评测按各实验协议隔离。最终评测前冻结 Skill 与使用策略，同时报告原始 Skill 表现、逐域退化和回退比例，避免把“全部回退”当成泛化成功。
 
-## News 🔥🔥🔥
-- **[2026-07-24]** 📰 **SkillOpt in the news.** Read the official [Microsoft Research feature](https://www.microsoft.com/en-us/research/blog/skillopt-agent-skills-as-trainable-parameters/), along with recent coverage from [VentureBeat](https://venturebeat.com/orchestration/microsofts-open-source-skillopt-automatically-upgrades-ai-agent-skills-without-touching-model-weights), [Synced (机器之心)](https://mp.weixin.qq.com/s/pMlyj3a3KOh8L7cIHClRXA), [Flowtivity](https://flowtivity.ai/blog/microsoft-skillopt-train-ai-agent-skills/), and [The Decoder](https://the-decoder.com/microsofts-skillopt-boosts-gpt-5-5-by-using-nothing-but-a-trained-markdown-file/).
-- **[2026-07-02]** 🚀 **SkillOpt [v0.2.0](https://github.com/microsoft/SkillOpt/releases/tag/v0.2.0) is out on [PyPI](https://pypi.org/project/skillopt/)!** Headline feature: **SkillOpt-Sleep**, a nightly offline self-evolution engine (harvest → mine → replay → consolidate behind a held-out validation gate), now shipped as the `skillopt-sleep` CLI. It also includes experimental multi-objective, replay, and dream-rollout controls; the main CLI keeps conservative defaults and does not expose every experiment-harness control as a flag. The release source adds integration shells for **Claude Code, Codex, Copilot, and Devin**, plus an **OpenClaw reference adaptation**; these plugin/MCP files live in the repository rather than the PyPI wheel. It also adds SearchQA split materialization, Windows robustness, and hardened JSON parsing. See the [release notes](https://github.com/microsoft/SkillOpt/releases/tag/v0.2.0) for full release details and contributor acknowledgements.
-- **[2026-06-15]** 😴 **SkillOpt-Sleep (preview)** — a nightly offline self-evolution companion for local coding agents (Claude Code / Codex / Copilot): review past sessions, replay recurring tasks, and consolidate validated skills behind a held-out gate. See **[`docs/sleep/README.md`](docs/sleep/README.md)** for what it is, how to use it, and results.
-- **[2026-06-03]** 🎉 **[gbrain](https://github.com/garrytan/gbrain), [gbrain-evals](https://github.com/garrytan/gbrain-evals/blob/main/docs/benchmarks/2026-06-03-skillopt.md), and [darwin-skill](https://github.com/alchaincyf/darwin-skill) have all integrated SkillOpt.**
-- **[2026-06-02]** 🎉 **SkillOpt [v0.1.0](https://github.com/microsoft/SkillOpt/releases/tag/v0.1.0) is now available on [PyPI](https://pypi.org/project/skillopt/)!** Install with `pip install skillopt`. This initial release includes the full training loop (rollout → reflect → aggregate → select → update → evaluate), multi-backend support (OpenAI / Azure / Claude / Qwen / MiniMax), six built-in benchmarks, and WebUI dashboard.
+## 当前进展
 
----
+已实现跨域实验框架、验证器校准与反馈闭环、配对评测，以及带执行回执的断点恢复和离线审计。最新 V18 研究在 SearchQA 与 MBPP-sanitized 兼容子集上比较全文更新和分层 Skill。
 
-## Overview
+目前仍是研究原型：已有局部学习收益，但尚未证明稳定的跨域泛化优势。Research 目前是限定来源的检索与引用核验，并非完整自主 DeepResearch；V18 本轮不新增 Research 干预，两个领域均参与开发，不属于未见领域测试。
 
-Modern agent skills are usually hand-crafted, generated one-shot by a strong
-LLM, or evolved through loosely controlled self-revision — none of which
-behaves like a deep-learning optimizer for the skill itself, and none of
-which reliably improves over its starting point under feedback.
+## 代码与文档
 
-**SkillOpt treats the skill document as the trainable state of a frozen
-agent**, and trains it with the discipline that makes weight-space
-optimization reproducible. A separate optimizer model turns scored rollouts
-into bounded add / delete / replace edits on a single skill document; in the
-default paper-style path, a candidate edit is accepted only when it strictly
-improves a held-out validation score. A textual learning-rate budget, a rejected-edit buffer,
-and an epoch-wise slow / meta update make skill training stable while
-adding **zero inference-time model calls** at deployment.
+| 位置 | 内容 |
+| --- | --- |
+| `skillopt/cross_domain/`、`skillopt/scope_evolution_v2/` | 跨域评测、范围门与负迁移分析 |
+| `skillopt/validator_pilot/`、`skillopt/coevolution*/` | 可执行验证、反馈、Skill／验证器进化与版本化实验 |
+| `scripts/`、`configs/`、`tests/` | 运行／审计入口、配置与回归测试 |
+| [研究索引](docs/research-overview.md) | 阅读顺序、实验边界与复现要求 |
+| [V18 协议](docs/coevolution-v18-protocol.md) | 最新实验设计、对照、预算与评价方式 |
 
-The deployed artifact is a compact `best_skill.md` (typically 300–2,000
-tokens) that runs against the unchanged target model. Across **six
-benchmarks, seven target models, and three execution harnesses** (direct
-chat, Codex CLI, Claude Code CLI), SkillOpt is best or tied-best on **all
-52 evaluated (model, benchmark, harness) cells** and on GPT-5.5 lifts the
-average no-skill accuracy by **+23.5 points in direct chat, +24.8 inside
-the Codex agentic loop, and +19.1 inside Claude Code**. Optimized skill
-artifacts transfer across model scales, between Codex and Claude Code
-harnesses, and to nearby benchmarks without further optimization.
+保留历史版本是为了支持依赖与冻结实验审计，不代表它们都是推荐的新实验入口。
 
-For the full method, ablations, and per-cell results see the [paper](https://arxiv.org/abs/2605.23904); for a visual walkthrough of the loop see the [project page](https://microsoft.github.io/SkillOpt/); for deeper API / backend / benchmark docs see [`docs/`](docs/).
+## 安装与离线测试
 
-## 🎬 Demo Video
-
-https://github.com/user-attachments/assets/eb12d3bc-371c-467f-904d-91b61f339ed7
-
-<p align="center">
-  <a href="https://youtu.be/JUBMDTCiM0M"><b>▶ Watch the full demo on YouTube</b></a>
-</p>
-
----
-
-## Extensibility & WebUI
-
-### Adding a new backend
-
-A backend = a chat / exec target (e.g. `openai_chat`, `claude_chat`,
-`qwen_chat`, `minimax_chat`, `copilot_chat`, `openai_compatible`, `codex_exec`,
-`claude_code_exec`, `cursor_exec`, `copilot_exec`). If a provider implements the OpenAI Chat Completions
-protocol, try the built-in `openai_compatible` backend before adding code. See
-[`docs/guide/new-backend.md`](docs/guide/new-backend.md) for the full
-contract. Chat backends add a `skillopt/model/<name>_backend.py` module;
-target-only exec backends use the shared harness in `codex_harness.py`.
-Both register through `common.py`, `backend_config.py`, and
-`skillopt/model/__init__.py`.
-
-### Adding a new benchmark
-
-A benchmark = a `skillopt/envs/<name>/` package with an adapter, a data loader,
-a scored rollout helper, a YAML config, and optionally an initial seed skill.
-See
-[`docs/guide/new-benchmark.md`](docs/guide/new-benchmark.md) for the full
-contract; the simplest reference is `skillopt/envs/searchqa/`.
-
-### WebUI
-
-Launch the monitoring dashboard (optional):
+使用 Python 3.10+，在独立环境中安装：
 
 ```bash
-pip install -e ".[webui]"
-python -m skillopt_webui.app
+python -m pip install -e ".[dev,searchqa,cross-domain,validator-pilot]"
+python -m pytest -q tests/test_coevolution_v18_*.py
 ```
 
-| Flag | Default | Description |
-|---|---|---|
-| `--port` | 7860 | Server port |
-| `--host` | `0.0.0.0` | Bind address |
-| `--share` | off | Create a public Gradio share link |
+上述测试使用合成数据和模拟接口，不需要 API Key。真实 Coding 执行当前依赖 macOS 的系统沙箱；不能把离线测试通过理解为其他平台已支持真实实验。
 
-The default host listens on every network interface. Use
-`--host 127.0.0.1` for local-only access.
+API 配置参考 [`.env.example`](.env.example)，实际密钥仅放本地 `.env`。仓库不包含密钥、原始调用日志、历史运行缓存及第三方数据快照。**精确复现历史实验还需要匹配的数据版本、父 Skill 和审计材料，不是 clone 后即可一键复现。** 详见[复现边界](docs/research-overview.md#复现与发布边界)。
 
----
+## 致谢
 
-## Citation
-
-```bibtex
-@article{yang2026skillopt,
-  title={Skillopt: Executive strategy for self-evolving agent skills},
-  author={Yang, Yifan and Gong, Ziyang and Huang, Weiquan and Yang, Qihao and Zhou, Ziwei and Huang, Zisu and Li, Yan and Gao, Xuemei and Dai, Qi and Liu, Bei and others},
-  journal={arXiv preprint arXiv:2605.23904},
-  year={2026}
-}
-```
+原始训练框架来自 [Microsoft SkillOpt](https://github.com/microsoft/SkillOpt)，上游使用说明见 [docs/index.md](docs/index.md)。保留原项目 [MIT License](LICENSE)；第三方数据与任务遵循各自授权，不自动适用本仓库许可。
