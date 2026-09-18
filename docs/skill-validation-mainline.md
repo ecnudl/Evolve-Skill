@@ -119,6 +119,7 @@ python -m skillopt.skill_validation import-v15 \
 | `sandbox.py`、`sandbox_worker.py` | Linux Docker 限制资源执行；不可用时保留 unsupported，绝不在宿主退化执行 |
 | `calibration.py` | 按共同义务比较、自然／工程数据分开、配对诊断、冻结与一次性校准 |
 | `stage2.py`、`stage2_fixtures.py` | 固定产物导入导出、三组比较与可回放 smoke；合成数据明确标记 |
+| `stage2_transport.py` | 可选 PJLAB／glm-5.3 提案接口验收；固定四次逻辑调用上限，分开记录 HTTP 重试和 token 用量 |
 
 运行无 API 的集成 smoke：
 
@@ -138,11 +139,22 @@ python -m skillopt.skill_validation.stage2 \
 
 输出包括 `protocol.json`、分开的冻结产物／H、`development_views.json`、提案与 trace、逐产物执行回执、比较、校准决策和 `summary.json`。结果记录全流程唯一执行成本；脚本回调与真实模型／网络调用不能混算。部署细节见 [Linux 运行环境](skill-validation-linux-runtime-20260918.md)。
 
+需要显式验证真实 API 接口时，可运行下面的**付费、联网**小测试；读取本地 `.env` 中专用 PJLAB 配置，不执行产物、不校准或更新 Skill：
+
+```bash
+python -m skillopt.skill_validation.stage2_transport \
+  --repo /absolute/path/to/SkillOpt \
+  --output /absolute/path/to/SkillOpt/outputs/skill_validation/stage2_live_proposal
+```
+
+每次最多四次逻辑调用、单 worker、每次输出上限 2,048 tokens；现有客户端每次允许最多三次 HTTP attempts，分别计数。重复调用只读终态缓存；多次重试前序的 token 用量未知时，不能把终态用量当作全部成本。模型提案被拒绝属于正常结果，不为获得合法／正向输出自动重试。
+
 ### 尚未完成的研究能力
 
 - 当前 Research 在三种预注册检查配方中提出组合／修订，不生成任意新检查器，也没有新的任务级模型探针生成器。不能把它称为完整自主 DeepResearch。
 - 资料按问题选择，但仍限定于少量官方文档；引用核验只证明来源，未建立自动逻辑蕴含证明。
 - `CallableTask` 是 Python／JSON 函数，不是仓库修复、真实工作簿或多工具 Agent。公开期望采用精确 JSON 比较；非空对象级保持 target 暂不支持。
+- 输入保持检查覆盖调用前后的 JSON 可见状态，不证明对象身份、执行中间状态或不可见外部副作用保持。
 - 原地修改的强制义务没有相应检查时保留 unknown；Near-Miss 不误用主要由公开契约适用性规则约束，不证明学会了泛化路由。
 - 容器保护宿主，但产物与观察器在同一 Python 进程，不能保证恶意产物无法伪造测量。正式恶意代码场景需更强执行服务。
 - 工程 smoke 只检验链路；需要独立采集并冻结真实 No-Skill／Current／Candidate 产物，才能评价 Research 的检错和决策增益。

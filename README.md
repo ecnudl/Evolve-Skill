@@ -18,6 +18,8 @@
 
 新主线聚焦 **Research 驱动的机制 Rubric 如何改善 Skill 验证与准入**。已建立公开证据／隐藏审计隔离，并接通阶段二的有界 Research 提案、条件化检查、Linux 隔离执行及独立校准／审计工程链路。真实方法效果和新主线的 Skill 准入／更新仍待验证。见[主线说明与运行命令](docs/skill-validation-mainline.md)、[阶段一验收报告](docs/skill-validation-stage1-report-20260917.md)。
 
+最新工程验收见 [阶段二报告](docs/skill-validation-stage2-report-20260918.md)：本地 907 项测试通过、Linux 126 次正常执行，另完成真实 API 接口复测；这些不等于 Research 已提高泛化性能。
+
 目前仍是研究原型：已有局部学习收益，但尚未证明稳定的跨域泛化优势。Research 目前是限定来源的检索与引用核验，并非完整自主 DeepResearch；V18 本轮不新增 Research 干预，两个领域均参与开发，不属于未见领域测试。
 
 ## 代码与文档
