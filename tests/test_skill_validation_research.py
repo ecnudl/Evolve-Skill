@@ -90,6 +90,42 @@ def test_no_research_has_same_recipe_interface_no_docs():
     assert len(model.calls) == 2
 
 
+def test_synthesis_explicitly_describes_complete_replacement_and_no_research_citations():
+    model = Model([plan(), {"status": "no_update", "rules": [], "reason": "No warranted recipe change."}])
+    result = BoundedResearch(model=model).propose("adaptive_no_research", fixed_rubric(), [view()])
+    assert result.status == "no_update"
+    system, payload, _ = model.calls[1]
+    contract = payload["proposal_contract"]
+    assert contract["rules_semantics"] == "complete_replacement"
+    assert contract["allowed_source_ids"] == []
+    assert contract["literal_conditions"] == {"applicability": "explicit_obligation", "exception": "absent_obligation"}
+    assert "no_update" in contract["allowed_statuses"]
+    assert "explicitly list every old recipe you want to retain" in system
+    assert "never cite artifact IDs" in system and "EVERY rule must have citations:[]" in system
+    assert "Do not add an inverted applicability rule" in system
+
+
+def test_research_synthesis_citation_ids_are_only_available_sources(tmp_path):
+    model = Model([plan([URL]), update()])
+    result = BoundedResearch(model=model, fetcher=source_fetch, cache_root=tmp_path).propose(
+        "adaptive_research", fixed_rubric(), [view()])
+    assert result.status == "update"
+    system, payload, _ = model.calls[1]
+    contract = payload["proposal_contract"]
+    assert contract["allowed_source_ids"] == [s["source_id"] for s in payload["sources"] if s["status"] == "available"]
+    assert "preserve_whitespace" in contract["quote_policy"]
+    assert "preserving all whitespace and punctuation exactly" in system
+    assert "omit_citation" in contract["unsupported_citation"]
+
+
+def test_prompt_clarification_does_not_relax_inverted_rule_parser():
+    proposed = update()
+    proposed["rules"][0]["applicability"] = "absent_obligation"
+    proposed["rules"][0]["exception"] = "explicit_obligation"
+    result = BoundedResearch(model=Model([plan(), proposed])).propose("adaptive_no_research", fixed_rubric(), [view()])
+    assert result.status == "invalid" and result.rubric is None
+
+
 def test_research_source_gap_recipe_trace_and_serialization(tmp_path):
     def synthesis(payload):
         citation = {"source_id": payload["sources"][0]["source_id"], "quote": QUOTE}
