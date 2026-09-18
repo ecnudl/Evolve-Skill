@@ -4,7 +4,7 @@
 
 ## 阅读顺序
 
-新主线优先阅读 [Research-driven Skill Validation](skill-validation-mainline.md)：当前仅阶段一，固定产物验证回放与可见证据／隐藏审计隔离，尚无新方法效果结论。以下保留历史研究脉络。
+新主线优先阅读 [Research-driven Skill Validation](skill-validation-mainline.md)：阶段一证据隔离保持不变，阶段二新增有界 Research、条件检查、Linux 执行与独立校准／审计工程链路；尚无新方法效果结论。以下保留历史研究脉络。
 
 1. [目标与指标](cross-domain-objective-and-evaluation.md)：平均表现、最差域、逐域损害与使用覆盖率。
 2. [三部分实验总结](experiment-report-skill-validation-coevolution-20260916.md)：Skill 学习、可执行验证、协同进化各自已有的证据与局限。

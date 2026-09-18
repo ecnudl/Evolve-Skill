@@ -1,6 +1,8 @@
-# Research-driven Skill Validation：新主线与阶段一
+# Research-driven Skill Validation：新主线
 
-目标仍是 **通过 Coding Rubric 与 Research 改进 Skill 的验证、进化与适用范围判断**，降低跨域负迁移。当前只完成阶段一：固定产物的离线验证回放与证据隔离。没有 Research 调用、验证器校准、Skill 更新或泛化效果结论。
+目标仍是 **通过 Coding Rubric 与 Research 改进 Skill 的验证、进化与适用范围判断**，降低跨域负迁移。阶段一的固定产物回放与证据隔离保持不变；阶段二已增加有界 Research 提案、公开契约检查、Linux 隔离执行、独立校准和审计的工程入口。**尚未证明 Research 的真实增量效果，尚未接入新主线的 Skill Gate／Skill 更新。**
+
+下面先保留阶段一接口说明；阶段二入口、局限与后续边界见文末。历史 VXX 源码和冻结实验不修改。
 
 ## 本阶段的数据流
 
@@ -96,9 +98,56 @@ python -m skillopt.skill_validation import-v15 \
 
 每个案例输出 `case.json`、`rubric.json`、`verifier_view.json`、`report.json`、`summary.json`；历史导入另存 `host_only/audit.json`。重复回放必须内容一致，不能覆盖不同的结果。源码改变导致管线指纹改变时，使用新输出目录。
 
-这里没有 live execution 入口；无沙箱不能转为宿主直接执行。`unsupported` 回执保留为 unknown。运行产物放 `outputs/`，不提交密钥、历史调用缓存或私有审计数据。临时路径若包含系统符号链接，应先使用真实路径；导入导出拒绝符号链接证据路径。
+阶段一入口不执行代码。阶段二仅在满足约束的 Linux Docker 中执行；无沙箱不能转为宿主直接执行。`unsupported` 回执保留为 unknown。运行产物放 `outputs/`，不提交密钥、历史调用缓存或私有审计数据。临时路径若包含系统符号链接，应先使用真实路径；导入导出拒绝符号链接证据路径。
 
-## 下一阶段边界：预留原则，不提前实现
+## 阶段二：工程链路与适用边界
+
+新增入口为 `python -m skillopt.skill_validation.stage2`，不复制历史 VXX。数据流为：
+
+1. 宿主冻结同一组三条件产物、共同任务义务、完整分区清单；H 另存 `host_only/audit.json`。
+2. 固定检查在 development 上执行；两个自适应对照获得**相同的匿名化公开证据及显式 H 缺口摘要**。
+3. `research.py` 做问题规划、按问题选择限定的 Python 3.11 官方资料、综合条件化检查提案；允许无更新、检索失败、非法提案。
+4. `checks.py` 把可复用检查配方实例化为宿主已登记的公开调用／关系；`sandbox.py` 在固定镜像、无网络、非 root、只读文件系统中执行。
+5. 提案、完整执行管线、预算与阈值冻结后，`calibration.py` 在 verifier_calibration 比较检出、误拒、覆盖率、Near-Miss 与配对方向；再在 verifier_audit 独立报告。
+
+`accepted` 只代表一次有限数据下的验证器校准检查点，**不授予部署、跨领域使用或 Skill 准入权限**。fixture／mutant／历史不完整记录不计入自然效果验收，证据不足为 Pending。
+
+| 新文件 | 职责 |
+| --- | --- |
+| `research.py` | 两个自适应对照的共同提案接口、文档白名单、隔离缓存、引用来源与成本记录 |
+| `checks.py` | 公开例子的精确 JSON 比较、整个调用参数的状态保持、显式重复一致性关系；回执绑定与持久缓存 |
+| `sandbox.py`、`sandbox_worker.py` | Linux Docker 限制资源执行；不可用时保留 unsupported，绝不在宿主退化执行 |
+| `calibration.py` | 按共同义务比较、自然／工程数据分开、配对诊断、冻结与一次性校准 |
+| `stage2.py`、`stage2_fixtures.py` | 固定产物导入导出、三组比较与可回放 smoke；合成数据明确标记 |
+
+运行无 API 的集成 smoke：
+
+```bash
+python -m skillopt.skill_validation.stage2 --output outputs/skill_validation/stage2_local
+```
+
+macOS 或没有固定镜像时，执行记录为 unsupported／检查为 unknown，这是失败关闭路径，不是代码执行成功。在已配置的 Linux 上使用：
+
+```bash
+python -m skillopt.skill_validation.stage2 \
+  --image sha256:b8fe4ce3655e95f7f22c2a87d8e03a2f1f0cedc488a8e9adf18cc5a18cfdf401 \
+  --output outputs/skill_validation/stage2_docker
+```
+
+再次执行同一命令复用原有提案与执行回执。未闭合 intent 不自动重试；改源码／预算／数据不能覆盖原输出。`--common-evidence` 使用新的独立输出目录，仅共享原始公开调用，新增重复探针没有证据时仍为 unknown。`--pool DIR` 导入 `export_pool()` 冻结的数据，宿主负责核验真实来源，哈希不能认证自然运行。
+
+输出包括 `protocol.json`、分开的冻结产物／H、`development_views.json`、提案与 trace、逐产物执行回执、比较、校准决策和 `summary.json`。结果记录全流程唯一执行成本；脚本回调与真实模型／网络调用不能混算。部署细节见 [Linux 运行环境](skill-validation-linux-runtime-20260918.md)。
+
+### 尚未完成的研究能力
+
+- 当前 Research 在三种预注册检查配方中提出组合／修订，不生成任意新检查器，也没有新的任务级模型探针生成器。不能把它称为完整自主 DeepResearch。
+- 资料按问题选择，但仍限定于少量官方文档；引用核验只证明来源，未建立自动逻辑蕴含证明。
+- `CallableTask` 是 Python／JSON 函数，不是仓库修复、真实工作簿或多工具 Agent。公开期望采用精确 JSON 比较；非空对象级保持 target 暂不支持。
+- 原地修改的强制义务没有相应检查时保留 unknown；Near-Miss 不误用主要由公开契约适用性规则约束，不证明学会了泛化路由。
+- 容器保护宿主，但产物与观察器在同一 Python 进程，不能保证恶意产物无法伪造测量。正式恶意代码场景需更强执行服务。
+- 工程 smoke 只检验链路；需要独立采集并冻结真实 No-Skill／Current／Candidate 产物，才能评价 Research 的检错和决策增益。
+
+## 后续实验与阶段三边界
 
 第二阶段保持 Skill 与真实三条件产物冻结，只比较 fixed、adaptive_no_research、adaptive_research。候选与自然产物的采集规则先冻结，不允许被比较的验证器挑选有利样本。新增配对诊断：Skill 相关回归、Skill 修复、共同错误和不确定情况；单次随机胜败不解释为确定因果。
 
@@ -108,4 +157,4 @@ Research 的隔离必须覆盖查询、搜索摘要、网页、版本与缓存�
 
 第三阶段仍按 3A 冻结候选准入回放 → 3B 共同父 Skill、不同验证反馈的真实单轮更新。未经相应范围校准的验证器不能批准 Skill。Restrict 只选择预先冻结的子范围，新条件需要新的确认数据。不会把全部回退当作学习收益。
 
-**当前上述第二、三阶段均未实施。** fixture、历史兼容性回放与真实方法效果必须分别报告。阶段一交付的是可运行链路和隔离能力，不是 Research 已提高泛化性能。
+**当前阶段二完成的是工程链路，真实方法效果实验及阶段三尚未完成。** fixture、历史兼容性回放与真实方法效果必须分别报告。下一步先用冻结自然产物验证 Research 是否提供普通自适应对照没有的有效证据；之后才进入 3A 冻结候选决策回放、3B 单轮反馈驱动更新，不自动开启大规模协同进化。
