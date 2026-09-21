@@ -224,6 +224,11 @@ nor audit truth. No result from audit is returned to the proposal model.
                      "no_skill_updates": True, "calibration_is_not_deployment_authority": True})
     _write(root / "protocol.json", protocol)
     export_pool(pool, root / "frozen_pool")
+    # Host-only development diagnostic before any model/executor request. This
+    # does not tune thresholds, inspect held-out outcomes, or grant admission.
+    from .panel import inspect_pool
+    panel_preflight = inspect_pool(pool)
+    _write(root / "host_only" / "panel_preflight.json", panel_preflight)
     views, dev_reports = _development(pool, executor, root, max_executions)
     _write(root / "development_views.json", seal({"views": views}))
     _write(root / "development_reports.json", seal({"reports": dev_reports}))
@@ -284,6 +289,8 @@ nor audit truth. No result from audit is returned to the proposal model.
                             "independent_audit_has_no_admission_authority"}
             outcomes[purpose][arm] = {"decision": decision, "report": report}
     summary = seal({"protocol_hash": protocol["record_hash"], "proposal_status": {a: p.status for a, p in proposals.items()},
+                    "panel_preflight_hash": panel_preflight["record_hash"],
+                    "panel_readiness": panel_preflight["readiness"],
                     "proposal_costs": {a: p.costs for a, p in proposals.items()}, "outcomes": outcomes,
                     "total_unique_execution_cost": _execution_totals(root),
                     "execution_costs_by_partition": execution_costs,

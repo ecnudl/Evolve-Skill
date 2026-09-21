@@ -11,6 +11,8 @@ exclude_docs: |
   cross-domain-*.md
   experiment-report-*.md
   research-overview.md
+  research-progress-*.md
+  results/
   skill-validation*.md
   validator-*-protocol-*.md
 

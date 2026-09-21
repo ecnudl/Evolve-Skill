@@ -82,6 +82,8 @@ def test_full_fixture_study_and_exact_replay(tmp_path):
     result, model, executor = study(tmp_path)
     assert result["pool_artifact_count"] == 27 and result["model_artifact_count"] == 0
     assert result["learning_or_generalization_effect_established"] is False
+    assert result["panel_readiness"]["status"] == "pending"
+    assert (tmp_path / "host_only/panel_preflight.json").is_file()
     assert result["proposal_status"] == {"fixed": "no_update", "adaptive_no_research": "update", "adaptive_research": "update"}
     assert len(model.calls) == 4 and executor.calls
     assert result["total_unique_execution_cost"]["executor_requests_including_development_and_shared_preparation"] == 126

@@ -1,8 +1,8 @@
 # Research-driven Skill Validation：新主线
 
-目标仍是 **通过 Coding Rubric 与 Research 改进 Skill 的验证、进化与适用范围判断**，降低跨域负迁移。阶段一的固定产物回放与证据隔离保持不变；阶段二已增加有界 Research 提案、公开契约检查、Linux 隔离执行、独立校准和审计的工程入口。**尚未证明 Research 的真实增量效果，尚未接入新主线的 Skill Gate／Skill 更新。**
+目标仍是 **通过 Coding Rubric 与 Research 改进 Skill 的验证、进化与适用范围判断**，降低跨域负迁移。**截至 2026-09-21，Skill 更新与 Skill Gate 已接通最小工程闭环，但 Research 的真实增量及跨域效果尚未证明。** 真实单轮更新、工程准入 smoke 和未完成的自然任务实验是三类不同证据，见[最新汇总](research-progress-20260921.md)。
 
-下面先保留阶段一接口说明；阶段二入口、局限与后续边界见文末。历史 VXX 源码和冻结实验不修改。
+下面按开发时间保留阶段一、阶段二及后续接口说明；早期章节的“本阶段”不代表当前全部能力。历史 VXX 源码和冻结实验不修改。
 
 ## 本阶段的数据流
 
@@ -169,4 +169,60 @@ Research 的隔离必须覆盖查询、搜索摘要、网页、版本与缓存�
 
 第三阶段仍按 3A 冻结候选准入回放 → 3B 共同父 Skill、不同验证反馈的真实单轮更新。未经相应范围校准的验证器不能批准 Skill。Restrict 只选择预先冻结的子范围，新条件需要新的确认数据。不会把全部回退当作学习收益。
 
-**当前阶段二完成的是工程链路，真实方法效果实验及阶段三尚未完成。** fixture、历史兼容性回放与真实方法效果必须分别报告。下一步先用冻结自然产物验证 Research 是否提供普通自适应对照没有的有效证据；之后才进入 3A 冻结候选决策回放、3B 单轮反馈驱动更新，不自动开启大规模协同进化。
+**当前阶段二完成的是工程链路，Research 的真实方法效果及阶段三正式准入尚未完成。** 下文新增独立的单轮探索入口，可做内容更新与原始效果比较，但不批准 Skill、不扩大适用范围。fixture、历史兼容性回放与真实方法效果必须分别报告。仍需要用冻结自然产物验证 Research 是否提供普通自适应对照没有的有效证据，再连接 3A 冻结候选准入；不自动开启大规模协同进化。
+
+## 2026-09-18：评分器验收与自然面板准备
+
+见 [本轮改进与泛化进化状态报告](skill-validation-quality-and-evolution-20260918.md)。新增两个小入口，不改变历史实验：
+
+- `panel.py`：读取已冻结的 Stage-2 pool，只用 development 的 H 做学习空间和数据质量诊断；其他分区只报告元数据。三条件按共同任务计数，保留 unknown，报告产物重复、候选与父 Skill 相同、配对胜负及逐任务族结果。Stage-2 在首次提案前自动保存此宿主报告，不向模型发送。
+- `legacy_panel.py`：批量导入实际闭合的 V15/V16 Coding development 记录，复用原有严格导入／公开回放。Skill-bearing 记录保持 `unassigned`，没有经过原学习协议确认的父子关系不能改名成 Current/Candidate；历史记录的正式自然验收分母始终为零。
+
+默认自然开发面板规划为至少 64 原任务、16 声明任务族、4 项目、4 有错误的任务族、各条件审计覆盖率至少 75%。这是面向项目任务的先导筛查配置，不是统计功效保证，也不根据结果筛题。`ready_for_pilot_review` 不是 Verifier/Skill 准入；`pending` 不阻断明确标记的工程回放。任务族及来源真实性仍需外部核验，不能靠声明字段认证。
+
+```bash
+python -m skillopt.skill_validation.panel \
+  --pool outputs/skill_validation/stage2_20260918_docker_a/frozen_pool \
+  --output outputs/skill_validation/quality_20260918/fixture_panel
+
+python -m skillopt.skill_validation.legacy_panel \
+  --run-root outputs/coevolution_v16/pilot_20260915_a_clean_resume_20260916 \
+  --output outputs/skill_validation/quality_20260918/legacy \
+  --source-kind model --limit 64
+```
+
+这些示例需要本机既有运行材料；没有缓存不能伪造。新增模块会改变 Stage-2 的全模块源码指纹，因此完整 study 要使用新输出目录，不能覆盖或继续写旧冻结 study。单独对旧 frozen_pool 做宿主诊断不修改该池。
+
+真实工作簿评分器增加非空合法范围检查、缺失公式缓存识别和 `status`／`evaluator_version`。旧 `ok` 保持兼容且失败关闭，`ok=False` 不等于已确认语义错误；新消费者必须保留详细状态。尚未提供公式重算、缓存新鲜度证明或真实工作簿安全执行；旧 rollout 的独立文字检查也不能作为新验证器证据。
+
+## 2026-09-18：单轮内容更新探索入口
+
+`single_round.py` 接通共享父 Skill → 固定开发产物 → 绑定公开执行证据的反馈 → 一次文本更新 → 冻结候选 → 独立最终题目的原始配对评测。详见 [协议与运行说明](skill-validation-single-round-20260918.md)。
+
+`single_round_data.py` 负责真实历史父 Skill 与未使用公开 Coding 任务的预留；`single_round_feedback.py` 只向 updater 投影可见反馈；`remote_executor.py` 通过 SSH 复用 Linux Docker，不在本机运行生成代码。相同有效反馈合并为一个 updater 请求，不能伪装成多个独立对照。
+
+这是单轮探索，不是已获准入的 3B 正式闭环：本轮校准因缺少 Near-Miss 必然 Pending，也没有 Skill Gate 或跨域任务。当前 MBPP 适配不支持 Research 新增有效检查，因此它只能检查反馈驱动内容更新的可运行性和新题上的描述性效果，不能判断 Research 的增量价值。
+
+真实小实验已完成，见 [单轮实验结果](skill-validation-single-round-results-20260918.md)：No-Skill 30/32、Parent 26/32、Candidate 27/32；两个重复的改善方向相反，尚无稳定收益。三种反馈合并为一个候选。事后隔离执行还确认了一例原生检查漏检；原始评分保持不变。
+
+## 2026-09-20：有准入控制的最小闭环
+
+新增 `closed_loop.py`，与上面的 shadow 单轮比较入口明确分开。它将校准结果作为 updater 的硬门槛，并在 final 之前加入独立 `skill_confirmation`、Skill Gate 和执行前 scope 选择。新增 `probe_recipes.py` 支持在宿主明确许可下生成一个合法新输入，仅检查既有输入保持义务；`admission.py` 绑定验证管线、Skill 内容／版本和冻结条件，支持 Local Commit／Restrict／Reject／Pending。未批准或不适用时使用干净 No-Skill。
+
+四组 Linux 工程 smoke 已完成，162 次隔离执行，0 付费 API；相关测试 672 项通过。fixture 的正式校准仍为 Pending，只有显式工程模拟模式可以走正向分支，绝不获得真实部署授权。当前没有跨域准入或长期自动进化。
+
+实现、可运行命令、各组结果及边界见 [最小准入闭环报告](skill-validation-gated-loop-20260920.md)。9 月 18 日的真实模型成绩不因此改变；工程 smoke 不作为 Research 或泛化有效性的证据。
+
+## 2026-09-20：条件化更新与自然数据诊断
+
+新增 `natural_study.py`：条件化 Preserve／Repair／Restrict updater、契约对照、共享匿名探针、有限独立校准和真实 HumanEval+ 自定义面板；不替代前述冻结工程协议。校准仅授权限定 Coding 开发反馈，真实 Skill 部署与跨域范围仍未授权。
+
+当日相关新旧测试合计 1,087 项通过；公开参考验收暴露并修复了示例提取问题。初期报告记录了 48 道开发题的 No-Skill／Current 首次配对。后经限流恢复，截至本次发布已保存 **169/256 个开发位置**，其中包括 unknown，并非 169 次成功；剩余 87 个。没有完成三组验证器或新 Skill 的自然效果比较。隐藏参考审计的契约争议尚未解决，不能将原始 H 分数当作完全可信的正确率。
+
+参见[运行协议](skill-validation-natural-pilot-20260920.md)与[实际结果及恢复限制](skill-validation-natural-results-20260920.md)。原模型回答、旧协议和源码快照保留，不重抽不利样本。
+
+## 2026-09-21：发布与恢复边界
+
+最新可核对断点及聚合数字见[发布报告](research-progress-20260921.md)与[汇总 JSON](results/skill-validation-20260921.json)。原始数据目录不随 Git 发布，报告内的本机证据路径不代表公开下载链接。
+
+恢复脚本保留原 SSH／Docker 身份，不能把服务器本机 Docker 伪装成旧 SSH 传输。迁移编排到服务器、健康检查来源与缓存新鲜度仍需单独验收；`proxy_on` 成功不证明 API 客户端使用了代理。该次发布不启动付费实验，不修改冻结主线源码或已有结果。
