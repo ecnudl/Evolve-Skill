@@ -9,6 +9,7 @@
 3. [最小准入闭环](skill-validation-gated-loop-20260920.md)：两道门与工程控制实验。
 4. [自然任务协议](skill-validation-natural-pilot-20260920.md)、[初期结果](skill-validation-natural-results-20260920.md)、[开发诊断](skill-validation-natural-development-diagnostic-20260920.md)：真实实验设计与目前不能继续作效果推断的原因。
 5. [机器可读结果摘要](results/skill-validation-20260921.json)：已核对的聚合数字、来源标识与记录哈希，不包含原始产物。
+6. [真实记录 demo](../examples/research_evidence/README.md)：现已公开精选模型产物、实际反馈、父／候选 Skill 和完整单轮逐题评分摘录，可离线重算摘要；不是完整私有缓存或新的效果实验。
 
 ## 核心问题与方法边界
 

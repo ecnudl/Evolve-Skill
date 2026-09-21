@@ -1,0 +1,158 @@
+{
+  "kind": "verbatim_public_feedback_pair_excerpt",
+  "source": {
+    "local_source": "outputs/skill_validation/single_round_20260918_a/feedback/fixed.json",
+    "original_record_hash": "c75643ef0f2754e9849a9b80695e82b8301f55b69378174c5309414c09628eec",
+    "raw_record_distributed": false
+  },
+  "task_id": "mbpp:643",
+  "partition": "development",
+  "original_pairs": 8,
+  "exported_pairs": 1,
+  "pair_index": 0,
+  "updater_saw_more_than_this_excerpt": true,
+  "model_view_pair": {
+    "task": {
+      "information_origin": "public_contract",
+      "domain": "coding",
+      "prompt": "Write a function that checks if a strings contains 'z', except at the start and end of the word.\n\nImplement the named Python function in solution.py.\nPublic native example (original assertion 0; Python assertion semantics):\nassert text_match_wordz_middle(\"pythonzabc.\")==True",
+      "obligations": [
+        {
+          "id": "obligation_0",
+          "kind": "requested_behavior",
+          "statement": "Write a function that checks if a strings contains 'z', except at the start and end of the word.",
+          "contract_quote": "Write a function that checks if a strings contains 'z', except at the start and end of the word.",
+          "target": "",
+          "critical": true
+        }
+      ],
+      "public_files": []
+    },
+    "public_cases": [
+      {
+        "arguments": {
+          "args": [],
+          "kwargs": {}
+        },
+        "contract_quote": "assert text_match_wordz_middle(\"pythonzabc.\")==True",
+        "obligation_ids": [
+          "obligation_0"
+        ],
+        "expected": true,
+        "expected_is_provided": true,
+        "expected_exception": null
+      }
+    ],
+    "roles": {
+      "no_skill": {
+        "artifact": {
+          "information_origin": "submitted_artifact",
+          "availability": "available",
+          "files": [
+            {
+              "path": "solution.py",
+              "content": "import re\n\ndef text_match_wordz_middle(text):\n    \"\"\"Check if a string contains 'z', except at the start or end of a word.\"\"\"\n    return bool(re.search(r'\\Bz\\B', text))\n"
+            },
+            {
+              "path": "public_runner.py",
+              "content": "def _case_0():\n    try:\n        from solution import text_match_wordz_middle\n        assert text_match_wordz_middle(\"pythonzabc.\")==True\n        return True\n    except MemoryError:\n        raise\n    except Exception as error:\n        return False\n\ndef check():\n    return _case_0()\n"
+            }
+          ]
+        },
+        "checks": [
+          {
+            "method": "public_examples",
+            "obligation_id": "obligation_0",
+            "status": "pass",
+            "observations": [
+              {
+                "information_origin": "recorded_public_execution",
+                "public_input": {
+                  "args": [],
+                  "kwargs": {}
+                },
+                "status": "observed",
+                "attempt": 0,
+                "actual": true,
+                "exception": null,
+                "before_args": [],
+                "after_args": [],
+                "before_kwargs": {},
+                "after_kwargs": {}
+              }
+            ]
+          }
+        ],
+        "obligations": {
+          "obligation_0": "pass"
+        },
+        "status": "pass"
+      },
+      "current": {
+        "artifact": {
+          "information_origin": "submitted_artifact",
+          "availability": "available",
+          "files": [
+            {
+              "path": "solution.py",
+              "content": "def text_match_wordz_middle(text):\n    \"\"\"Check if a string contains 'z' except at the start and end of the word.\"\"\"\n    if len(text) < 3:\n        return False\n    return 'z' in text[1:-1]\n"
+            },
+            {
+              "path": "public_runner.py",
+              "content": "def _case_0():\n    try:\n        from solution import text_match_wordz_middle\n        assert text_match_wordz_middle(\"pythonzabc.\")==True\n        return True\n    except MemoryError:\n        raise\n    except Exception as error:\n        return False\n\ndef check():\n    return _case_0()\n"
+            }
+          ]
+        },
+        "checks": [
+          {
+            "method": "public_examples",
+            "obligation_id": "obligation_0",
+            "status": "pass",
+            "observations": [
+              {
+                "information_origin": "recorded_public_execution",
+                "public_input": {
+                  "args": [],
+                  "kwargs": {}
+                },
+                "status": "observed",
+                "attempt": 0,
+                "actual": true,
+                "exception": null,
+                "before_args": [],
+                "after_args": [],
+                "before_kwargs": {},
+                "after_kwargs": {}
+              }
+            ]
+          }
+        ],
+        "obligations": {
+          "obligation_0": "pass"
+        },
+        "status": "pass"
+      }
+    },
+    "same_delivered_content": false
+  },
+  "source_bindings": {
+    "task_hash": "53b245a05883f3e6e3380c11f32a2eaf3b3ce2cefd7f732849c6715f30bc32f4",
+    "callable_task_hash": "4d5191300d469da4e680559589d383a52e1243bc1af84e0201daaf500e197f42",
+    "repeat": 0,
+    "reports": [
+      {
+        "role": "current",
+        "artifact_record_hash": "681f94a136ec3356c2ad1df3a3899a7735d33fdf8d6c227a4dc89bde354fbe90",
+        "artifact_hash": "84c3b496db1633d5662bba448707685786e93edfa6a5438270c56f7dc0a4ed0c",
+        "report_hash": "a32d5b0ca8adde324d95dce0e72a5e309c2def8b01ff418f1e89b9e39b8d10e0"
+      },
+      {
+        "role": "no_skill",
+        "artifact_record_hash": "9d5a57d9250ad62f4d0a95668af3e15faefcdf07d589c9fdf236a7f3820f2250",
+        "artifact_hash": "9ce72e97eb8f740979a6ef257d39c1da31578d16d6a26183fc17943e5daf9771",
+        "report_hash": "e96d5aaa694435583a9a9678031df4eccc0989aa6d86a31bdff90a2e27dcb075"
+      }
+    ]
+  },
+  "posthoc_probe_included": false
+}

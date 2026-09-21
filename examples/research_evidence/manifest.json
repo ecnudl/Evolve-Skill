@@ -1,0 +1,71 @@
+{
+  "schema": "public_research_evidence_v1",
+  "published_date": "2026-09-21",
+  "method_effect_established": false,
+  "publication_type": "sanitized_excerpts_of_existing_real_runs",
+  "selection": "Four post-hoc explanatory development cases plus all 96 unique final positions of one completed single-round run. No current calibration/confirmation/final inputs exported.",
+  "excluded": [
+    "credentials",
+    "provider endpoints",
+    "machine paths in transport",
+    "raw API transport envelopes and unselected responses",
+    "hidden test inputs",
+    "reference source code",
+    "private execution logs"
+  ],
+  "integrity_scope": "File hashes verify package consistency, not authenticity. Original sealed-record hashes identify unpublished source records; excerpts are not the original records.",
+  "files": {
+    "NOTICE.md": {
+      "sha256": "07ed4dc0145bc2b574310c122e9960c87466e9ffe2e6d739342a7367e5cab64c",
+      "bytes": 2262
+    },
+    "README.md": {
+      "sha256": "4274a18d66bf089080b4882c6730fe97d1d5884cdba96d1291eacac1ecefa59d",
+      "bytes": 6583
+    },
+    "cases/audit_disagreement.json": {
+      "sha256": "4decffca4d50e63d8c9203bc8c1f9446cfa36b915b5116ed9466890cf5ffd381",
+      "bytes": 19608
+    },
+    "cases/power_boundary.json": {
+      "sha256": "522c59c9c028b78869e93a8ce72c4e09276eb5afce74bf0cbb231ffb399e7549",
+      "bytes": 12931
+    },
+    "cases/public_check_blindspot.json": {
+      "sha256": "c64645b759213cf017a6c308d3c6403146620f7299c726f429d26d32c79d83a5",
+      "bytes": 7797
+    },
+    "cases/word_boundary.json": {
+      "sha256": "b396f8d39f14175465574321f9a8f9852802dc1321a5d12866e6e04f7c298b05",
+      "bytes": 8304
+    },
+    "licenses/HumanEval-MIT.txt": {
+      "sha256": "bcba3de214851cce46ed5af42d6698044616eeace887c3231bc7a20474ab639e",
+      "bytes": 1083
+    },
+    "single_round_final_outcomes.json": {
+      "sha256": "24936515a012843fb765ed3729a18004ebdbd018eae763e56a6fc6306a4e1b3a",
+      "bytes": 53957
+    },
+    "skill_update/candidate.md": {
+      "sha256": "5aa8965113f7dd9e486d43a432a79566bccae9b9755fb8c07e02668135bff6ef",
+      "bytes": 3395
+    },
+    "skill_update/feedback_excerpt.json": {
+      "sha256": "17fcfa6d2b6eeff1ed5b5bf7fbd784da80d2f7c9a57f9ef19fc8a16d619f1a72",
+      "bytes": 6029
+    },
+    "skill_update/parent.md": {
+      "sha256": "fe8cb359d99197d82f9e0a7fefbe9f25d7e846def1abea376a4621f21e0a451d",
+      "bytes": 3715
+    },
+    "skill_update/update.json": {
+      "sha256": "633fb5f0f5b0abd644a05b9d3b2a4155a6b84ec84775c52bf55b0a4baba4cbc0",
+      "bytes": 2026
+    },
+    "skill_update/validator_attempts.json": {
+      "sha256": "cc7f844bd4bd6ce380e1b0dacebd10f34c51b82766aa4eac5d1eaf623ea577df",
+      "bytes": 4215
+    }
+  }
+}

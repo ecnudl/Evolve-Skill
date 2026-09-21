@@ -14,8 +14,11 @@
 2. [最新进展与实验汇总](docs/research-progress-20260921.md)：上次推送后新增了什么、实际跑到了哪里、下一步缺什么。
 3. [主线接口与运行说明](docs/skill-validation-mainline.md)：可见验证 V / 独立审计 H、分区、授权和入口。
 4. [自然任务实验协议](docs/skill-validation-natural-pilot-20260920.md)与[公开汇总 JSON](docs/results/skill-validation-20260921.json)：对照、预算、分母和原始记录指纹。
+5. [真实实验材料与离线 demo](examples/research_evidence/README.md)：真实 Skill 前后文本、反馈摘录、4 个配对代码案例与全部 96 个去重后的单轮最终评分位置。
 
-分析时请区分**算法设计、工程 fixture、历史回放、真实模型实验**；给出的改进建议应指向具体代码或证据缺口，而不是默认方法已经有效。原始运行缓存未公开，汇总指纹不等于独立复核。
+分析时请区分**算法设计、工程 fixture、历史回放、真实模型实验**；给出的改进建议应指向具体代码或证据缺口，而不是默认方法已经有效。现在提供经过筛选的真实记录摘录；完整原始运行缓存仍未公开，记录回放不等于重新执行或独立认证。
+
+无需 API 即可查看真实记录并重算结果：`python scripts/replay_research_demo.py`。它不执行模型生成的代码。
 
 ## 方法如何工作
 

@@ -1,0 +1,185 @@
+{
+  "id": "word_boundary",
+  "task_id": "mbpp:643",
+  "function": "text_match_wordz_middle",
+  "contract_summary_zh": "判断单词内部是否有 z；单词首尾的 z 不满足条件。",
+  "summary_is_paraphrase": true,
+  "model": "glm-5.3",
+  "partition": "development",
+  "repeat": 0,
+  "source_run": "single_round_20260918_a",
+  "provenance_kind": "real_model_artifacts",
+  "selection": "Post-hoc diagnostic illustration, not representative sampling.",
+  "skill_file": "skill_update/parent.md",
+  "artifacts": [
+    {
+      "condition": "no_skill",
+      "source": {
+        "local_source": "outputs/skill_validation/single_round_20260918_a/development/artifacts/9d5a57d9250ad62f4d0a95668af3e15faefcdf07d589c9fdf236a7f3820f2250.json",
+        "original_record_hash": "9d5a57d9250ad62f4d0a95668af3e15faefcdf07d589c9fdf236a7f3820f2250",
+        "raw_record_distributed": false
+      },
+      "model_request_hash": "99909c3b087cd2f05e79c15f4ba76bb2cdb8fd25442281a79beab36046f773f9",
+      "task_hash": "53b245a05883f3e6e3380c11f32a2eaf3b3ce2cefd7f732849c6715f30bc32f4",
+      "skill_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "solution_py": "import re\n\ndef text_match_wordz_middle(text):\n    \"\"\"Check if a string contains 'z', except at the start or end of a word.\"\"\"\n    return bool(re.search(r'\\Bz\\B', text))\n",
+      "solution_sha256": "260caed20adf3cbba4b328e9295f5de3071f4b38172094662fbc48156d5101d9",
+      "public_status": "pass",
+      "public_report_hash": "e96d5aaa694435583a9a9678031df4eccc0989aa6d86a31bdff90a2e27dcb075"
+    },
+    {
+      "condition": "current",
+      "source": {
+        "local_source": "outputs/skill_validation/single_round_20260918_a/development/artifacts/681f94a136ec3356c2ad1df3a3899a7735d33fdf8d6c227a4dc89bde354fbe90.json",
+        "original_record_hash": "681f94a136ec3356c2ad1df3a3899a7735d33fdf8d6c227a4dc89bde354fbe90",
+        "raw_record_distributed": false
+      },
+      "model_request_hash": "01c92abe7b3a6a1fc720886efd5c16b7304f29366dd857624d573787e166299a",
+      "task_hash": "53b245a05883f3e6e3380c11f32a2eaf3b3ce2cefd7f732849c6715f30bc32f4",
+      "skill_hash": "1d2c2d8e5094b286470adbe111f164f3abec9b0467c0ce5b6a2aa0b681dba554",
+      "solution_py": "def text_match_wordz_middle(text):\n    \"\"\"Check if a string contains 'z' except at the start and end of the word.\"\"\"\n    if len(text) < 3:\n        return False\n    return 'z' in text[1:-1]\n",
+      "solution_sha256": "5ccc654e7d1e344743f360f1d58debfbe1a74dc8d27331781d6de16e41b0dedc",
+      "public_status": "pass",
+      "public_report_hash": "a32d5b0ca8adde324d95dce0e72a5e309c2def8b01ff418f1e89b9e39b8d10e0"
+    }
+  ],
+  "diagnostics": [
+    {
+      "source": {
+        "local_source": "outputs/skill_validation/single_round_20260918_a/posthoc_development_word_boundary/no_skill.json",
+        "original_record_hash": "c806e4f14a43a7fff9ab2d8f4119d37d0b1bff432649b49f99096b0d8edf58ce",
+        "raw_record_distributed": false
+      },
+      "origin": "posthoc_human_public_contract_diagnostic",
+      "case_id": "punctuation_boundary",
+      "condition": "no_skill",
+      "artifact_record_hash": "9d5a57d9250ad62f4d0a95668af3e15faefcdf07d589c9fdf236a7f3820f2250",
+      "public_expected": false,
+      "matches_public_contract_case": true,
+      "included_in_original_score": false,
+      "used_by_updater": false,
+      "execution": {
+        "status": "observed",
+        "actual": false,
+        "before_args": [
+          "abz."
+        ],
+        "after_args": [
+          "abz."
+        ],
+        "before_kwargs": {},
+        "after_kwargs": {},
+        "exception": null,
+        "reason": "public_callable_executed",
+        "cleanup_confirmed": true,
+        "duration_seconds": 5.610326,
+        "input_hash": "fb2422681697086c0a6f45291f65c796850f4a98b1c1a0424a333b7cbcdf8e74",
+        "source_hash": "21d5e7f004d10c6a67cd5a052c261ee96592b143116a88c9d54d9dbebdb0d50b",
+        "call_hash": "c4fb25101795e1af204eabae0f8a2373f7773a919d95859070a28717286542cb",
+        "isolation_hash": "19fbfdaf7be527cbd2dfba16eaf3263c31a965b6bd564fb07fbd56508a151a48",
+        "original_record_hash": "440230f8e8ad577f7ac48c1db26240890587a58c0abd8bef957e3b655f7b8f46",
+        "isolation": {
+          "image": "sha256:b8fe4ce3655e95f7f22c2a87d8e03a2f1f0cedc488a8e9adf18cc5a18cfdf401",
+          "network": "none",
+          "root_read_only": true,
+          "source_read_only": true,
+          "user": "65534:65534",
+          "timeout_seconds": 10,
+          "memory_mb": 256
+        }
+      }
+    },
+    {
+      "source": {
+        "local_source": "outputs/skill_validation/single_round_20260918_a/posthoc_development_word_boundary/parent.json",
+        "original_record_hash": "f4cca927d06a297c442e7b026c520024f778c80ee1185a540b7529d19d785962",
+        "raw_record_distributed": false
+      },
+      "origin": "posthoc_human_public_contract_diagnostic",
+      "case_id": "punctuation_boundary",
+      "condition": "current",
+      "artifact_record_hash": "681f94a136ec3356c2ad1df3a3899a7735d33fdf8d6c227a4dc89bde354fbe90",
+      "public_expected": false,
+      "matches_public_contract_case": false,
+      "included_in_original_score": false,
+      "used_by_updater": false,
+      "execution": {
+        "status": "observed",
+        "actual": true,
+        "before_args": [
+          "abz."
+        ],
+        "after_args": [
+          "abz."
+        ],
+        "before_kwargs": {},
+        "after_kwargs": {},
+        "exception": null,
+        "reason": "public_callable_executed",
+        "cleanup_confirmed": true,
+        "duration_seconds": 3.108966,
+        "input_hash": "d5e5985edcbbffc062d774ef121ca98fefd5176ff1c8dbb37d2aaf3831207efc",
+        "source_hash": "82565aa259292a46c1337df93e3e22806026ec4ea82e31ab2d16b0e727464238",
+        "call_hash": "c4fb25101795e1af204eabae0f8a2373f7773a919d95859070a28717286542cb",
+        "isolation_hash": "19fbfdaf7be527cbd2dfba16eaf3263c31a965b6bd564fb07fbd56508a151a48",
+        "original_record_hash": "9ac502f712e2fbd7e3e3c94fa57dff3034152b4d3d0d0e8bfd5f8bd019f71af8",
+        "isolation": {
+          "image": "sha256:b8fe4ce3655e95f7f22c2a87d8e03a2f1f0cedc488a8e9adf18cc5a18cfdf401",
+          "network": "none",
+          "root_read_only": true,
+          "source_read_only": true,
+          "user": "65534:65534",
+          "timeout_seconds": 10,
+          "memory_mb": 256
+        }
+      }
+    },
+    {
+      "source": {
+        "local_source": "outputs/skill_validation/single_round_20260918_a/posthoc_development_word_boundary/reference.json",
+        "original_record_hash": "88b144b2da24ac12e92294bb920eb19dd4ac7c9a07ce4f96763fc1bad85f48e3",
+        "raw_record_distributed": false
+      },
+      "origin": "posthoc_human_public_contract_diagnostic",
+      "case_id": "punctuation_boundary",
+      "condition": "reference",
+      "artifact_record_hash": null,
+      "public_expected": false,
+      "matches_public_contract_case": true,
+      "included_in_original_score": false,
+      "used_by_updater": false,
+      "execution": {
+        "status": "observed",
+        "actual": false,
+        "before_args": [
+          "abz."
+        ],
+        "after_args": [
+          "abz."
+        ],
+        "before_kwargs": {},
+        "after_kwargs": {},
+        "exception": null,
+        "reason": "public_callable_executed",
+        "cleanup_confirmed": true,
+        "duration_seconds": 1.378545,
+        "input_hash": "aa6922392264a8c310eb7ec76d99fb8c838c6a07d532a3618b8817d2bb376d97",
+        "source_hash": "bd87c9e181ed29a090116266e9c6c5b82963bda709887f9a93a4d679d9a8d0b9",
+        "call_hash": "c4fb25101795e1af204eabae0f8a2373f7773a919d95859070a28717286542cb",
+        "isolation_hash": "19fbfdaf7be527cbd2dfba16eaf3263c31a965b6bd564fb07fbd56508a151a48",
+        "original_record_hash": "0bf9b01b09495b59787de2eec030f16723e91ce97e1d0441ad6475e4bcc7d838",
+        "isolation": {
+          "image": "sha256:b8fe4ce3655e95f7f22c2a87d8e03a2f1f0cedc488a8e9adf18cc5a18cfdf401",
+          "network": "none",
+          "root_read_only": true,
+          "source_read_only": true,
+          "user": "65534:65534",
+          "timeout_seconds": 10,
+          "memory_mb": 256
+        }
+      }
+    }
+  ],
+  "causal_skill_effect_established": false,
+  "research_credit": false
+}

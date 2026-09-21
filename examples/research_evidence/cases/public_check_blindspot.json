@@ -1,0 +1,93 @@
+{
+  "id": "public_check_blindspot",
+  "task_id": "HumanEval/145",
+  "function": "order_by_points",
+  "contract_summary_zh": "按题面约定的带符号数码和稳定排序；负数首位的符号会影响顺序。这里不是完整题面。",
+  "summary_is_paraphrase": true,
+  "model": "glm-5.3",
+  "partition": "development",
+  "repeat": 0,
+  "source_run": "natural_20260920_b",
+  "provenance_kind": "real_model_artifacts",
+  "selection": "Post-hoc diagnostic illustration, not random or representative sampling.",
+  "skill_file": "skill_update/parent.md",
+  "artifacts": [
+    {
+      "condition": "no_skill",
+      "source": {
+        "local_source": "outputs/skill_validation/natural_20260920_b/artifacts/903938db2874ef793d07d8cddda3d88f6aa6455bf7446c09d9a9e2cdc556dd55.json",
+        "original_record_hash": "903938db2874ef793d07d8cddda3d88f6aa6455bf7446c09d9a9e2cdc556dd55",
+        "raw_record_distributed": false
+      },
+      "model_request_hash": "f371bab13c4fbe0af0fefeba18ed0d5b4c98785003510ea7e388d2d9b44f9979",
+      "task_hash": "04e3b5d97419183ac1a24ec2f1d49dede437ad5f1d3ebab28885546ad39e6dac",
+      "skill_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "solution_py": "def order_by_points(nums):\n    def digit_sum(n):\n        return sum(int(c) for c in str(abs(n)))\n    return sorted(nums, key=digit_sum)\n",
+      "solution_sha256": "054107ed05e0e744fc7693fa4c89c0c4870816243cf3f9c87b935811b7386760",
+      "public_status": "pass",
+      "public_report_hash": "40cf1eaf4995d4ec87bf85cc8ccaaa1f37cbf449900a3189ab624bedf7269b35",
+      "public_wrapper_py": "ENTRY = 'order_by_points'\nATOL = 0\nEXAMPLES = [{'arguments': {'args': [[]], 'kwargs': {}}, 'expected': []}]\nimport copy\nimport importlib\nimport math\n\ndef _plain(value):\n    if type(value) in (str, int, bool, type(None)):\n        return True\n    if type(value) is float:\n        return math.isfinite(value)\n    if type(value) is list:\n        return all(_plain(x) for x in value)\n    if type(value) is dict:\n        return all(type(k) is str and _plain(v) for k, v in value.items())\n    return False\n\ndef _floats(value):\n    return type(value) is float or (type(value) is list and bool(value) and all(type(x) is float for x in value))\n\ndef _close(actual, expected, tolerance):\n    if type(expected) is list:\n        return type(actual) is list and len(actual) == len(expected) and all(_close(a, e, tolerance) for a, e in zip(actual, expected))\n    if type(actual) not in (int, float, bool) or type(expected) not in (int, float, bool):\n        return False\n    return abs(actual - expected) <= tolerance + 1e-7 * abs(expected)\n\ndef _same(actual, expected):\n    if actual == expected:\n        return True\n    tolerance = ATOL or (1e-6 if _floats(expected) else 0)\n    return bool(tolerance and type(actual) is type(expected) and _close(actual, expected, tolerance))\n\ndef check():\n    candidate = getattr(importlib.import_module('solution'), ENTRY)\n    for case in EXAMPLES:\n        args = copy.deepcopy(case['arguments'])\n        actual = candidate(*args['args'], **args['kwargs'])\n        if not _plain(actual) or not _same(actual, case['expected']):\n            return False\n    return True\n",
+      "audit_summary": {
+        "original_record_hash": "8ebc1eae182fe7d16065de57fd10622e8b04305f3dc89c46a22a9a7083f3a554",
+        "native_status": "fail",
+        "enhanced_status": "fail",
+        "counts": {
+          "base_count": 6,
+          "plus_count": 1000,
+          "base_failed": 3,
+          "plus_failed": 963
+        },
+        "interpretation": "Reference-based observation, not infallible truth; hidden inputs and reference source are omitted."
+      }
+    },
+    {
+      "condition": "current",
+      "source": {
+        "local_source": "outputs/skill_validation/natural_20260920_b/artifacts/a567e0f0266ae9bb82ff23780e1bfd3315c75dd8162419ff16d5fe6cb1393aa4.json",
+        "original_record_hash": "a567e0f0266ae9bb82ff23780e1bfd3315c75dd8162419ff16d5fe6cb1393aa4",
+        "raw_record_distributed": false
+      },
+      "model_request_hash": "c7f835cdccd4146ec247fb5d8ce2f33494d97c7f1304f7d9d87192a4ee0c841c",
+      "task_hash": "04e3b5d97419183ac1a24ec2f1d49dede437ad5f1d3ebab28885546ad39e6dac",
+      "skill_hash": "1d2c2d8e5094b286470adbe111f164f3abec9b0467c0ce5b6a2aa0b681dba554",
+      "solution_py": "def order_by_points(nums):\n    \"\"\"\n    Write a function which sorts the given list of integers\n    in ascending order according to the sum of their digits.\n    Note: if there are several items with similar sum of their digits,\n    order them based on their index in original list.\n\n    For example:\n    >>> order_by_points([1, 11, -1, -11, -12]) == [-1, -11, 1, -12, 11]\n    >>> order_by_points([]) == []\n    \"\"\"\n\n    def digit_sum(n):\n        return sum(int(c) for c in str(abs(n)))\n\n    return sorted(nums, key=digit_sum)\n",
+      "solution_sha256": "2875c8d0cac8c3bc714ba6b3d22ff5509a0ca87e6cac13cbff0a9dece1b2e662",
+      "public_status": "pass",
+      "public_report_hash": "d71b73707f6d4542f98f196a29da1cc2dc0a8eb95cf3c6ceff28fdefd30b2f6c",
+      "public_wrapper_py": "ENTRY = 'order_by_points'\nATOL = 0\nEXAMPLES = [{'arguments': {'args': [[]], 'kwargs': {}}, 'expected': []}]\nimport copy\nimport importlib\nimport math\n\ndef _plain(value):\n    if type(value) in (str, int, bool, type(None)):\n        return True\n    if type(value) is float:\n        return math.isfinite(value)\n    if type(value) is list:\n        return all(_plain(x) for x in value)\n    if type(value) is dict:\n        return all(type(k) is str and _plain(v) for k, v in value.items())\n    return False\n\ndef _floats(value):\n    return type(value) is float or (type(value) is list and bool(value) and all(type(x) is float for x in value))\n\ndef _close(actual, expected, tolerance):\n    if type(expected) is list:\n        return type(actual) is list and len(actual) == len(expected) and all(_close(a, e, tolerance) for a, e in zip(actual, expected))\n    if type(actual) not in (int, float, bool) or type(expected) not in (int, float, bool):\n        return False\n    return abs(actual - expected) <= tolerance + 1e-7 * abs(expected)\n\ndef _same(actual, expected):\n    if actual == expected:\n        return True\n    tolerance = ATOL or (1e-6 if _floats(expected) else 0)\n    return bool(tolerance and type(actual) is type(expected) and _close(actual, expected, tolerance))\n\ndef check():\n    candidate = getattr(importlib.import_module('solution'), ENTRY)\n    for case in EXAMPLES:\n        args = copy.deepcopy(case['arguments'])\n        actual = candidate(*args['args'], **args['kwargs'])\n        if not _plain(actual) or not _same(actual, case['expected']):\n            return False\n    return True\n",
+      "audit_summary": {
+        "original_record_hash": "4e98d1754ed0e74cb2fcafeba20d8f2376454dd7459c1104fd8e83f5dd87739a",
+        "native_status": "fail",
+        "enhanced_status": "fail",
+        "counts": {
+          "base_count": 6,
+          "plus_count": 1000,
+          "base_failed": 3,
+          "plus_failed": 963
+        },
+        "interpretation": "Reference-based observation, not infallible truth; hidden inputs and reference source are omitted."
+      }
+    }
+  ],
+  "diagnostics": [],
+  "causal_skill_effect_established": false,
+  "research_credit": false,
+  "static_diagnostic": {
+    "executed_as_new_probe": false,
+    "public_input": [
+      1,
+      11,
+      -1,
+      -11,
+      -12
+    ],
+    "public_expected": [
+      -1,
+      -11,
+      1,
+      -12,
+      11
+    ],
+    "note": "This public example was omitted by the original wrapper, which checked only an empty list. Both generated keys use abs(n); no new per-input execution is claimed here."
+  }
+}

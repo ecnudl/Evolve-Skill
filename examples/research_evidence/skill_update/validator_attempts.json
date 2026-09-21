@@ -1,0 +1,106 @@
+{
+  "kind": "real_model_validator_proposals",
+  "attempts": [
+    {
+      "arm": "adaptive_no_research",
+      "source": {
+        "local_source": "outputs/skill_validation/single_round_20260918_a/proposals/adaptive_no_research.json",
+        "original_record_hash": "e31683052458e21a6797319f53e1d2934a7ea4bd301116c81f6d6b3bdfe87c50",
+        "raw_record_distributed": false
+      },
+      "status": "no_update",
+      "reason": "The current rubric already covers the only obligation kind observed across all development items (requested_behavior) via host-registered public examples with public expected values. No task exhibits an input_preservation obligation, so an input_state rule is not warranted, and no host-registered relations exist beyond public examples to justify a public_invariant rule. The proposal_contract has no allowed source IDs, so no citations can support new rules. The existing single recipe remains sufficient; retiring or adding rules is unsupported by evidence.",
+      "costs": {
+        "model_calls": 2,
+        "calls": [
+          {
+            "stage": "plan",
+            "status": "completed",
+            "prompt_sha256": "654e6d058e48e526985751316e981df113284a94735ac5a74d023792f507d332",
+            "input_tokens": 8620,
+            "output_tokens": 502,
+            "cached": false,
+            "wall_seconds": 6.936478374991566
+          },
+          {
+            "stage": "synthesis",
+            "status": "completed",
+            "prompt_sha256": "d8ebf19ba1af58f32d7795f6eed51bb718ff858f50430f4c597b3e7fa12be128",
+            "input_tokens": 9482,
+            "output_tokens": 217,
+            "cached": false,
+            "wall_seconds": 4.611183125060052
+          }
+        ],
+        "usage_complete": true,
+        "input_tokens": 18102,
+        "output_tokens": 719,
+        "retrieval_requests": 0,
+        "retrieval_characters": 0,
+        "execution_calls": 0,
+        "budget": {
+          "max_model_calls": 2,
+          "max_pages": 3,
+          "max_prompt_bytes": 120000,
+          "max_output_tokens": 2048,
+          "max_reported_total_tokens": 40000
+        },
+        "equal_budget_cap_not_equal_realized_cost": true
+      },
+      "sources_count": 0,
+      "calibration_status": "pending",
+      "produced_distinct_feedback": false
+    },
+    {
+      "arm": "adaptive_research",
+      "source": {
+        "local_source": "outputs/skill_validation/single_round_20260918_a/proposals/adaptive_research.json",
+        "original_record_hash": "ef6bbf331a0516117a465da77b9aae5dffd9e15520b69690bcd03e5b9cda5a64",
+        "raw_record_distributed": false
+      },
+      "status": "invalid",
+      "reason": "Proposal, transport or configured budget failed validation.",
+      "costs": {
+        "model_calls": 2,
+        "calls": [
+          {
+            "stage": "plan",
+            "status": "completed",
+            "prompt_sha256": "f3ef0414416d2080392f928eb1a1b7b3993f660b2240d65b68b44865a40f9ad2",
+            "input_tokens": 8721,
+            "output_tokens": 263,
+            "cached": false,
+            "wall_seconds": 5.665470500010997
+          },
+          {
+            "stage": "synthesis",
+            "status": "completed",
+            "prompt_sha256": "7de76a199374b9b601ef5d477b337a39b23b6451fe7ca375c3996224dfa9b919",
+            "input_tokens": 15452,
+            "output_tokens": 224,
+            "cached": false,
+            "wall_seconds": 4.6045872090617195
+          }
+        ],
+        "usage_complete": true,
+        "input_tokens": 24173,
+        "output_tokens": 487,
+        "retrieval_requests": 2,
+        "retrieval_characters": 24000,
+        "execution_calls": 0,
+        "budget": {
+          "max_model_calls": 2,
+          "max_pages": 3,
+          "max_prompt_bytes": 120000,
+          "max_output_tokens": 2048,
+          "max_reported_total_tokens": 40000
+        },
+        "equal_budget_cap_not_equal_realized_cost": true
+      },
+      "sources_count": 2,
+      "calibration_status": "pending",
+      "produced_distinct_feedback": false
+    }
+  ],
+  "limitation": "These are real unsuccessful/no-update proposals, not evidence of Research improvement. Source webpages and raw model responses are omitted."
+}

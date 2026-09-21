@@ -1,0 +1,43 @@
+{
+  "kind": "real_model_skill_update",
+  "model": "glm-5.3",
+  "source": {
+    "local_source": "outputs/skill_validation/single_round_20260918_a/frozen_candidates.json",
+    "original_record_hash": "08d7c0409ef34391b0a675eed7d84425da918937e78d2e13af55d6ddd508862d",
+    "raw_record_distributed": false
+  },
+  "parent_source": {
+    "local_source": "outputs/skill_validation/single_round_20260918_a/parent_skill.json",
+    "original_record_hash": "ee322fb6786d92fd5048100e1c51ff149da93286d8b4729bafa4e30b0dfb6aff",
+    "raw_record_distributed": false
+  },
+  "parent_original_text_sha256": "1d2c2d8e5094b286470adbe111f164f3abec9b0467c0ce5b6a2aa0b681dba554",
+  "candidate_original_text_sha256": "9dd664e1ec238f8fdf0ecb6e1db7eb874164c50514830bfb8fd1d724db6db9fd",
+  "text_export_transform": "Append a single LF only if absent; no other changes. JSON source hashes refer to original text.",
+  "parent_file": "skill_update/parent.md",
+  "candidate_file": "skill_update/candidate.md",
+  "original_text_had_trailing_newline": {
+    "parent": false,
+    "candidate": false
+  },
+  "update_record_hash": "7a608883923b2231eb506b47bd82b02c37c658338e512d9db0d3bbaa7ca27b2d",
+  "model_request_hash": "e9688bc610b617bdbe946ac175e16b1483fa9e1e0171c87e38965738624a31ac",
+  "model_reply_receipt_hash": "798793d10712f3ca3e1ea053a8888c87e9c485dd6d344cf69cf5df22128c2c12",
+  "response_sha256": "9dd664e1ec238f8fdf0ecb6e1db7eb874164c50514830bfb8fd1d724db6db9fd",
+  "http_attempt_count": 1,
+  "usage": {
+    "prompt_tokens": 8113,
+    "total_tokens": 8983,
+    "completion_tokens": 870
+  },
+  "parent_fallback": false,
+  "candidate_aliases": [
+    "fixed",
+    "adaptive_no_research",
+    "adaptive_research"
+  ],
+  "unique_candidate_texts": 1,
+  "deployment_authorized": false,
+  "original_feedback_model_view_hash": "6f9b0c7762eaaa0d55f1027fb97801139b05ed844f9ee18d3a8af7c93b3e8241",
+  "interpretation": "Real text change, not validated generalization. The update retained file-section/no-JSON rules that conflict with the JSON solver contract."
+}

@@ -1,0 +1,346 @@
+{
+  "id": "audit_disagreement",
+  "task_id": "HumanEval/141",
+  "function": "file_name_check",
+  "contract_summary_zh": "判断文件名是否符合任务约束；其中首字母明确限定为 ASCII a-z / A-Z。这里不是完整题面。",
+  "summary_is_paraphrase": true,
+  "model": "glm-5.3",
+  "partition": "development",
+  "repeat": 0,
+  "source_run": "natural_20260920_b",
+  "provenance_kind": "real_model_artifacts",
+  "selection": "Post-hoc diagnostic illustration, not random or representative sampling.",
+  "skill_file": "skill_update/parent.md",
+  "artifacts": [
+    {
+      "condition": "no_skill",
+      "source": {
+        "local_source": "outputs/skill_validation/natural_20260920_b/artifacts/443726350e881b4a9a6d678dce48977ef576590e02029e17f06026ad38b9fe9f.json",
+        "original_record_hash": "443726350e881b4a9a6d678dce48977ef576590e02029e17f06026ad38b9fe9f",
+        "raw_record_distributed": false
+      },
+      "model_request_hash": "ccb9ac276ce1d6ef854b325b7b879ac607eba5c76b80628b64f00c771e1426ee",
+      "task_hash": "46094735feb0a6469b869e5e26a32f1f904f868e756f42f8de527284193a36f5",
+      "skill_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "solution_py": "def file_name_check(file_name):\n    if file_name.count('.') != 1:\n        return 'No'\n    before, after = file_name.split('.')\n    if not before:\n        return 'No'\n    if not before[0].isalpha() or not before[0].isascii():\n        return 'No'\n    if sum(c.isdigit() for c in file_name) > 3:\n        return 'No'\n    if after not in ('txt', 'exe', 'dll'):\n        return 'No'\n    return 'Yes'\n",
+      "solution_sha256": "01d036dea4e125fd82b3a41c2541c814ede043bfd1bc801e89f49ce31483148c",
+      "public_status": "pass",
+      "public_report_hash": "ce140071a6b9568cba8e00779db4c006f819b9db1210bd9be03621dd6ba7693f",
+      "public_wrapper_py": "ENTRY = 'file_name_check'\nATOL = 0\nEXAMPLES = [{'arguments': {'args': ['example.txt'], 'kwargs': {}}, 'expected': 'Yes'}]\nimport copy\nimport importlib\nimport math\n\ndef _plain(value):\n    if type(value) in (str, int, bool, type(None)):\n        return True\n    if type(value) is float:\n        return math.isfinite(value)\n    if type(value) is list:\n        return all(_plain(x) for x in value)\n    if type(value) is dict:\n        return all(type(k) is str and _plain(v) for k, v in value.items())\n    return False\n\ndef _floats(value):\n    return type(value) is float or (type(value) is list and bool(value) and all(type(x) is float for x in value))\n\ndef _close(actual, expected, tolerance):\n    if type(expected) is list:\n        return type(actual) is list and len(actual) == len(expected) and all(_close(a, e, tolerance) for a, e in zip(actual, expected))\n    if type(actual) not in (int, float, bool) or type(expected) not in (int, float, bool):\n        return False\n    return abs(actual - expected) <= tolerance + 1e-7 * abs(expected)\n\ndef _same(actual, expected):\n    if actual == expected:\n        return True\n    tolerance = ATOL or (1e-6 if _floats(expected) else 0)\n    return bool(tolerance and type(actual) is type(expected) and _close(actual, expected, tolerance))\n\ndef check():\n    candidate = getattr(importlib.import_module('solution'), ENTRY)\n    for case in EXAMPLES:\n        args = copy.deepcopy(case['arguments'])\n        actual = candidate(*args['args'], **args['kwargs'])\n        if not _plain(actual) or not _same(actual, case['expected']):\n            return False\n    return True\n",
+      "audit_summary": {
+        "original_record_hash": "dd4e448796a6049998a8ba034d296d4539255e92a225261076d998dbac34c15b",
+        "native_status": "pass",
+        "enhanced_status": "fail",
+        "counts": {
+          "base_count": 26,
+          "plus_count": 1000,
+          "base_failed": 0,
+          "plus_failed": 4
+        },
+        "interpretation": "Reference-based observation, not infallible truth; hidden inputs and reference source are omitted."
+      }
+    },
+    {
+      "condition": "current",
+      "source": {
+        "local_source": "outputs/skill_validation/natural_20260920_b/artifacts/ae046ad22f2e284c295f5a04fd0de27e50dadbbf48a27e22fa6e7ebeb5b57593.json",
+        "original_record_hash": "ae046ad22f2e284c295f5a04fd0de27e50dadbbf48a27e22fa6e7ebeb5b57593",
+        "raw_record_distributed": false
+      },
+      "model_request_hash": "612124e171977b1e2acc001b9020f4d203e938a90bb7a946958f7f0141383485",
+      "task_hash": "46094735feb0a6469b869e5e26a32f1f904f868e756f42f8de527284193a36f5",
+      "skill_hash": "1d2c2d8e5094b286470adbe111f164f3abec9b0467c0ce5b6a2aa0b681dba554",
+      "solution_py": "def file_name_check(file_name):\n    \"\"\"Create a function which takes a string representing a file's name, and returns\n    'Yes' if the the file's name is valid, and returns 'No' otherwise.\n    A file's name is considered to be valid if and only if all the following conditions \n    are met:\n    - There should not be more than three digits ('0'-'9') in the file's name.\n    - The file's name contains exactly one dot '.'\n    - The substring before the dot should not be empty, and it starts with a letter from \n    the latin alphapet ('a'-'z' and 'A'-'Z').\n    - The substring after the dot should be one of these: ['txt', 'exe', 'dll']\n    Examples,\n    file_name_check(\"example.txt\") # => 'Yes'\n    file_name_check(\"1example.dll\") # => 'No' (the name should start with a latin alphapet letter)\n    \"\"\"\n    if not isinstance(file_name, str):\n        return 'No'\n    if file_name.count('.') != 1:\n        return 'No'\n    digit_count = sum(1 for ch in file_name if ch.isdigit())\n    if digit_count > 3:\n        return 'No'\n    before, after = file_name.split('.')\n    if not before:\n        return 'No'\n    if not before[0].isalpha() or not before[0].isascii():\n        return 'No'\n    if after not in ('txt', 'exe', 'dll'):\n        return 'No'\n    return 'Yes'\n",
+      "solution_sha256": "a0b7b48833ee0d178d3a7220db06fd882d8deb9a90111199e50452e87f59c542",
+      "public_status": "pass",
+      "public_report_hash": "71b62a2df45dd3b3db8130c2f4f907e487dcfe69b26f9f4ef6277fdd376be208",
+      "public_wrapper_py": "ENTRY = 'file_name_check'\nATOL = 0\nEXAMPLES = [{'arguments': {'args': ['example.txt'], 'kwargs': {}}, 'expected': 'Yes'}]\nimport copy\nimport importlib\nimport math\n\ndef _plain(value):\n    if type(value) in (str, int, bool, type(None)):\n        return True\n    if type(value) is float:\n        return math.isfinite(value)\n    if type(value) is list:\n        return all(_plain(x) for x in value)\n    if type(value) is dict:\n        return all(type(k) is str and _plain(v) for k, v in value.items())\n    return False\n\ndef _floats(value):\n    return type(value) is float or (type(value) is list and bool(value) and all(type(x) is float for x in value))\n\ndef _close(actual, expected, tolerance):\n    if type(expected) is list:\n        return type(actual) is list and len(actual) == len(expected) and all(_close(a, e, tolerance) for a, e in zip(actual, expected))\n    if type(actual) not in (int, float, bool) or type(expected) not in (int, float, bool):\n        return False\n    return abs(actual - expected) <= tolerance + 1e-7 * abs(expected)\n\ndef _same(actual, expected):\n    if actual == expected:\n        return True\n    tolerance = ATOL or (1e-6 if _floats(expected) else 0)\n    return bool(tolerance and type(actual) is type(expected) and _close(actual, expected, tolerance))\n\ndef check():\n    candidate = getattr(importlib.import_module('solution'), ENTRY)\n    for case in EXAMPLES:\n        args = copy.deepcopy(case['arguments'])\n        actual = candidate(*args['args'], **args['kwargs'])\n        if not _plain(actual) or not _same(actual, case['expected']):\n            return False\n    return True\n",
+      "audit_summary": {
+        "original_record_hash": "b3cfd342618c893ec65cdca07697094de469823e6c546cc4240203c3f31cdf3a",
+        "native_status": "pass",
+        "enhanced_status": "fail",
+        "counts": {
+          "base_count": 26,
+          "plus_count": 1000,
+          "base_failed": 0,
+          "plus_failed": 4
+        },
+        "interpretation": "Reference-based observation, not infallible truth; hidden inputs and reference source are omitted."
+      }
+    }
+  ],
+  "diagnostics": [
+    {
+      "source": {
+        "local_source": "outputs/skill_validation/natural_development_diagnostic_20260920/receipts/HumanEval_141-ascii_control-canonical_reference.json",
+        "original_record_hash": "da7f3fa9fb47dbca2c358d35c9892dbadd27426a0082277ef49b8b1f0caada8b",
+        "raw_record_distributed": false
+      },
+      "origin": "posthoc_human_public_contract_diagnostic",
+      "case_id": "ascii_control",
+      "condition": "canonical_reference",
+      "artifact_record_hash": null,
+      "public_expected": "Yes",
+      "matches_public_contract_case": true,
+      "included_in_original_score": false,
+      "used_by_updater": false,
+      "execution": {
+        "status": "observed",
+        "actual": "Yes",
+        "before_args": [
+          "a.txt"
+        ],
+        "after_args": [
+          "a.txt"
+        ],
+        "before_kwargs": {},
+        "after_kwargs": {},
+        "exception": null,
+        "reason": "public_callable_executed",
+        "cleanup_confirmed": true,
+        "duration_seconds": 2.179441,
+        "input_hash": "3e9c68b8f0d96bc48055ebfae33b735e4d79b389a16e2e05bfa8556c9e820fc4",
+        "source_hash": "5ed3568ba05f9bc15774c6cc775079e3abb3bb391f193d1a6f4ac5c9fa72d7af",
+        "call_hash": "0286554951622668c29c504cac78032169256853984416e7d2c8a48276a5da60",
+        "isolation_hash": "19fbfdaf7be527cbd2dfba16eaf3263c31a965b6bd564fb07fbd56508a151a48",
+        "original_record_hash": "df3fde6759a3027277ae4663c623e8909fb11cc8e5ed4efb55caab512834c07d",
+        "isolation": {
+          "image": "sha256:b8fe4ce3655e95f7f22c2a87d8e03a2f1f0cedc488a8e9adf18cc5a18cfdf401",
+          "network": "none",
+          "root_read_only": true,
+          "source_read_only": true,
+          "user": "65534:65534",
+          "timeout_seconds": 10,
+          "memory_mb": 256
+        }
+      }
+    },
+    {
+      "source": {
+        "local_source": "outputs/skill_validation/natural_development_diagnostic_20260920/receipts/HumanEval_141-ascii_control-current.json",
+        "original_record_hash": "405ab1365f54cfc049ec6d980705200cd947ff023278dc9475ac68c03edec295",
+        "raw_record_distributed": false
+      },
+      "origin": "posthoc_human_public_contract_diagnostic",
+      "case_id": "ascii_control",
+      "condition": "current",
+      "artifact_record_hash": "ae046ad22f2e284c295f5a04fd0de27e50dadbbf48a27e22fa6e7ebeb5b57593",
+      "public_expected": "Yes",
+      "matches_public_contract_case": true,
+      "included_in_original_score": false,
+      "used_by_updater": false,
+      "execution": {
+        "status": "observed",
+        "actual": "Yes",
+        "before_args": [
+          "a.txt"
+        ],
+        "after_args": [
+          "a.txt"
+        ],
+        "before_kwargs": {},
+        "after_kwargs": {},
+        "exception": null,
+        "reason": "public_callable_executed",
+        "cleanup_confirmed": true,
+        "duration_seconds": 1.812734,
+        "input_hash": "9b51d92a103d7e09fa8e90fdf2ae6774581b36e2035986a9e1415b04959aa3e9",
+        "source_hash": "5ded1ab6016a1e74eab311ea53cf024c41f4d1ec2b1f4e86a46415c2a09720e9",
+        "call_hash": "0286554951622668c29c504cac78032169256853984416e7d2c8a48276a5da60",
+        "isolation_hash": "19fbfdaf7be527cbd2dfba16eaf3263c31a965b6bd564fb07fbd56508a151a48",
+        "original_record_hash": "d055a18a1470e1fa793751f9f1d65131f4fee2e630ebc92e63449b8805882dfa",
+        "isolation": {
+          "image": "sha256:b8fe4ce3655e95f7f22c2a87d8e03a2f1f0cedc488a8e9adf18cc5a18cfdf401",
+          "network": "none",
+          "root_read_only": true,
+          "source_read_only": true,
+          "user": "65534:65534",
+          "timeout_seconds": 10,
+          "memory_mb": 256
+        }
+      }
+    },
+    {
+      "source": {
+        "local_source": "outputs/skill_validation/natural_development_diagnostic_20260920/receipts/HumanEval_141-ascii_control-no_skill.json",
+        "original_record_hash": "8e8eb82221c18c2df12906bf5131674eb9dab460921800ce4d81dba7e5ea5b4a",
+        "raw_record_distributed": false
+      },
+      "origin": "posthoc_human_public_contract_diagnostic",
+      "case_id": "ascii_control",
+      "condition": "no_skill",
+      "artifact_record_hash": "443726350e881b4a9a6d678dce48977ef576590e02029e17f06026ad38b9fe9f",
+      "public_expected": "Yes",
+      "matches_public_contract_case": true,
+      "included_in_original_score": false,
+      "used_by_updater": false,
+      "execution": {
+        "status": "observed",
+        "actual": "Yes",
+        "before_args": [
+          "a.txt"
+        ],
+        "after_args": [
+          "a.txt"
+        ],
+        "before_kwargs": {},
+        "after_kwargs": {},
+        "exception": null,
+        "reason": "public_callable_executed",
+        "cleanup_confirmed": true,
+        "duration_seconds": 1.586818,
+        "input_hash": "27009210da0fe255c9e94feaa6dee9c3f6717f8633a4cfcb9ba082fb39486bf8",
+        "source_hash": "81abf2d930d4ed071f2502ce1df082fb6add2e9c6de5f9d808eeb1b6175c6b97",
+        "call_hash": "0286554951622668c29c504cac78032169256853984416e7d2c8a48276a5da60",
+        "isolation_hash": "19fbfdaf7be527cbd2dfba16eaf3263c31a965b6bd564fb07fbd56508a151a48",
+        "original_record_hash": "20d0f3a7ff43972d9ac7f515cc6b0c50af5da276e4766c76f68a7a4e5d0c2928",
+        "isolation": {
+          "image": "sha256:b8fe4ce3655e95f7f22c2a87d8e03a2f1f0cedc488a8e9adf18cc5a18cfdf401",
+          "network": "none",
+          "root_read_only": true,
+          "source_read_only": true,
+          "user": "65534:65534",
+          "timeout_seconds": 10,
+          "memory_mb": 256
+        }
+      }
+    },
+    {
+      "source": {
+        "local_source": "outputs/skill_validation/natural_development_diagnostic_20260920/receipts/HumanEval_141-unicode_initial-canonical_reference.json",
+        "original_record_hash": "600e0df4adc1b62e287634b204db1d034ef814316be97cfd5698210ece87b56e",
+        "raw_record_distributed": false
+      },
+      "origin": "posthoc_human_public_contract_diagnostic",
+      "case_id": "unicode_initial",
+      "condition": "canonical_reference",
+      "artifact_record_hash": null,
+      "public_expected": "No",
+      "matches_public_contract_case": false,
+      "included_in_original_score": false,
+      "used_by_updater": false,
+      "execution": {
+        "status": "observed",
+        "actual": "Yes",
+        "before_args": [
+          "é.txt"
+        ],
+        "after_args": [
+          "é.txt"
+        ],
+        "before_kwargs": {},
+        "after_kwargs": {},
+        "exception": null,
+        "reason": "public_callable_executed",
+        "cleanup_confirmed": true,
+        "duration_seconds": 2.494298,
+        "input_hash": "f17cde3f3d6abfab905b9eb9a30b941f3d2c504f6d56309b6b729571d4d594a9",
+        "source_hash": "5ed3568ba05f9bc15774c6cc775079e3abb3bb391f193d1a6f4ac5c9fa72d7af",
+        "call_hash": "5fcea4a88b69ae27f2afe07e9c157b79afc41317ad5de797af46e24d986204f3",
+        "isolation_hash": "19fbfdaf7be527cbd2dfba16eaf3263c31a965b6bd564fb07fbd56508a151a48",
+        "original_record_hash": "0d18771f1dcbadeb7ac967ff47ce40900ef84dbf1bbdddaee9b480f6904a01e8",
+        "isolation": {
+          "image": "sha256:b8fe4ce3655e95f7f22c2a87d8e03a2f1f0cedc488a8e9adf18cc5a18cfdf401",
+          "network": "none",
+          "root_read_only": true,
+          "source_read_only": true,
+          "user": "65534:65534",
+          "timeout_seconds": 10,
+          "memory_mb": 256
+        }
+      }
+    },
+    {
+      "source": {
+        "local_source": "outputs/skill_validation/natural_development_diagnostic_20260920/receipts/HumanEval_141-unicode_initial-current.json",
+        "original_record_hash": "2e49c44610955b66a5c8a81b507d730f45c9372930566e44523183ec109f9bee",
+        "raw_record_distributed": false
+      },
+      "origin": "posthoc_human_public_contract_diagnostic",
+      "case_id": "unicode_initial",
+      "condition": "current",
+      "artifact_record_hash": "ae046ad22f2e284c295f5a04fd0de27e50dadbbf48a27e22fa6e7ebeb5b57593",
+      "public_expected": "No",
+      "matches_public_contract_case": true,
+      "included_in_original_score": false,
+      "used_by_updater": false,
+      "execution": {
+        "status": "observed",
+        "actual": "No",
+        "before_args": [
+          "é.txt"
+        ],
+        "after_args": [
+          "é.txt"
+        ],
+        "before_kwargs": {},
+        "after_kwargs": {},
+        "exception": null,
+        "reason": "public_callable_executed",
+        "cleanup_confirmed": true,
+        "duration_seconds": 2.173797,
+        "input_hash": "00b66515c6f4b6d4a7904d82d670d9d56863910aac746392de6b08c127afedb6",
+        "source_hash": "5ded1ab6016a1e74eab311ea53cf024c41f4d1ec2b1f4e86a46415c2a09720e9",
+        "call_hash": "5fcea4a88b69ae27f2afe07e9c157b79afc41317ad5de797af46e24d986204f3",
+        "isolation_hash": "19fbfdaf7be527cbd2dfba16eaf3263c31a965b6bd564fb07fbd56508a151a48",
+        "original_record_hash": "7ccaf28abdd6e04654a2cd4c667e26fbf710d45ebb0045616f1360ca0a983599",
+        "isolation": {
+          "image": "sha256:b8fe4ce3655e95f7f22c2a87d8e03a2f1f0cedc488a8e9adf18cc5a18cfdf401",
+          "network": "none",
+          "root_read_only": true,
+          "source_read_only": true,
+          "user": "65534:65534",
+          "timeout_seconds": 10,
+          "memory_mb": 256
+        }
+      }
+    },
+    {
+      "source": {
+        "local_source": "outputs/skill_validation/natural_development_diagnostic_20260920/receipts/HumanEval_141-unicode_initial-no_skill.json",
+        "original_record_hash": "18685aa45b1d0b9bcf84380baf83735084e520d1b038e861dfc38cfac1a88cb8",
+        "raw_record_distributed": false
+      },
+      "origin": "posthoc_human_public_contract_diagnostic",
+      "case_id": "unicode_initial",
+      "condition": "no_skill",
+      "artifact_record_hash": "443726350e881b4a9a6d678dce48977ef576590e02029e17f06026ad38b9fe9f",
+      "public_expected": "No",
+      "matches_public_contract_case": true,
+      "included_in_original_score": false,
+      "used_by_updater": false,
+      "execution": {
+        "status": "observed",
+        "actual": "No",
+        "before_args": [
+          "é.txt"
+        ],
+        "after_args": [
+          "é.txt"
+        ],
+        "before_kwargs": {},
+        "after_kwargs": {},
+        "exception": null,
+        "reason": "public_callable_executed",
+        "cleanup_confirmed": true,
+        "duration_seconds": 0.838865,
+        "input_hash": "a1c98288ffe5f4b1a4216796bef693f9fa6cb704395166c6a846bb51aedd4d07",
+        "source_hash": "81abf2d930d4ed071f2502ce1df082fb6add2e9c6de5f9d808eeb1b6175c6b97",
+        "call_hash": "5fcea4a88b69ae27f2afe07e9c157b79afc41317ad5de797af46e24d986204f3",
+        "isolation_hash": "19fbfdaf7be527cbd2dfba16eaf3263c31a965b6bd564fb07fbd56508a151a48",
+        "original_record_hash": "16242bb63f51747b2a0900d973a511736357c8abfc439040d76047e313778d5f",
+        "isolation": {
+          "image": "sha256:b8fe4ce3655e95f7f22c2a87d8e03a2f1f0cedc488a8e9adf18cc5a18cfdf401",
+          "network": "none",
+          "root_read_only": true,
+          "source_read_only": true,
+          "user": "65534:65534",
+          "timeout_seconds": 10,
+          "memory_mb": 256
+        }
+      }
+    }
+  ],
+  "causal_skill_effect_established": false,
+  "research_credit": false
+}
