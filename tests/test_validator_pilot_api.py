@@ -33,7 +33,8 @@ def install_client(monkeypatch, handler):
     real_client = httpx.Client
     configurations = []
     def client(**kwargs):
-        configurations.append(kwargs)
+        configurations.append(dict(kwargs))
+        kwargs.pop("proxy", None)  # Keep all test traffic on MockTransport, including explicit proxy tests.
         return real_client(transport=httpx.MockTransport(handler), **kwargs)
     monkeypatch.setattr(module.httpx, "Client", client)
     return configurations
@@ -58,6 +59,8 @@ def test_direct_client_cache_and_credential_free_artifacts(configured, monkeypat
     assert len(requests) == 2
     assert configurations[0]["trust_env"] is False
     assert configurations[0]["follow_redirects"] is False
+    assert "proxy" not in configurations[0]
+    assert "proxy" not in first["request"]["service"]
     payload = json.loads(requests[0].content)
     assert payload == {"model": "glm-5.3", "temperature": 0, "max_tokens": 100,
                        "messages": [{"role": "system", "content": "system"},
@@ -462,3 +465,117 @@ def test_empty_content_with_length_is_reported_as_truncation(configured, monkeyp
         result = call(api)
     assert not result["ok"] and result["error_type"] == "truncated_content"
     assert result["finish_reason"] == "length" and result["response"] == ""
+
+
+@pytest.fixture
+def bigmodel_configured(tmp_path, monkeypatch):
+    monkeypatch.setattr(module, "dotenv_values", lambda path: {
+        "BIGMODEL_CHAT_URL": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+        "BIGMODEL_API_KEY": "SYNTHETIC_BIGMODEL_CREDENTIAL_NOT_REAL",
+        "BIGMODEL_MODEL": "glm-5.3"})
+    return tmp_path
+
+
+@pytest.mark.parametrize("stream", [False, True])
+def test_bigmodel_explicit_payload_identity_and_cache(bigmodel_configured, monkeypatch, stream):
+    requests = []
+
+    def handler(request):
+        requests.append(request)
+        return (stream_response([sse_event("answer", finish="stop"), b"data: [DONE]\n\n"])
+                if stream else response("answer"))
+
+    configurations = install_client(monkeypatch, handler)
+    root = bigmodel_configured / "run"
+    with module.CachedAPI(bigmodel_configured, root, provider="bigmodel", stream=stream,
+                          reasoning_effort="max") as api:
+        result = call(api)
+        assert result["ok"] and result["returned_model"] == "glm-5.3"
+        assert call(api) == result
+    assert len(requests) == 1
+    assert str(requests[0].url) == "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+    payload = json.loads(requests[0].content)
+    assert payload["thinking"] == {"type": "enabled"}
+    assert payload["reasoning_effort"] == "max"
+    assert payload.get("stream", False) is stream
+    assert configurations[0]["trust_env"] is configurations[0]["follow_redirects"] is False
+    service = result["request"]["service"]
+    assert service["provider"] == "BIGMODEL" and service["host"] == "open.bigmodel.cn"
+    assert service["thinking"] == {"type": "enabled"}
+    assert service["returned_model_rule"] == "exact_requested_model"
+    for path in root.rglob("*.json"):
+        assert "SYNTHETIC_BIGMODEL_CREDENTIAL" not in path.read_text()
+        assert "Authorization" not in path.read_text()
+    with pytest.raises(ValueError, match="Immutable"):
+        module.CachedAPI(bigmodel_configured, root, provider="bigmodel", stream=stream,
+                         reasoning_effort="low")
+
+
+@pytest.mark.parametrize("field,value", [
+    ("BIGMODEL_CHAT_URL", "http://open.bigmodel.cn/api/paas/v4/chat/completions"),
+    ("BIGMODEL_CHAT_URL", "https://other.invalid/api/paas/v4/chat/completions"),
+    ("BIGMODEL_CHAT_URL", "https://open.bigmodel.cn/api/paas/v4/chat/completions?key=x"),
+    ("BIGMODEL_CHAT_URL", "https://user:pass@open.bigmodel.cn/api/paas/v4/chat/completions"),
+    ("BIGMODEL_CHAT_URL", "https://open.bigmodel.cn:444/api/paas/v4/chat/completions"),
+    ("BIGMODEL_CHAT_URL", "https://open.bigmodel.cn/api/paas/v4"),
+    ("BIGMODEL_MODEL", "glm-5"), ("BIGMODEL_API_KEY", ""),
+])
+def test_bigmodel_rejects_invalid_configuration(bigmodel_configured, monkeypatch, field, value):
+    values = module.dotenv_values(None)
+    values[field] = value
+    monkeypatch.setattr(module, "dotenv_values", lambda _: values)
+    with pytest.raises(ValueError):
+        module.CachedAPI(bigmodel_configured, bigmodel_configured / "run", provider="bigmodel")
+
+
+@pytest.mark.parametrize("returned_model", [None, "glm-5.2"])
+@pytest.mark.parametrize("stream", [False, True])
+def test_bigmodel_response_model_must_match(bigmodel_configured, monkeypatch, returned_model, stream):
+    def handler(_):
+        if stream:
+            chunk = json.loads(sse_event("answer", finish="stop").decode()[6:])
+            chunk["model"] = returned_model
+            return stream_response([("data: " + json.dumps(chunk) + "\n\n").encode(), b"data: [DONE]\n\n"])
+        body = response().json()
+        body["model"] = returned_model
+        return httpx.Response(200, json=body)
+
+    install_client(monkeypatch, handler)
+    with module.CachedAPI(bigmodel_configured, bigmodel_configured / "run", provider="bigmodel",
+                          stream=stream) as api:
+        result = call(api)
+        assert call(api) == result
+    assert not result["ok"] and result["error_type"] == "unexpected_response_model"
+    assert result["http_attempt_count"] == 1
+
+
+@pytest.mark.parametrize("proxy", ["http://127.0.0.1:7890", "http://[::1]:7892"])
+def test_bigmodel_loopback_proxy_explicit_and_cache_bound(bigmodel_configured, monkeypatch, proxy):
+    configurations = install_client(monkeypatch, lambda _: response("answer"))
+    root = bigmodel_configured / "run"
+    with module.CachedAPI(bigmodel_configured, root, provider="bigmodel", proxy=proxy) as api:
+        result = call(api)
+    assert result["ok"]
+    assert configurations[0]["proxy"] == proxy and configurations[0]["trust_env"] is False
+    assert result["request"]["service"]["proxy"] == proxy
+    with pytest.raises(ValueError, match="Immutable"):
+        module.CachedAPI(bigmodel_configured, root, provider="bigmodel")
+
+
+@pytest.mark.parametrize("proxy", [
+    "http://proxy.example:7890", "https://127.0.0.1:7890", "http://localhost:7890",
+    "http://127.0.0.1", "http://127.0.0.1:0", "http://127.0.0.1:65536",
+    "http://PRIVATE_CREDENTIAL@127.0.0.1:7890", "http://127.0.0.1:7890?key=PRIVATE_CREDENTIAL",
+    "http://127.0.0.1:7890#fragment", "http://127.0.0.1:7890/path", True, "",
+])
+def test_bigmodel_proxy_rejects_credentials_or_unapproved_destinations(bigmodel_configured, proxy):
+    root = bigmodel_configured / "run"
+    with pytest.raises(ValueError, match="loopback HTTP") as caught:
+        module.CachedAPI(bigmodel_configured, root, provider="bigmodel", proxy=proxy)
+    assert "PRIVATE_CREDENTIAL" not in str(caught.value)
+    assert not root.exists()
+
+
+def test_pjlab_does_not_silently_enable_proxy(configured):
+    with pytest.raises(ValueError, match="requires BigModel"):
+        module.CachedAPI(configured, configured / "run", proxy="http://127.0.0.1:7890")

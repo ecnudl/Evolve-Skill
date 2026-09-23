@@ -226,3 +226,29 @@ python -m skillopt.skill_validation.legacy_panel \
 最新可核对断点及聚合数字见[发布报告](research-progress-20260921.md)与[汇总 JSON](results/skill-validation-20260921.json)。原始数据目录不随 Git 发布，报告内的本机证据路径不代表公开下载链接。
 
 恢复脚本保留原 SSH／Docker 身份，不能把服务器本机 Docker 伪装成旧 SSH 传输。迁移编排到服务器、健康检查来源与缓存新鲜度仍需单独验收；`proxy_on` 成功不证明 API 客户端使用了代理。该次发布不启动付费实验，不修改冻结主线源码或已有结果。
+
+## 2026-09-22：自然实验完成与固定产物验证器回放
+
+BigModel `glm-5.3` 自然实验已完成，见[实验复盘](skill-validation-analysis-20260922.md)。Research 旧分支没有取得研究资料且未通过提案解析，实际回退到固定反馈；不能将相同候选的别名当作独立对照或 Research 收益。
+
+新增 `natural_verifier_replay.py`：固定已有 No-Skill/Current/Candidate 产物，只改变验证器。`compact-gap-v2` 明确分支、压缩开发视图并保留来源归属；`indexed-evidence-v3` 进一步用证据片段 ID 避免模型抄写引用造成的接口失败。ID 只绑定原文，不证明该原文支持检查，也不修复模型生成的期望答案。原始严格检查器和 legacy 默认接口保留。
+
+`natural_documents.py` 将批准的官方文档请求交给 Linux，保留公共地址与重定向检查，并复制校验原文快照。不关闭 DNS 安全检查、不修改本机代理路由、不将 API key 传给文档抓取器。模型调用仍从本机发起；本机休眠或断网会影响编排。
+
+该入口不读取 final，不调用 solver/updater。由于原校准与确认面板已经被使用，所有实际授权保持 Pending；阈值诊断不构成新的独立校准。新版管线不能沿用旧授权。
+
+```bash
+python -m skillopt.skill_validation.natural_verifier_replay \
+  --repo /absolute/repository \
+  --source /absolute/repository/outputs/skill_validation/natural_20260922_bigmodel_c \
+  --output /absolute/repository/outputs/skill_validation/NEW_REPLAY_DIRECTORY \
+  --remote-repo /absolute/linux/repository \
+  --interface-version indexed-evidence-v3 --workers 4 --execution-workers 4 \
+  --api-proxy http://127.0.0.1:7890
+```
+
+命令需要既有真实私有运行产物、可用 API 配置和 Linux 执行器，不是可无数据运行的公开 demo。复跑已有目录必须使用该次冻结源码与完全相同参数；未完成的请求不能静默重抽。
+
+本轮新增 BigModel 显式适配，所需空白配置已列入 `.env.example`：`BIGMODEL_CHAT_URL`、`BIGMODEL_API_KEY`、`BIGMODEL_MODEL`。`natural_study` 新运行需显式选择 `--provider bigmodel`；旧 PJLAB 默认值与服务身份保留，不能只替换 key 后向旧目录续写。SSH 文档适配目前依赖既有实验室 SSH 别名和远端 Python 路径，并非开箱即用的通用集群部署；更换传输配置须重新冻结协议。
+
+另有两个明确隔离的诊断入口：`public_examples.py` 恢复遗漏的公开字面示例，仅作显式启用的覆盖修正；提取成功不证明示例与规范一致，已发现 `/116` 的题面/参考冲突，不能直接重写旧评分。`probe_review.py` 对冻结探针作无执行结果、无 H 标签的语义适用性审阅，只允许 keep/abstain，不允许改输入或期望值；保留率与误拒、检错同时报告，全部弃用不能称为有效学习。这两个入口都不授予部署权限。

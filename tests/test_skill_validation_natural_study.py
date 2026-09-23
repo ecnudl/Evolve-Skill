@@ -27,7 +27,11 @@ CANDIDATE = ("## Mechanism\nPublic contract conformance.\n## When\nThe stated co
 H_SECRET = "HOST_ONLY_SENTINEL_NEVER_SEND_TO_MODEL"
 
 
-def test_adapter_amendment_preserves_same_panel_and_old_receipts(tmp_path):
+@pytest.mark.parametrize("reason,has_model_artifact", [
+    (None, False), ("Provider transport and request contract amendment.", False),
+    ("Provider transport and request contract amendment.", True),
+])
+def test_adapter_amendment_preserves_same_panel_and_old_receipts(tmp_path, reason, has_model_artifact):
     old = tmp_path / "outputs/skill_validation/old"
     new = tmp_path / "outputs/skill_validation/new"
     parent = seal({"text": PARENT})
@@ -40,17 +44,56 @@ def test_adapter_amendment_preserves_same_panel_and_old_receipts(tmp_path):
                         "exposure_inventory.json": seal({"old_exposures": []}),
                         "eligibility_manifest.json": seal({"eligibility": "original"})}.items():
         study._write(old / name, value)
+    if has_model_artifact:
+        study._write(old / "artifacts" / "synthetic-metadata.json", seal({"provenance_kind": "model"}))
     before = {p: p.read_bytes() for p in old.rglob("*.json")}
-    amended = study.amend_panel(tmp_path, new, old)
+    amended = study.amend_panel(tmp_path, new, old, reason=reason)
     assert amended["splits"] == manifest["splits"]
     assert amended["amendment"]["same_panel_not_new_independent_sample"] is True
     assert amended["amendment"]["previous_manifest_hash"] == manifest["record_hash"]
+    assert amended["amendment"]["development_model_artifacts_preexist"] is (
+        True if reason is None else has_model_artifact)
+    if reason is not None:
+        assert amended["amendment"]["reason"] == reason
     assert amended["settings"]["implementation_hash"] != manifest["settings"]["implementation_hash"]
     assert study._read(new / "parent_skill.json") == parent
     assert {p: p.read_bytes() for p in old.rglob("*.json")} == before
-    assert study.amend_panel(tmp_path, new, old) == amended
+    assert study.amend_panel(tmp_path, new, old, reason=reason) == amended
     with pytest.raises(ValueError):
         study.amend_panel(tmp_path, old, old)
+
+
+@pytest.mark.parametrize("provider,prefix", [("PJLAB", "pjlab-request:"), ("BIGMODEL", "bigmodel-request:")])
+def test_solver_provenance_names_actual_provider(tmp_path, provider, prefix):
+    class Calls:
+        class api:
+            service = {"provider": provider, "fixture": True}
+
+        @staticmethod
+        def call(*args, **kwargs):
+            return {"request_hash": "fixture-request", "ok": True,
+                    "response": json.dumps({"solution.py": "def solve(value):\n    return value\n"})}
+
+    artifact = study.solve(fixture_row("development", 0), "", "no_skill", 0, Calls(), tmp_path)
+    assert artifact.source_ref == prefix + "fixture-request"
+    assert artifact.availability == "available"
+
+
+def test_cli_forwards_explicit_bigmodel_transport_without_network(tmp_path, monkeypatch):
+    received, closed = {}, []
+
+    class Executor:
+        def close(self):
+            closed.append(True)
+
+    monkeypatch.setattr(study, "ExecutorPool", lambda *args: Executor())
+    monkeypatch.setattr(study, "run", lambda *args, **kwargs: received.update(kwargs))
+    study.main(["run", "--repo", str(tmp_path), "--output", str(tmp_path / "run"),
+                "--provider", "bigmodel", "--reasoning-effort", "max",
+                "--api-proxy", "http://127.0.0.1:7890", "--stop-after", "development"])
+    assert received["provider"] == "bigmodel" and received["reasoning_effort"] == "max"
+    assert received["api_proxy"] == "http://127.0.0.1:7890"
+    assert received["stop_after"] == "development" and closed == [True]
 
 
 def fixture_row(partition, index):

@@ -1,0 +1,93 @@
+{
+  "date": "2026-09-22",
+  "publication_date": "2026-09-23",
+  "model": "glm-5.3",
+  "provider": "BigModel",
+  "evidence_kind": "real_model_artifacts_and_exploratory_frozen_panel_replay",
+  "independent_confirmation": false,
+  "cross_domain_evidence": false,
+  "deployment_authorized": false,
+  "natural_study": {
+    "dataset": "HumanEvalPlus v0.1.10 custom split, not official leaderboard",
+    "task_counts": {"development": 64, "verifier_calibration": 24, "skill_confirmation": 24, "final": 40},
+    "repeats_per_task": 2,
+    "final_full_position_results": {
+      "no_skill": {"pass": 70, "fail": 2, "unknown": 8, "denominator": 80},
+      "current": {"pass": 69, "fail": 3, "unknown": 8, "denominator": 80},
+      "contract_only_u0": {"pass": 70, "fail": 4, "unknown": 6, "denominator": 80},
+      "contract_only_u1": {"pass": 71, "fail": 1, "unknown": 8, "denominator": 80},
+      "fixed_u0": {"pass": 71, "fail": 3, "unknown": 6, "denominator": 80},
+      "fixed_u1": {"pass": 69, "fail": 3, "unknown": 8, "denominator": 80}
+    },
+    "fixed_u0_vs_no_skill": {"win": 0, "loss": 0, "tie": 72, "unknown": 8},
+    "adaptive_candidates_alias_fixed": true,
+    "protocol_hash": "9dc778d098d3ec5ca40e00743e1416aa8eecd922da32471fd429f2c7ef646513",
+    "result_hash": "417e61f38983cd147e6ca006c2e46351b0f4b849ce783b9cc46ce2868ea91449"
+  },
+  "verifier_panels": {
+    "calibration": {"tasks": 24, "artifact_positions": 96, "H_error": 6, "H_correct": 90, "H_unknown": 0},
+    "diagnostic": {"tasks": 24, "artifact_positions": 144, "H_error": 14, "H_correct": 124, "H_unknown": 6},
+    "H_is_imperfect_frozen_host_audit": true
+  },
+  "verifier_comparison_b": {
+    "fixed": {
+      "calibration": {"detected": 5, "false_rejections": 0, "prediction_unknown": 0},
+      "diagnostic": {"detected": 1, "false_rejections": 0, "prediction_unknown": 6}
+    },
+    "adaptive_no_research": {
+      "calibration": {"detected": 5, "false_rejections": 16, "prediction_unknown": 0},
+      "diagnostic": {"detected": 2, "false_rejections": 17, "prediction_unknown": 12},
+      "calls": 49, "tokens": 102264
+    },
+    "adaptive_research": {
+      "calibration": {"detected": 5, "false_rejections": 0, "prediction_unknown": 0},
+      "diagnostic": {"detected": 7, "false_rejections": 10, "prediction_unknown": 12},
+      "calls": 49, "tokens": 259704
+    },
+    "result_hash": "f7f0f22ed8de3781798cbfc0614e24a547cff332b0a64e4bc69dc7847a947187"
+  },
+  "blind_review_ablation": {
+    "reviewer_observes_artifacts_outputs_or_H": false,
+    "can_change_probe_answers": false,
+    "adaptive_no_research": {
+      "calibration": {"detected": 5, "false_rejections": 0, "prediction_unknown": 0, "kept_checks": 38, "proposed_checks": 42},
+      "diagnostic": {"detected": 2, "false_rejections": 0, "prediction_unknown": 12, "kept_checks": 34, "proposed_checks": 38},
+      "review_failure_tasks": 0,
+      "calls": 41, "tokens": 40801
+    },
+    "adaptive_research": {
+      "calibration": {"detected": 5, "false_rejections": 0, "prediction_unknown": 0, "kept_checks": 40, "proposed_checks": 40},
+      "diagnostic": {"detected": 4, "false_rejections": 0, "prediction_unknown": 12, "kept_checks": 34, "proposed_checks": 39},
+      "review_failure_tasks": 1,
+      "failure_caveat": "Four removed false alarms arose from one duplicate-index review response failing closed, not a successfully parsed semantic decision.",
+      "new_detection_caveat": "Three positions on one task, HumanEval/83; shared Base/Current/Candidate errors, not three Skill-induced regressions.",
+      "calls": 41, "tokens": 174210
+    },
+    "gate": "Pending: consumed panel and new uncalibrated review pipeline",
+    "result_hash": "aafac72660de1d684f821b71994afd15b8171cb96f407d9ae69ff8482398814b"
+  },
+  "public_example_diagnostic": {
+    "development_tasks_scanned": 64,
+    "affected_tasks": 4,
+    "recovered_examples": 7,
+    "artifact_execution_calls": 28,
+    "reference_crosscheck_calls": 7,
+    "new_example_mismatch_artifacts": 8,
+    "mismatches_agreeing_with_reference": {"task": "HumanEval/145", "artifacts": 4},
+    "mismatches_with_contract_reference_conflict": {"task": "HumanEval/116", "artifacts": 4},
+    "old_scores_rewritten": false
+  },
+  "new_experiment_cost": {
+    "scope": "verifier_replay_20260922_a + verifier_replay_20260922_b + probe_review_20260922_a; excludes original natural study",
+    "logical_requests": 231, "terminal_reported_tokens": 678470, "terminal_API_failures": 0
+  },
+  "tests": {"mainline_related_passed": 984, "historical_related_passed": 245, "offline_same_result_replays": 2},
+  "limitations": [
+    "No new Skill or cross-domain performance improvement established.",
+    "Already-consumed panels; descriptive, not independent confirmatory evidence.",
+    "Repeated artifacts are not independent tasks; lexical grouping does not certify semantic independence.",
+    "Actual token costs differ across arms; not a compute-matched causal claim.",
+    "References, public examples and task prose may disagree.",
+    "Unknown and interface failures retained, not silently converted to semantic errors."
+  ]
+}

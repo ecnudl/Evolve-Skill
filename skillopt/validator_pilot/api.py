@@ -1,4 +1,9 @@
-"""Direct, bounded PJLAB calls with immutable, credential-free request caches."""
+"""Direct, bounded provider calls with immutable, credential-free request caches.
+
+The historical PJLAB configuration remains the default.  The optional
+``provider="bigmodel"`` path is an explicit new-run adapter for local GLM-5.3
+experiments; it never changes the identity of an existing PJLAB run.
+"""
 
 from __future__ import annotations
 
@@ -20,6 +25,7 @@ T = TypeVar("T")
 R = TypeVar("R")
 MODEL = "glm-5.3"
 PROVIDER_HOST = "token.pjlab.org.cn"
+BIGMODEL_HOST = "open.bigmodel.cn"
 
 
 def digest(value: Any) -> str:
@@ -56,9 +62,26 @@ def write_immutable_json(path: Path, value: Any) -> None:
             temporary.unlink(missing_ok=True)
 
 
-def _configuration(repo: Path, model: str) -> tuple[str, str]:
-    # Read only the three dedicated PJLAB entries; never mutate process environment.
+def _configuration(repo: Path, model: str, provider: str = "pjlab") -> tuple[str, str]:
+    # Read only the provider-specific entries; never mutate process environment.
     values = dotenv_values(Path(repo) / ".env")
+    if provider == "bigmodel":
+        endpoint = str(values.get("BIGMODEL_CHAT_URL") or "").strip()
+        key = str(values.get("BIGMODEL_API_KEY") or "").strip()
+        configured_model = str(values.get("BIGMODEL_MODEL") or MODEL).strip()
+        if model != MODEL or configured_model != MODEL:
+            raise ValueError("BigModel adapter requires BIGMODEL_MODEL=glm-5.3")
+        parsed = urlsplit(endpoint)
+        if (parsed.scheme != "https" or parsed.hostname != BIGMODEL_HOST
+                or parsed.username or parsed.password or parsed.query or parsed.fragment
+                or parsed.port not in (None, 443)
+                or parsed.path.rstrip("/") != "/api/paas/v4/chat/completions"):
+            raise ValueError("BIGMODEL_CHAT_URL must be the approved HTTPS BigModel chat endpoint")
+        if not key:
+            raise ValueError("BIGMODEL_API_KEY is missing from the repository .env")
+        return endpoint, key
+    if provider != "pjlab":
+        raise ValueError("provider must be pjlab or bigmodel")
     base = str(values.get("PJLAB_BASE_URL") or "").strip()
     key = str(values.get("PJLAB_API_KEY") or "").strip()
     configured_model = str(values.get("PJLAB_MODEL") or MODEL).strip()
@@ -173,7 +196,7 @@ class CachedAPI:
     """
 
     def __init__(self, repo: Path, root: Path, model: str = MODEL, workers: int = 8, *, stream: bool = False,
-                 reasoning_effort: str | None = None):
+                 reasoning_effort: str | None = None, provider: str = "pjlab", proxy: str | None = None):
         if isinstance(workers, bool) or not isinstance(workers, int) or not 1 <= workers <= 12:
             raise ValueError("workers must be an integer in [1, 12]")
         if type(stream) is not bool:
@@ -181,18 +204,38 @@ class CachedAPI:
         if reasoning_effort is not None and (
                 not isinstance(reasoning_effort, str) or reasoning_effort not in {"low", "high", "max"}):
             raise ValueError("GLM-5.3 reasoning_effort must be None, low, high, or max")
-        endpoint, api_key = _configuration(Path(repo), model)
+        if proxy is not None:
+            valid_proxy = False
+            if provider == "bigmodel" and type(proxy) is str and proxy == proxy.strip():
+                try:
+                    parsed_proxy = urlsplit(proxy)
+                    valid_proxy = (
+                        parsed_proxy.scheme == "http" and parsed_proxy.hostname in {"127.0.0.1", "::1"}
+                        and parsed_proxy.port is not None and 1 <= parsed_proxy.port <= 65535
+                        and parsed_proxy.username is None and parsed_proxy.password is None
+                        and not parsed_proxy.query and not parsed_proxy.fragment
+                        and parsed_proxy.path in {"", "/"})
+                except ValueError:
+                    pass
+            if not valid_proxy:
+                raise ValueError("An explicit proxy requires BigModel and a credential-free loopback HTTP endpoint")
+        endpoint, api_key = _configuration(Path(repo), model, provider=provider)
         self.root, self.model, self.workers = Path(root), model, workers
+        self.provider = provider
         self.stream = stream
         self.reasoning_effort = reasoning_effort
+        host = PROVIDER_HOST if provider == "pjlab" else BIGMODEL_HOST
+        path = "/v1/chat/completions" if provider == "pjlab" else "/api/paas/v4/chat/completions"
         self.service = {
-            "provider": "PJLAB", "host": PROVIDER_HOST, "path": "/v1/chat/completions",
+            "provider": "PJLAB" if provider == "pjlab" else "BIGMODEL",
+            "host": host, "path": path,
             "model": model, "temperature": 0, "trust_env": False,
             "follow_redirects": False, "generation_seed": "not sent",
             "timeout_seconds": {"connect": 20, "read": 120, "write": 30, "pool": 20},
             "max_retries": 2, "retry_statuses": [429, 500, 502, 503, 504],
             "retry_backoff_seconds": [2, 4], "max_retry_after_seconds": 10,
-            "protocol": "pjlab-validator-pilot-v1",
+            "protocol": ("pjlab-validator-pilot-v1" if provider == "pjlab"
+                         else "bigmodel-glm53-validator-pilot-v1"),
         }
         if stream:
             self.service.update(stream=True, stream_options={"include_usage": True},
@@ -201,6 +244,11 @@ class CachedAPI:
                                 stream_completion_rule="[DONE] plus finish_reason=stop")
         if reasoning_effort is not None:
             self.service["reasoning_effort"] = reasoning_effort
+        if provider == "bigmodel":
+            self.service["thinking"] = {"type": "enabled"}
+            self.service["returned_model_rule"] = "exact_requested_model"
+        if proxy is not None:
+            self.service["proxy"] = proxy
         write_immutable_json(self.root / "service.json", self.service)
         self._endpoint = endpoint
         self._client = httpx.Client(
@@ -208,6 +256,7 @@ class CachedAPI:
             trust_env=False, follow_redirects=False,
             timeout=httpx.Timeout(120, connect=20, write=30, pool=20),
             limits=httpx.Limits(max_connections=12, max_keepalive_connections=12),
+            **({"proxy": proxy} if proxy is not None else {}),
         )
         self._health = "unchecked"
         self._health_lock = threading.Lock()
@@ -265,6 +314,10 @@ class CachedAPI:
             payload.update(stream=True, stream_options={"include_usage": True})
         if self.reasoning_effort is not None:
             payload["reasoning_effort"] = self.reasoning_effort
+        if self.provider == "bigmodel":
+            # GLM-5.3 always enables thinking; omitting this field is not
+            # equivalent to the frozen PJLAB request contract.
+            payload["thinking"] = {"type": "enabled"}
         attempts: list[dict[str, Any]] = []
         for attempt in range(self.service["max_retries"] + 1):
             # Never concatenate a previous failed attempt's partial response into a retry.
@@ -304,7 +357,9 @@ class CachedAPI:
                         outcome.update(stream_complete=body["_stream_complete"],
                                        stream_event_count=body["_stream_event_count"],
                                        stream_characters=body["_stream_chars"])
-                    if self.stream and not body["_stream_complete"]:
+                    if self.provider == "bigmodel" and body.get("model") != self.model:
+                        error_type = "unexpected_response_model"
+                    elif self.stream and not body["_stream_complete"]:
                         error_type = "incomplete_stream"
                     elif finish == "length":
                         error_type = "truncated_content"

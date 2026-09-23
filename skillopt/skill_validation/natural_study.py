@@ -94,7 +94,8 @@ def solve(row, skill, condition, repeat, calls, root):
     artifact = ArtifactRecord(task.contract.content_hash, repeat, condition,
         "none" if condition == "no_skill" else "skill-" + shash[:16], shash, files, availability,
         "fixture" if calls.api.service.get("fixture") else "model", True, False,
-        "pjlab-request:" + receipt["request_hash"], digest(receipt))
+        ("bigmodel-request:" if calls.api.service.get("provider") == "BIGMODEL" else "pjlab-request:")
+        + receipt["request_hash"], digest(receipt))
     _write(root / "artifacts" / (artifact.content_hash + ".json"), artifact.sealed())
     return artifact
 
@@ -187,7 +188,7 @@ def project_probe_feedback(task, artifacts, reports, authority, policy_hash, pro
             "qualification": "Finite independently calibrated generator, not certified task answers; ambiguity remains."}
 
 
-def amend_panel(repo, root, prior_root):
+def amend_panel(repo, root, prior_root, *, reason=None):
     """Explicit adapter repair on the SAME panel, never a new independent split."""
     from . import natural_data
     repo, root, prior_root = checked_path(repo), checked_path(root), checked_path(prior_root)
@@ -197,14 +198,20 @@ def amend_panel(repo, root, prior_root):
     parent = _read(prior_root / "parent_skill.json")
     require(protocol["manifest_hash"] == previous["record_hash"]
             and protocol["parent_hash"] == parent["record_hash"], "Prior experiment identity mismatch")
+    require(reason is None or type(reason) is str and 0 < len(reason.strip()) <= 2000,
+            "An explicit amendment reason must be nonempty bounded text")
+    preexisting_artifacts = True if reason is None else any(
+        _read(path).get("provenance_kind") == "model"
+        for path in sorted((prior_root / "artifacts").glob("*.json")))
     manifest = {k: v for k, v in previous.items() if k != "record_hash"}
     manifest["settings"] = {**manifest["settings"], "implementation_hash":
                             hashlib.sha256(Path(natural_data.__file__).read_bytes()).hexdigest()}
     manifest.update(run_path=str(root.relative_to(repo)),
         amendment={"previous_manifest_hash": previous["record_hash"], "previous_protocol_hash": protocol["record_hash"],
-                   "reason": "Public example extractor must distinguish function examples from mathematical definitions.",
+                   "reason": reason if reason is not None else
+                       "Public example extractor must distinguish function examples from mathematical definitions.",
                    "same_panel_not_new_independent_sample": True,
-                   "development_model_artifacts_preexist": True,
+                   "development_model_artifacts_preexist": preexisting_artifacts,
                    "selection_based_on_model_outcomes": False})
     frozen = seal(manifest)
     for name in ("source_snapshot.json", "exposure_inventory.json", "eligibility_manifest.json", "parent_skill.json"):
@@ -214,7 +221,7 @@ def amend_panel(repo, root, prior_root):
 
 
 def run(repo, root, executor, *, workers=6, repeats=2, update_repeats=2, stop_after=None, reuse_from=None,
-        public_preflight=None):
+        public_preflight=None, provider="pjlab", reasoning_effort="low", api_proxy=None):
     from .natural_data import load_tasks
     from .natural_metrics import calibrate_policy, summarize
     repo, root = checked_path(repo), checked_path(root)
@@ -237,7 +244,9 @@ def run(repo, root, executor, *, workers=6, repeats=2, update_repeats=2, stop_af
         _write(root / "public_compatibility.json", compatibility)
     require(1 <= repeats <= 3 and 1 <= update_repeats <= 3, "Bounded repeat budget")
     reference_locks, artifact_locks, lock_guard = {}, {}, threading.Lock()
-    with CachedAPI(repo, root / "api", workers=workers, stream=True, reasoning_effort="low") as api:
+    require(reasoning_effort in {"low", "high", "max"}, "Unsupported reasoning effort")
+    with CachedAPI(repo, root / "api", workers=workers, stream=True, reasoning_effort=reasoning_effort,
+                   provider=provider, proxy=api_proxy) as api:
         source_hashes = {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
                          for p in Path(__file__).parent.glob("*.py")}
         inherited = None
@@ -518,7 +527,12 @@ def main(argv=None):
     parser.add_argument("--update-repeats", type=int, default=2)
     parser.add_argument("--stop-after", choices=("development",))
     parser.add_argument("--reuse-from", type=Path)
+    parser.add_argument("--amendment-reason", help="Explicit reason for a new same-panel protocol; amend only")
     parser.add_argument("--public-preflight", type=Path)
+    parser.add_argument("--provider", choices=("pjlab", "bigmodel"), default="pjlab",
+                        help="Explicit provider for this new run; historical default is pjlab")
+    parser.add_argument("--reasoning-effort", choices=("low", "high", "max"), default="low")
+    parser.add_argument("--api-proxy", help="Explicit loopback HTTP proxy for BigModel only; never inferred from environment")
     args = parser.parse_args(argv)
     if args.command == "prepare":
         from .natural_data import prepare
@@ -528,13 +542,15 @@ def main(argv=None):
         print(json.dumps({"manifest_hash": manifest["record_hash"], "parent_hash": parent["record_hash"]}))
     elif args.command == "amend":
         require(args.reuse_from is not None, "Amend requires explicit prior output")
-        print(json.dumps({"manifest_hash": amend_panel(args.repo, args.output, args.reuse_from)["record_hash"]}))
+        print(json.dumps({"manifest_hash": amend_panel(args.repo, args.output, args.reuse_from,
+                         reason=args.amendment_reason)["record_hash"]}))
     else:
         executor = ExecutorPool(args.remote_repo, args.execution_workers)
         try:
             run(args.repo, args.output, executor, workers=args.workers, repeats=args.repeats,
                 update_repeats=args.update_repeats, stop_after=args.stop_after, reuse_from=args.reuse_from,
-                public_preflight=args.public_preflight)
+                public_preflight=args.public_preflight, provider=args.provider,
+                reasoning_effort=args.reasoning_effort, api_proxy=args.api_proxy)
         finally:
             executor.close()
 

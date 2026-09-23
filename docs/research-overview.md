@@ -1,14 +1,14 @@
 # 跨域安全 Skill 进化：研究索引
 
-更新：2026-09-21。目标是通过 **Coding Rubric + 有界 Research** 提高 Skill 学习与范围判断的质量，兼顾多领域收益和负迁移，而不是逐域追求最高分。
+更新：2026-09-23，实验截至 9/22。目标是通过 **Coding Rubric + 有界 Research** 提高 Skill 学习与范围判断的质量，兼顾多领域收益和负迁移，而不是逐域追求最高分。
 
 ## 阅读顺序
 
-1. [最新进展与实验汇总](research-progress-20260921.md)：实现状态、实际观察、当前断点。
+1. [最新自然实验复盘](skill-validation-analysis-20260922.md)：完整运行、接口修复、固定产物验证器回放及结论边界；[9/21 发布记录](research-progress-20260921.md)保留当时断点。
 2. [新主线接口](skill-validation-mainline.md)：证据、分区、检查、授权与命令。按日期保存的章节反映当时状态，以最新章节为准。
 3. [最小准入闭环](skill-validation-gated-loop-20260920.md)：两道门与工程控制实验。
 4. [自然任务协议](skill-validation-natural-pilot-20260920.md)、[初期结果](skill-validation-natural-results-20260920.md)、[开发诊断](skill-validation-natural-development-diagnostic-20260920.md)：真实实验设计与目前不能继续作效果推断的原因。
-5. [机器可读结果摘要](results/skill-validation-20260921.json)：已核对的聚合数字、来源标识与记录哈希，不包含原始产物。
+5. [最新机器可读结果摘要](results/skill-validation-20260922.json)：自然实验、固定验证器比较和盲审消融的分母、成本及记录哈希；[9/21 摘要](results/skill-validation-20260921.json)保留历史断点。
 6. [真实记录 demo](../examples/research_evidence/README.md)：现已公开精选模型产物、实际反馈、父／候选 Skill 和完整单轮逐题评分摘录，可离线重算摘要；不是完整私有缓存或新的效果实验。
 
 ## 核心问题与方法边界
@@ -35,10 +35,11 @@
 | Skill 内容更新 | `single_round_feedback.py`、`conditional_feedback.py` | 父 Skill＋公开配对证据 → 条件化更新提示；不直接读取 H 答案 |
 | 候选准入与闭环 | `admission.py`、`closed_loop.py` | 获授权验证器＋冻结候选＋独立确认 → 决策、执行前选择与下一轮状态 |
 | 自然实验编排 | `natural_data.py`、`natural_study.py` | 冻结数据、父 Skill、模型与预算 → 对照产物、诊断、条件更新及评测记录 |
+| 固定产物验证器诊断 | `natural_verifier_replay.py`、`natural_documents.py`、`probe_review.py` | 相同真实产物、受限资料、冻结探针 → 检错／误拒／配对方向与盲审消融；旧面板不产生新授权 |
 | 面板诊断与历史适配 | `panel.py`、`legacy_panel.py` | 固定产物池／历史记录 → 宿主诊断；历史回放不计入新自然验收 |
 | 运行恢复 | `reused_calls.py`；`scripts/resume_natural_validation.py` | 相同请求与已闭合回执 → 原样重放；新请求限流，断点不重抽失败 |
 
-`closed_loop.py` 已完成 fixture 控制路径；`single_round.py` 已有真实小实验；`natural_study.py` 尚停在开发采集。三者不是三份已经完成的效果验证。
+`closed_loop.py` 已完成 fixture 控制路径；`single_round.py` 已有真实小实验；`natural_study.py` 的 BigModel 运行已完成，但旧 Research 提案无效、回退分支共享候选，不能据此比较 Research 效果。三者不是三份已证实有效的方法。
 
 ## 证据账本
 
@@ -52,7 +53,9 @@
 | [V18 协议](coevolution-v18-protocol.md) | SearchQA + MBPP-sanitized；整体式／分层式；Research 不启用 | 双域适配，不是未见域；发布时完整离线审计链未闭合，不列效果结论 |
 | [9/18 单轮真实更新](skill-validation-single-round-results-20260918.md) | 16 个最终任务 × 2 次：No-Skill 30/32、Parent 26/32、Candidate 27/32 | 重复方向相反；三种反馈收敛为同一候选，不能比较 Research 效果 |
 | [9/20 准入工程闭环](skill-validation-gated-loop-20260920.md) | 四场景、162 次隔离执行，0 API；无新证据／样本不足阻止 updater | 工程流程正确性的证据，不是自然学习收益 |
-| [9/20 自然面板](skill-validation-natural-pilot-20260920.md) | 152 个任务；169/256 开发位置，87 待采集 | 未完成对照和 final，不报告最终方法准确率 |
+| [9/20–21 自然面板历史断点](skill-validation-natural-pilot-20260920.md) | 当时 152 个任务；169/256 开发位置，87 待采集 | 仅为旧断点；后续完整运行见下一行，勿当作当前进度 |
+| [9/22 BigModel 完整运行与复盘](skill-validation-analysis-20260922.md) | 同一 152 题划分；最终 No-Skill 70/80、Current 69/80、固定反馈候选 71/80 和 69/80 | 未证明稳定收益或跨域效果；71/80 的配对差异涉及 unknown，旧 Research 分支并非独立成功对照 |
+| [9/22 固定探针盲审消融](skill-validation-analysis-20260922.md#8-后续消融冻结测试只审阅其可采纳性) | 无 Research 分支误拒 33→0，保留 72/80 个检查及新增检出；Research 分支新增 3 个检出位置来自同一共同错误任务 | 有检查质量改进信号；已消费面板、不同实际成本、无新授权，不是 Skill 泛化收益 |
 
 历史统计来自相应报告；这次重新核对了新主线本地汇总记录，并未重新运行全部历史实验。不同面板、重复次数、交付契约、评分器之间不能直接比较百分点。
 

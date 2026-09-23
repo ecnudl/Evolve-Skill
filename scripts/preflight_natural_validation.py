@@ -15,7 +15,7 @@ from pathlib import Path
 
 from skillopt.coevolution_v5.core import seal, verify
 from skillopt.skill_validation.checks import ExecutionCache, validate_callable
-from skillopt.skill_validation.models import ArtifactRecord, SourceFile
+from skillopt.skill_validation.models import ArtifactRecord, SourceFile, require
 from skillopt.skill_validation.natural_data import load_tasks
 from skillopt.skill_validation.natural_study import ExecutorPool, audit
 from skillopt.skill_validation.research import fixed_rubric
@@ -120,16 +120,77 @@ def run(repo, frozen, output, remote_repo, workers=4):
     return summary
 
 
+def run_public(repo, frozen, output, remote_repo, workers=4):
+    """Check every frozen public wrapper with its reference; never run H or a model.
+
+    This validates adapter compatibility, not whether the reference satisfies
+    every aspect of the natural-language contract. Results remain host-side.
+    """
+    manifest_path = frozen / "data_manifest.json"
+    original = manifest_path.read_bytes()
+    manifest = verify(json.loads(original))
+    pool = ExecutorPool(remote_repo, workers)
+    expected = {"manifest_hash": manifest["record_hash"], "executor": pool.identity,
+                "transport": pool.transport_identity, "public_only": True}
+    write_immutable_json(output / "protocol.json", seal(expected))
+    rows = [row for part in manifest["splits"] for row in load_tasks(repo, manifest, part)]
+
+    def inspect(row):
+        task = row["public_task"]
+        item = artifact(row, row["host_audit"]["reference_code"], "public-reference")
+        suffix = task.contract.original_task_id.replace("/", "_")
+        cache = ExecutionCache(pool, output / "execution" / suffix, max_executions=1)
+        report = validate_callable(task, item, fixed_rubric(), cache)
+        for receipt in cache.records.values():
+            from skillopt.skill_validation.single_round import _healthy
+            _healthy(receipt["execution"])
+        write_immutable_json(output / "reports" / (suffix + ".json"), report)
+        record = seal({"task_id": task.contract.original_task_id,
+                       "partition": task.contract.partition, "status": report["status"],
+                       "task_hash": task.content_hash, "report_hash": report["record_hash"],
+                       "provenance_kind": "reference_compatibility_control"})
+        write_immutable_json(output / "rows" / (suffix + ".json"), record)
+        return record
+
+    outcomes = []
+    try:
+        health = pool.run({"probe.py": "def ping():\n    return True\n"}, "probe", "ping", [], {})
+        require(health.get("actual") is True and health.get("status") == "observed", "Sandbox unavailable")
+        write_immutable_json(output / "sandbox_health.json", health)
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            for future in as_completed([executor.submit(inspect, row) for row in rows]):
+                result = future.result()
+                outcomes.append(result)
+                if len(outcomes) % 16 == 0 or result["status"] != "pass":
+                    print(json.dumps({"public_preflight_completed": len(outcomes), "total": len(rows),
+                                      "task_id": result["task_id"], "status": result["status"]}), flush=True)
+    finally:
+        pool.close()
+    require(manifest_path.read_bytes() == original, "Frozen panel changed")
+    summary = seal({**expected, "version": "natural-public-compatibility-v1", "model_calls": 0,
+                    "hidden_audit_executed": False, "task_count": len(rows),
+                    "rows": sorted(outcomes, key=lambda r: (r["partition"], r["task_id"])),
+                    "counts": dict(Counter(r["status"] for r in outcomes)),
+                    "reference_pass_is_not_contract_truth": True})
+    write_immutable_json(output / "summary.json", summary)
+    return summary
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--frozen", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--remote-repo", required=True)
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--public-only", action="store_true",
+                        help="All-partition public-wrapper compatibility; no H and no model calls")
     args = parser.parse_args()
     repo = Path(__file__).resolve().parents[1]
-    summary = run(repo, repo / args.frozen, repo / args.output, args.remote_repo, args.workers)
-    print(json.dumps({key: summary[key] for key in ("ready", "task_count", "reference_h", "reference_public", "wall_seconds")}))
+    runner = run_public if args.public_only else run
+    summary = runner(repo, repo / args.frozen, repo / args.output, args.remote_repo, args.workers)
+    fields = ("task_count", "counts", "model_calls", "hidden_audit_executed") if args.public_only else (
+        "ready", "task_count", "reference_h", "reference_public", "wall_seconds")
+    print(json.dumps({key: summary[key] for key in fields}))
 
 
 if __name__ == "__main__":
