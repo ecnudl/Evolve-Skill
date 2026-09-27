@@ -8,6 +8,8 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import stat
+import sys
 import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
@@ -39,6 +41,39 @@ def _canonical(path):
 def _report():
     return SleepReport(night=1, project="/repo/example", accepted=True,
                        gate_action="accept_new_best")
+
+
+def _latest_fixture(tmp):
+    root = os.path.join(tmp, ".skillopt-sleep", "staging")
+    night = os.path.join(root, "20260815-010203")
+    os.makedirs(night)
+    pointer = os.path.join(root, ".latest")
+    for path, body in ((os.path.join(night, "manifest.json"), "{}"),
+                       (pointer, "20260814-010203\n")):
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(body)
+    return root, night, pointer
+
+
+def _latest_snapshot_lstat(staging_mod, pointer, change):
+    """Alter only pointer snapshots; real link/junction probes still run."""
+    real_lstat, observations = os.lstat, []
+
+    def lstat(path, *args, **kwargs):
+        info = real_lstat(path, *args, **kwargs)
+        caller = sys._getframe(1)
+        if (os.fspath(path) == pointer and caller.f_globals is staging_mod.__dict__
+                and caller.f_code is not staging_mod._is_link_or_junction.__code__):
+            observations.append(info)
+            # Fail promptly if a regression turns the bounded check into a loop.
+            if len(observations) > 5:
+                raise AssertionError("Pointer snapshot retries exceeded five")
+            values = list(info)
+            change(values, len(observations))
+            return os.stat_result(values)
+        return info
+
+    return lstat, observations
 
 
 class TestSkillProposalRows(unittest.TestCase):
@@ -399,6 +434,105 @@ class TestWriteStagingCompatibility(unittest.TestCase):
             sleep.assert_called_once_with(0.005)
             with open(os.path.join(root, ".latest"), encoding="utf-8") as handle:
                 self.assertEqual(handle.read(), "20260815-010203\n")
+
+    def test_latest_pointer_reobserves_unlinked_snapshot_before_publication(self):
+        from skillopt_sleep import staging as staging_mod
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root, night, pointer = _latest_fixture(tmp)
+
+            def transient(values, observation):
+                if observation == 1:
+                    values[stat.ST_NLINK] = 0
+
+            lstat, observations = _latest_snapshot_lstat(staging_mod, pointer, transient)
+            with mock.patch.object(staging_mod.os, "lstat", new=lstat), mock.patch.object(
+                staging_mod, "_write_atomic_bytes", wraps=staging_mod._write_atomic_bytes
+            ) as write:
+                staging_mod._publish_latest(root, night)
+
+            self.assertEqual(len(observations), 2)
+            write.assert_called_once()
+            with open(pointer, encoding="utf-8") as handle:
+                self.assertEqual(handle.read(), "20260815-010203\n")
+
+    def test_latest_pointer_persistent_unlinked_snapshot_is_bounded_and_never_written(self):
+        from skillopt_sleep import staging as staging_mod
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root, night, pointer = _latest_fixture(tmp)
+
+            def unlinked(values, _observation):
+                values[stat.ST_NLINK] = 0
+
+            lstat, observations = _latest_snapshot_lstat(staging_mod, pointer, unlinked)
+            with mock.patch.object(staging_mod.os, "lstat", new=lstat), mock.patch.object(
+                staging_mod, "_write_atomic_bytes"
+            ) as write, self.assertRaises(StagingError):
+                staging_mod._publish_latest(root, night)
+
+            self.assertGreaterEqual(len(observations), 2)
+            self.assertLessEqual(len(observations), 5)
+            write.assert_not_called()
+            with open(pointer, encoding="utf-8") as handle:
+                self.assertEqual(handle.read(), "20260814-010203\n")
+
+    def test_latest_pointer_unsafe_snapshot_is_not_retried_or_written(self):
+        from skillopt_sleep import staging as staging_mod
+
+        for preceding_zero in (False, True):
+            for unsafe in ("hardlink", "negative_links", "symlink", "directory", "fifo", "junction"):
+                with self.subTest(preceding_zero=preceding_zero, unsafe=unsafe), tempfile.TemporaryDirectory() as tmp:
+                    root, night, pointer = _latest_fixture(tmp)
+
+                    def change(values, observation):
+                        if preceding_zero and observation == 1:
+                            values[stat.ST_NLINK] = 0
+                        elif unsafe in {"hardlink", "negative_links"}:
+                            values[stat.ST_NLINK] = 2 if unsafe == "hardlink" else -1
+                        elif unsafe != "junction":
+                            mode = {"symlink": stat.S_IFLNK, "directory": stat.S_IFDIR, "fifo": stat.S_IFIFO}[unsafe]
+                            values[stat.ST_MODE] = mode | stat.S_IMODE(values[stat.ST_MODE])
+
+                    lstat, observations = _latest_snapshot_lstat(staging_mod, pointer, change)
+                    real_junction = getattr(os.path, "isjunction", lambda _path: False)
+
+                    def junction(path):
+                        return (path == pointer and unsafe == "junction"
+                                and len(observations) > int(preceding_zero)) or real_junction(path)
+
+                    with mock.patch.object(staging_mod.os, "lstat", new=lstat), mock.patch.object(
+                        staging_mod.os.path, "isjunction", side_effect=junction, create=True
+                    ), mock.patch.object(staging_mod, "_write_atomic_bytes") as write, self.assertRaises(StagingError):
+                        staging_mod._publish_latest(root, night)
+
+                    self.assertEqual(len(observations), 1 + int(preceding_zero))
+                    write.assert_not_called()
+                    with open(pointer, encoding="utf-8") as handle:
+                        self.assertEqual(handle.read(), "20260814-010203\n")
+
+    def test_latest_pointer_reobservation_error_is_not_absence_permission(self):
+        from skillopt_sleep import staging as staging_mod
+
+        for failure in (FileNotFoundError, PermissionError):
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as tmp:
+                root, night, pointer = _latest_fixture(tmp)
+
+                def disappear(values, observation):
+                    if observation == 1:
+                        values[stat.ST_NLINK] = 0
+                    else:
+                        raise failure("pointer snapshot unavailable")
+
+                lstat, observations = _latest_snapshot_lstat(staging_mod, pointer, disappear)
+                with mock.patch.object(staging_mod.os, "lstat", new=lstat), mock.patch.object(
+                    staging_mod, "_write_atomic_bytes"
+                ) as write, self.assertRaises(failure):
+                    staging_mod._publish_latest(root, night)
+                self.assertEqual(len(observations), 2)
+                write.assert_not_called()
+                with open(pointer, encoding="utf-8") as handle:
+                    self.assertEqual(handle.read(), "20260814-010203\n")
 
     def test_generic_atomic_write_never_retries_permission_error(self):
         from skillopt_sleep import staging as staging_mod

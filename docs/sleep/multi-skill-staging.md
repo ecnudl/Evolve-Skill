@@ -129,6 +129,15 @@ artifact batch, and publishes its basename through a private mode-`0600`
 reserved nights; adoption cannot reorder nights by changing a directory mtime.
 Symlinked staging directories and manifests are ignored or refused.
 
+Concurrent publishers can replace `.latest` while another publisher is checking
+its metadata. A regular-file snapshot can then have zero links because its old
+inode has just been unlinked. Publication permits at most five metadata checks
+for this transient case, repeating the file-type and alias checks each time;
+it still requires a regular, single-link file before proceeding. Hard links,
+symlinks, junctions, non-regular files, persistent zero-link snapshots, and read
+errors remain rejected. This is specific to the derived `.latest` pointer: it
+does not add retries to live-file validation or adoption.
+
 ## Reviewing and adopting
 
 ```text

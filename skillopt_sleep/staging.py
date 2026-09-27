@@ -864,6 +864,7 @@ _STAGING_DIR_RE = re.compile(r"^(\d{8}-\d{6})(?:-(\d+))?$")
 _MANIFEST_SCHEMA = "skillopt-sleep-staging"
 _MANIFEST_VERSION = 2
 _LATEST_FILENAME = ".latest"
+_LATEST_POINTER_SNAPSHOT_ATTEMPTS = 5
 
 
 def _latest_pointer_path(root: str) -> str:
@@ -935,12 +936,21 @@ def _publish_latest(root: str, out: str) -> None:
         raise StagingError(f"cannot publish a staging night without a manifest: {out}")
     pointer = _latest_pointer_path(root_abs)
     if os.path.lexists(pointer):
-        info = os.lstat(pointer)
-        if (
-            _is_link_or_junction(pointer)
-            or not stat.S_ISREG(info.st_mode)
-            or info.st_nlink != 1
-        ):
+        # A concurrent atomic replacement can unlink the inode after lstat
+        # resolves it but before it reads the attributes. A regular-file
+        # snapshot with zero links is therefore inconclusive, not permission
+        # to skip validation. Only this derived pointer gets bounded metadata
+        # re-observation; every attempt repeats all type/alias checks. Missing
+        # paths and other OSErrors still propagate instead of passing the guard.
+        for _ in range(_LATEST_POINTER_SNAPSHOT_ATTEMPTS):
+            info = os.lstat(pointer)
+            if _is_link_or_junction(pointer) or not stat.S_ISREG(info.st_mode):
+                raise StagingError(f"latest-staging pointer is unsafe: {pointer}")
+            if info.st_nlink == 1:
+                break
+            if info.st_nlink != 0:
+                raise StagingError(f"latest-staging pointer is unsafe: {pointer}")
+        else:
             raise StagingError(f"latest-staging pointer is unsafe: {pointer}")
     # Concurrent staging publishers may briefly retain the replace destination
     # on Windows. Retrying is safe only for this derived, last-writer-wins pointer.
