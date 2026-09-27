@@ -4,17 +4,19 @@
 
 我们不要求每个 benchmark 都达到 SOTA，而是希望 Skill 学到可迁移的解题机制，在改善目标任务的同时保留其他领域的能力。泛化范围应由行为证据确认，不能由模型在 Skill 文本中自行宣称。
 
-**截至 2026-09-23（实验截至 9/22）：152 题 Coding 自然实验已完成，并完成固定产物验证器比较和测试提案盲审。** 最明确的进展是减少了错误检查导致的误拒；Skill 稳定增益、Research 独有信息增量与跨域泛化收益仍未得到证明。这不是一个已经完成全部实验的论文复现包。
+**截至 2026-09-27：同课程归纳、修复轨迹学习、候选确认及预算诊断已完成，共同 Solver 可靠性修复已通过 Linux 工程验收。** 修复细节促成两份主候选，后续96个实际注入位置未观察到干扰，但没有证明语义正迁移。普通归纳多20个通过位置，19个来自截断差异；另一逐例候选净增9项也全部涉及交付。预算扩大后原始分差缩小，不能把交付稳定性当作泛化提升。历史目标课程A–D仍Pending；Skill稳定增益、Research独有信息增量与跨域收益均待证明。这不是已完成全部实验的论文复现包。
 
 ## 给首次阅读仓库的 AI / 研究者
 
+9/27补充：[求解可靠性修复与Linux验收](docs/skill-validation-solver-reliability-20260927.md)已接通共同输出预算、一次公开修订及回归保护；完整工程smoke 9/9公开通过，另验证超时修订和保留正确初稿。没有调整评测体系，也不将这些工程检查算作泛化增益。
+
 建议按下面顺序阅读，不必从全部历史 `coevolution_vXX` 开始：
 
-1. [研究索引与证据边界](docs/research-overview.md)：研究问题、代码地图、历史结果及不可支持的结论。
-2. [最新实验结果与问题复盘](docs/skill-validation-analysis-20260922.md)：完整自然实验、验证器比较、盲审消融、检查器缺陷及下一步。
-3. [主线接口与运行说明](docs/skill-validation-mainline.md)：可见验证 V / 独立审计 H、分区、授权和入口。
-4. [自然任务实验协议](docs/skill-validation-natural-pilot-20260920.md)与[最新汇总 JSON](docs/results/skill-validation-20260922.json)：对照、预算、分母和原始记录指纹。
-5. [真实实验材料与离线 demo](examples/research_evidence/README.md)：此前已公开的真实 Skill、反馈、4 个配对代码案例与 96 个单轮评分位置；不是本轮 152 题实验的完整原始数据。
+1. [当前完整流程](docs/current-workflow.md)：持续维护的主文档，说明初始化、每步输入输出、Rubric/Research、反馈更新及两道门；明确真实与 fixture 状态。
+2. [结果与经验账本](docs/results-and-lessons.md)：持续维护的重要实验表格、正向信号、反例、成本和数据存档索引。
+3. [研究索引与证据边界](docs/research-overview.md)：更多历史报告与代码地图；日期报告不改写为新结果。
+4. [主线接口与运行说明](docs/skill-validation-mainline.md)：按实现阶段保留的详细说明；最新对照见 [9/25 报告](docs/skill-validation-mechanism-study-20260925.md)，历史目标课程见 [9/24 报告](docs/skill-validation-capability-curriculum-20260924.md)。
+5. [真实实验材料与离线 demo](examples/research_evidence/README.md)：已有真实 Skill、反馈、4 个配对代码案例与96个单轮评分位置；新增9/25真实“修复轨迹→规则→条件反转执行”及负例摘录。不是所有实验的完整原始数据。
 
 分析时请区分**算法设计、工程 fixture、历史回放、真实模型实验**；给出的改进建议应指向具体代码或证据缺口，而不是默认方法已经有效。现在提供经过筛选的真实记录摘录；完整原始运行缓存仍未公开，记录回放不等于重新执行或独立认证。
 
@@ -32,17 +34,9 @@
 
 ## 最重要的实验结果
 
-| 实验 | 观察 | 能说明什么 |
-| --- | --- | --- |
-| 历史 V8，64 个共同初稿的答案修订 | 简略反馈 51/64，结构化反馈 59/64 | 结构化执行反馈有价值信号；不是 Skill 进化或跨域效果 |
-| 历史 V16，三域协同进化 | No-Skill 100%，固定验证器 96.30%，自适应 94.44%，Research 自适应 98.15% | 尚未优于 Base；面板有天花板，不能证明 Research 泛化收益 |
-| 9/18，真实 MBPP-sanitized 单轮更新 | No-Skill 30/32、Parent 26/32、Candidate 27/32；16 题 × 2 次 | 更新链可运行，但两次重复的收益方向相反；三种反馈合并为同一候选 |
-| 9/20，四组最小闭环 smoke | 162 次隔离执行；限制、拒绝、无新证据、样本不足路径均运行 | 工程验证，0 次模型 API；不是自然效果或部署授权 |
-| 9/22，HumanEval+ 自定义自然面板完成 | 152 题划分 64/24/24/40；最终 40 题 × 2 次：No-Skill 70/80、Current 69/80、固定反馈候选 71/80 和 69/80 | 尚无稳定收益；71/80 的已知配对为 0 胜 0 负，名义差值涉及 unknown/覆盖率 |
-| 9/22，固定产物验证器比较 | 校准 24 题 / 96 个位置，三条件诊断 24 题 / 144 个位置；新增检查也产生错误预期值和误拒 | 引用准确不等于检查正确；同为 49 次调用，两分支实际 token 相差约 2.54 倍 |
-| 9/22，测试提案盲审消融 | 无 Research 分支相对 H 的误拒 33→0，保留 72/80 个检查及原有新增检出 | 检查质量有改进信号；已消费面板上的探索，不是独立校准或 Skill 泛化收益 |
+结果统一维护在[精简账本](docs/results-and-lessons.md)，包含 SearchQA 来源学习、V12/V14 内容更新、V8 结构化答案修订、9/23 执行前审阅与反馈修订、9/24 课程 Pending、9/25 机制学习与归因，以及9/27工程验收。正向信号与必要反例、分母和实际成本一起保存，避免多份摘要逐渐不一致。
 
-详见[完整表格与案例](docs/skill-validation-analysis-20260922.md)及[历史三部分报告](docs/experiment-report-skill-validation-coevolution-20260916.md)。H 指冻结的独立宿主审计，本身仍有契约争议。不能将不同任务面板直接横比；重复执行不等于新增独立任务，unknown 不等于语义错误。
+H 指冻结的独立宿主审计，本身仍有契约争议。不能将不同任务面板直接横比；重复执行不等于新增独立任务，unknown 不等于语义错误。
 
 当前需要优先解决的问题：
 
@@ -53,6 +47,12 @@
 ## 代码入口与离线运行
 
 新工作集中于 [`skillopt/skill_validation/`](skillopt/skill_validation/)：`stage2.py`（验证器比较）、`closed_loop.py`（带准入的一轮流程）、`natural_study.py`（自然任务对照）；本轮增加 `natural_verifier_replay.py`（真实固定产物诊断）、`probe_review.py`（盲审消融）、`public_examples.py`（公开示例覆盖诊断）。历史入口保留，不改写冻结协议。
+
+9/23 新增 `admissibility.py`（执行前审阅）、`probe_fact_research.py`（逐检查外部事实研究）、`verifier_readiness.py`（独立错误族与配对方向诊断）及 `admissibility_study.py`（真实旧产物实验）。Research 连接的工程验证与自然效果分开报告，不把可运行接口当作 Research 增益。`scripts/inventory_mbpp_full.py` 已盘点 424 个潜在新任务／394 个词面族，尚未形成正式独立分区。
+
+9/24 新增 `skill_seed.py`、`rule_skill.py` / `rule_learning.py`、`capability_goals.py` 和 `curriculum_study.py`：来源可追溯初始化、有限规则编辑、历史能力诊断及生成任务家族的 shadow 学习入口。当前课程不使用 Research 反馈，不签发跨域部署权限；各步状态见[完整流程](docs/current-workflow.md)。后续维护约定见 [AGENTS.md](AGENTS.md)。
+
+9/25–27 的 `mechanism_study.py`、`public_repair_feedback.py` 和 `mechanism_case_confirmation.py` 接通共同课程对照、真实修复证据到规则更新、冻结候选确认；`solver_profile.py` 提供显式 `reliable_v1`，统一初稿/修订预算、一次公开修订及回归保护。新行为使用新输出目录，不改写历史协议或评分。
 
 Python 3.10+，建议使用独立环境：
 
@@ -68,7 +68,7 @@ API 字段参考 [`.env.example`](.env.example)，密钥只放本地 `.env`。�
 
 ## 接下来要证明什么
 
-先将公开示例覆盖验收、契约冲突标记和检查可采纳性审阅接入新协议；在未消费的数据上校准，再用删除研究资料的对照与实际成本记录区分 Research 的信息增量。通过后才将可靠反馈接回同父 Skill 的分叉更新与独立确认，最后验证 Coding → Spreadsheet 的迁移。当前不以扩大多轮实验、反复使用旧确认集或全部回退替代这些证据。
+确认与预算归因、公共修订回归保护均已完成；下一步统一使用可靠求解配置，保留真实修复轨迹学习，并接入具有真实依赖及目标机制错误空间的新任务，而非继续增加接近满分的小题。历史目标课程保持独立；另用未消费数据校准执行前审阅与逐缺口Research，按实际成本区分资料增量。未授权Research不进入正式学习/准入反馈，shadow探索另行标记。再接Skill准入与Coding→Spreadsheet迁移，不以反复使用旧确认集或全部回退替代泛化证据。
 
 ## 致谢
 

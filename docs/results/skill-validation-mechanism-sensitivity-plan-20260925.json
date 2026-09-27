@@ -1,0 +1,20 @@
+{
+  "kind": "analysis_plan_not_experimental_result",
+  "study": "mechanism_pilot_20260925_a",
+  "declared_on": "2026-09-25",
+  "timing": "During execution, before inspecting any confirmation outcomes",
+  "basis": "Frozen task contracts and host-declared finite transformations only; no solver output or H outcome was used",
+  "original_protocol_unchanged": true,
+  "primary_confirmation_tasks": 78,
+  "issue": "Joint return-and-transformed-state deduplication misses return-equivalent preserve/unconstrained tasks across development and confirmation",
+  "additional_sensitivity_excluded_task_ids": [
+    "synthetic-pipeline-b77da8e7ae74d4d76afb049825a17749158cfc39d537cd63ac517e4b4804d9de-preserve",
+    "synthetic-pipeline-b77da8e7ae74d4d76afb049825a17749158cfc39d537cd63ac517e4b4804d9de-unconstrained",
+    "synthetic-pipeline-2debe0794bdae1a91f3a26d260ba222a545c26b332d874377e536ed98e01fb70-preserve",
+    "synthetic-pipeline-2debe0794bdae1a91f3a26d260ba222a545c26b332d874377e536ed98e01fb70-unconstrained"
+  ],
+  "sensitivity_confirmation_tasks": 74,
+  "additional_comparison": "Within task/history/repeat/condition, pair raw and conditional statuses, report wins/losses/unknowns and call aliases; do not treat aggregate subtraction as paired inference",
+  "interpretation": "Report the full preregistered panel first; sensitivity does not certify semantic independence or replace the original results",
+  "deployment_authorized": false
+}

@@ -1,14 +1,20 @@
 # 跨域安全 Skill 进化：研究索引
 
-更新：2026-09-23，实验截至 9/22。目标是通过 **Coding Rubric + 有界 Research** 提高 Skill 学习与范围判断的质量，兼顾多领域收益和负迁移，而不是逐域追求最高分。
+索引更新：2026-09-27。目标是通过 **Coding Rubric + 有界 Research** 提高 Skill 学习与范围判断的质量，兼顾多领域收益和负迁移，而不是逐域追求最高分。
+
+从现在起优先维护两份主文档：[当前完整流程](current-workflow.md)记录每环节输入输出、初始化及实现状态；[结果与经验账本](results-and-lessons.md)精选重要实验、完整关键对照及数据来源。本页保留历史导航，以下代码地图和证据表为截至 9/23 的索引，不代替主文档的最新状态。9/24 新增规则学习与课程的真实试跑仍 Pending，尚无新 Skill 确认成绩，见[课程报告](skill-validation-capability-curriculum-20260924.md)。
+
+9/25[同课程机制归纳对照及后续实验](skill-validation-mechanism-study-20260925.md)已完成：30题开发/78题确认、3历史。local比Base多20个通过位置，19来自截断减少、1来自不终止代码消失；mechanism全no_update，没有机制策略优势。修复轨迹已真实进入更新，96个后续实际规则注入位置未观察到干扰，但没有语义增益证据；新增源码修改面板No-Skill满分，再次暴露难度天花板。C逐例候选确认净增9项均涉及交付；G预算诊断显示预算扩大后原始分差从18/156降至8/156。独立回执复核完成，[结果JSON](results/skill-validation-mechanism-20260925.json)保留分母/成本。无Research独有增益或跨域结论。
 
 ## 阅读顺序
 
-1. [最新自然实验复盘](skill-validation-analysis-20260922.md)：完整运行、接口修复、固定产物验证器回放及结论边界；[9/21 发布记录](research-progress-20260921.md)保留当时断点。
+最新工程补充：[9/27可靠求解配置与Linux验收](skill-validation-solver-reliability-20260927.md)；[验收JSON](results/skill-validation-solver-reliability-20260927.json)。它统一预算/格式、单次公开修订和回归保护，不改变9/25的历史效果结论，不改评测体系。
+
+1. [9/23 执行前审阅与验证](skill-validation-admissibility-20260923.md)：执行前审阅、事实研究连接、真实旧产物重新执行、代码 review 和候选新数据；[9/23 反馈修订诊断](skill-validation-feedback-repair-20260923.md)与[9/24 规则更新实现](skill-validation-rule-learning-20260924.md)记录后续内容学习工作；[9/22 自然实验复盘](skill-validation-analysis-20260922.md)保留来源运行。
 2. [新主线接口](skill-validation-mainline.md)：证据、分区、检查、授权与命令。按日期保存的章节反映当时状态，以最新章节为准。
 3. [最小准入闭环](skill-validation-gated-loop-20260920.md)：两道门与工程控制实验。
 4. [自然任务协议](skill-validation-natural-pilot-20260920.md)、[初期结果](skill-validation-natural-results-20260920.md)、[开发诊断](skill-validation-natural-development-diagnostic-20260920.md)：真实实验设计与目前不能继续作效果推断的原因。
-5. [最新机器可读结果摘要](results/skill-validation-20260922.json)：自然实验、固定验证器比较和盲审消融的分母、成本及记录哈希；[9/21 摘要](results/skill-validation-20260921.json)保留历史断点。
+5. [9/23 机器可读摘要](results/skill-validation-admissibility-20260923.json)：执行前审阅、格式与语义弃用、配对方向、Research 工程 smoke 及新数据盘点；[9/22 摘要](results/skill-validation-20260922.json)保留来源实验的分母、成本及记录哈希。
 6. [真实记录 demo](../examples/research_evidence/README.md)：现已公开精选模型产物、实际反馈、父／候选 Skill 和完整单轮逐题评分摘录，可离线重算摘要；不是完整私有缓存或新的效果实验。
 
 ## 核心问题与方法边界
@@ -36,6 +42,8 @@
 | 候选准入与闭环 | `admission.py`、`closed_loop.py` | 获授权验证器＋冻结候选＋独立确认 → 决策、执行前选择与下一轮状态 |
 | 自然实验编排 | `natural_data.py`、`natural_study.py` | 冻结数据、父 Skill、模型与预算 → 对照产物、诊断、条件更新及评测记录 |
 | 固定产物验证器诊断 | `natural_verifier_replay.py`、`natural_documents.py`、`probe_review.py` | 相同真实产物、受限资料、冻结探针 → 检错／误拒／配对方向与盲审消融；旧面板不产生新授权 |
+| 执行前检查审阅与逐项 Research | `admissibility.py`、`probe_fact_research.py` | 固定检查 → 合法性审阅；仅外部事实缺口触发资料研究 → 再审同一检查 → 保留项执行；不改写 expected |
+| 新管线充分性与回放 | `verifier_readiness.py`、`admissibility_study.py` | 真实固定产物 → 独立任务／错误族、误拒、unknown 和 Skill 配对方向；充分性不等于授权 |
 | 面板诊断与历史适配 | `panel.py`、`legacy_panel.py` | 固定产物池／历史记录 → 宿主诊断；历史回放不计入新自然验收 |
 | 运行恢复 | `reused_calls.py`；`scripts/resume_natural_validation.py` | 相同请求与已闭合回执 → 原样重放；新请求限流，断点不重抽失败 |
 
@@ -56,6 +64,7 @@
 | [9/20–21 自然面板历史断点](skill-validation-natural-pilot-20260920.md) | 当时 152 个任务；169/256 开发位置，87 待采集 | 仅为旧断点；后续完整运行见下一行，勿当作当前进度 |
 | [9/22 BigModel 完整运行与复盘](skill-validation-analysis-20260922.md) | 同一 152 题划分；最终 No-Skill 70/80、Current 69/80、固定反馈候选 71/80 和 69/80 | 未证明稳定收益或跨域效果；71/80 的配对差异涉及 unknown，旧 Research 分支并非独立成功对照 |
 | [9/22 固定探针盲审消融](skill-validation-analysis-20260922.md#8-后续消融冻结测试只审阅其可采纳性) | 无 Research 分支误拒 33→0，保留 72/80 个检查及新增检出；Research 分支新增 3 个检出位置来自同一共同错误任务 | 有检查质量改进信号；已消费面板、不同实际成本、无新授权，不是 Skill 泛化收益 |
+| [9/23 执行前审阅与新执行](skill-validation-admissibility-20260923.md) | 81 次 API／682 次隔离调用；无 Research 来源误拒 33→0，Research 来源 10→0 但其中 6 个靠格式弃权消除；676 个保留探针执行一致 | 能减少错误反馈；Candidate 相对 Base 的退化仍 0/2 被识别。两来源 reviewer 都不读资料，不是新 Research 因果实验 |
 
 历史统计来自相应报告；这次重新核对了新主线本地汇总记录，并未重新运行全部历史实验。不同面板、重复次数、交付契约、评分器之间不能直接比较百分点。
 

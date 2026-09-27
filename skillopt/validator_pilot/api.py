@@ -196,11 +196,14 @@ class CachedAPI:
     """
 
     def __init__(self, repo: Path, root: Path, model: str = MODEL, workers: int = 8, *, stream: bool = False,
-                 reasoning_effort: str | None = None, provider: str = "pjlab", proxy: str | None = None):
+                 reasoning_effort: str | None = None, provider: str = "pjlab", proxy: str | None = None,
+                 initial_health_policy: str = "legacy_success_only"):
         if isinstance(workers, bool) or not isinstance(workers, int) or not 1 <= workers <= 12:
             raise ValueError("workers must be an integer in [1, 12]")
         if type(stream) is not bool:
             raise ValueError("stream must be an explicit boolean")
+        if type(initial_health_policy) is not str or initial_health_policy not in {"legacy_success_only", "completed_response_v1"}:
+            raise ValueError("Unknown initial API health policy")
         if reasoning_effort is not None and (
                 not isinstance(reasoning_effort, str) or reasoning_effort not in {"low", "high", "max"}):
             raise ValueError("GLM-5.3 reasoning_effort must be None, low, high, or max")
@@ -224,6 +227,7 @@ class CachedAPI:
         self.provider = provider
         self.stream = stream
         self.reasoning_effort = reasoning_effort
+        self.initial_health_policy = initial_health_policy
         host = PROVIDER_HOST if provider == "pjlab" else BIGMODEL_HOST
         path = "/v1/chat/completions" if provider == "pjlab" else "/api/paas/v4/chat/completions"
         self.service = {
@@ -249,6 +253,10 @@ class CachedAPI:
             self.service["returned_model_rule"] = "exact_requested_model"
         if proxy is not None:
             self.service["proxy"] = proxy
+        # The legacy default retains byte-identical historical request/cache
+        # identities. Only an explicitly new protocol opts into this policy.
+        if initial_health_policy != "legacy_success_only":
+            self.service["initial_health_policy"] = initial_health_policy
         write_immutable_json(self.root / "service.json", self.service)
         self._endpoint = endpoint
         self._client = httpx.Client(
@@ -272,6 +280,22 @@ class CachedAPI:
     def __exit__(self, *_: Any) -> None:
         self.close()
 
+    def _initial_ready(self, record: dict[str, Any]) -> bool:
+        """Task-budget failure is not necessarily a failed API connection.
+
+        This changes only the initial network barrier, never delivery status,
+        retries, output budgets or the persisted terminal response. Wrong
+        models, incomplete streams and malformed responses remain blocking.
+        """
+        if record.get("ok") is True:
+            return True
+        return (self.initial_health_policy == "completed_response_v1"
+                and record.get("status") == 200
+                and record.get("returned_model") == self.model
+                and (not self.stream or record.get("stream_complete") is True)
+                and ((record.get("error_type") == "truncated_content" and record.get("finish_reason") == "length")
+                     or (record.get("error_type") == "empty_content" and record.get("finish_reason") == "stop")))
+
     def call(self, system: str, user: str, kind: str, key: str,
              max_tokens: int = 6000, repeat: int = 0) -> dict[str, Any]:
         if not all(isinstance(item, str) for item in (system, user, kind, key)):
@@ -290,6 +314,10 @@ class CachedAPI:
                 record = json.loads(path.read_text(encoding="utf-8"))
                 if record.get("request_hash") != identifier or record.get("request") != request:
                     raise ValueError("Frozen request cache failed integrity check")
+                if self.initial_health_policy != "legacy_success_only" and self._initial_ready(record):
+                    with self._health_lock:
+                        if self._health == "unchecked":
+                            self._health = "ready"
                 return record
             # All first real callers queue here until the first actual response.
             with self._health_lock:
@@ -298,7 +326,7 @@ class CachedAPI:
                 if self._health == "unchecked":
                     record = self._perform(request, identifier)
                     write_immutable_json(path, record)
-                    self._health = "ready" if record["ok"] else "failed"
+                    self._health = "ready" if self._initial_ready(record) else "failed"
                     return record
             record = self._perform(request, identifier)
             write_immutable_json(path, record)
@@ -400,7 +428,7 @@ class CachedAPI:
         if not items:
             return []
         first = fn(items[0])
-        if isinstance(first, dict) and first.get("ok") is False:
+        if isinstance(first, dict) and first.get("ok") is False and not self._initial_ready(first):
             raise RuntimeError("PJLAB batch health barrier failed; remaining jobs were not submitted")
         if len(items) == 1:
             return [first]

@@ -1,0 +1,36 @@
+{
+  "date": "2026-09-24",
+  "status": "implemented_and_reviewed_real_comparison_pending",
+  "model": "glm-5.3",
+  "execution": "Linux_digest_pinned_Docker_via_SSH",
+  "tests": {"suite": "tests/test_skill_validation_*.py", "passed": 1443, "failed": 0},
+  "history": {"development_tasks": 64, "paired_repeat_positions": 128, "detailed_pairs": 10, "hidden_audit_in_planner": false},
+  "runs": [
+    {"name": "curriculum_20260924_a", "status": "pending_generation", "model_calls": 4, "reported_tokens": 48772, "reason": "Whole JSON code fences rejected by the initial strict parser; records unchanged."},
+    {"name": "curriculum_20260924_b", "status": "pending_goals", "model_calls": 2, "reported_tokens": 46391, "reason": "Historical goal response misplaced reason fields; no manual semantic repair."},
+    {"name": "curriculum_20260924_c", "status": "pending_generation", "model_calls": 4, "reported_tokens": 39770, "reason": "Both planners valid and targeted families generated; generic generator exhausted its 2048-token cap."},
+    {"name": "curriculum_20260924_d", "status": "pending_generation", "model_calls": 4, "reported_tokens": 50271, "reason": "Both task-generation calls truncated at 6144 tokens; raising budget alone did not fix delivery."}
+  ],
+  "experimental_model_calls": 14,
+  "reported_experiment_tokens": 185204,
+  "engineering_qualification": {
+    "hand_selected_numeric_specs": {"passed": 3, "total": 3},
+    "real_model_generated_targeted_specs_from_c": {"passed": 6, "total": 6, "compiled_contract_variants": 18},
+    "reference_role_comparisons_per_spec": 528,
+    "inputs_per_qualification": 176,
+    "not_verifier_calibration": true,
+    "not_skill_effect_evidence": true
+  },
+  "real_skill_updates": 0,
+  "real_confirmation_scores_available": false,
+  "cross_domain_evaluated": false,
+  "deployment_authorized": false,
+  "active_experiments": false,
+  "conclusions": [
+    "History-conditioned capability planning and task-family compilation now have executable interfaces and real model records.",
+    "Generation of six families and their isolated reference/check qualification were demonstrated, not a Skill performance gain.",
+    "Goal-to-adapter representability must be checked; a generic list DSL did not initially cover signed exact-power predicates.",
+    "Structured-output reliability and teacher reasoning budget currently block the fair end-to-end comparison.",
+    "State-contract reversals are not approximate-math Near-Misses or cross-domain transfer."
+  ]
+}

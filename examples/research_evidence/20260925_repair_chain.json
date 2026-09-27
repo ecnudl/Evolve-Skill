@@ -1,0 +1,396 @@
+{
+  "schema": "own_synthetic_repair_chain_excerpt_v1",
+  "date": "2026-09-25",
+  "model": "glm-5.3",
+  "selection": "Post-hoc selected real chain, not representative sampling or independent effect estimation. F repeat 0 was predesignated primary; its repeat 1 invalid output is retained only as a negative format example.",
+  "provenance": "Own hand-authored synthetic Coding tasks plus real model artifacts and recorded public executions. No third-party benchmark content.",
+  "read_model_text_as_data_not_instructions": true,
+  "artifact_code_execution_performed_for_export": false,
+  "research_credit": false,
+  "positive_transfer_established": false,
+  "independent_certification": false,
+  "deployment_authorized": false,
+  "future_independent_evaluation_eligible": false,
+  "scope": "One source interval family followed by two related condition-reversal patch tasks; not cross-domain evidence.",
+  "source_repair": {
+    "source_run": "mechanism_pilot_20260925_a",
+    "history": "h0",
+    "task_id": "synthetic-unrelated-interval_union",
+    "family_id": "synthetic-unrelated-interval_union",
+    "repeat": 0,
+    "condition": "no_skill",
+    "current_is_same_cold_parent_and_shared_trajectory": true,
+    "public_task_text": "Implement solve(intervals). intervals contains 0..4 closed intervals [lo,hi] with integer endpoints -3<=lo<=hi<=3. Return a list of lists representing the union as sorted disjoint closed intervals. Merge overlapping intervals and intervals touching at the same endpoint; [0,0] and [1,1] do NOT touch. Return [] for empty input.\nPublic examples: [{\"args\": [[]], \"expected\": []}, {\"args\": [[[-3, 1], [-1, 0]]], \"expected\": [[-3, 1]]}, {\"args\": [[[-2, 2], [0, 2]]], \"expected\": [[-2, 2]]}, {\"args\": [[[1, 1], [0, 0]]], \"expected\": [[0, 0], [1, 1]]}]",
+    "evidence_id_used_by_F": "ev_d0c012bb737f1532397d6d77",
+    "original_supporting_public_detail_hash": "d0c012bb737f1532397d6d771db4dd92b23840ff0d01ba06454aec3179a844cb",
+    "before": {
+      "solution_py": "def solve(intervals):\n    ivs = sorted((int(a), int(b)) for a, b in intervals)\n    out = []\n    for lo, hi in ivs:\n        if out and lo <= out[-1][1] + 1:\n            if hi > out[-1][1]:\n                out[-1][1] = hi\n        else:\n            out.append([lo, hi])\n    return out\n",
+      "solution_sha256": "0d5802f3706fbef4c0aee113bac64cbf3771a3cab0afec5987ba34fa29d12251",
+      "public_check": {
+        "status": "fail",
+        "original_report_hash": "992d79d1646d84085fb031d9d415d018d07a7625f0b4b6a62897e7e4df31c7a2",
+        "observations": [
+          {
+            "actual": false,
+            "exception": null,
+            "execution_status": "observed",
+            "execution_record_hash": "86dd028f6b52629ed9233e2b06b784535115399294b0528105dd702aeb93f6d9"
+          }
+        ],
+        "scope": "whole_registered_public_wrapper_not_per_component_proof"
+      },
+      "original_artifact_hash": "9fae31e7b22b31c6db9eb99e6752ee46364247afd190c0292ff323bdf9c8a627"
+    },
+    "after": {
+      "solution_py": "def solve(intervals):\n    ivs = sorted((int(a), int(b)) for a, b in intervals)\n    out = []\n    for lo, hi in ivs:\n        if out and lo <= out[-1][1]:\n            if hi > out[-1][1]:\n                out[-1][1] = hi\n        else:\n            out.append([lo, hi])\n    return out\n",
+      "solution_sha256": "0f5917354f318c3a799f1f532c1ea333a474609b9544412ffd96bf76fc84b2ad",
+      "public_check": {
+        "status": "pass",
+        "original_report_hash": "bdd8b89b9d0d18b435d54ac802e0956b445845790ab25ffd6af430fff91701bf",
+        "observations": [
+          {
+            "actual": true,
+            "exception": null,
+            "execution_status": "observed",
+            "execution_record_hash": "7c20f2a80068c33f81b84e83b54449ff813f6483efe193fbd167700ef601aacf"
+          }
+        ],
+        "scope": "whole_registered_public_wrapper_not_per_component_proof"
+      },
+      "original_artifact_hash": "129c9c8dd822012f5e90134fac607355d927f1f45a1f28ed7bebd403c47ceb7e"
+    },
+    "source": {
+      "local_source": "outputs/skill_validation/mechanism_pilot_20260925_a/histories/h0/development/1543f24181ab145047e41a043e8a9caefba83b23463eed04f3430edc516de16a/public_revision/9fae31e7b22b31c6db9eb99e6752ee46364247afd190c0292ff323bdf9c8a627/record.json",
+      "original_revision_hash": "c10c691c7f76607632fddbcd84ae5fe85210671829b74b8097a1e183fec699c7",
+      "original_F_details_hash": "de72522c243137e10cd85edf2f0927bd8ae32c018c982a3932fc5baf502e8c9c"
+    },
+    "interpretation": "Actual answer repair changed only the adjacency comparison. This is not itself Skill evolution or a No-Skill versus Skill causal improvement."
+  },
+  "skill_proposal": {
+    "source_run": "mechanism_repair_feedback_20260925_f",
+    "history": "h0",
+    "arm": "trajectory",
+    "repeat": 0,
+    "status": "candidate",
+    "candidate": {
+      "history_id": "shared-cold-h0",
+      "rules": [
+        {
+          "id": "interval_merge_adjacency_strictness",
+          "mechanism": "closed-interval merge adjacency predicate",
+          "procedure": [
+            "When implementing a union/merge of closed intervals, merge the next interval into the current output interval only when its lo is <= the current interval's hi.",
+            "Do not widen the merge condition to lo <= hi + 1 (adjacent integers) unless the contract explicitly states that adjacent-but-disjoint intervals merge.",
+            "Before finalizing, locate any contract sentence or public example that distinguishes touching at the same endpoint from adjacency (e.g. two single-point intervals one unit apart) and confirm the merge condition reproduces it.",
+            "If the contract's touching definition is ambiguous and no distinguishing example exists, keep the literal endpoint condition and note the ambiguity rather than guessing a wider merge."
+          ],
+          "when": "A public task obligation asks to merge closed intervals into a union of sorted disjoint intervals, with a stated rule about which intervals touch or merge.",
+          "exceptions": [
+            "Contracts that explicitly define adjacent integer endpoints as touching or merging require the opposite comparison; no such condition-reversal case is present in the supplied evidence, so this exception is untested."
+          ],
+          "scope": {
+            "required_obligation_kinds": [
+              "requested_behavior"
+            ],
+            "forbidden_obligation_kinds": []
+          },
+          "evidence_ids": [
+            "ev_d0c012bb737f1532397d6d77"
+          ]
+        }
+      ]
+    },
+    "rule_skill_hash": "8392017e762a8eefa2998954e267359db5358e6cbd34a7599d9a5be8e54e6f47",
+    "edit_reason": "ev_d0c012bb737f1532397d6d77 shows a draft failing public checks with merge condition lo <= out[-1][1] + 1 while the contract says [0,0] and [1,1] do NOT touch; the revised implementation using lo <= out[-1][1] passed the same public check, giving an observed failure and a supplied successful alternative for this exact mechanism. No reversal case (a contract requiring adjacent merging) was supplied, so the exception boundary is stated but untested; no causal No-Skill/Current effect is claimed since both arms share the trajectory.",
+    "semantic_support_automatically_certified": false,
+    "source": {
+      "local_source": "outputs/skill_validation/mechanism_repair_feedback_20260925_f/histories/h0/updates/trajectory-0.json",
+      "original_proposal_hash": "a72c3f96c9e99d4bc683657b834823f1b11a574095b901a1a658c03b63f5d570",
+      "model_request_hash": "e2ace1b45400757aaf8e796bc16dca388fe2cfec08fe458632b597297e3c8a5c",
+      "original_request_record_hash": "cb641df22cd441398cefdc60813512760f1703cde8a9579900f8bb1d2b2443c3"
+    },
+    "limitations": [
+      "The source supports the endpoint comparison, not the universal ambiguity default.",
+      "The machine scope only requires requested_behavior; textual when is not an implemented routing filter.",
+      "No reverse-policy example was supplied to this update; the stated exception was a proposal, not a validated boundary."
+    ]
+  },
+  "reverse_policy_execution": {
+    "source_run": "mechanism_repair_transfer_20260925_a",
+    "history": "h0",
+    "exposure": "raw",
+    "examples": [
+      {
+        "task_id": "curated-patch-interval_policy-preserve",
+        "role": "preserve",
+        "repeat": 0,
+        "condition": "trajectory",
+        "public_task_text": "Modify the existing Python module below and return the full updated solution.py implementing solve(payload). payload is a dictionary with data, optional string tag, and optional boolean use_new_policy.\nExisting behavior: data is a list of closed integer [lo,hi] intervals, lo<=hi. Return their sorted union as lists; merge overlap or equal endpoint, not merely consecutive integer endpoints.\nRequested change: Also merge intervals when the next lower endpoint is exactly previous upper endpoint plus one.\nAdd optional boolean use_new_policy, default false. Apply the requested rule only when true; omitted/false must keep the existing result behavior.\nReturn exactly result and summary. Retain summary={'size':len(payload['data']), 'tag':payload.get('tag','')} computed from the original payload. Do not mutate payload or any nested input. All input data follow the described types; strings use ASCII plus explicitly permitted CSV newlines. Collections contain at most eight entries, integer magnitudes at most nine, nonnegative counts/offsets/limits at most eight.\nSTARTER SOURCE (public, not a solution to the requested change):\ndef _apply(data):\n    result = []\n    for lo, hi in sorted(data):\n        if result and lo <= result[-1][1]: result[-1][1] = max(result[-1][1], hi)\n        else: result.append([lo, hi])\n    return result\n\ndef _summary(payload):\n    return {'size': len(payload['data']), 'tag': payload.get('tag', '')}\n\ndef solve(payload):\n    summary = _summary(payload)\n    result = _apply(payload['data'])\n    return {'result': result, 'summary': summary}\n\nREGISTERED PUBLIC EXAMPLES:\n[{\"expected\": {\"result\": [], \"summary\": {\"size\": 0, \"tag\": \"\"}}, \"input\": {\"data\": []}}, {\"expected\": {\"result\": [], \"summary\": {\"size\": 0, \"tag\": \"\"}}, \"input\": {\"data\": [], \"use_new_policy\": true}}, {\"expected\": {\"result\": [[0, 0], [1, 1]], \"summary\": {\"size\": 2, \"tag\": \"batch-1\"}}, \"input\": {\"data\": [[0, 0], [1, 1]], \"tag\": \"batch-1\", \"use_new_policy\": false}}, {\"expected\": {\"result\": [[0, 1]], \"summary\": {\"size\": 2, \"tag\": \"batch-1\"}}, \"input\": {\"data\": [[0, 0], [1, 1]], \"tag\": \"batch-1\", \"use_new_policy\": true}}]",
+        "task_record_hash": "2e088dfc4f8562a78b63b04dc1851812966b49ddbbbb56137a11d369e89d85eb",
+        "solution_py": "def _apply(data, use_new_policy):\n    result = []\n    for lo, hi in sorted(data):\n        if result:\n            prev = result[-1]\n            merge = lo <= prev[1] or (use_new_policy and lo == prev[1] + 1)\n            if merge:\n                if hi > prev[1]:\n                    prev[1] = hi\n                continue\n        result.append([lo, hi])\n    return result\n\ndef _summary(payload):\n    return {'size': len(payload['data']), 'tag': payload.get('tag', '')}\n\ndef solve(payload):\n    summary = _summary(payload)\n    result = _apply(payload['data'], bool(payload.get('use_new_policy', False)))\n    return {'result': result, 'summary': summary}\n",
+        "solution_sha256": "e189812c63a11a055cd83249a5956f58d3c33f48438a3ee5521deb7f02fb7a87",
+        "revision_decision": "kept",
+        "public_check": {
+          "status": "pass",
+          "original_report_hash": "519ca1ffc92243b51d18506f4073fc0ec71df78033c6bb140e83d37c77a7ebbd",
+          "observations": [
+            {
+              "actual": true,
+              "exception": null,
+              "execution_status": "observed",
+              "execution_record_hash": "7dac7bd431b97a5db85495bf5193b50bbb236e452e62f0caae58674267885be8"
+            }
+          ],
+          "scope": "whole_registered_public_wrapper_not_per_component_proof"
+        },
+        "H_summary": {
+          "status": "pass",
+          "original_audit_hash": "75fe2de989924a658f4c1f45c7733842b2d83a3112521bb1581d31f05210af76",
+          "information_origin": "host_only_audit_aggregate_not_model_visible_evidence"
+        },
+        "source": {
+          "local_source": "outputs/skill_validation/mechanism_repair_transfer_20260925_a/positions/ec0344f9abb3cc161db62dab45aa5e9e503a943070b624241c400d4e7abe4d9b/public_revision/6266ba19ee9f405e800883f26799d3fd25398ed9d3c1fb35e298019ac08a3250/record.json",
+          "original_revision_hash": "38c614c8d6e976fec610407c585249d47a767e634d2278507d796fafdbde24a8",
+          "original_artifact_hash": "6266ba19ee9f405e800883f26799d3fd25398ed9d3c1fb35e298019ac08a3250",
+          "rule_skill_hash": "8392017e762a8eefa2998954e267359db5358e6cbd34a7599d9a5be8e54e6f47",
+          "original_position_record_hash": "9545645ce76d85fc96ba42317c6d85db4d6833cacef03e0dd3603b4314805099"
+        }
+      },
+      {
+        "task_id": "curated-patch-interval_policy-replace",
+        "role": "replace",
+        "repeat": 0,
+        "condition": "trajectory",
+        "public_task_text": "Modify the existing Python module below and return the full updated solution.py implementing solve(payload). payload is a dictionary with data, optional string tag, and optional boolean use_new_policy.\nExisting behavior: data is a list of closed integer [lo,hi] intervals, lo<=hi. Return their sorted union as lists; merge overlap or equal endpoint, not merely consecutive integer endpoints.\nRequested change: Also merge intervals when the next lower endpoint is exactly previous upper endpoint plus one.\nReplace the old result rule with the requested rule unconditionally. The optional legacy use_new_policy field is now ignored, including omitted/false. Do not retain the obsolete result rule.\nReturn exactly result and summary. Retain summary={'size':len(payload['data']), 'tag':payload.get('tag','')} computed from the original payload. Do not mutate payload or any nested input. All input data follow the described types; strings use ASCII plus explicitly permitted CSV newlines. Collections contain at most eight entries, integer magnitudes at most nine, nonnegative counts/offsets/limits at most eight.\nSTARTER SOURCE (public, not a solution to the requested change):\ndef _apply(data):\n    result = []\n    for lo, hi in sorted(data):\n        if result and lo <= result[-1][1]: result[-1][1] = max(result[-1][1], hi)\n        else: result.append([lo, hi])\n    return result\n\ndef _summary(payload):\n    return {'size': len(payload['data']), 'tag': payload.get('tag', '')}\n\ndef solve(payload):\n    summary = _summary(payload)\n    result = _apply(payload['data'])\n    return {'result': result, 'summary': summary}\n\nREGISTERED PUBLIC EXAMPLES:\n[{\"expected\": {\"result\": [], \"summary\": {\"size\": 0, \"tag\": \"\"}}, \"input\": {\"data\": []}}, {\"expected\": {\"result\": [], \"summary\": {\"size\": 0, \"tag\": \"\"}}, \"input\": {\"data\": [], \"use_new_policy\": true}}, {\"expected\": {\"result\": [[0, 1]], \"summary\": {\"size\": 2, \"tag\": \"batch-1\"}}, \"input\": {\"data\": [[0, 0], [1, 1]], \"tag\": \"batch-1\", \"use_new_policy\": false}}, {\"expected\": {\"result\": [[0, 1]], \"summary\": {\"size\": 2, \"tag\": \"batch-1\"}}, \"input\": {\"data\": [[0, 0], [1, 1]], \"tag\": \"batch-1\", \"use_new_policy\": true}}]",
+        "task_record_hash": "e3c7105f77fe74c8be5815a11a1ba7800f7eae36e32d2876d7efdf4556c9c41a",
+        "solution_py": "def _apply(data):\n    result = []\n    for lo, hi in sorted(data):\n        if result and lo <= result[-1][1] + 1:\n            if hi > result[-1][1]:\n                result[-1][1] = hi\n        else:\n            result.append([lo, hi])\n    return result\n\ndef _summary(payload):\n    return {'size': len(payload['data']), 'tag': payload.get('tag', '')}\n\ndef solve(payload):\n    summary = _summary(payload)\n    result = _apply(payload['data'])\n    return {'result': result, 'summary': summary}\n",
+        "solution_sha256": "3ec8b5ed8e48987ba6166e6f81e831e5984c4148be157e5ff847a1c8bfb71c9d",
+        "revision_decision": "kept",
+        "public_check": {
+          "status": "pass",
+          "original_report_hash": "47e75bd95e81991a0f5ec64df79f2c5d8adcb416d8eb59053e98453838f8cbae",
+          "observations": [
+            {
+              "actual": true,
+              "exception": null,
+              "execution_status": "observed",
+              "execution_record_hash": "e6c4e4ef37d1a73aab787de94e86ba65e3c64eb42e1b4439190a280924adeb81"
+            }
+          ],
+          "scope": "whole_registered_public_wrapper_not_per_component_proof"
+        },
+        "H_summary": {
+          "status": "pass",
+          "original_audit_hash": "721671a630d37f54488db34842da65121438a4c4b279c2db98a2b424bbdbdc00",
+          "information_origin": "host_only_audit_aggregate_not_model_visible_evidence"
+        },
+        "source": {
+          "local_source": "outputs/skill_validation/mechanism_repair_transfer_20260925_a/positions/991821f12ac6228e02611182b2fc5f27c079837be43a614768030871b214291e/public_revision/41a5f739352e40cd173484399d20e694653f5a0876e37109c15cea6a71d97dc1/record.json",
+          "original_revision_hash": "bf74615e146ebe1d72a2e8ad31be48b40e0c40b962a220781fb99faeeb19747e",
+          "original_artifact_hash": "41a5f739352e40cd173484399d20e694653f5a0876e37109c15cea6a71d97dc1",
+          "rule_skill_hash": "8392017e762a8eefa2998954e267359db5358e6cbd34a7599d9a5be8e54e6f47",
+          "original_position_record_hash": "8e693912469da999d06132717f5ca5dd45e5cfb1e11d5ab60e86cf1b18e91bb4"
+        }
+      }
+    ],
+    "all_h0_interval_no_skill_and_trajectory_positions": [
+      {
+        "task_id": "curated-patch-interval_policy-preserve",
+        "role": "preserve",
+        "repeat": 0,
+        "condition": "no_skill",
+        "public_initial_status": "pass",
+        "public_final_status": "pass",
+        "H_final_status": "pass",
+        "original_position_record_hash": "364e8fb3b46317be75439ed95d25ddc3d2f46ddfd931b2513d6b1598f4a47986"
+      },
+      {
+        "task_id": "curated-patch-interval_policy-preserve",
+        "role": "preserve",
+        "repeat": 0,
+        "condition": "trajectory",
+        "public_initial_status": "pass",
+        "public_final_status": "pass",
+        "H_final_status": "pass",
+        "original_position_record_hash": "9545645ce76d85fc96ba42317c6d85db4d6833cacef03e0dd3603b4314805099"
+      },
+      {
+        "task_id": "curated-patch-interval_policy-preserve",
+        "role": "preserve",
+        "repeat": 1,
+        "condition": "no_skill",
+        "public_initial_status": "pass",
+        "public_final_status": "pass",
+        "H_final_status": "pass",
+        "original_position_record_hash": "f2915e9828dc458148a4f9074084dd8ac63f033a619c22a360c0c25b4f430cdd"
+      },
+      {
+        "task_id": "curated-patch-interval_policy-preserve",
+        "role": "preserve",
+        "repeat": 1,
+        "condition": "trajectory",
+        "public_initial_status": "pass",
+        "public_final_status": "pass",
+        "H_final_status": "pass",
+        "original_position_record_hash": "0e9c7318f57982cc358ef845485e6878c835fb8ea7fed3e70d93058a1585aee6"
+      },
+      {
+        "task_id": "curated-patch-interval_policy-replace",
+        "role": "replace",
+        "repeat": 0,
+        "condition": "no_skill",
+        "public_initial_status": "pass",
+        "public_final_status": "pass",
+        "H_final_status": "pass",
+        "original_position_record_hash": "dd82b4b79744f34ce5cb3451e2a4ac8f5462d5740eae2db40921b530d3e344eb"
+      },
+      {
+        "task_id": "curated-patch-interval_policy-replace",
+        "role": "replace",
+        "repeat": 0,
+        "condition": "trajectory",
+        "public_initial_status": "pass",
+        "public_final_status": "pass",
+        "H_final_status": "pass",
+        "original_position_record_hash": "8e693912469da999d06132717f5ca5dd45e5cfb1e11d5ab60e86cf1b18e91bb4"
+      },
+      {
+        "task_id": "curated-patch-interval_policy-replace",
+        "role": "replace",
+        "repeat": 1,
+        "condition": "no_skill",
+        "public_initial_status": "pass",
+        "public_final_status": "pass",
+        "H_final_status": "pass",
+        "original_position_record_hash": "995335f9946ac0bff487faea6c96304cf87d1bb29cbe92e6f4f8beba5ec5d900"
+      },
+      {
+        "task_id": "curated-patch-interval_policy-replace",
+        "role": "replace",
+        "repeat": 1,
+        "condition": "trajectory",
+        "public_initial_status": "pass",
+        "public_final_status": "pass",
+        "H_final_status": "pass",
+        "original_position_record_hash": "cb88bf433fd0d18d810f4065598b4d4caae71bfd785284fb623111dd25bf7536"
+      }
+    ],
+    "interpretation": "Both No-Skill and the raw frozen candidate pass all shown h0 positions. The candidate follows the new adjacent-integer policy here; no positive gain or proven rule-following is established."
+  },
+  "retained_negative_examples": {
+    "F_invalid": {
+      "source_run": "mechanism_repair_feedback_20260925_f",
+      "history": "h0",
+      "arm": "summary_only",
+      "repeat": 1,
+      "used_as_primary_candidate": false,
+      "status": "invalid",
+      "finish_reason": "stop",
+      "response": "NO_UPDATE\n\nAll supplied paired details show identical delivered content between arms (ev_07ac98c2241c1b4622f3ec7a, ev_0c7d5057c23d8073448f7276, ev_a88d89d76e58bac7436aad3d, ev_d0c012bb737f1532397d6d77, ev_d588abd55964c5c6f8c9decc) or shared api_failure with no execution (ev_3e50e28c6eeb92dc1047cb1a). The single observed public failure (ev_0c7d5057c23d8073448f7276) is identical in both arms, the wrapper returns only a false boolean without component attribution, and no repair annex, condition-reversal case, or distinct failure mechanism attributable to a procedural lesson is supplied. No bounded, counterexample-constrained rule is justified by this evidence.",
+      "response_sha256": "65add72aa81e8ff227a650104657e6da41d3e7d2e8960bdbe61d672603f6b248",
+      "why_invalid": "The literal NO_UPDATE is followed by explanatory text; the unchanged parser accepts exact NO_UPDATE or schema-valid JSON, not this mixed format. No repair/relabeling performed.",
+      "source": {
+        "local_source": "outputs/skill_validation/mechanism_repair_feedback_20260925_f/histories/h0/updates/summary_only-1.json",
+        "original_proposal_hash": "602b293cbd7cdb528f5e9d40e171d1b99a40f81f3b83a42d23a313dcbeddc97f",
+        "model_request_hash": "bca15592bb9df1fb15f6c6ecb04fdbe03b81c7b902f5b3e1fe026c45a48baade"
+      }
+    },
+    "T_format_unknowns": [
+      {
+        "history": "h0",
+        "task_id": "curated-patch-log_redaction-replace",
+        "repeat": 1,
+        "availability": "parse_failure",
+        "api_response_ok": true,
+        "finish_reason": "stop",
+        "parse_error": "JSONDecodeError: Extra data: line 2 column 1 (char 507)",
+        "response_characters": 520,
+        "response_sha256": "ff37614df4052c4b284839b1d62f4fe986323299270a97009153651faefbd078",
+        "request_hash": "c4c96fc4e99bcf305a6c3256e7e4bfb6a13e991086fb707f5e4b1768b05adafe",
+        "aliased_conditions": [
+          "no_skill",
+          "current",
+          "summary_only"
+        ],
+        "nominal_positions": 3,
+        "public_check_status": "unknown",
+        "H_summary_status": "unknown",
+        "revision_decision": "skipped",
+        "no_executable_artifact_or_semantic_failure_claimed": true,
+        "source": {
+          "local_source": "outputs/skill_validation/mechanism_repair_transfer_20260925_a/positions/e5d2805e3cee68a7fe4ca15837bf81ff1b4ed963ebf43683640277fe16dc4226/public_initial/17384530f79d7640289bd903be746cf967c6e5d375e593b41c8b5bb1ae512893.json",
+          "original_initial_record_hash": "c60ecdb6f3f305ff50fb27ad585f77816990a5e01b77ec59907508995ecf4896",
+          "original_artifact_hash": "17384530f79d7640289bd903be746cf967c6e5d375e593b41c8b5bb1ae512893"
+        }
+      },
+      {
+        "history": "h1",
+        "task_id": "curated-patch-interval_policy-preserve",
+        "repeat": 0,
+        "availability": "parse_failure",
+        "api_response_ok": true,
+        "finish_reason": "stop",
+        "parse_error": "JSONDecodeError: Expecting value: line 1 column 1 (char 0)",
+        "response_characters": 621,
+        "response_sha256": "01b3a37319413bf2303c95e0939bde563ff5941e8b7ca68416f998720d2b0550",
+        "request_hash": "42885da447e60d148222181d6430d62417bfc7717b4c4856abf758f71c97a225",
+        "aliased_conditions": [
+          "no_skill",
+          "current",
+          "summary_only"
+        ],
+        "nominal_positions": 3,
+        "public_check_status": "unknown",
+        "H_summary_status": "unknown",
+        "revision_decision": "skipped",
+        "no_executable_artifact_or_semantic_failure_claimed": true,
+        "source": {
+          "local_source": "outputs/skill_validation/mechanism_repair_transfer_20260925_a/positions/e7f77d78a339ad975a2a5568f247f189ae9d60db68f33974f320201977329e6b/public_initial/8c30506eaf3a018ecfc89afecd3b4444e6eef3313951db163101dd327f5c2930.json",
+          "original_initial_record_hash": "022d138ced7441cebf5b769652c8f5244d9b1ab75e7f7beff28f01c9badcfac4",
+          "original_artifact_hash": "8c30506eaf3a018ecfc89afecd3b4444e6eef3313951db163101dd327f5c2930"
+        }
+      }
+    ]
+  },
+  "full_T_context": {
+    "original_summary_hash": "ccc4f173a7b90bc7b28349bfceb02ba968df06eefb4f0713b13c3bf26583552b",
+    "original_rows_hash": "b0a7014a1aa7ce75db5cfd1a5186dcee023d4b336250855cc0587a867c16c6cb",
+    "nominal_positions": 576,
+    "tasks": 24,
+    "declared_source_families": 12,
+    "histories": 3,
+    "repeats": 2,
+    "H_final_counts": {
+      "raw/current": {
+        "pass": 142,
+        "fail": 0,
+        "unknown": 2
+      },
+      "raw/no_skill": {
+        "pass": 142,
+        "fail": 0,
+        "unknown": 2
+      },
+      "raw/summary_only": {
+        "pass": 142,
+        "fail": 0,
+        "unknown": 2
+      },
+      "raw/trajectory": {
+        "pass": 144,
+        "fail": 0,
+        "unknown": 0
+      }
+    },
+    "H_label_note": "Host audit aggregate, not V input, not infallible semantic truth. Two unique format failures are six cached alias positions; zero confirmed semantic failures in this panel.",
+    "interpretation": "The +2 all-attempt difference per arm is removal of format unknowns, not demonstrated repair of two semantic errors. Shared, consumed development panel with no positive-transfer target."
+  },
+  "excluded": [
+    "Hidden test inputs and expected outcomes",
+    "API credentials, URLs and service configuration",
+    "Provider reasoning or complete raw API caches",
+    "Third-party benchmark task text or reference solutions"
+  ],
+  "integrity_scope": "Published checksums verify excerpt consistency only. Original record hashes identify private source records, not an independently authenticated execution chain.",
+  "excerpt_sha256": "478979bcd1ef136b60788b064bc4a3951f0fde92404c202711783746e33c7bfc"
+}

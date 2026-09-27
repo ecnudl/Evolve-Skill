@@ -12,6 +12,7 @@ import json
 import threading
 from collections import Counter, defaultdict
 from pathlib import Path
+from types import MappingProxyType
 
 from skillopt.coevolution_v5.core import seal, verify
 from skillopt.validator_pilot.api import CachedAPI, digest, write_immutable_json
@@ -55,14 +56,19 @@ class BoundedCalls:
     Equal prompts/repeats share one real response, including updater prompts.
     Different repeat numbers remain independent requests, not independent tasks.
     """
-    def __init__(self, api, root, protocol_hash, limit):
+    def __init__(self, api, root, protocol_hash, limit, *, output_token_limits=None):
+        limits = {} if output_token_limits is None else dict(output_token_limits)
+        require(set(limits) <= {"public-initial", "public-revision"}, "Only public solver caps may be configured")
+        require(all(type(cap) is int and 1 <= cap <= 16000 for cap in limits.values()), "Invalid solver token cap")
+        self.output_token_limits = MappingProxyType(limits)
         self.api, self.root, self.protocol_hash, self.limit = api, checked_path(root), protocol_hash, limit
         self.lock = threading.Lock()
         self.request_locks = {}
 
     def call(self, system, user, kind, *, repeat=0, max_tokens=2048):
         require(len((system + user).encode()) <= 120000, "Pilot prompt byte budget exceeded")
-        require(1 <= max_tokens <= 2048, "Pilot output budget exceeded")
+        require(type(max_tokens) is int and 1 <= max_tokens <= self.output_token_limits.get(kind, 2048),
+                "Pilot output budget exceeded")
         key = digest({"protocol": self.protocol_hash, "system": system, "user": user,
                       "kind": kind, "repeat": repeat, "max_tokens": max_tokens})
         request = {"model": self.api.model, "system": system, "user": user, "kind": kind,

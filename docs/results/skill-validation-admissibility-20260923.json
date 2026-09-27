@@ -1,0 +1,250 @@
+{
+  "schema": "skill-validation-public-summary-v1",
+  "date": "2026-09-23",
+  "report": "../skill-validation-admissibility-20260923.md",
+  "evidence_class": "consumed_natural_panel_diagnostic_and_separate_engineering_fixture",
+  "formal_verifier_authorization": false,
+  "skill_update_calls": 0,
+  "cross_domain_effect_established": false,
+  "natural_study": {
+    "source": "verifier_replay_20260922_b",
+    "output": "outputs/skill_validation/admissibility_study_20260923_a",
+    "result_hash": "a3e73a7a0474f481e5457fdd1b816d927ad94d7e08419c372c55fdaab8587cb0",
+    "protocol_hash": "6c98b232cfa1b6edd33d8070577ab0b1ea7f8c13de0b80a2a41f197ab770556a",
+    "admissibility_version_at_run": "pre-execution-probe-admissibility-v1",
+    "current_code_version": "pre-execution-probe-admissibility-v2",
+    "unique_tasks": 48,
+    "arm_positions": 480,
+    "reviewer_reads_external_sources": false,
+    "gap_research_enabled": false,
+    "candidate_and_artifacts_frozen": true,
+    "gate": "pending_consumed_panel_new_uncalibrated_pipeline",
+    "model": "glm-5.3",
+    "provider": "bigmodel",
+    "model_workers": 6,
+    "execution_workers": 4,
+    "api_calls": 81,
+    "api_failures": 0,
+    "reported_tokens": 102809,
+    "isolated_calls": 682,
+    "rows": [
+      {
+        "check_source": "adaptive_no_research",
+        "panel": "verifier_calibration",
+        "tasks": 24,
+        "positions": 96,
+        "audit_errors": 6,
+        "audit_correct": 90,
+        "audit_unknown": 0,
+        "detected_before": 5,
+        "detected_after": 5,
+        "false_rejected_before": 16,
+        "false_rejected_after": 0,
+        "kept_checks": 36,
+        "total_checks": 42,
+        "review_format_unknown": 2,
+        "prediction_unknown": 0
+      },
+      {
+        "check_source": "adaptive_no_research",
+        "panel": "skill_confirmation",
+        "tasks": 24,
+        "positions": 144,
+        "audit_errors": 14,
+        "audit_correct": 124,
+        "audit_unknown": 6,
+        "detected_before": 2,
+        "detected_after": 2,
+        "false_rejected_before": 17,
+        "false_rejected_after": 0,
+        "kept_checks": 28,
+        "total_checks": 38,
+        "review_format_unknown": 4,
+        "prediction_unknown": 12
+      },
+      {
+        "check_source": "adaptive_research",
+        "panel": "verifier_calibration",
+        "tasks": 24,
+        "positions": 96,
+        "audit_errors": 6,
+        "audit_correct": 90,
+        "audit_unknown": 0,
+        "detected_before": 5,
+        "detected_after": 5,
+        "false_rejected_before": 0,
+        "false_rejected_after": 0,
+        "kept_checks": 40,
+        "total_checks": 40,
+        "review_format_unknown": 0,
+        "prediction_unknown": 0
+      },
+      {
+        "check_source": "adaptive_research",
+        "panel": "skill_confirmation",
+        "tasks": 24,
+        "positions": 144,
+        "audit_errors": 14,
+        "audit_correct": 124,
+        "audit_unknown": 6,
+        "detected_before": 7,
+        "detected_after": 5,
+        "false_rejected_before": 10,
+        "false_rejected_after": 0,
+        "kept_checks": 34,
+        "total_checks": 39,
+        "review_format_unknown": 3,
+        "prediction_unknown": 12
+      }
+    ],
+    "false_rejection_removal": {
+      "adaptive_no_research": {
+        "semantic_abstention": 33,
+        "format_unknown": 0
+      },
+      "adaptive_research": {
+        "semantic_abstention": 4,
+        "format_unknown": 6
+      }
+    },
+    "paired_directions_both_sources": [
+      {
+        "comparison": "current_vs_no_skill",
+        "target": "regression",
+        "audit_positions": 3,
+        "audit_tasks": 3,
+        "fixed_correct": 1,
+        "reviewed_correct": 2
+      },
+      {
+        "comparison": "candidate_vs_no_skill",
+        "target": "regression",
+        "audit_positions": 2,
+        "audit_tasks": 2,
+        "fixed_correct": 0,
+        "reviewed_correct": 0
+      },
+      {
+        "comparison": "candidate_vs_current",
+        "target": "regression",
+        "audit_positions": 4,
+        "audit_tasks": 3,
+        "fixed_correct": 0,
+        "reviewed_correct": 0
+      },
+      {
+        "comparison": "candidate_vs_current",
+        "target": "repair",
+        "audit_positions": 4,
+        "audit_tasks": 4,
+        "fixed_correct": 1,
+        "reviewed_correct": 2
+      }
+    ],
+    "coverage": {
+      "available_arm_artifacts": 468,
+      "artifacts_without_admitted_execution": 98,
+      "absent_arm_artifacts": 12
+    },
+    "execution_consistency": {
+      "probe_pairs": 676,
+      "identical": 676,
+      "changed": 0,
+      "call_pairs": 682,
+      "record_hash": "cbf74c6f927be7592704db42feb2a39e5e7ae6e7e198252abbf8aa8e6e29553c"
+    },
+    "zero_new_call_replay": true,
+    "post_run_bug": {
+      "kind": "integer_float_public_expected_representation_conflict",
+      "task": "HumanEval/97",
+      "affected_checks": 3,
+      "fixed_in_current_code": true,
+      "historical_results_rewritten": false
+    },
+    "limitations": [
+      "Same 48 tasks across source strata, not 96 independent tasks.",
+      "H is a frozen audit with known contract limitations, not absolute truth.",
+      "Not a new causal Research comparison or independent calibration.",
+      "All review branches use public-contract-only inputs, with indirect producer information possibly in probe rationales.",
+      "Current code corrections require a new frozen pipeline; old runs replay with their source snapshots.",
+      "Review-only token counts exclude historical generator costs."
+    ]
+  },
+  "research_fixture_smoke": {
+    "output": "outputs/skill_validation/probe_fact_smoke_20260923_a",
+    "result_hash": "e906a0eb701b28d329d561b478de6884b7d48676b85d1e122d7adf42d49d96af",
+    "question_origin": "caller_declared_fixture_gap",
+    "tasks": 2,
+    "handwritten_artifacts": 4,
+    "api_calls": 4,
+    "api_failures": 0,
+    "reported_tokens": 4057,
+    "isolated_calls": 2,
+    "cases": [
+      {
+        "name": "whitespace_api",
+        "research_status": "invalid",
+        "reason": "plan returned unauthorized extra fragments field",
+        "selected_sources": 0,
+        "review_decision": "keep",
+        "review_basis": "public_contract_only",
+        "executions": [
+          "match",
+          "mismatch"
+        ]
+      },
+      {
+        "name": "literal_space_near_miss",
+        "research_status": "no_update",
+        "selected_sources": 0,
+        "review_decision": "abstain",
+        "executions": [
+          "not_executed",
+          "not_executed"
+        ]
+      }
+    ],
+    "new_external_document_retrievals": 0,
+    "zero_new_call_replay": true,
+    "natural_effect_established": false,
+    "research_incremental_effect_established": false
+  },
+  "public_inventory": {
+    "development_tasks": 64,
+    "explicit_doctest_blocks": 57,
+    "parsable": 54,
+    "unsupported": 3,
+    "parsable_not_selected": 5,
+    "omission_task": "HumanEval/51",
+    "selected_examples_outside_inventory": 69,
+    "record_hash": "e7e6fd0b94d3dd162f4fe60d03f5f341e0e63e98d897fbd2427a0ddb542d9b1b"
+  },
+  "data_preparation": {
+    "source": "MBPP full",
+    "source_tasks": 974,
+    "excluded_sanitized_ids": 427,
+    "static_candidate_tasks": 424,
+    "lexical_families": 394,
+    "formal_partition_created": false,
+    "model_calls": 0,
+    "reference_execution_calls": 0,
+    "complete_freshness_certification": false,
+    "record_hash": "23e9288e6d61b94422b69e57ef64e2bc796adaaf802b637ec488d03ba55fc8be",
+    "zero_download_replay": true,
+    "limitations": [
+      "V11 static compatibility is not full current callable-adapter support.",
+      "Lexical families do not guarantee semantic or pretraining independence.",
+      "Sparse native assertions do not establish a strong H."
+    ]
+  },
+  "testing": {
+    "related_offline_tests_passed": 1419,
+    "diff_check_passed": true,
+    "all_repository_tests_claimed": false
+  },
+  "publication": {
+    "full_raw_cache_included": false,
+    "credentials_included": false,
+    "summary_is_not_independent_reproduction": true
+  }
+}

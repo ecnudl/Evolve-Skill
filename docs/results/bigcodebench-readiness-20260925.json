@@ -1,0 +1,42 @@
+{
+  "version": "bigcodebench-metadata-readiness-20260925-v1",
+  "status": "metadata_pinned_runtime_and_task_compatibility_not_qualified",
+  "dataset": "bigcode/bigcodebench",
+  "revision": "b74c0d0bf70d2c0bc459be537895cca163007f1a",
+  "source": "https://huggingface.co/api/datasets/bigcode/bigcodebench/revision/b74c0d0bf70d2c0bc459be537895cca163007f1a",
+  "license_in_dataset_card": "apache-2.0",
+  "card_declared_splits": {
+    "v0.1.0_hf": 1140,
+    "v0.1.1": 1140,
+    "v0.1.2": 1140,
+    "v0.1.3": 1140,
+    "v0.1.4": 1140
+  },
+  "split_versions_are_not_independent_task_sets": true,
+  "complete_and_instruct_are_not_independent_task_ids": true,
+  "task_shards_downloaded": false,
+  "task_shards_executed": false,
+  "compatible_task_count": null,
+  "arm64_runtime_qualified": false,
+  "new_model_calls": 0,
+  "metadata_only_projection": true,
+  "exposure_notice": {
+    "cause": "An initial official Dataset Viewer lookup automatically displayed canonical-solution and test excerpts to a research subagent. No answer text is republished here.",
+    "exposed_ids": [
+      "BigCodeBench/0", "BigCodeBench/1", "BigCodeBench/2", "BigCodeBench/3",
+      "BigCodeBench/4", "BigCodeBench/5", "BigCodeBench/6", "BigCodeBench/7",
+      "BigCodeBench/8", "BigCodeBench/9", "BigCodeBench/10", "BigCodeBench/11",
+      "BigCodeBench/12", "BigCodeBench/13", "BigCodeBench/14", "BigCodeBench/15",
+      "BigCodeBench/16", "BigCodeBench/17"
+    ],
+    "future_use": "development_or_compatibility_only_not_strict_unseen_confirmation",
+    "future_model_prompt_contamination_claim": "No claim that other public tasks were absent from model pretraining."
+  },
+  "required_before_experiment": [
+    "Pin a dataset split and evaluator/source revision, verify the actual shard rather than summing card versions.",
+    "Separate whitelisted public task/contracts/dependencies from canonical_solution and test; keep hidden fields host-only.",
+    "Qualify native unittest semantics and dependency isolation; JSON-callable compatibility cannot be assumed.",
+    "Assign task families and exposed IDs before viewing method outcomes; do not claim library tasks automatically measure constraint preservation.",
+    "Freeze development and independent confirmation panels before model runs; report compatibility exclusions and full natural-panel results."
+  ]
+}

@@ -16,12 +16,12 @@
   "integrity_scope": "File hashes verify package consistency, not authenticity. Original sealed-record hashes identify unpublished source records; excerpts are not the original records.",
   "files": {
     "NOTICE.md": {
-      "sha256": "07ed4dc0145bc2b574310c122e9960c87466e9ffe2e6d739342a7367e5cab64c",
-      "bytes": 2262
+      "sha256": "d4f1f1180b4b7101bc19613d4ab2798489858df84237f9c398d58e79c8818f29",
+      "bytes": 2620
     },
     "README.md": {
-      "sha256": "4274a18d66bf089080b4882c6730fe97d1d5884cdba96d1291eacac1ecefa59d",
-      "bytes": 6583
+      "sha256": "cc58a824051494d59f036ec8f6e0083e8517847133955a1c8bb9dc3a5517d477",
+      "bytes": 7807
     },
     "cases/audit_disagreement.json": {
       "sha256": "4decffca4d50e63d8c9203bc8c1f9446cfa36b915b5116ed9466890cf5ffd381",
@@ -66,6 +66,16 @@
     "skill_update/validator_attempts.json": {
       "sha256": "cc7f844bd4bd6ce380e1b0dacebd10f34c51b82766aa4eac5d1eaf623ea577df",
       "bytes": 4215
+    },
+    "20260925_repair_chain.json": {
+      "sha256": "0ab26c93eaecaf29ba2b94c68e86e4073038ba711a97003cb1ab7ab0f5f3ffe2",
+      "bytes": 27202
     }
+  },
+  "supplement": {
+    "date": "2026-09-25",
+    "file": "20260925_repair_chain.json",
+    "selection": "One selected own-synthetic answer-repair/Skill-proposal/reverse-policy chain, with matched No-Skill controls and real invalid/unknown examples. Not independent certification, positive-transfer or Research evidence.",
+    "historical_96_position_table_unchanged": true
   }
 }

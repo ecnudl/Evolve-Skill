@@ -40,7 +40,7 @@ def mocked_docker(monkeypatch):
     monkeypatch.setattr(sandbox.platform, "system", lambda: "Linux")
     monkeypatch.setattr(sandbox.shutil, "which", lambda _: "/fixture/bin/docker")
     state = {"commands": [], "observation": observation(), "inspect": {
-        "Id": IMAGE_ID, "RepoDigests": [IMAGE], "Os": "linux", "Volumes": None}}
+        "Id": IMAGE_ID, "RepoDigests": [IMAGE], "Os": "linux", "Config": {"Volumes": None}}}
 
     def command(argv, timeout, limit=sandbox.MAX_OUTPUT_BYTES):
         state["commands"].append((argv, timeout))
@@ -117,9 +117,38 @@ def test_missing_docker_is_unsupported_without_host_fallback(mocked_docker, monk
     assert not mocked_docker["commands"]
 
 
-@pytest.mark.parametrize("update", [{"RepoDigests": []}, {"Os": "windows"}, {"Id": "unknown"}, {"Volumes": {"/secret": {}}}])
+@pytest.mark.parametrize("update", [{"RepoDigests": []}, {"Os": "windows"}, {"Id": "unknown"},
+                                   {"Config": {"Volumes": {"/secret": {}}}}])
 def test_image_identity_and_unrequested_volumes_fail_closed(mocked_docker, update):
     mocked_docker["inspect"].update(update)
+    assert call()["reason"] == "image_inspection_mismatch"
+    assert len(mocked_docker["commands"]) == 1
+
+
+@pytest.mark.parametrize("config", [{}, {"Volumes": None}, {"Volumes": {}}, {"Env": ["PATH=/usr/bin"]}])
+def test_docker29_missing_or_empty_volumes_still_has_no_automatic_mounts(mocked_docker, config):
+    mocked_docker["inspect"]["Config"] = config
+    row = call()
+    assert row["status"] == "observed"
+    assert row["version"] == row["executor_identity"]["version"] == "skill-validation-docker-callable-v2"
+    command = mocked_docker["commands"][0][0]
+    template = command[command.index("--format") + 1]
+    assert '"Config":{{json .Config}}' in template
+    assert ".Config.Volumes" not in template
+
+
+@pytest.mark.parametrize("config", [None, [], "", False, 0,
+    {"Volumes": []}, {"Volumes": ""}, {"Volumes": False}, {"Volumes": 0},
+    {"Volumes": ["/secret"]}, {"Volumes": {"/secret": None}}])
+def test_unknown_config_and_volume_shapes_fail_closed_without_container(mocked_docker, config):
+    mocked_docker["inspect"]["Config"] = config
+    row = call()
+    assert row["status"] == "unsupported" and row["reason"] == "image_inspection_mismatch"
+    assert len(mocked_docker["commands"]) == 1
+
+
+def test_missing_config_object_is_not_assumed_volume_free(mocked_docker):
+    mocked_docker["inspect"].pop("Config")
     assert call()["reason"] == "image_inspection_mismatch"
     assert len(mocked_docker["commands"]) == 1
 

@@ -2,6 +2,8 @@
 
 本目录是 Evolve-Skill 自有实验记录的精选公开摘录，不是完整 benchmark 数据镜像。
 
+- **9/25 修复证据链**：`20260925_repair_chain.json` 来自本仓库自建的区间合并、源码修改与日志处理任务，以及实际模型产物和公开执行记录；不含第三方 benchmark 正文。原始检查仍保留，未修正模型产物来美化展示。H 只导出聚合状态，不发布其隐藏输入、预期值或参考解。
+
 - **HumanEval**：OpenAI，[原项目](https://github.com/openai/human-eval)，[原 MIT 许可](https://github.com/openai/human-eval/blob/master/LICENSE)。部分生成代码的 docstring 复述了原公开题面；保留归属并附 [MIT 许可副本](licenses/HumanEval-MIT.txt)。案例 76、141、145 的独立题意概述为本仓库整理，不替代原任务定义。
 - **HumanEval+ / EvalPlus**：[EvalPlus](https://github.com/evalplus/evalplus)，本次使用 HumanEval+ v0.1.10。该项目[许可为 Apache-2.0，部分执行代码另遵循 MIT](https://github.com/evalplus/evalplus/blob/master/LICENSE)。本包只提供本实验的生成产物、任务 ID 和执行计数，没有再分发增强测试输入、参考源码或 EvalPlus 软件快照。
 - **MBPP / Mostly Basic Python Problems**：Google Research，[数据卡](https://huggingface.co/datasets/google-research-datasets/mbpp)，[项目](https://github.com/google-research/google-research/tree/master/mbpp)，数据卡标注 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)。保留任务 643 的公开反馈片段和生成代码，以说明验证盲区；其余最终表仅为任务 ID 与本实验结果，不含完整题库或隐藏断言。

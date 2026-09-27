@@ -31,7 +31,7 @@ from skillopt.validator_pilot.api import digest
 
 from .models import file_path, require
 
-VERSION = "skill-validation-docker-callable-v1"
+VERSION = "skill-validation-docker-callable-v2"
 PROTOCOL = "skill-validation-python-observer-v1"
 MAX_OUTPUT_BYTES = 65536
 MAX_INPUT_BYTES = 262144
@@ -216,13 +216,20 @@ class DockerExecutor:
         if docker is None:
             return finish("unsupported", "docker_unavailable")
         inspect_format = ('{"Id":{{json .Id}},"RepoDigests":{{json .RepoDigests}},'
-                          '"Os":{{json .Os}},"Volumes":{{json .Config.Volumes}}}')
+                          '"Os":{{json .Os}},"Config":{{json .Config}}}')
         inspected = _bounded_command([docker, "image", "inspect", "--format", inspect_format, self.image], 5)
         if inspected.code != 0 or inspected.unavailable or inspected.timed_out or inspected.overflow:
             return finish("unsupported", "pinned_image_or_daemon_unavailable")
         try:
             info = _strict_json(inspected.stdout)
-            valid = (info["Os"] == "linux" and not info.get("Volumes")
+            # Docker 29 may represent Config as a map without a Volumes key.
+            # Inspect the complete object rather than dereferencing an absent
+            # map key in the Go template; unknown shapes remain unsupported.
+            require(type(info["Config"]) is dict, "Image Config must be an object")
+            volumes = info["Config"].get("Volumes")
+            require(volumes is None or (type(volumes) is dict and not volumes),
+                    "Unexpected automatic volumes or volume metadata type")
+            valid = (info["Os"] == "linux"
                      and (self.image == info["Id"] or self.image in (info.get("RepoDigests") or [])))
             require(valid, "Unexpected image identity, OS or automatic volume")
             require(re.fullmatch(r"sha256:[0-9a-f]{64}", info["Id"]) is not None, "Invalid image ID")
