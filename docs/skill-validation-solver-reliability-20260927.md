@@ -48,6 +48,15 @@ Review还修正了三个集成问题：实际API策略与声明不符时应在�
 
 公开demo的14项文件哈希与96个历史评分位置重算通过；第一阶段离线smoke及规则学习fixture smoke通过，均0模型调用，不是新效果实验。41个本次发布生产Python文件的Ruff `F` 检查通过；扩展到测试文件有12条导入/名称提示（9条为跨文件pytest fixture的导入/参数同名，3条为未使用导入），不宣称全仓库lint通过。文档链接、依赖闭包、JSON和凭证扫描通过。macOS上的`/tmp`是符号链接，离线smoke最初按安全约束拒绝该输出路径，改用其真实`/private/tmp`路径后通过，未放松路径检查。
 
+### 发布后的 CI 兼容性修正
+
+提交`c8137ed`的[GitHub CI](https://github.com/ecnudl/Evolve-Skill/actions/runs/36319170325)为7项成功、2项失败，不能把前述本地验收称为跨版本CI全部通过：
+
+- 文档严格构建产生46条站内链接警告。两份新主文档包含正常的GitHub源码/示例链接，但未列入既有的研究文档排除清单。修正为与其他研究报告一致、在GitHub阅读，并增加站点外部导航；保留`--strict`和文档正文链接。
+- Python 3.12研究测试为2,418 passed、2 failed、2 skipped。两项失败均为深层JSON已返回`invalid`，但测试将异常类型写死为`RecursionError`，该环境实际经严格字段校验返回`ValueError`。测试改为核实安全不变量，并新增两阶段×两异常的4个定向测试；生产解析器、限制、缓存规则和历史结果均不变。
+
+修正后本地相关模块在Python 3.10.20与3.13.12均62/62通过；仅含提交文件的副本通过`mkdocs build --strict`（MkDocs 1.6.1、Material 9.7.7）。这些不是Python 3.12的本地实测；其结果须看修复提交对应的[GitHub CI](https://github.com/ecnudl/Evolve-Skill/actions/workflows/ci.yml)。本次0模型调用，不改变实验结论或进化流程。
+
 ## 使用与存档
 
 ```bash

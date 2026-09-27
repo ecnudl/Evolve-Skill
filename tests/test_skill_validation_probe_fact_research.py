@@ -205,15 +205,51 @@ def test_cached_result_integrity_is_checked_before_replay(tmp_path):
     assert len(calls.requests) == 1
 
 
+def assert_terminal_invalid_and_replay(tmp_path, calls, fetcher, stage):
+    result = run(tmp_path, calls, fetcher)
+    assert verify(result) == result and result["status"] == "invalid"
+    assert result["sources"] == [] and result["selection"] is None
+    assert result["probe"] == probe()
+    assert all(result[field] is False for field in (
+        "hidden_or_artifact_access", "probe_modified", "verified", "semantic_authority", "deployment_authorized"))
+    assert result["plan"] == (None if stage == "plan" else plan())
+    assert len(result["retrieved_sources"]) == (0 if stage == "plan" else 1)
+    assert [item["stage"] for item in result["trace"]] == (["plan"] if stage == "plan" else ["plan", "select"])
+    assert len(calls.requests) == (1 if stage == "plan" else 2)
+    assert len(fetcher.requests) == (0 if stage == "plan" else 1)
+    requests_before, fetches_before = copy.deepcopy(calls.requests), copy.deepcopy(fetcher.requests)
+    assert run(tmp_path, calls, fetcher) == result
+    assert calls.requests == requests_before and fetcher.requests == fetches_before
+    return result
+
+
 @pytest.mark.parametrize("stage", ["plan", "selection"])
 def test_deeply_nested_model_json_is_terminal_invalid_not_a_crash_or_retry(tmp_path, stage):
     nested = '{"nested":' + '[' * 2000 + '0' + ']' * 2000 + '}'
     responses = [nested] if stage == "plan" else [plan(), nested]
-    calls, fetcher = Calls(responses), Fetcher()
-    result = run(tmp_path, calls, fetcher)
-    assert result["status"] == "invalid" and result["failure_type"] == "RecursionError"
-    assert run(tmp_path, calls, fetcher) == result
-    assert len(calls.requests) == len(responses)
+    # CPython versions may reject during decoding or decode successfully and
+    # reject the wrong schema. The observable safety contract is the same.
+    assert_terminal_invalid_and_replay(tmp_path, Calls(responses), Fetcher(), stage)
+
+
+@pytest.mark.parametrize("stage", ["plan", "selection"])
+@pytest.mark.parametrize("error_type", [RecursionError, ValueError])
+def test_decode_failures_are_terminal_invalid_at_each_stage(tmp_path, monkeypatch, stage, error_type):
+    sentinel = "fixture-targeted-decoder-failure"
+    original_decode = research._decode
+    injected = []
+
+    def decode(raw):
+        if raw == sentinel:
+            injected.append(error_type)
+            raise error_type("fixture parser rejection")
+        return original_decode(raw)
+
+    monkeypatch.setattr(research, "_decode", decode)
+    responses = [sentinel] if stage == "plan" else [plan(), sentinel]
+    result = assert_terminal_invalid_and_replay(tmp_path, Calls(responses), Fetcher(), stage)
+    assert result["failure_type"] == error_type.__name__
+    assert injected == [error_type]  # The valid plan and cached replay use the real decoder.
 
 
 @pytest.mark.parametrize("corruption", ["probe", "question", "verified", "semantic_authority", "status", "sources",
