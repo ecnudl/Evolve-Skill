@@ -1,0 +1,263 @@
+{
+  "version": "gepa-long-learning-safe-summary-v1",
+  "status": "completed",
+  "reason": "official_gepa_development_selection",
+  "date": "2026-10-01",
+  "evidence_kind": "natural_development_learning",
+  "run_root": "/root/continual-baselines-long-20261001-study/learning/gepa",
+  "frozen_source_root": "/root/continual-baselines-long-20261001-source",
+  "full_result_hash": "e2cb8b16e038f06b0b702b21cb4e7aed2e9ea6575affbb10dfbb99c23e1ae459",
+  "identity_hash": "3c23d837c8a932b42b8b918a1a17924a482d49bf7132e59f819954df98594ff2",
+  "manifest_hash": "81e49bf1933706b3c7b6dad2c9d81f44d4bdb66ae466344a042fa661519e36ae",
+  "source_identity_hash": "706bd3cc9125ccd77cef2b257ff9cb9a56c56133f62b12ae780c4303045746ad",
+  "source_file_count": 32,
+  "official_commit": "d771eb21b5dd3228bc3f567293d2ccfc423fc900",
+  "official_source_hash": "352437d543bd2084ce50857cc5a0001433901f8a8425c285419cbd95324385f6",
+  "data": {
+    "benchmark": "bigcodebench",
+    "partition": "development",
+    "panel_hash": "d0f8fb0bdbe273429fbf22dcba127c8c1ba22d9ea05d1748528b4678c71974ad",
+    "authorized_tasks": 129,
+    "authorized_roles": {
+      "train": 65,
+      "selection": 64
+    },
+    "train_dataset_family_ids": 64,
+    "selection_dataset_family_ids": 64,
+    "role_family_overlap": 0,
+    "family_definition": "Frozen importer family identifiers, not a new semantic independence audit",
+    "semantic_family_independence_certified": false
+  },
+  "model": {
+    "provider": "bigmodel",
+    "name": "glm-5.3",
+    "max_tokens": 65536,
+    "reasoning_effort": "low",
+    "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+    "transport": {
+      "stream": true,
+      "read_timeout_seconds": 300,
+      "stream_wall_seconds": 1800,
+      "initial_health_policy": "completed_response_v1"
+    }
+  },
+  "configured_budget": {
+    "max_metric_calls": 512,
+    "max_reflection_calls": 32,
+    "max_api_calls": 600,
+    "max_reported_tokens": 2000000,
+    "max_iterations": 2,
+    "minibatch_size": 8,
+    "solver_max_tokens": 65536,
+    "reflection_max_tokens": 4096
+  },
+  "iterations": {
+    "actual_loop_iterations": 2,
+    "actual_iterations_certified": true,
+    "trace_sha256": "60b22fbc72009fcfce53f00a27c70bc5b2717759380d0a42e746f54fc79c7fae",
+    "trace_semantics": "JSON checkpointed loop entries; no pickle loaded",
+    "latest_checkpointed_iteration_indices_zero_based": [
+      0,
+      1
+    ]
+  },
+  "official_selection": {
+    "best_idx": 0,
+    "candidate_count": 2,
+    "candidates": [
+      {
+        "index": 0,
+        "candidate_hash": "a3e455a211c31f74e92f2ca6cf061251dc5806ba12f0109d1a840e2d68b6d2d7",
+        "skill_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "skill_utf8_bytes": 0,
+        "empty_skill": true,
+        "selection_score": 0.515625,
+        "selection_positions": 64,
+        "selection_pairs_vs_empty_parent": {
+          "win": 0,
+          "loss": 0,
+          "tie": 64
+        }
+      },
+      {
+        "index": 1,
+        "candidate_hash": "a5bd357bd25d1d0f71991d81e6af57155325dbe03e33c81bae1dabc9cbc78422",
+        "skill_sha256": "a79cf7ae3a4cb40a96fe0da459a80b8b49d772f3aef42efd5c405593196f3d0c",
+        "skill_utf8_bytes": 4337,
+        "empty_skill": false,
+        "selection_score": 0.4375,
+        "selection_positions": 64,
+        "selection_pairs_vs_empty_parent": {
+          "win": 4,
+          "loss": 9,
+          "tie": 51
+        }
+      }
+    ],
+    "parents": [
+      [
+        null
+      ],
+      [
+        0
+      ]
+    ],
+    "total_metric_calls": 160,
+    "num_full_val_evals": 2,
+    "discovery_eval_counts": [
+      0,
+      96
+    ]
+  },
+  "evaluation_roster_by_candidate": [
+    {
+      "candidate_hash": "a3e455a211c31f74e92f2ca6cf061251dc5806ba12f0109d1a840e2d68b6d2d7",
+      "train": {
+        "positions": 16,
+        "tasks": 16,
+        "dataset_family_ids": 16,
+        "statuses": {
+          "pass": 10,
+          "fail": 6
+        },
+        "score_sum": 10
+      },
+      "selection": {
+        "positions": 64,
+        "tasks": 64,
+        "dataset_family_ids": 64,
+        "statuses": {
+          "pass": 33,
+          "fail": 31
+        },
+        "score_sum": 33
+      }
+    },
+    {
+      "candidate_hash": "a5bd357bd25d1d0f71991d81e6af57155325dbe03e33c81bae1dabc9cbc78422",
+      "train": {
+        "positions": 8,
+        "tasks": 8,
+        "dataset_family_ids": 8,
+        "statuses": {
+          "pass": 5,
+          "fail": 3
+        },
+        "score_sum": 5
+      },
+      "selection": {
+        "positions": 64,
+        "tasks": 64,
+        "dataset_family_ids": 64,
+        "statuses": {
+          "fail": 36,
+          "pass": 28
+        },
+        "score_sum": 28
+      }
+    },
+    {
+      "candidate_hash": "b028c60ee2ac509b9f10e92ef996092886cfc353ac0ac1e1a45d903c2a1d518f",
+      "train": {
+        "positions": 8,
+        "tasks": 8,
+        "dataset_family_ids": 8,
+        "statuses": {
+          "fail": 3,
+          "pass": 5
+        },
+        "score_sum": 5
+      },
+      "selection": {
+        "positions": 0,
+        "tasks": 0,
+        "dataset_family_ids": 0,
+        "statuses": {},
+        "score_sum": 0
+      }
+    }
+  ],
+  "evaluations": {
+    "closed": 160,
+    "statuses": {
+      "pass": 81,
+      "fail": 79
+    },
+    "unknown_reasons": {},
+    "unknown_diagnostics": [],
+    "unique_tasks": 80
+  },
+  "costs": {
+    "logical_calls": 162,
+    "terminal_calls": 162,
+    "unclosed_calls": 0,
+    "http_attempts": 162,
+    "http_attempts_known_subtotal": 162,
+    "http_attempts_total": 162,
+    "http_attempts_semantics": "known_subtotal_total_unknown_if_unclosed",
+    "reported_tokens_known_subtotal": 145551,
+    "missing_usage_calls": 0,
+    "usage_complete": true,
+    "retry_inclusive_usage_known": true,
+    "reflection_calls": 2,
+    "solver_calls": 160
+  },
+  "finish_reasons": {
+    "stop": 162
+  },
+  "returned_models": {
+    "exact_requested_model": 162
+  },
+  "native_execution_costs": {
+    "container_calls": 160,
+    "wall_seconds_including_cleanup": 1427.0556210000007,
+    "receipts_with_execution_costs": 160,
+    "scope": "unique closed development evaluation receipts, not configured slots"
+  },
+  "max_completion_tokens_by_role": {
+    "solver": 732,
+    "reflection": 1031
+  },
+  "parent_skill_empty": true,
+  "selected_skill_nonempty": false,
+  "selected_skill_utf8_bytes": 0,
+  "selected_skill_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "started_at_utc": "2026-09-30T18:37:57.979887+00:00",
+  "completed_at_utc": "2026-09-30T19:10:57.840242+00:00",
+  "wall_seconds": 1979.8603551387787,
+  "audit": {
+    "source_hashes_and_official_pin_verified": true,
+    "manifest_panel_and_runtime_verified": true,
+    "call_intents_receipts_and_caches_verified": true,
+    "result_costs_and_artifacts_verified": true,
+    "selection_scores_verified_from_frozen_evaluations": true,
+    "optimizer_pickle_loaded": false,
+    "new_model_calls": 0,
+    "new_native_evaluations": 0,
+    "old_results_modified": false
+  },
+  "limitations": [
+    "Development optimization/selection, not independent final evidence.",
+    "Empty parent was selected; no S1/cross-domain evaluation was launched, and this is not evidence of learned generalization.",
+    "Solver/evaluation counts are reported separately from configured task authorization and official metric-call accounting.",
+    "usage_complete and retry_inclusive_usage_known are separate; no monetary price estimate."
+  ],
+  "deployment_authorized": false,
+  "scope_expansion_authorized": false,
+  "selection_outcome": "Official optimizer retained the empty parent; no new S1 samples are authorized or needed for this unchanged selected Skill.",
+  "new_s1_evaluation_performed": false,
+  "generated_proposals": 2,
+  "qualitative_review": {
+    "scope": "Static private reading of the nonselected 4337-byte full-selection candidate; raw Skill and task identifiers are not exported.",
+    "useful_mechanisms": [
+      "Preserve declared interfaces and return contracts",
+      "Avoid invented restrictions and unnecessary data transformations",
+      "Minimize unspecified side effects and obey explicit reproducibility requirements"
+    ],
+    "applicability_and_exceptions": "Coding-specific task-format heading and local 'unless specified' exceptions exist, but no executable cross-domain applicability predicate, abstention, or fallback policy is learned.",
+    "transfer_risk": "The instruction demands Python function code and imposes library/task-pattern guidance; unconditional application could conflict with short-answer QA formatting.",
+    "overfitting_hypothesis": "General contract-preservation rules are mixed with concrete library defaults and task-pattern details extracted from a small training sample.",
+    "causal_status": "Plausible static risks, not proof of the causes of the nine selection losses; single-run paired differences remain subject to solver randomness."
+  },
+  "record_hash": "d13496ca7397536e7910889ace8dbc1b08d379e70b20ef91b00257b1ce93af8c"
+}

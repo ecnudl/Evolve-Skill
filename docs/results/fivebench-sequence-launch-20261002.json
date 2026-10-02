@@ -1,0 +1,49 @@
+{
+  "evidence_kind": "real_model_run_started_not_completed_method_effect",
+  "captured_at": "2026-10-02T18:00:34.257079+08:00",
+  "launched_at": "2026-10-02T17:51:29+08:00",
+  "protocol_hash": "773c2efad28a31b70c3c45d6837e88b155f9790e40a64aff5c6b4624fbcf2d7d",
+  "source_root": "/root/continual-sequential-20261002-c-source",
+  "study_root": "/root/continual-sequential-20261002-c-study",
+  "methods_in_queue_order": ["skillopt", "gepa"],
+  "domain_order": ["bigcodebench", "spreadsheetbench", "searchqa", "korbench", "alfworld"],
+  "model": "glm-5.3",
+  "provider": "BIGMODEL",
+  "reasoning_effort": "low",
+  "solver_max_tokens": 65536,
+  "reflection_max_tokens": 4096,
+  "learning_workers": 1,
+  "evaluation_workers": 10,
+  "independent_final": false,
+  "data_provenance": "historically exposed development panels; outcome-blind task-family role split; learning and all-domain evaluation overlap is disclosed",
+  "s1_skillopt_operational_snapshot": {
+    "status": "running",
+    "call_intents": 67,
+    "closed_calls": 66,
+    "in_flight_calls": 1,
+    "evaluated_training_or_selection_positions": 66,
+    "score_counts": {"pass": 42, "fail": 24, "unknown": 0},
+    "returned_model_glm_5_3": 66,
+    "finish_reason_stop": 66,
+    "reported_tokens_known_subtotal": 25614,
+    "terminal_present": false,
+    "is_method_final_score": false,
+    "snapshot_atomic": false
+  },
+  "independently_checked_first_call": {
+    "status_code": 200,
+    "finish_reason": "stop",
+    "stream_complete": true,
+    "http_attempt_count": 1,
+    "reported_tokens": 260,
+    "receipt_hash": "306aecc1c33f399204bb2be8f458ef1bc2cad3169ee326e67a36d8c7d804a748",
+    "request_hash": "73632cf39b8cb0ff208aa05cd92dca762ebf7cd23621729764349c9cac79d2fa"
+  },
+  "claim_limits": [
+    "GEPA is queued, not started at this snapshot.",
+    "Five-stage learning and the learned-checkpoint matrix are not complete.",
+    "Unchanged policies reference existing matched evaluations; references are not new independent runs.",
+    "Resource-safe Pending carries the parent as a declared attempt, not completed learning.",
+    "No deployment authority or independent generalization claim is granted."
+  ]
+}

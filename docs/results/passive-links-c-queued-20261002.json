@@ -1,0 +1,45 @@
+{
+  "evidence_kind": "engineering_implementation_and_offline_tests_not_qualified_real_replay",
+  "status": "waiting_for_completed_baseline_handoff",
+  "source_root": "/root/continual-unknown-passive-20261002-c-source",
+  "planned_qualification_root": "/root/continual-unknown-passive-20261002-c-q",
+  "planned_replay_root": "/root/continual-unknown-passive-20261002-c-replay",
+  "tmux_session": "passive-links-20261002-c",
+  "log": "/root/continual-unknown-passive-20261002-c.log",
+  "version": "spreadsheet-independent-lo-passive-links-v9c",
+  "cli_version": "passive-hyperlinks-frozen-h-replay-v3",
+  "source_sha256": {
+    "sheet_passive_links.py": "65038a5ab6a6d1fd966b8f6fc07e1c0aaa89463672c7d380d0746d745b239996",
+    "replay_sheet_passive_links.py": "47554425eabd2ccec1db02d2a6ad9b7cdfe829f12e7f98a7edd48bca7848f57f"
+  },
+  "repair_scope": "Detached comparison view restores original hyperlink display only when it exactly equalled the original HTTPS href and native display exactly equals the unchanged explicit literal cell string. No original workbook, execution input, formula, value, href or visible text is changed.",
+  "offline_tests": {
+    "local_related": 236,
+    "independent_review_targeted": 101,
+    "linux_related": 159,
+    "counts_are_overlapping_not_additive": true
+  },
+  "required_real_qualification": {
+    "engine_controls": 43,
+    "original_score_controls": 18,
+    "link_score_controls": 4,
+    "old_41_engine_fixture_bytes_and_expectations_unchanged": true,
+    "new_display_controls_require_exactly_one_actual_restoration": true,
+    "completed": false
+  },
+  "real_prior_outputs_read_only_structure_check": {
+    "task_id": "192-22",
+    "repeats": [0, 1],
+    "display_restorations_each": 3,
+    "old_full_content_guard_passed_each": true,
+    "new_native_execution": false,
+    "new_score_generated": false
+  },
+  "wait_policy": "Wait up to 24h for both finite baseline methods to terminate. Revalidate all ten completed stage records without new model or native execution. Fail closed if evidence or cleanup is incomplete.",
+  "known_preservation_required_for_coverage_claim": 134,
+  "full_replay_positions_if_qualified": 160,
+  "new_unknown_recovery_claimed": false,
+  "historical_scores_replaced": false,
+  "learning_scorer_changed": false,
+  "model_api_calls": 0
+}

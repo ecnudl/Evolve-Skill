@@ -1,0 +1,60 @@
+{
+  "version": "full-panel-delivery-recovery-v1",
+  "protocol_hash": "d94d73d8ce76428e5ec5954b68d6dcaa8ecc0e8404a134682a4532e510f06987",
+  "status": "completed",
+  "blocked_reason": null,
+  "original_positions": 1000,
+  "selected": 10,
+  "completed": 10,
+  "blocked": 0,
+  "counts": {
+    "pass": 7,
+    "fail": 2,
+    "unknown": 1
+  },
+  "new_costs": {
+    "logical_calls": 10,
+    "http_attempts": 10,
+    "reported_tokens": 575051,
+    "usage_complete": true,
+    "unclosed_calls": 0,
+    "retry_inclusive_usage_known": true
+  },
+  "old_selected_costs": {
+    "logical_calls": 10,
+    "http_attempts": 10,
+    "reported_tokens": 661414,
+    "usage_complete": true,
+    "unclosed_calls": 0,
+    "retry_inclusive_usage_known": true
+  },
+  "known_reported_tokens": 575051,
+  "usage_missing_calls": 0,
+  "native_execution": {
+    "reported_container_calls": 9,
+    "reported_wall_seconds": 14.740329999999998,
+    "cleanup_confirmed_results": 9,
+    "cleanup_unconfirmed_results": 0,
+    "container_results_without_explicit_cleanup_flag": 0,
+    "available_predictions_without_execution_cost_record": 0
+  },
+  "result_hashes": {
+    "76e8184bef47e8c6ad99c23b3f6640d2ce0797ddbca931801376f6bca2ca1755": "31cd6476161aaeada8ee479831296d196bc3abe6ef2db8882f817c10d77ac1d6",
+    "7f67d21d4a3284abe501e800f759e89908eb01d5783294f7c32e139aba637d07": "b9ca61d437c81e0c5e1b0b82e278439efb1a9544ce8b2cfedd8094e668384f69",
+    "2af2a7e19b8e298df8791ae29b4a6fbfd018843480b5ca70d01ed93429b70b49": "ab233d7c8b8ef327aa5785dee759f05007353a692dd16aa1c5492141589c4db7",
+    "4b115a5d62fe8e0ad50874a478224f04256a80b5191478a7e895c1200f3972f7": "05ed4910b1add851b5a413c9afe29325d9a3203919084a964839a507f007c0d9",
+    "a66372ba16fe2e72de5fc246aad783e148335f2ec90a41306d160d6920f950ac": "5038396d8bfa3aff8faf16be3b9319be3b07ba0231f6f6c203d8510c6977a9cb",
+    "645ed868adadd8ea67a160819a0928b24ad4f05f130257ce7a7432f8d9329c4a": "edb4e3b41f49087c5673cae92bb9eb9c248ccf1dde9fe771af213020695d7c2e",
+    "c6af4da34635300dbd16ed7d8fc9f0613fd4f742d56f6ad363876c72790d4c11": "d7c953a3aba30424dd80e78bf10c36683797b2b7a62b7f6b2766035e9d67cf06",
+    "8fd13cb4248c93bd1ac9cd89235b41f14b77be1f30d0102e27a8460fa5e33b7d": "c4bf04443f366c48d33c3d857b6af1c71ff499ea70613bd9455d8401f10cf1eb",
+    "b521079136a1cf8e44b96f6c8c89aa64fd29cea21ad73622832c793ec441df38": "38a85c2a512b1bc9ee23e79650ead0c21e0d0d7ef319864394eb053f0746401f",
+    "6e444a8994234294bd03dad8158f000fbd8ccb05daaea60c8b61c5e27908c390": "bbd0f798aeaf33a07d0bb5d18916832bd5df8f7008d032372d077a8523f27514"
+  },
+  "evidence_kind": "selected_closed_delivery_retry_diagnostic",
+  "diagnostic_only": true,
+  "old_scores_replaced": false,
+  "feedback_allowed": false,
+  "whole_benchmark_accuracy_claimed": false,
+  "causal_token_effect_claimed": false,
+  "record_hash": "1d8977d693617f3ffa94e00b201660ce65efff2c2866dafde5a90c50139f372e"
+}

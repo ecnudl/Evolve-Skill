@@ -1,0 +1,222 @@
+{
+  "version": "spreadsheet-v6-independent-replay-v1",
+  "status": "rejected",
+  "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+  "engine": {
+    "version": "spreadsheet-independent-lo-recalculation-v6",
+    "image_id": "sha256:f7f6f598c4f0b16ea514614c22325e8b3a2d5d0317f423757dcdfa1bb2c4d790",
+    "timeout_seconds": 120,
+    "memory_mb": 1024,
+    "cpus": 1,
+    "pids_limit": 128,
+    "network": "none",
+    "root_read_only": true,
+    "source_read_only": true,
+    "user": "65534:65534",
+    "macros": "never_execute",
+    "links": "no_update",
+    "sources": {
+      "/root/continual-unknown-sheet-v6-20261001-source/skillopt/continual_eval/sheet_recalc.py": "ae9bd26cda8e220240538cde96713c6809bab6286301993f88505b6e02cae35b",
+      "/root/continual-unknown-sheet-v6-20261001-source/skillopt/continual_eval/sheet_recalc_worker.py": "e357b987205ed597e500c6f0866979dd9e3d58ea681ef851aa66dfa942cba231",
+      "/root/continual-unknown-sheet-v6-20261001-source/skillopt/continual_eval/spreadsheet_compat.py": "4b81345fa88eed55172ffb5d3f801804dff0067fbfe0e45d1fa4985b39370a47",
+      "/root/continual-unknown-sheet-v6-20261001-source/skillopt/envs/spreadsheetbench/evaluator.py": "405c4204688593eb71b4603c8483a5b2b20927f15e0dc0c4878aa4636a0cfb6c",
+      "/root/continual-unknown-sheet-v6-20261001-source/skillopt/skill_validation/sandbox.py": "8a88a3a5664ac305d8ae499955462d202304dd38ba7b27f105bb4728da6502ce",
+      "/root/continual-unknown-sheet-v6-20261001-source/skillopt/continual_eval/sheet_recalc_v6.py": "af7fa025c233833e891b5bfff5216afece85f57d9cf80929c02b6584e88e753e"
+    },
+    "comparison_view": "format30-exact-numeric-comparison-view-v1"
+  },
+  "controls": [
+    {
+      "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+      "name": "correct",
+      "qualified": true,
+      "receipt_hash": "6624032891ac752b1e8a8db32d80fdb705b1c079d2f303fe6423f104abaaa21e",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "121ff3e87e789981e4305e2f6662509881d9bf05d5a585cd6bd3ee90b16319b8"
+    },
+    {
+      "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+      "name": "wrong",
+      "qualified": true,
+      "receipt_hash": "d07aa324c9d10e50fbb64dd4a971718b09640e4f92a78290cfa4783b04d9aeb0",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "ba4308896bb1a7ada39914e9a546eff1e05bd74be1e6ab9e5843717fc8b7b03b"
+    },
+    {
+      "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+      "name": "empty_string",
+      "qualified": true,
+      "receipt_hash": "a3cdfb074c8b19ee339f2ffc9692f9704213174b94d767f6afc6ca02d3eb572a",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "b189626758c700af3206209747c3c5e7e48b6f9accc5387313069caa70967b3e"
+    },
+    {
+      "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+      "name": "retained_dependency",
+      "qualified": true,
+      "receipt_hash": "cce12b505f812119cc24d3d543976ebd245475f0ce2c84bc47c966ca69479a0e",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "54ab6e2358bd8b680995d538b7fa31f5141f89035b68fce09bb927f4e59a8d8f"
+    },
+    {
+      "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+      "name": "unsupported",
+      "qualified": true,
+      "receipt_hash": "f3b559f4963d3f372cb63b3fcd4daa7c666cec0a023fd45fa5dfe3c5bd7f9270",
+      "cleanup_confirmed": true,
+      "reason": "recalculation_changed_formula",
+      "record_hash": "3d2a042bc864eb1ab9cc7da79edfb5be17fca33399bedf4a2eaa899e81cf81a5"
+    },
+    {
+      "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+      "name": "array_correct",
+      "qualified": true,
+      "receipt_hash": "765a4cb67a6b811efb78ddc76c48165dc45e90fdfad36ad917f72f987d075559",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "79894344182f0a89a6e345c8a828ece8b9ac4d64e4f40a2305c1c5a8b68022a8"
+    },
+    {
+      "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+      "name": "array_wrong",
+      "qualified": true,
+      "receipt_hash": "a2f4f8608f3258760371124ca421bd22029364120970df2ceb7678be83cd99dd",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "e27a1566f03723df46c81af4874ecba6d1616d3c3160931b1cb9f9daaec19ec9"
+    },
+    {
+      "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+      "name": "numeric_roundtrip",
+      "qualified": true,
+      "receipt_hash": "428831a1f868b7acdd84357f322d71a7fc12779263c4796d26ad9c5177b7bc1b",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "a677efaa8374d7cb015a0c6024556c8994d19eec76c56a7b3f39756729cd2627"
+    },
+    {
+      "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+      "name": "numeric_wrong",
+      "qualified": true,
+      "receipt_hash": "bbe055f80006eae42e2381f420d8ef715ed25a0b292231df470be51a5fff4484",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "975db07670db85ac1d69aa32301b365e801b5b3deaa0d98d2c8f3964606b2eed"
+    },
+    {
+      "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+      "name": "boolean_false",
+      "qualified": true,
+      "receipt_hash": "a43d428b83d8cf248085b759d56bdb21c436ec8bea644c30d28bc3a064ecb5d9",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "89a1897af5e0ad79d357b32c4365c34e50c4e3fd5a4025697862931bc33f7eb6"
+    },
+    {
+      "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+      "name": "boolean_true",
+      "qualified": true,
+      "receipt_hash": "8c69808682f04b7387bc50c5febced0b078caf043a9299fb4de1e2004597abab",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "3811a6143b7c1e46987a2f74b19f193de6c32c349e7d15dd80ab5f045c89c9da"
+    },
+    {
+      "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+      "name": "boolean_wrong",
+      "qualified": true,
+      "receipt_hash": "f6ae0f8eb841bfcbf1b521334845791e2670e49b86207c02427a93a79dbe74bf",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "98e02f1c1577c641630835782359ae9b7eafa22ff7baf7beb09e41db0ff0b8a6"
+    },
+    {
+      "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+      "name": "boolean_string_wrong",
+      "qualified": true,
+      "receipt_hash": "c3d09cd7492448facd7b2429e40ace8271321138fbd68d35c768f2735ac9775b",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "77545a612ea03281327835bd18e771df78467c29ccca046f7a939e844095b0b7"
+    },
+    {
+      "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+      "name": "utf16le_metadata",
+      "qualified": true,
+      "receipt_hash": "8d0b77ce5a645413547217bb587db9760b35e853cb2f90898fc738832b5e0a7d",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "5ad0c56331a334dbcfd4e0d98c8006f89017dc0a6368160305a01b05a37e8bcf"
+    },
+    {
+      "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+      "name": "utf16be_metadata",
+      "qualified": true,
+      "receipt_hash": "2bc523d8873827a1b7a0cec44f36bd6274bd961eb2475a86a885b7abffab3399",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "4c10f696a8a73e24777bc99efbf7da95034810949b5e7d75247d2ead0218d9e4"
+    },
+    {
+      "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+      "name": "utf16_external",
+      "qualified": true,
+      "receipt_hash": "6923e6abe3df9cff2bfae20bde8b52cf354d67f5f9771a8a5f658041c22cbf8b",
+      "cleanup_confirmed": true,
+      "reason": "unsupported_external_relationship",
+      "record_hash": "53422a9e1477ec57a189b9a1a02815d1c2e01881e2e940082f595a328d71f224"
+    },
+    {
+      "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+      "name": "utf16_doctype",
+      "qualified": true,
+      "receipt_hash": "80a66df63f96871d1f242c35351eb5f8e38bbf7ddef3c02926be8779bcdd27ff",
+      "cleanup_confirmed": true,
+      "reason": "unsupported_workbook_structure",
+      "record_hash": "cf27962bae9f729a96499babf48a4c6da2814399f778f9035e2ec0b002c1d391"
+    },
+    {
+      "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+      "name": "format30_correct",
+      "qualified": false,
+      "receipt_hash": "c2c1311eeb3800ebcf2f185970c150a00a194145b7e159974f208fead726af6f",
+      "cleanup_confirmed": true,
+      "reason": "format30_comparison_view_unverified",
+      "record_hash": "5b023780e9385371296be63e88f277a3448b35bd07e249be7ab4640dc39749b0"
+    },
+    {
+      "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+      "name": "format30_observer",
+      "qualified": true,
+      "receipt_hash": "9e7c1b5c11b6eb52a865c9d4d923d080f20241bc34c19c7ba2a02d6c40fba50d",
+      "cleanup_confirmed": true,
+      "reason": "recalculation_changed_literal_cell",
+      "record_hash": "78f3c61a5ec68d5c50c727965e20cd7947553e23609ad83a009bf64b80d21d1f"
+    },
+    {
+      "protocol_hash": "ad1f50a2cb15d36a08fbf4bec459ce2fed87b45392ca2394707fca901ea1a6b9",
+      "name": "format30_wrong",
+      "qualified": false,
+      "receipt_hash": "da8a10d0242712e03440fb67b691554099993b32f73b7f269690da5a98d28fb8",
+      "cleanup_confirmed": true,
+      "reason": "format30_comparison_view_unverified",
+      "record_hash": "901138195ebee24427857048650200994e6ea3da1f75c93c79776557aab56e52"
+    }
+  ],
+  "execution": {
+    "closed_workbooks": 20,
+    "open_workbook_intents": 0,
+    "containers_attempted": 18,
+    "reported_wall_seconds": 48.235216106288135,
+    "cleanup_unconfirmed": 0,
+    "model_api_calls": 0
+  },
+  "evidence_kind": "engineering_fixture",
+  "model_api_calls": 0,
+  "excel_equivalence_proven": false,
+  "record_hash": "0aec8ce64dfdf43c8cb8822f36934720ee4f6662a05f7e0138f55cf6c502a650"
+}

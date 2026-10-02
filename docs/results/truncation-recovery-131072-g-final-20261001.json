@@ -1,0 +1,124 @@
+{
+  "version": "truncation-recovery-v5",
+  "status": "completed",
+  "protocol_hash": "0860c05d38b25157af3e9883c92613e5d9b57ea678b948545bfa928c685595b1",
+  "eligible_positions": 3,
+  "completed_positions": 3,
+  "counts": {
+    "korbench": {
+      "eligible": 3,
+      "response_available": 3,
+      "score_fail": 2,
+      "score_pass": 1
+    }
+  },
+  "new_costs": {
+    "logical_calls": 3,
+    "http_attempts": 3,
+    "reported_tokens": 119371,
+    "usage_complete": true,
+    "unclosed_calls": 0,
+    "retry_inclusive_usage_known": true
+  },
+  "transport_override": {
+    "read_timeout_seconds": 300,
+    "stream_wall_seconds": 3600
+  },
+  "max_tokens": 131072,
+  "budget_change": {
+    "from": 65536,
+    "to": 131072
+  },
+  "old_scores_replaced": false,
+  "optimizer_resumed": false,
+  "causal_token_effect_claimed": false,
+  "whole_benchmark_accuracy_claimed": false,
+  "evidence_kind": "selected_truncation_retry_diagnostic",
+  "captured_at": "2026-09-30T17:14:09.098539+00:00",
+  "full_report_hash": "6164ae5b62abb6cbe9597296f70bd4e4dd67a644673208cd19ce481ee88f69e0",
+  "independent_tasks": 3,
+  "task_families": 2,
+  "model": {
+    "provider": "bigmodel",
+    "name": "glm-5.3",
+    "reasoning_effort": "low",
+    "stream": true
+  },
+  "positions": [
+    {
+      "position_id": "8a2c7ae1f095f77a8836cea8b9c68df0b9106eec8093cd16139b70faed15429d",
+      "task_hash": "a13c230bb9a7a9bc18c1849e59db4b3f878eb7241fcc2b16ec6d524510ba1fed",
+      "result_hash": "32f08db45500c86b852bd6c04d4e857f8b69bfa325896b41666846b3217f74cb",
+      "call_request_hash": "07409116e76dc3bf3898bbdad13d548a6fb0e325988f9ca11d6eda8c45479353",
+      "http_status": 200,
+      "finish_reason": "stop",
+      "stream_complete": true,
+      "prediction_status": "available",
+      "score_status": "fail",
+      "usage": {
+        "prompt_tokens": 385,
+        "completion_tokens": 18780,
+        "total_tokens": 19165,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 18407
+        }
+      },
+      "wall_seconds": 294.2349926121533,
+      "response_characters": 863
+    },
+    {
+      "position_id": "5a5247a77e878778b8187b87d75ae6c055e96a0a1f0b60371f5efdcfcb622c28",
+      "task_hash": "e9d78a72654fd0cdb53bace3cb384e010e514545ca857cd0b96137a52b11f381",
+      "result_hash": "6012d73e7ef3b7f363ebe7742eacd57805ac6773fb3b89179c4fddcb9ca4b222",
+      "call_request_hash": "ff6b6a031db5830827e47d9165fc31cf9db86588ddbf0dfe99c4964738178e7e",
+      "http_status": 200,
+      "finish_reason": "stop",
+      "stream_complete": true,
+      "prediction_status": "available",
+      "score_status": "fail",
+      "usage": {
+        "prompt_tokens": 426,
+        "completion_tokens": 65079,
+        "total_tokens": 65505,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 64609
+        }
+      },
+      "wall_seconds": 697.6941051091999,
+      "response_characters": 845
+    },
+    {
+      "position_id": "894271e00c16c812bad009431a15c9f6c1909e83d068eadc99490c9d4fd6f89c",
+      "task_hash": "cf961b9da8fcbeca5bbe41740f40fce555c108a3e79d5afdce00eab8f93d4ea2",
+      "result_hash": "23d70f4760854c065600ada621156f0acda44a5badc6f5ebfecd42415be59297",
+      "call_request_hash": "85b2379ef04472cf4c4034bed90a378b241e7c5d9f6861d8315f7ffa1c9efaab",
+      "http_status": 200,
+      "finish_reason": "stop",
+      "stream_complete": true,
+      "prediction_status": "available",
+      "score_status": "pass",
+      "usage": {
+        "prompt_tokens": 352,
+        "completion_tokens": 34349,
+        "total_tokens": 34701,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 34184
+        }
+      },
+      "wall_seconds": 394.4025145904161,
+      "response_characters": 165
+    }
+  ],
+  "all_completions_below_previous_cap": true,
+  "equal_budget_resampling_control": false,
+  "record_hash": "d9b352fad2919c4b8a862dcad937763a95d95f0bf4093efa97fea26438aacaf1"
+}

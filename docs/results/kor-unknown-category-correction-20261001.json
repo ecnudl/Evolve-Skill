@@ -1,0 +1,306 @@
+{
+  "version": "kor-unknown-category-attribution-correction-v1",
+  "date": "2026-10-01",
+  "evidence_kind": "readonly_original_receipt_task_mapping_audit",
+  "sources": {
+    "plan_hash": "e3f33c0ad7257cefc67d00b278a36e5631087661d010532c8f6949c6d5b9c35b",
+    "checkpoint_hash": "23762517fdcea80593992bf3e17802aff0a3cf7a29d33b010f74297128d6901e",
+    "panel_hash": "81694612b9180c8d266f92808c70eeb0b700c1a1c080f07f8c79abfd2c80a19f",
+    "diagnostic_protocol_hash": "250a060a3d49d7e3d99be781aac0375949d8d2555ca77be032efd17efd8845d0",
+    "original_full_report_hash": "787d14f4fe12e8306bfce8081059f6ef60be842e262be23eab738b61f7aa4752"
+  },
+  "scope": {
+    "condition": "no_skill",
+    "history": "h0",
+    "stage": 0,
+    "original_positions": 1000,
+    "original_tasks": 500,
+    "unknown_positions": 11,
+    "unknown_tasks": 10
+  },
+  "full_category_counts": {
+    "cipher": {
+      "pass": 151,
+      "fail": 48,
+      "unknown": 1
+    },
+    "counterfactual": {
+      "pass": 177,
+      "fail": 23,
+      "unknown": 0
+    },
+    "logic": {
+      "pass": 128,
+      "fail": 72,
+      "unknown": 0
+    },
+    "operation": {
+      "pass": 176,
+      "fail": 24,
+      "unknown": 0
+    },
+    "puzzle": {
+      "pass": 114,
+      "fail": 76,
+      "unknown": 10
+    }
+  },
+  "unknown_category_by_cause": {
+    "cipher": {
+      "length": {
+        "positions": 1,
+        "tasks": 1,
+        "families": 1
+      },
+      "network_error": {
+        "positions": 0,
+        "tasks": 0,
+        "families": 0
+      }
+    },
+    "counterfactual": {
+      "length": {
+        "positions": 0,
+        "tasks": 0,
+        "families": 0
+      },
+      "network_error": {
+        "positions": 0,
+        "tasks": 0,
+        "families": 0
+      }
+    },
+    "logic": {
+      "length": {
+        "positions": 0,
+        "tasks": 0,
+        "families": 0
+      },
+      "network_error": {
+        "positions": 0,
+        "tasks": 0,
+        "families": 0
+      }
+    },
+    "operation": {
+      "length": {
+        "positions": 0,
+        "tasks": 0,
+        "families": 0
+      },
+      "network_error": {
+        "positions": 0,
+        "tasks": 0,
+        "families": 0
+      }
+    },
+    "puzzle": {
+      "length": {
+        "positions": 9,
+        "tasks": 8,
+        "families": 4
+      },
+      "network_error": {
+        "positions": 1,
+        "tasks": 1,
+        "families": 1
+      }
+    }
+  },
+  "unknown_positions": [
+    {
+      "position": "76e8184bef47e8c6ad99c23b3f6640d2ce0797ddbca931801376f6bca2ca1755",
+      "task_hash": "44be2f04fb2e6c251bccf08682042254fbfb3c53036d62ae2444a21d8d60b272",
+      "repeat": 0,
+      "category": "cipher",
+      "family_id": "cipher:rule:6",
+      "score_hash": "d89a30383aa8d3ffed4448586954001cc9e2c5f27136215088b0df4a807ac409",
+      "receipt_hash": "a8c79bde7c03f3ad8cb6c291b65d641fcd1e9bf0defde8ab3997dffa866c0197",
+      "finish_reason": "length",
+      "original_unknown_reason": "model_response_truncated",
+      "raw_response_sha256": "e875f002c98896387b98149e9bc89c8523ab1f89ae753492be1b803df791e499",
+      "final_characters": 122207,
+      "complete_wrappers": 2177,
+      "diagnostic_eligible": true,
+      "diagnostic_status": "pass"
+    },
+    {
+      "position": "dde466a21663747f1919dd5405f5b504d1067a5e5b23157f06bb540cf75eab81",
+      "task_hash": "ef47a794fc5faa179992dbba97bc696bddaf3dfb0bf3756c2b16019d372e85e9",
+      "repeat": 0,
+      "category": "puzzle",
+      "family_id": "puzzle:rule:7",
+      "score_hash": "e3fee6b6ea981ad42a0d8efc5e28841f6a1aafc2fe26b84faf54f977b0ace1c7",
+      "receipt_hash": "418c4886eae1e68fed9cdc4357332f59d1748dc140cd2ce74515451937bd932c",
+      "finish_reason": "network_error",
+      "original_unknown_reason": "model_call_unavailable",
+      "raw_response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final_characters": 0,
+      "complete_wrappers": 0,
+      "diagnostic_eligible": false,
+      "diagnostic_status": null
+    },
+    {
+      "position": "7f67d21d4a3284abe501e800f759e89908eb01d5783294f7c32e139aba637d07",
+      "task_hash": "56f28084e59338408a2051858c0e454eb8d70ea8bf691b93b605f4d6954ba7a4",
+      "repeat": 0,
+      "category": "puzzle",
+      "family_id": "puzzle:rule:13",
+      "score_hash": "13afa549230df441dc9a493048dda09ab4069c7b5ae6bae5692fa2df7dba2ecc",
+      "receipt_hash": "1a4d195d9e8331d298286909deea78582115c2b8530d35c84b7f6329c6c32194",
+      "finish_reason": "length",
+      "original_unknown_reason": "model_response_truncated",
+      "raw_response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final_characters": 0,
+      "complete_wrappers": 0,
+      "diagnostic_eligible": false,
+      "diagnostic_status": "unknown"
+    },
+    {
+      "position": "2af2a7e19b8e298df8791ae29b4a6fbfd018843480b5ca70d01ed93429b70b49",
+      "task_hash": "ed51b32a1987b932271c53ee32fc1ad1c220f1a4df470d46a57f966dbbea8e28",
+      "repeat": 1,
+      "category": "puzzle",
+      "family_id": "puzzle:rule:13",
+      "score_hash": "659f704cac3d26d6933483f820077968b844fe8916b60995f2fb8c1a6bc08795",
+      "receipt_hash": "873f83eee606e406b7b8e25503264cc55fa52494d282a5627e9b00528a257b7f",
+      "finish_reason": "length",
+      "original_unknown_reason": "model_response_truncated",
+      "raw_response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final_characters": 0,
+      "complete_wrappers": 0,
+      "diagnostic_eligible": false,
+      "diagnostic_status": "unknown"
+    },
+    {
+      "position": "4b115a5d62fe8e0ad50874a478224f04256a80b5191478a7e895c1200f3972f7",
+      "task_hash": "9ef73241b453b72848c23f5c7cf8526a683657a39d920d05ed64fb0cb0841ff4",
+      "repeat": 1,
+      "category": "puzzle",
+      "family_id": "puzzle:rule:14",
+      "score_hash": "cda1d5b6f826013684463bd1ead55862062c00ae878a927cfc5de1143432e41f",
+      "receipt_hash": "2d2d530fcbbc684f4b54802843aea3f9c4f6112193dae19e66ebbcf0ff60bff8",
+      "finish_reason": "length",
+      "original_unknown_reason": "model_response_truncated",
+      "raw_response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final_characters": 0,
+      "complete_wrappers": 0,
+      "diagnostic_eligible": false,
+      "diagnostic_status": "unknown"
+    },
+    {
+      "position": "a66372ba16fe2e72de5fc246aad783e148335f2ec90a41306d160d6920f950ac",
+      "task_hash": "a13c230bb9a7a9bc18c1849e59db4b3f878eb7241fcc2b16ec6d524510ba1fed",
+      "repeat": 0,
+      "category": "puzzle",
+      "family_id": "puzzle:rule:14",
+      "score_hash": "a9b5a4c6cf5b3e67370089db6888924cf83050d03d8238707c2e26faf17c2888",
+      "receipt_hash": "eceef397845694449bf0dabdcd7c8ad57a899eb0ee8079f3429ff40e50b5f01e",
+      "finish_reason": "length",
+      "original_unknown_reason": "model_response_truncated",
+      "raw_response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final_characters": 0,
+      "complete_wrappers": 0,
+      "diagnostic_eligible": false,
+      "diagnostic_status": "unknown"
+    },
+    {
+      "position": "645ed868adadd8ea67a160819a0928b24ad4f05f130257ce7a7432f8d9329c4a",
+      "task_hash": "e9d78a72654fd0cdb53bace3cb384e010e514545ca857cd0b96137a52b11f381",
+      "repeat": 0,
+      "category": "puzzle",
+      "family_id": "puzzle:rule:14",
+      "score_hash": "59a769a852557c7ce0a89676d01d05d186a8bea9b8974256456200314179f2d7",
+      "receipt_hash": "fe2bcbb2c9735232e0086bd94011a51ef2827558d626c964be2143b36fcbab7c",
+      "finish_reason": "length",
+      "original_unknown_reason": "model_response_truncated",
+      "raw_response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final_characters": 0,
+      "complete_wrappers": 0,
+      "diagnostic_eligible": false,
+      "diagnostic_status": "unknown"
+    },
+    {
+      "position": "c6af4da34635300dbd16ed7d8fc9f0613fd4f742d56f6ad363876c72790d4c11",
+      "task_hash": "e9d78a72654fd0cdb53bace3cb384e010e514545ca857cd0b96137a52b11f381",
+      "repeat": 1,
+      "category": "puzzle",
+      "family_id": "puzzle:rule:14",
+      "score_hash": "fd7f7542887ec4220be07b4c3bed0e28fb418ad64e4a470fb42d05dbe253efc2",
+      "receipt_hash": "7a07b617b49c097a020f7f5c07bb094a64ca03f168358f45d9daedde7cac1b8a",
+      "finish_reason": "length",
+      "original_unknown_reason": "model_response_truncated",
+      "raw_response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final_characters": 0,
+      "complete_wrappers": 0,
+      "diagnostic_eligible": false,
+      "diagnostic_status": "unknown"
+    },
+    {
+      "position": "8fd13cb4248c93bd1ac9cd89235b41f14b77be1f30d0102e27a8460fa5e33b7d",
+      "task_hash": "594eadb1ab9dc49661bf32f12d2814dc276076e252c9135c0444ae06550aa676",
+      "repeat": 0,
+      "category": "puzzle",
+      "family_id": "puzzle:rule:15",
+      "score_hash": "4dbff887b2131673ba167dcb3e9523e0c48a8dc5b4b9e884ea3e7317e0dfbb32",
+      "receipt_hash": "1877a8318a27ec54f28d877bf331b6f9e3f0584d4651c1814e07ea4ff26f6ccd",
+      "finish_reason": "length",
+      "original_unknown_reason": "model_response_truncated",
+      "raw_response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final_characters": 0,
+      "complete_wrappers": 0,
+      "diagnostic_eligible": false,
+      "diagnostic_status": "unknown"
+    },
+    {
+      "position": "b521079136a1cf8e44b96f6c8c89aa64fd29cea21ad73622832c793ec441df38",
+      "task_hash": "3cf86b22440e457be1d31383ec0a7d5ebe9fc47ba42e30b9a69ee6ad901f7b0e",
+      "repeat": 1,
+      "category": "puzzle",
+      "family_id": "puzzle:rule:15",
+      "score_hash": "f9e3dff27d9eff51f8111907bbf361d482e2833a50677168498a492113e1610f",
+      "receipt_hash": "7c0604d2ba78938150f4cea9d8e443f7b919c7df86e24f1bdd702d8312ab1d3a",
+      "finish_reason": "length",
+      "original_unknown_reason": "model_response_truncated",
+      "raw_response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final_characters": 0,
+      "complete_wrappers": 0,
+      "diagnostic_eligible": false,
+      "diagnostic_status": "unknown"
+    },
+    {
+      "position": "6e444a8994234294bd03dad8158f000fbd8ccb05daaea60c8b61c5e27908c390",
+      "task_hash": "66541458404caf2aff319c48de16e4e6bacdc59b59c5bf59875e4d4507cf8cb0",
+      "repeat": 1,
+      "category": "puzzle",
+      "family_id": "puzzle:rule:25",
+      "score_hash": "d6cd498315360ad9f94fddc1d66777a997481d8eb213bf8823d2163609f42d2f",
+      "receipt_hash": "b5ffe2db8992226c2af0d60ee5eb7b36dd33bff677e8b845b28d1980dd341273",
+      "finish_reason": "length",
+      "original_unknown_reason": "model_response_truncated",
+      "raw_response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final_characters": 0,
+      "complete_wrappers": 0,
+      "diagnostic_eligible": false,
+      "diagnostic_status": "unknown"
+    }
+  ],
+  "correction": {
+    "incorrect_prose": "All ten length replies were Puzzle and the network_error was Cipher.",
+    "correct_attribution": "Cipher: one length reply with repeated complete wrappers. Puzzle: nine length replies with empty final content plus one provider network_error.",
+    "cause": "Marginal category totals and marginal failure-cause totals were incorrectly combined in narrative; per-position join was missing there.",
+    "full_summary_category_and_cause_marginals_unchanged": true,
+    "diagnostic_artifact_selection_correct": true,
+    "formal_scores_unchanged": true,
+    "old_sealed_json_not_modified": true
+  },
+  "checks": {
+    "all_unknown_task_receipt_prediction_score_bindings_verified": true,
+    "all_ten_length_items_match_frozen_diagnostic_positions": true,
+    "single_nonempty_2177_wrapper_raw_bytes_match_prior_diagnostic": true,
+    "gold_or_hidden_reasoning_values_inspected": false,
+    "new_model_calls": 0,
+    "new_native_executions": 0
+  },
+  "record_hash": "a46dab366ee9f628e4fe37daa50b1187c4b9b82589764b3616ea0fa7c4e5cc99"
+}

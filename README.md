@@ -1,12 +1,26 @@
 # Evolve-Skill
 
+无上下文的代码代理请先读 [AGENTS.md](AGENTS.md) 和[接手指南](docs/agent-start-here.md)，再核对两份主文档：[当前流程](docs/current-workflow.md)、[结果账本](docs/results-and-lessons.md)。本轮运行以[新 D：SkillOpt 五域补跑与 No-Skill 对比](docs/skillopt-generalization-20261002.md)及实际回执为准，不把历史快照当当前状态。
+
 基于 [Microsoft SkillOpt v0.2.0](https://github.com/microsoft/SkillOpt/releases/tag/v0.2.0) 的研究项目：**通过 Coding Rubric 与有界 DeepResearch 协同改进 Skill 的内容、验证和适用范围，降低跨领域负迁移。**
 
 我们不要求每个 benchmark 都达到 SOTA，而是希望 Skill 学到可迁移的解题机制，在改善目标任务的同时保留其他领域的能力。泛化范围应由行为证据确认，不能由模型在 Skill 文本中自行宣称。
 
-**截至 2026-09-27：同课程归纳、修复轨迹学习、候选确认及预算诊断已完成，共同 Solver 可靠性修复已通过 Linux 工程验收。** 修复细节促成两份主候选，后续96个实际注入位置未观察到干扰，但没有证明语义正迁移。普通归纳多20个通过位置，19个来自截断差异；另一逐例候选净增9项也全部涉及交付。预算扩大后原始分差缩小，不能把交付稳定性当作泛化提升。历史目标课程A–D仍Pending；Skill稳定增益、Research独有信息增量与跨域收益均待证明。这不是已完成全部实验的论文复现包。
+**10/2 22:18 最新核验：新 D 正式规模 SkillOpt 队列已启动，但前三来源阶段为 Pending，KOR 阶段进行中。** 新序列 v2 显式启用学习 v4，每来源尝试后匹配原 No-Skill 全五域评测；尚无完整五阶段学习或新方法收益结论。它是原生 baseline 对比，不是 Research/Rubric 双门主线已经完成。[协议、进度与限制](docs/skillopt-generalization-20261002.md)
+
+**历史快照（截至 2026-09-27）：同课程归纳、修复轨迹学习、候选确认及预算诊断已完成，共同 Solver 可靠性修复已通过 Linux 工程验收。** 修复细节促成两份主候选，后续96个实际注入位置未观察到干扰，但没有证明语义正迁移。普通归纳多20个通过位置，19个来自截断差异；另一逐例候选净增9项也全部涉及交付。预算扩大后原始分差缩小，不能把交付稳定性当作泛化提升。历史目标课程A–D仍Pending；Skill稳定增益、Research独有信息增量与跨域收益均待证明。这不是已完成全部实验的论文复现包。
 
 ## 给首次阅读仓库的 AI / 研究者
+
+10/2傍晚[旧 C baseline 接续实录](docs/baseline-continuation-20261002.md)保留五域适配、双方法队列及当时启动快照。旧 C 的 SkillOpt 五阶段尝试现已终止，完整学习为 **0/5**；25格均是携空父后引用旧 No-Skill，不是新观测。新 D 只运行 SkillOpt，使用新版本和目录，不续写旧 C。工作簿链接兼容 B 的独立诊断仍为79/55/26、134旧已知保持，不算 Skill 收益。
+
+10/2[未知结果修复与复测](docs/unknown-recovery-results-20261002.md)：最新冻结参考标签H v3通过34＋18项资格，同80题×2原产物零API重评为**79通过/55失败/26未知**；较v8b70/48/42恢复16未知，原118个已知保持。过粗元数据预筛的B负结果51/41/68亦保留。交付失败另列回顾性端到端79/61/20，不改内容分或原基线；这些是评测覆盖与归因修复，不是Skill收益。KOR10次截断恢复7/2/1，仍有131072输出tokens截断。[完整新数据](docs/results/unknown-sheet-frozen-gold-c-replay-final-20261002.json)
+
+10/1新增：[夜间监控、五域新基线与学习结果](docs/overnight-baselines-20261001.md)，[聚合数据](docs/results/noskill-fivebench-long-20261001.json)保留1,419题×2的分母与成本。通过/失败/未知分别为：Coding 400/399/1，SearchQA 560/234/6，KOR 746/243/11，ALF 65/13/0，工作簿63/44/53。全部完成，但工作簿仍有兼容性覆盖不足，Coding新环境资格仍Pending，不把完成执行当环境完全修好。GEPA、SkillOpt有限重提及条件化归纳shadow均未选出优于空父的Skill；小分差不足以判断方法优劣。下一步优先比较可信具体反例反馈与仅成败反馈，而非继续扩写Skill。新公式预览/ALF日志修复仅工程验收、未宣称方法收益；最新状态见[当前流程](docs/current-workflow.md)和[结果账本](docs/results-and-lessons.md)。
+
+9/28新增：[五基准持续评测框架](docs/skill-validation-continual-evaluation-20260928.md)，支持BigCodeBench、SpreadsheetBench、SearchQA、KOR-Bench、ALFWorld的冻结S0–S5评测、配对比较和断点回放。它接收外部冻结Skill，不等于已经实现五阶段协同学习。
+
+9/29[五域No-Skill开发基线](docs/noskill-baseline-results-20260929.md)已全部落盘：1419题×2，共2838位置；Sheet的62/160 unknown已做原因诊断，未重算。Coding单阶段SkillOpt第一轮候选28/64、空父39/64，gate拒绝；第二轮因响应截断Pending，GEPA未启动。[最新实验结果总表](docs/experiment-results-20260929.md)区分完整与部分结果、未知和成本；没有新的独立final或泛化效果结论。
 
 9/27补充：[求解可靠性修复与Linux验收](docs/skill-validation-solver-reliability-20260927.md)已接通共同输出预算、一次公开修订及回归保护；完整工程smoke 9/9公开通过，另验证超时修订和保留正确初稿。没有调整评测体系，也不将这些工程检查算作泛化增益。
 
@@ -14,11 +28,14 @@
 
 1. [当前完整流程](docs/current-workflow.md)：持续维护的主文档，说明初始化、每步输入输出、Rubric/Research、反馈更新及两道门；明确真实与 fixture 状态。
 2. [结果与经验账本](docs/results-and-lessons.md)：持续维护的重要实验表格、正向信号、反例、成本和数据存档索引。
-3. [研究索引与证据边界](docs/research-overview.md)：更多历史报告与代码地图；日期报告不改写为新结果。
-4. [主线接口与运行说明](docs/skill-validation-mainline.md)：按实现阶段保留的详细说明；最新对照见 [9/25 报告](docs/skill-validation-mechanism-study-20260925.md)，历史目标课程见 [9/24 报告](docs/skill-validation-capability-curriculum-20260924.md)。
-5. [真实实验材料与离线 demo](examples/research_evidence/README.md)：已有真实 Skill、反馈、4 个配对代码案例与96个单轮评分位置；新增9/25真实“修复轨迹→规则→条件反转执行”及负例摘录。不是所有实验的完整原始数据。
+3. [新 D 五域 SkillOpt 对比](docs/skillopt-generalization-20261002.md)：本轮协议、进度、No-Skill参照与数据重叠边界；实际完成以绑定回执和终态为准。
+4. [研究索引与证据边界](docs/research-overview.md)：更多历史报告与代码地图；日期报告不改写为新结果。
+5. [主线接口与运行说明](docs/skill-validation-mainline.md)：按实现阶段保留的详细说明；历史对照见 [9/25 报告](docs/skill-validation-mechanism-study-20260925.md)，历史目标课程见 [9/24 报告](docs/skill-validation-capability-curriculum-20260924.md)。
+6. [真实实验材料与离线 demo](examples/research_evidence/README.md)：已有真实 Skill、反馈、4 个配对代码案例与96个单轮评分位置；新增9/25真实“修复轨迹→规则→条件反转执行”及负例摘录。不是所有实验的完整原始数据。
 
 分析时请区分**算法设计、工程 fixture、历史回放、真实模型实验**；给出的改进建议应指向具体代码或证据缺口，而不是默认方法已经有效。现在提供经过筛选的真实记录摘录；完整原始运行缓存仍未公开，记录回放不等于重新执行或独立认证。
+
+部分归档报告保留了当时的 `outputs/…` 本地证据引用，这些私有运行产物不随仓库发布；请优先使用 `docs/results/` 的脱敏摘要和明确标注的公开 demo，不把缺少原始回执的摘要视为独立复现证明。
 
 无需 API 即可查看真实记录并重算结果：`python scripts/replay_research_demo.py`。它不执行模型生成的代码。
 
@@ -46,7 +63,11 @@ H 指冻结的独立宿主审计，本身仍有契约争议。不能将不同任
 
 ## 代码入口与离线运行
 
-新工作集中于 [`skillopt/skill_validation/`](skillopt/skill_validation/)：`stage2.py`（验证器比较）、`closed_loop.py`（带准入的一轮流程）、`natural_study.py`（自然任务对照）；本轮增加 `natural_verifier_replay.py`（真实固定产物诊断）、`probe_review.py`（盲审消融）、`public_examples.py`（公开示例覆盖诊断）。历史入口保留，不改写冻结协议。
+新 D baseline 入口为[五阶段编排](scripts/continue_fivebench_baselines.py)、[显式 v2 配置](configs/continual_learning/fivebench_sequence_v2.pjlab.json)、[学习器](skillopt/continual_learning/skillopt.py)及[只读对比报告器](scripts/report_fivebench_generalization.py)。学习端恢复策略与原评测身份分开冻结；相同 Skill 的评测引用不算新增独立样本。已有运行不可通过重执行启动脚本覆盖，操作边界见本轮报告。
+
+新评测流可零API运行：`python -m skillopt.continual_eval smoke --output outputs/continual_eval/offline_demo`。这是5基准×6阶段的编排fixture，不是真实benchmark分数；[配置模板](configs/continual_eval/five_benchmarks.json)与[Linux原生运行环境](skillopt/continual_eval/runtime/README.md)供下一步采集基线使用。
+
+Research 双门主线集中于 [`skillopt/skill_validation/`](skillopt/skill_validation/)：`stage2.py`（验证器比较）、`closed_loop.py`（带准入的一轮流程）、`natural_study.py`（自然任务对照）；另有 `natural_verifier_replay.py`（真实固定产物诊断）、`probe_review.py`（盲审消融）、`public_examples.py`（公开示例覆盖诊断）。它与新 D 原生 baseline 分支分开，历史入口保留，不改写冻结协议。
 
 9/23 新增 `admissibility.py`（执行前审阅）、`probe_fact_research.py`（逐检查外部事实研究）、`verifier_readiness.py`（独立错误族与配对方向诊断）及 `admissibility_study.py`（真实旧产物实验）。Research 连接的工程验证与自然效果分开报告，不把可运行接口当作 Research 增益。`scripts/inventory_mbpp_full.py` 已盘点 424 个潜在新任务／394 个词面族，尚未形成正式独立分区。
 

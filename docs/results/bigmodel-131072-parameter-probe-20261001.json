@@ -1,0 +1,27 @@
+{
+  "intent_hash": "cc2fa6f4a7e23660e48e0859d4555764dde56e42f070103bcb680e8c8067cd6d",
+  "max_tokens": 131072,
+  "status": 200,
+  "error_category": null,
+  "parameter_accepted_and_short_answer_completed": true,
+  "effective_long_output_limit_verified": false,
+  "returned_model": "glm-5.3",
+  "finish_reason": "stop",
+  "stream_complete": true,
+  "response_characters": 2,
+  "usage": {
+    "prompt_tokens": 25,
+    "completion_tokens": 3,
+    "total_tokens": 28,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    }
+  },
+  "http_attempt_count": 1,
+  "wall_seconds": 1.2373649729415774,
+  "benchmark_tasks_submitted": 0,
+  "record_hash": "2143c0e6227561ccd9b3fb25049bb7bb4a10175331b61fbfa3698f3e43763f95"
+}

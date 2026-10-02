@@ -1,0 +1,71 @@
+{
+  "evidence_kind": "partial_real_sequential_run_not_completed_five_stage_learning",
+  "captured_at": "2026-10-02T18:31:27+08:00",
+  "protocol_hash": "773c2efad28a31b70c3c45d6837e88b155f9790e40a64aff5c6b4624fbcf2d7d",
+  "model": "glm-5.3",
+  "method": "skillopt",
+  "closed_attempts": [
+    {
+      "stage": 1,
+      "benchmark": "bigcodebench",
+      "learning_status": "pending",
+      "reason": "native_reflection_parse_incomplete",
+      "completed_updates": 1,
+      "last_complete_update_action": "reject",
+      "closed_calls": 216,
+      "reported_tokens_known": 262970,
+      "missing_usage_calls": 0,
+      "unknown_task_scores": 0,
+      "second_update_reflection_calls": 9,
+      "second_update_finish_reason_stop": 9,
+      "second_update_max_completion_tokens": 1030
+    },
+    {
+      "stage": 2,
+      "benchmark": "spreadsheetbench",
+      "learning_status": "pending",
+      "reason": "evaluation_unknown",
+      "detail": "prediction:recalculation_changed_literal_cell",
+      "completed_updates": 0,
+      "closed_calls": 1,
+      "reported_tokens_known": 1425,
+      "missing_usage_calls": 0,
+      "selection_submitted": 1,
+      "selection_planned": 40,
+      "unknown_task_scores": 1
+    },
+    {
+      "stage": 3,
+      "benchmark": "searchqa",
+      "learning_status": "pending",
+      "reason": "evaluation_unknown",
+      "detail": "provider returned sensitive with a closed stream",
+      "completed_updates": 0,
+      "closed_calls": 115,
+      "reported_tokens_known": 126691,
+      "missing_usage_calls": 1,
+      "initial_selection": {"pass": 46, "fail": 18, "unknown": 0},
+      "partial_train": {"pass": 34, "fail": 16, "unknown": 1},
+      "train_planned": 64
+    }
+  ],
+  "closed_attempts_cost_known_subtotal": {
+    "closed_calls": 332,
+    "http_attempts": 332,
+    "reported_tokens_known": 391086,
+    "missing_usage_calls": 1,
+    "unclosed_calls": 0,
+    "usage_complete": false,
+    "includes_first_update_cost_do_not_add_it_again": true
+  },
+  "policy_carried_after_each_closed_attempt": "empty_parent",
+  "evaluation_matrix_cells_after_closed_attempts": 15,
+  "matrix_cell_kind": "historical_empty_policy_reference",
+  "new_model_calls_for_those_matrix_cells": 0,
+  "new_independent_evaluation_observations": 0,
+  "completed_learning_stages": 0,
+  "current_stage": {"stage": 4, "benchmark": "korbench", "status": "running", "closed_calls_at_snapshot": 70},
+  "queued_method": "gepa",
+  "final_or_deployment_authorized": false,
+  "interpretation": "The finite queue advances resource-safe Pending attempts without claiming successful learning. Compatibility, service refusal and reflection-format blockers remain distinct; missing evaluations and usage are retained."
+}

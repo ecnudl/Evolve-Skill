@@ -1,0 +1,179 @@
+{
+  "version": "continual-noskill-fivebench-public-summary-v1",
+  "date": "2026-09-29",
+  "status": "all_planned_positions_have_terminal_predictions_and_scores",
+  "evidence_kind": "real_model_development_baseline_not_independent_final_or_method_effect",
+  "method": "no_skill",
+  "history": "h0",
+  "stage": 0,
+  "partition": "development",
+  "model": {"provider": "bigmodel", "name": "glm-5.3", "reasoning_effort": "low", "max_tokens_per_call": 4096},
+  "repeats_per_task": 2,
+  "benchmark_tasks_total": 1419,
+  "positions_total": 2838,
+  "missing_predictions_or_scores": 0,
+  "independence": "Repeated positions are not independent tasks. Declared families have benchmark-specific granularity and do not certify semantic independence or absence of historical exposure.",
+  "metric_convention": {
+    "all_position_bounds": "[pass/N, (pass+unknown)/N]; identification bounds, not confidence intervals",
+    "evaluable": "pass/(pass+fail); excludes unknown, not a full-panel score",
+    "unknown_is_confirmed_failure": false,
+    "cross_benchmark_mean_computed": false
+  },
+  "benchmarks": {
+    "searchqa": {
+      "run": "noskill-searchqa-20260928-b",
+      "primary_metric": "strict_exact_match",
+      "data_source": "existing data/searchqa_split/train/items.json; historically exposed development subset",
+      "tasks": 400, "declared_families": 400, "positions": 800,
+      "counts": {"pass": 552, "fail": 242, "unknown": 6, "missing": 0},
+      "by_repeat": [
+        {"repeat": 0, "positions": 400, "pass": 272, "fail": 125, "unknown": 3},
+        {"repeat": 1, "positions": 400, "pass": 280, "fail": 117, "unknown": 3}
+      ],
+      "all_position_bounds": [0.69, 0.6975],
+      "evaluable": {"numerator": 552, "denominator": 794},
+      "unknown_reasons": {"model_call_unavailable": 6},
+      "unknown_note": "Six HTTP 400 responses; detailed provider reason unavailable in frozen client.",
+      "costs": {"logical_calls": 800, "terminal_receipts": 800, "unclosed_calls": 0, "http_attempts_known_subtotal": 804, "reported_tokens_known_subtotal": 875172, "receipts_with_unknown_usage": 6, "usage_complete": false, "retry_inclusive_usage_known": false},
+      "source": {
+        "captured_at_utc": "2026-09-29T02:14:35.953474+00:00",
+        "snapshot_file": "searchqa-20260929T021435Z-95a1b5fe09793223.json",
+        "snapshot_hash": "95a1b5fe09793223bbe5faffb1444e81a42274330b69e2ec71c5597354dac76e",
+        "plan_hash": "c85dd295f33a8ccbaa776e083629d920a2a8d5c9eca73bbecfc8a66805495097"
+      }
+    },
+    "korbench": {
+      "run": "noskill-korbench-20260928-a",
+      "primary_metric": "official_rule_accuracy",
+      "data_source": "outcome-blind whole-rule-family partition; five categories, 100 development tasks each",
+      "tasks": 500, "declared_families": 50, "positions": 1000,
+      "counts": {"pass": 639, "fail": 201, "unknown": 160, "missing": 0},
+      "by_repeat": [
+        {"repeat": 0, "positions": 500, "pass": 319, "fail": 101, "unknown": 80},
+        {"repeat": 1, "positions": 500, "pass": 320, "fail": 100, "unknown": 80}
+      ],
+      "all_position_bounds": [0.639, 0.799],
+      "evaluable": {"numerator": 639, "denominator": 840},
+      "unknown_reasons": {"model_response_truncated": 160},
+      "truncated_by_category": {"cipher": 36, "counterfactual": 0, "logic": 3, "operation": 1, "puzzle": 120},
+      "costs": {"logical_calls": 1000, "terminal_receipts": 1000, "unclosed_calls": 0, "http_attempts_known_subtotal": 1016, "reported_tokens_known_subtotal": 1519573, "receipts_with_unknown_usage": 0, "usage_complete": true, "retry_inclusive_usage_known": false},
+      "native_score_cost": {"container_calls_known_subtotal": 840, "wall_seconds_known_subtotal": 2001.893303, "positions_missing_execution_cost": 0, "scope": "score_phase_only"},
+      "source": {
+        "captured_at_utc": "2026-09-29T02:14:36.989738+00:00",
+        "snapshot_file": "korbench-20260929T021436Z-668e9e81fa0f7d65.json",
+        "snapshot_hash": "668e9e81fa0f7d65fa020fda5fc70f409373608e08fdd2ea6972b31cce3cf430",
+        "plan_hash": "2cafefa8e2392d67629e91d263c21b6e25ca4ffba1a8e6aeeb5d972da7da97c6"
+      }
+    },
+    "alfworld": {
+      "run": "noskill-alf-20260928-b",
+      "primary_metric": "native_won",
+      "data_source": "existing data/alfworld_path_split/train/items.json; all 39 source games from upstream train, not valid_unseen; zero duplicate games",
+      "tasks": 39, "declared_families": 39, "positions": 78,
+      "max_episode_steps": 50,
+      "protocol_note": "Persistent public initial observation; legacy A excluded for goal-loss protocol defect. No expert actions supplied.",
+      "counts": {"pass": 60, "fail": 6, "unknown": 12, "missing": 0},
+      "by_repeat": [
+        {"repeat": 0, "positions": 39, "pass": 33, "fail": 2, "unknown": 4},
+        {"repeat": 1, "positions": 39, "pass": 27, "fail": 4, "unknown": 8}
+      ],
+      "all_position_bounds": [0.7692307692307693, 0.9230769230769231],
+      "evaluable": {"numerator": 60, "denominator": 66},
+      "unknown_reasons": {"operator_closed_interrupted_attempt": 10, "model_response_truncated": 2},
+      "costs": {"logical_calls": 1098, "terminal_receipts": 1090, "unclosed_calls": 8, "http_attempts_known_subtotal": 1092, "reported_tokens_known_subtotal": 831437, "receipts_with_unknown_usage": 0, "usage_complete": false, "retry_inclusive_usage_known": false},
+      "interruption_note": "Ten interrupted positions were closed without resampling. Eight underlying call intents have no terminal receipt; terminal position coverage does not imply complete call accounting.",
+      "source": {
+        "captured_at_utc": "2026-09-29T02:16:46.094546+00:00",
+        "snapshot_file": "alfworld-20260929T021646Z-6178ee429afc6c91.json",
+        "snapshot_hash": "6178ee429afc6c919b24f0aa64a2be749bd9f868e14a7b0aa6b2d01607b576bc",
+        "plan_hash": "ac645d23baacef8f77d499e8e8f510a67969c3bd758b99ee6dfa264b1524296f"
+      }
+    },
+    "bigcodebench": {
+      "run": "noskill-bcb-20260928-a",
+      "primary_metric": "official_unit_test_pass",
+      "data_source": "bigcode/bigcodebench v0.1.4 instruct; locally frozen development subset of 400/1140 tasks",
+      "dataset_revision": "b74c0d0bf70d2c0bc459be537895cca163007f1a",
+      "tasks": 400, "declared_families": 399, "positions": 800,
+      "runtime_note": "8 GiB, serial scoring; not the upstream 30 GiB runtime. Lexical families do not certify semantic independence.",
+      "counts": {"pass": 416, "fail": 382, "unknown": 2, "missing": 0},
+      "by_repeat": [
+        {"repeat": 0, "positions": 400, "pass": 210, "fail": 188, "unknown": 2},
+        {"repeat": 1, "positions": 400, "pass": 206, "fail": 194, "unknown": 0}
+      ],
+      "all_position_bounds": [0.52, 0.5225],
+      "evaluable": {"numerator": 416, "denominator": 798},
+      "unknown_reasons": {"native_timeout": 1, "native_cleanup_interrupted": 1},
+      "costs": {"logical_calls": 800, "terminal_receipts": 800, "unclosed_calls": 0, "http_attempts_known_subtotal": 800, "reported_tokens_known_subtotal": 318182, "receipts_with_unknown_usage": 0, "usage_complete": true, "retry_inclusive_usage_known": true},
+      "native_score_cost": {"container_calls_known_subtotal": 799, "wall_seconds_known_subtotal": 4704.886404, "positions_missing_execution_cost": 1, "scope": "score_phase_only"},
+      "source": {
+        "captured_at_utc": "2026-09-29T02:28:32.546857+00:00",
+        "snapshot_file": "bigcodebench-20260929T022832Z-527cc934112e57c8.json",
+        "snapshot_hash": "527cc934112e57c86fb2ea80b0d5247641e851efe4f894eeb32c2dd15a04bfec",
+        "plan_hash": "d6b3a86a8557793a2aa1c7c6016139fc081b53c3b0bcbb9bf957eb16b63087d4"
+      }
+    },
+    "spreadsheetbench": {
+      "run": "noskill-sheet-20260928-b",
+      "primary_metric": "native_workbook_target_region_checks",
+      "data_source": "KAKA22/SpreadsheetBench Verified400; existing 80-task development split retained without filtering",
+      "dataset_revision": "ab0b742b0fc95b946f212d80ac7771b5531272e4",
+      "scorer": "spreadsheetbench-official-quote-and-string-cache-v1",
+      "tasks": 80, "declared_families": 80, "positions": 160,
+      "counts": {"pass": 59, "fail": 39, "unknown": 62, "missing": 0},
+      "by_repeat": [
+        {"repeat": 0, "positions": 80, "pass": 31, "fail": 20, "unknown": 29},
+        {"repeat": 1, "positions": 80, "pass": 28, "fail": 19, "unknown": 33}
+      ],
+      "all_position_bounds": [0.36875, 0.75625],
+      "evaluable": {"numerator": 59, "denominator": 98},
+      "unknown_reasons": {"native_cell_values_hard_all_cases": 61, "model_response_truncated": 1},
+      "posthoc_native_unknown_diagnosis": {
+        "evidence_kind": "read_only_posthoc_classification_of_original_unknown_records_not_rescoring",
+        "original_native_unknown_positions": 61,
+        "prediction_formula_cache_missing": 52,
+        "distinct_tasks_with_prediction_formula_cache_missing": 32,
+        "artifact_execution_exception": 8,
+        "output_workbook_missing": 1,
+        "gold_formula_cache_missing_under_compat_check": 0,
+        "executions_with_cleanup_confirmed": 159,
+        "container_timeouts_or_cleanup_failures": 0,
+        "original_statuses_changed": false,
+        "note": "openpyxl saving does not calculate formulas. These categories are not all infrastructure errors or all reasoning errors. A future recalculation protocol must apply uniformly to all predictions, not only these 52 positions; no gold rewrite."
+      },
+      "qualification_boundary": "80/80 reference observability was static engineering qualification, not solver accuracy or prediction assessability. Gold was not modified; upstream development exclusion note remains in the denominator; unresolved final gold pairing was not evaluated.",
+      "costs": {"logical_calls": 160, "terminal_receipts": 160, "unclosed_calls": 0, "http_attempts_known_subtotal": 160, "reported_tokens_known_subtotal": 219945, "receipts_with_unknown_usage": 0, "usage_complete": true, "retry_inclusive_usage_known": true},
+      "source": {
+        "captured_at_utc": "2026-09-29T02:51:01.272694+00:00",
+        "snapshot_file": "spreadsheetbench-20260929T025101Z-46e20bb05118a14e.json",
+        "snapshot_hash": "46e20bb05118a14e36fd4b2db558d17361e570c6ce066ff5fbfacc6c234e23c5",
+        "plan_hash": "064ef740b596c2282a8e808e207064879360a8b1405e7195f68d59a0884e3ab4"
+      }
+    }
+  },
+  "five_run_cost_subtotals": {
+    "logical_calls": 3858,
+    "terminal_receipts": 3850,
+    "unclosed_calls": 8,
+    "http_attempts_known_subtotal": 3872,
+    "reported_tokens_known_subtotal": 3764309,
+    "receipts_with_unknown_usage": 6,
+    "complete_billed_tokens": null,
+    "includes_excluded_or_preparation_runs": false,
+    "note": "Unclosed intents do not establish actual transmission. Retries, missing usage and generation-side native execution are not fully costed. No monetary estimate."
+  },
+  "publication": {
+    "local_source_directory": "outputs/continual_eval/resume_20260929_pm/results/snapshots/",
+    "raw_receipts_published": false,
+    "contains": "Reviewed metadata, counts, cost subtotals, reason codes and frozen source hashes only",
+    "excludes": "Credentials, task text, reference answers, generated code, raw API caches and action trajectories"
+  },
+  "limitations": [
+    "S0 development completion is not the complete five-stage continual-learning protocol.",
+    "No learned Skill, Research, method advantage or cross-domain generalization is evaluated here.",
+    "Unknowns remain unknown; no failed or interrupted position was resampled for this summary.",
+    "ALF A protocol-bug run is excluded and not pooled with B.",
+    "Spreadsheet unknown cause classification is post hoc; no retrospective score correction or formula recalculation is made.",
+    "Different native tasks, scoring protocols, declared family granularity and coverage preclude treating a pooled accuracy as generalization evidence."
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "version": "bcb-public-train-evidence-readiness-v1",
+  "checked_at": "2026-09-30T18:55:40.208308+00:00",
+  "status": "static_inventory_complete_not_execution_qualified",
+  "benchmark": "bigcodebench",
+  "dataset_revision": "bigcode/bigcodebench@b74c0d0bf70d2c0bc459be537895cca163007f1a:v0.1.4:instruct",
+  "partition": "development",
+  "authorized_role": "train",
+  "tasks": 65,
+  "families": 64,
+  "selection_tasks_analyzed": 0,
+  "scope": "Only authorized training public.prompt and public.entry_point inform this inventory. Full panel/task bytes participate only in integrity hashing; no hidden test content is inspected for check design.",
+  "parser": {
+    "version": "literal-doctest-equality-assert-signature-static-v1",
+    "ast_parsing_only": true,
+    "task_code_executed": false,
+    "synthetic_pass_is_only_to_parse_incomplete_public_signature_not_a_solution": true,
+    "supported_checks": [
+      "direct entry-point call with strict JSON literal args and literal expected output in doctest",
+      "assert direct entry-point literal call equals literal expected output"
+    ],
+    "assert_and_doctest_execution_not_performed": true,
+    "own_parser_controls_passed": 4
+  },
+  "verified_syntactic_counts": {
+    "tasks_with_public_entry_point": 65,
+    "tasks_with_def_signature": 65,
+    "tasks_with_unique_parsed_signature": 65,
+    "tasks_with_code_fences": 65,
+    "original_fences_parseable_as_complete_python": 0,
+    "incomplete_fences_parsed_with_synthetic_pass": 65,
+    "tasks_with_doctest_marker": 0,
+    "parsed_doctest_items": 0,
+    "tasks_with_assert_keyword": 0,
+    "supported_literal_doctest_checks": 0,
+    "supported_literal_assert_checks": 0,
+    "tasks_with_supported_literal_check": 0,
+    "tasks_with_example_keyword_only_not_a_check": 2,
+    "tasks_with_input_output_example_heading": 0,
+    "declared_parameters": 145,
+    "annotated_parameters": 19,
+    "tasks_with_annotated_parameters": 10,
+    "tasks_with_return_annotation": 9,
+    "parameter_default_expressions": 60,
+    "strict_json_literal_default_expressions": 57,
+    "tasks_with_no_required_arguments_by_signature": 13
+  },
+  "declared_annotation_syntax": {
+    "parameter_occurrences": {
+      "unannotated": 126,
+      "str": 12,
+      "int": 1,
+      "pd.DataFrame": 2,
+      "list": 3,
+      "np.ndarray": 1
+    },
+    "return_occurrences": {
+      "unannotated": 56,
+      "str": 1,
+      "pd.DataFrame": 3,
+      "other_annotation_syntax": 1,
+      "list": 1,
+      "dict": 1,
+      "bool": 1,
+      "plt.Axes": 1
+    },
+    "interpretation": "Syntax in public declarations, not verified runtime types; unannotated is unknown."
+  },
+  "heuristic_task_markers": {
+    "nonexclusive_task_counts": {
+      "filesystem_or_file_format": 21,
+      "dataframe_or_pandas": 25,
+      "array_or_numpy": 20,
+      "plotting_or_figure": 23,
+      "network_or_web": 6,
+      "json_like_type_words": 45,
+      "randomness": 27,
+      "input_mutation_or_preservation": 0
+    },
+    "tasks_with_any_filesystem_dataframe_array_plot_network_marker": 56,
+    "regex_patterns": {
+      "filesystem_or_file_format": "\\b(?:file|files|filename|directory|directories|filepath|path|csv|xlsx)\\b",
+      "dataframe_or_pandas": "\\b(?:dataframe|dataframes|pandas)\\b",
+      "array_or_numpy": "\\b(?:ndarray|numpy|np\\.|array|arrays)\\b",
+      "plotting_or_figure": "\\b(?:matplotlib|pyplot|plot|plots|axes|figure|figures|seaborn)\\b",
+      "network_or_web": "\\b(?:requests|http|https|url|urls|web|socket|sockets)\\b",
+      "json_like_type_words": "\\b(?:int|integer|float|str|string|bool|boolean|list|dictionary|dict)\\b",
+      "randomness": "\\b(?:random|randomly|seed|random_state|shuffle)\\b",
+      "input_mutation_or_preservation": "\\b(?:in.place|inplace|mutate|mutation|modify.{0,40}input|input.{0,40}unchanged)\\b"
+    },
+    "interpretation": "Keyword indicators only. Not verified task classes, input/output types, mandatory obligations, supportedness or exclusion decisions. A JSON-like type word does not make the full callable JSON-compatible; the nine tasks without complex-type/resource markers are not certified JSON-compatible either."
+  },
+  "readiness": {
+    "existing_literal_public_example_adapter_coverage": {
+      "tasks": 0,
+      "denominator": 65
+    },
+    "general_public_probe_execution_qualified": false,
+    "input_preservation_obligation_verified": false,
+    "recommendation": "Do not insert a blanket nonmutation rule or expose private tests as public examples. Retain native train scalar feedback as host-development evidence. Any extra public check needs an explicit contract-grounded proposal, applicability review and isolated execution; complex return types and filesystem state need bounded adapters.",
+    "no_supported_literal_examples_does_not_mean_no_possible_contract_checks": true
+  },
+  "source": {
+    "study": "/root/continual-baselines-long-20261001-study",
+    "manifest_path": "/root/continual-baselines-long-20261001-study/manifests/skillopt.json",
+    "manifest_hash": "03c764ab8f84c5a4c55ef976c434febf69e9644f202b88f8f963c50efcc3e6fc",
+    "manifest_file_sha256": "903fbeb4d823f8b69a9196a2c202c176a5031c140b889d43a21a9e3c93640384",
+    "panel_path": "/root/continual-baselines-long-20261001-study/data/learning.json",
+    "panel_hash": "d0f8fb0bdbe273429fbf22dcba127c8c1ba22d9ea05d1748528b4678c71974ad",
+    "panel_file_sha256": "dad23ce35a62e7692306dbb1245570bf95f05cf99c99f2c3caf81b33281d57ed",
+    "authorized_train_public_roster_digest": "eac0b098fca8a53f8f368dfc14e41cfdcb9270592a7cdd0f7f667ed8dc0b93f2"
+  },
+  "costs": {
+    "model_calls": 0,
+    "docker_calls": 0,
+    "task_executions": 0
+  },
+  "raw_prompts_code_examples_task_ids_hidden_tests_or_secrets_published": false,
+  "verifier_authorization_granted": false,
+  "skill_effect_established": false,
+  "record_hash": "1db3269a1b89c50aca75956eb821b3b10fcfcb2d2d1121192c6bb937b1f1cf72"
+}

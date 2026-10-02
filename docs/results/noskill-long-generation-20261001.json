@@ -1,0 +1,49 @@
+{
+  "version": "long-response-noskill-generation-v1",
+  "captured_at": "2026-09-30T17:15:48.924625+00:00",
+  "status": "generation_complete_score_waiting_for_shared_native_lock",
+  "evidence_kind": "real_model_historically_exposed_development_not_final",
+  "benchmark": "bigcodebench",
+  "tasks": 400,
+  "repeats": 2,
+  "positions": 800,
+  "model": {
+    "provider": "bigmodel",
+    "name": "glm-5.3",
+    "max_tokens": 65536,
+    "reasoning_effort": "low",
+    "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+    "transport": {
+      "stream": true,
+      "read_timeout_seconds": 300,
+      "stream_wall_seconds": 1800,
+      "initial_health_policy": "completed_response_v1"
+    }
+  },
+  "preparation_hash": "04ba994e72bb595896b23c0fbfe49ed038d72acdb9b2ac4c3ed1344dd0bc31ea",
+  "plan_hash": "4cfc9177817f833198d9c7bac2b77ac1d5dabcf61d372ac10f5e51e5e9b44056",
+  "prediction_counts": {
+    "available": 800
+  },
+  "finish_reason_counts": {
+    "stop": 800
+  },
+  "http_status_counts": {
+    "200": 800
+  },
+  "stream_complete_count": 800,
+  "costs": {
+    "logical_calls": 800,
+    "http_attempts": 800,
+    "reported_tokens": 324867,
+    "usage_complete": true,
+    "retry_inclusive_usage_known": true
+  },
+  "max_completion_tokens_observed": 6925,
+  "predictions_manifest_hash": "c2d34406fd31fb8dd175bfe54b7a3f52b1e661aff7d0902addc4e88fbd09df87",
+  "accuracy_not_yet_available": true,
+  "skillopt_status": "running",
+  "gepa_status": "not_started",
+  "historical_scores_replaced": false,
+  "record_hash": "2ae57226a6277ce835120d1765da9e503eebcda2f8b2f1b285b59a90ad9eccb8"
+}

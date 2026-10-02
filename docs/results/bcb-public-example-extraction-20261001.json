@@ -1,0 +1,102 @@
+{
+  "version": "bcb-public-example-extraction-report-v1",
+  "date": "2026-10-01",
+  "status": "completed_static_extraction_not_execution_validation",
+  "evidence_kind": "real_authorized_public_records_static_processing_plus_separate_engineering_fixtures",
+  "data": {
+    "tasks": 65,
+    "families": 64,
+    "partition": "development",
+    "authorized_role": "train",
+    "selection_tasks_used": 0,
+    "hidden_tests_used": 0,
+    "reference_solutions_used": 0,
+    "selected_by_model_or_audit_success": false
+  },
+  "counts": {
+    "records": 65,
+    "records_with_markers": 10,
+    "records_without_markers": 55,
+    "marker_candidates": 30,
+    "supported_candidates": 1,
+    "unsupported_candidates": 29,
+    "tasks_with_supported_extraction": 1,
+    "tasks_without_supported_extraction": 64,
+    "unsupported_reasons": {
+      "assignment_or_setup_unsupported": 14,
+      "not_direct_entry_call": 13,
+      "invalid_or_ambiguous_expression": 2
+    }
+  },
+  "semantics": {
+    "supported_means": "Syntactically recognized direct entry call with bounded JSON literal arguments and complete literal expected output; not established task correctness.",
+    "admissibility": "not_reviewed",
+    "execution_qualified_examples": 0,
+    "verifier_authorization": false,
+    "skill_updated": false,
+    "feedback_sent_to_updater": false,
+    "baseline_or_historical_extractor_changed": false,
+    "old_zero_coverage_report_preserved": true,
+    "research_information_gain_claimed": false
+  },
+  "behavior": {
+    "public_input_whitelist": [
+      "prompt",
+      "entry_point"
+    ],
+    "original_public_context_retained_privately": true,
+    "all_markers_retained_with_status_reason_and_source_spans": true,
+    "explicit_line_start_bcb_section_boundaries_only": true,
+    "quote_bracket_and_comment_context_checked_across_markers": true,
+    "trailing_prose_or_comments_not_silently_discarded": true,
+    "nonfinite_or_non_json_literals_rejected": true,
+    "no_eval_or_task_execution": true,
+    "deterministic_reextraction_equal_for_all65": true,
+    "original_manifest_and_panel_bytes_unchanged": true
+  },
+  "engineering_tests": {
+    "new_fixture_passed": 58,
+    "new_fixture_failed": 0,
+    "combined_with_existing_checks_stage2_transport_sandbox_passed": 232,
+    "combined_failed": 0,
+    "combined_skipped": 0,
+    "ruff": "passed",
+    "root_and_independent_review": "passed_after_marker_context_and_surrogate_fixes",
+    "fixtures_are_not_real_benchmark_checks": true
+  },
+  "identity": {
+    "private_root": "/root/bcb-public-extraction-20261001.yXwztC",
+    "private_root_mode": "0700",
+    "private_summary_record_hash": "db7892843a3a9ea8a9ed79e9e9890360b43edacbddde62dc3d7b3129e1f9117a",
+    "private_summary_file_sha256": "c05d6625fa9fd23b979174da2d97cec0b51fec4d62503170d5e9d89e9aad22c8",
+    "extractor": "skillopt/skill_validation/bcb_public_examples.py",
+    "extractor_sha256": "72b49588fc2282eaf0292dc676a5356527794f06ac5058aabdf9ce9fbf704a39",
+    "test_file_sha256": "0161ce8f0283139c03e95e1dd08618122d1975097545811c54de53b277e013b4",
+    "private_recipe_sha256": "babc1453651e3039919667560bddd52e7e6cb8d727db3a872de6b07821c3f5a8",
+    "source_manifest_file_sha256": "903fbeb4d823f8b69a9196a2c202c176a5031c140b889d43a21a9e3c93640384",
+    "source_panel_file_sha256": "dad23ce35a62e7692306dbb1245570bf95f05cf99c99f2c3caf81b33281d57ed",
+    "frozen_helper_root": "/root/continual-baselines-long-20261001-source",
+    "helper_core_sha256": "6883f4374c141f6670bd05a08d3571f1bf8cec981391d8ad7499811929fa9acc",
+    "helper_api_sha256": "eddffeb62fd54c819d1341628ae8552a8b758ae680cf8cd873c93b202ac19d20",
+    "supported_example_task_hash": "f524fbdd73b78832ed04702f02d25c115dd3270c357df0cb74b073b790aee639",
+    "supported_example_public_hash": "5dfc8ad1f499f8b3d0e6563834fdc786664ebc314c3a1d7807b070ad4e69305b",
+    "supported_example_extraction_hash": "de9520b5ffbb04b9771a8f53443da6bcf494e584cd10b90fe6325979f5f3a309"
+  },
+  "costs": {
+    "model_calls": 0,
+    "container_calls": 0,
+    "task_executions": 0
+  },
+  "limitations": [
+    "A parsed example can still be approximate, stochastic, contradictory or insufficient; independent admissibility review is required before using it as a check.",
+    "The single supported example still needs bounded filesystem and numerical/plotting runtime support; it has not been run on any candidate artifact.",
+    "Missing markers or unsupported forms do not prove the public contract lacks useful obligations.",
+    "This is public-format extraction repair, not evidence that Research found new knowledge or that Skill generalization improved."
+  ],
+  "related_reports": [
+    "bcb-public-contract-coverage-20261001.json",
+    "bcb-public-evidence-readiness-20261001.json"
+  ],
+  "raw_task_text_examples_or_credentials_published": false,
+  "record_hash": "9b12cf93dee5eec7d2b130b615bcd4d656e076e9cbac3149ddad90be564fb591"
+}

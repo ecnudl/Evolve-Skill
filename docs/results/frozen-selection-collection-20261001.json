@@ -1,0 +1,267 @@
+{
+  "version": "frozen-selection-collection-public-summary-v1",
+  "date": "2026-10-01",
+  "status": "completed",
+  "reason": "all_original_unsubmitted_positions_collected",
+  "evidence_kind": "real_model_development_diagnostic",
+  "method": "generic_summary",
+  "sources": {
+    "source_root": "/root/continual-selection-collection-20261001-source",
+    "collection_root": "/root/continual-selection-collection-20261001-study/generic_summary",
+    "full_result_hash": "d3199880c2f44a9ae7eb7eaa31e1a5388054322ae3d6d1008c661b3dbebbf84b",
+    "protocol_hash": "5c55756d11bc96893bf77bd361b1bb49ffe3f7c55bbc6d27943ac859323256d5",
+    "parent_root": "/root/continual-feedback-ablation-20261001-study/generic_summary",
+    "parent_result_hash": "e83ed102ace0f4bc27088893a10d46657930a554e3e556e3868759a7dfca17ee",
+    "parent_protocol_hash": "61e7da890dc8363c628e20d6beee07106c2126d6fe817bc91aaf13eaed83f44f",
+    "source_identity_hash": "338104e4ce16dc664e5f548e2f6f7866f20a6fd359244b985c0c49e2bc89164e",
+    "original_file_count_verified": 937,
+    "native_image_id": "sha256:b13b0bb97861eb3a2f3f9ead1e8718d1410882613f84e088bb31338c343149fa"
+  },
+  "model": {
+    "provider": "bigmodel",
+    "name": "glm-5.3",
+    "reasoning_effort": "low",
+    "max_tokens": 65536,
+    "transport": {
+      "stream": true,
+      "read_timeout_seconds": 300,
+      "stream_wall_seconds": 1800,
+      "initial_health_policy": "completed_response_v1"
+    }
+  },
+  "data": {
+    "benchmark": "bigcodebench",
+    "partition": "development",
+    "tasks": 64,
+    "families": 64,
+    "repeats": 1,
+    "family_definition": "frozen importer family IDs, not an independently certified semantic deduplication",
+    "semantic_family_independence_certified": false
+  },
+  "original_prefix": {
+    "positions": 16,
+    "counts": {
+      "fail": 8,
+      "pass": 7,
+      "unknown": 1
+    }
+  },
+  "new_collection": {
+    "planned_positions": 48,
+    "closed_positions": 48,
+    "counts": {
+      "fail": 21,
+      "pass": 27
+    },
+    "reflection_calls": 0
+  },
+  "combined": {
+    "positions": 64,
+    "counts": {
+      "pass": 34,
+      "fail": 29,
+      "unknown": 1,
+      "missing": 0
+    },
+    "known_denominator": 63,
+    "accuracy_known": 0.5396825396825397,
+    "accuracy_bounds": {
+      "lower": 0.53125,
+      "upper": 0.546875
+    },
+    "paired_to_frozen_empty_parent": {
+      "wins": 6,
+      "losses": 5,
+      "ties": 52,
+      "unknown": 1,
+      "missing": 0
+    },
+    "frozen_empty_parent_score": 0.515625,
+    "unknown_reasons": {
+      "native_timeout": 1
+    }
+  },
+  "costs": {
+    "shared_base": {
+      "logical_calls": 138,
+      "terminal_calls": 138,
+      "unclosed_calls": 0,
+      "http_attempts": 138,
+      "http_attempts_known_subtotal": 138,
+      "http_attempts_total": 138,
+      "http_attempts_semantics": "known_subtotal_total_unknown_if_unclosed",
+      "reported_tokens_known_subtotal": 103424,
+      "missing_usage_calls": 0,
+      "usage_complete": true,
+      "retry_inclusive_usage_known": true,
+      "reflection_calls": 9,
+      "solver_calls": 129
+    },
+    "original_arm": {
+      "logical_calls": 17,
+      "terminal_calls": 17,
+      "unclosed_calls": 0,
+      "http_attempts": 17,
+      "http_attempts_known_subtotal": 17,
+      "http_attempts_total": 17,
+      "http_attempts_semantics": "known_subtotal_total_unknown_if_unclosed",
+      "reported_tokens_known_subtotal": 47929,
+      "missing_usage_calls": 0,
+      "usage_complete": true,
+      "retry_inclusive_usage_known": true,
+      "reflection_calls": 1,
+      "solver_calls": 16
+    },
+    "new_collection": {
+      "logical_calls": 48,
+      "terminal_calls": 48,
+      "unclosed_calls": 0,
+      "http_attempts": 48,
+      "http_attempts_known_subtotal": 48,
+      "http_attempts_total": 48,
+      "http_attempts_semantics": "known_subtotal_total_unknown_if_unclosed",
+      "reported_tokens_known_subtotal": 55051,
+      "missing_usage_calls": 0,
+      "usage_complete": true,
+      "retry_inclusive_usage_known": true,
+      "reflection_calls": 0,
+      "solver_calls": 48
+    },
+    "shared_base_count_once_across_arms": true,
+    "new_total_cost_known": true,
+    "finish_reasons": {
+      "stop": 48
+    },
+    "new_returned_models": {
+      "glm-5.3": 48
+    },
+    "native_original_plus_new": {
+      "counts": {
+        "fail": 29,
+        "pass": 34,
+        "unknown": 1
+      },
+      "wall_seconds": 598.9874639999999
+    }
+  },
+  "checks": {
+    "original_sources_and_artifacts_unchanged": true,
+    "remaining_roster_bound": true,
+    "no_closed_unknown_retried": true,
+    "same_frozen_candidate": true,
+    "source_and_receipt_binding_verified": true,
+    "evidence_validation_issues": {}
+  },
+  "interpretation": {
+    "original_gate_status": "pending",
+    "diagnostic_only": true,
+    "s1_authorized": false,
+    "skill_updated": false,
+    "deployment_authorized": false,
+    "research_rubric_effect_claimed": false,
+    "independent_final_evaluation": false,
+    "note": "Post-hoc completion of only previously unsubmitted selection positions; original Pending decision is unchanged."
+  },
+  "full_panel_policy_comparison": {
+    "version": "full-selection-shadow-arm-comparison-v1",
+    "positions": 64,
+    "direction": "conditional_minus_generic",
+    "paired_counts": {
+      "wins": 4,
+      "losses": 6,
+      "ties": 53,
+      "unknown": 1
+    },
+    "known_pair_denominator": 63,
+    "condition_counts": {
+      "generic_summary": {
+        "counts": {
+          "fail": 29,
+          "pass": 34,
+          "unknown": 1
+        }
+      },
+      "conditional_mechanism": {
+        "counts": {
+          "fail": 32,
+          "pass": 32
+        }
+      }
+    },
+    "full_denominator_difference_bounds": {
+      "lower": -0.046875,
+      "upper": -0.03125
+    },
+    "generic_original_result_hash": "e83ed102ace0f4bc27088893a10d46657930a554e3e556e3868759a7dfca17ee",
+    "generic_collection_result_hash": "d3199880c2f44a9ae7eb7eaa31e1a5388054322ae3d6d1008c661b3dbebbf84b",
+    "conditional_result_hash": "2bbe57d83dc9a1e369ac2db889078ef7a2c68ea3b6a0fae4036bd6f62164806e",
+    "costs_excluding_shared_base_per_arm": {
+      "generic_summary": {
+        "solver": {
+          "calls": 64,
+          "http_attempts": 64,
+          "prompt_tokens": 59948,
+          "completion_tokens": 14272,
+          "total_tokens": 74220
+        },
+        "reflection": {
+          "calls": 1,
+          "http_attempts": 1,
+          "prompt_tokens": 27958,
+          "completion_tokens": 802,
+          "total_tokens": 28760
+        },
+        "total_calls": 65,
+        "total_tokens": 102980
+      },
+      "conditional_mechanism": {
+        "solver": {
+          "calls": 64,
+          "http_attempts": 64,
+          "prompt_tokens": 92140,
+          "completion_tokens": 15010,
+          "total_tokens": 107150
+        },
+        "reflection": {
+          "calls": 1,
+          "http_attempts": 1,
+          "prompt_tokens": 27987,
+          "completion_tokens": 1324,
+          "total_tokens": 29311
+        },
+        "total_calls": 65,
+        "total_tokens": 136461
+      },
+      "shared_base": {
+        "logical_calls": 138,
+        "terminal_calls": 138,
+        "unclosed_calls": 0,
+        "http_attempts": 138,
+        "http_attempts_known_subtotal": 138,
+        "http_attempts_total": 138,
+        "http_attempts_semantics": "known_subtotal_total_unknown_if_unclosed",
+        "reported_tokens_known_subtotal": 103424,
+        "missing_usage_calls": 0,
+        "usage_complete": true,
+        "retry_inclusive_usage_known": true,
+        "reflection_calls": 9,
+        "solver_calls": 129
+      },
+      "shared_base_count_once": true,
+      "total_actual_calls_shared_base_once": 268,
+      "total_actual_tokens_shared_base_once": 342865
+    },
+    "generic_gate": "pending",
+    "conditional_gate": "reject",
+    "s1_authorized": false,
+    "same_frozen_training_evidence": true,
+    "same_tasks_parent_updater_model_and_role_caps": true,
+    "compute_matched": false,
+    "posthoc_suffix_completion": true,
+    "independent_final_evidence": false,
+    "research_rubric_effect_claimed": false,
+    "interpretation": "Descriptive full-panel policy ablation. Unknown retained; no stable-effect inference or retroactive acceptance.",
+    "record_hash": "bd3d2de825dd6dc99eaf7751f96988c1821e652a3ada5b16e9470dea76b259f4"
+  },
+  "record_hash": "97be7575da40ff61760e35f5d7130f6ac84aa6b91c164a9fe8ef7395e5a6b4e1"
+}

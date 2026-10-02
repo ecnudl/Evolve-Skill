@@ -1,0 +1,203 @@
+{
+  "version": "continual-native-resource-qualification-v1",
+  "date": "2026-09-28",
+  "evidence_kind": "engineering_runtime_controls_not_model_or_method_effect",
+  "status": "native_controls_completed_full_benchmarks_not_qualified",
+  "model_calls": 0,
+  "model_tokens": 0,
+  "paid_model_experiments": 0,
+  "publication": {
+    "contains": "Metadata, counts, hashes and artifact references only.",
+    "excludes": "Credentials, benchmark text, game observations, action trajectories and raw model caches.",
+    "referenced_raw_artifacts_published": false,
+    "local_evidence_root": "outputs/continual_eval/resource_recovery_20260928/"
+  },
+  "alfworld": {
+    "resource_status": "assets_present_native_controls_completed",
+    "remote_data_root": "/root/continual-alf-prep-20260928/data",
+    "remote_python": "/root/continual-alf-prep-20260928/env/bin/python",
+    "environment_scope": "Dedicated ALFWorld virtual environment; shared conda environment was not modified.",
+    "selected_package_versions": {
+      "alfworld": "0.4.2",
+      "textworld": "1.7.0",
+      "gymnasium": "1.2.0",
+      "numpy": "2.4.6",
+      "openai": "3.17.0"
+    },
+    "complete_dependency_lock_verified": false,
+    "downloaded_game_files": 4027,
+    "existing_development_manifest_tasks": 39,
+    "development_manifest_game_and_sidecar_missing": 0,
+    "required_logic_files_present": 2,
+    "detector_or_pretrained_agent_downloaded": false,
+    "assets_receipt": {
+      "path": "outputs/continual_eval/resource_recovery_20260928/alf-assets-complete.json",
+      "sha256": "2c87ada3432400ef6b5c35c818ba21b22247d9e34f630d69b313b779ef15c75c"
+    },
+    "controls": {
+      "selection": "First existing development-manifest row per task type, fixed before the initial controls.",
+      "distinct_selected_tasks": 6,
+      "selection_is_independent_method_evaluation": false,
+      "controller": "Upstream handcoded expert for positive controls; one scripted look action for the negative control.",
+      "native_score": "Host-observed ALFWorld won flag; no LLM judge.",
+      "versions": [
+        {
+          "version": "v1",
+          "positive_attempts": 6,
+          "positive_successes": 0,
+          "completed_unsuccessful_episodes": 0,
+          "infrastructure_unknowns": 6,
+          "reason": "Missing openai dependency in the dedicated environment, imported transitively by the historical ALFWorld package.",
+          "negative_control": {"status": "unknown", "simulated_calls": 0},
+          "qualified": false,
+          "receipt": "outputs/continual_eval/resource_recovery_20260928/alf-native-controls-v1.json",
+          "receipt_sha256": "c7b5a2a972272bef4e369f6a29c3d26b1afa6ab2eede51d2834389dfa04b22d0"
+        },
+        {
+          "version": "v2",
+          "positive_attempts": 6,
+          "positive_successes": 2,
+          "completed_unsuccessful_episodes": 1,
+          "infrastructure_unknowns": 3,
+          "reason": "Dependency repaired, but cold full-dataset scans exceeded the 60-second startup limit. Warm-cache episodes could start; the native time limit remained 50 steps.",
+          "first_startup_timeout_seconds": 61.66327191982418,
+          "negative_control": {"status": "fail", "expected_status": "fail", "simulated_calls": 1},
+          "active_children_after_controls": 0,
+          "qualified": false,
+          "receipt": "outputs/continual_eval/resource_recovery_20260928/alf-native-controls-v2.json",
+          "receipt_sha256": "c296617a904c76d3c0a9738094d383a4ffddc341c907f2b40bced62a37ebf8b1"
+        },
+        {
+          "version": "v3",
+          "changes": ["Initialize from the selected episode directory", "Bind the native time limit to the configured step budget"],
+          "positive_attempts": 6,
+          "positive_successes": 5,
+          "completed_unsuccessful_episodes": 1,
+          "infrastructure_unknowns": 0,
+          "positive_control_max_steps": 150,
+          "explicit_episode_cleanup_confirmed": 6,
+          "negative_control": {"status": "fail", "expected_status": "fail", "simulated_calls": 1, "max_steps": 1},
+          "active_children_after_controls": 0,
+          "qualified": false,
+          "note": "The fixed pick-two handcoded expert did not succeed in 150 steps; this failure was preserved.",
+          "source_backends_sha256": "b2be7b9f0afe1075ec40d13958f8e56e8122bf8cff5d4e9e92a910200bc01297",
+          "receipt": "outputs/continual_eval/resource_recovery_20260928/alf-native-controls-v3.json",
+          "receipt_sha256": "46ab37a9118c4aa1ae1b51ed8409b1eafd3b248ca6de370563d5b8771e1e0c90"
+        },
+        {
+          "version": "v4",
+          "changes": ["Bounded normal worker exit before terminate/kill fallback", "Explicit post-cleanup worker-liveness check"],
+          "positive_attempts": 6,
+          "positive_successes": 6,
+          "completed_unsuccessful_episodes": 0,
+          "infrastructure_unknowns": 0,
+          "positive_control_max_steps": 150,
+          "explicit_episode_cleanup_confirmed": 6,
+          "negative_control": {"status": "fail", "expected_status": "fail", "simulated_calls": 1, "max_steps": 1},
+          "model_visible_fields": ["observation", "admissible_commands", "recent_history"],
+          "active_children_after_controls": 0,
+          "resource_tracker_warning_count": 0,
+          "leaked_semaphore_warning_count": 0,
+          "qualified": true,
+          "qualification_scope": "These native engineering controls only, not all 4027 games or a model baseline.",
+          "source_backends_sha256": "cde731a7e6e331372d8ece2c8bdf99f8be89f77bd1f94eb27c9d9a80d72e7363",
+          "receipt": "outputs/continual_eval/resource_recovery_20260928/alf-native-controls-v4.json",
+          "receipt_sha256": "d4f3cbdbc029372fcb1dbe8f358e299ed8f3d0ffd86c201e7638a6baeebc0919",
+          "log": "outputs/continual_eval/resource_recovery_20260928/alf-native-controls-v4.log",
+          "log_sha256": "89957f708a1c70894a8324559b32f6cb86caf9516bd62163fc957e3a5228b7b3"
+        }
+      ],
+      "cross_version_interpretation": "Versions reuse the same six tasks. Do not add the repeated attempts as independent tasks or interpret v3 5/6 to v4 6/6 as a method benefit; the handcoded controller varied across runs.",
+      "posthoc_witness": {
+        "kind": "authored_after_inspecting_the_fixed_expert_failure",
+        "tasks": 1,
+        "actions": 9,
+        "native_won": true,
+        "cleanup_confirmed": true,
+        "model_calls": 0,
+        "included_in_six_task_control_scores": false,
+        "interpretation": "The failed expert instance admitted a successful native execution. This does not replace the expert failure or count as generalization evidence.",
+        "receipt": "outputs/continual_eval/resource_recovery_20260928/alf-pick-two-authored-witness.json",
+        "receipt_sha256": "d90afc3c6af2084d6bb4f68f3afbac8a22cc8ece0e6ef6bb9a4928633e39d0aa",
+        "expert_diagnostic_receipt": "outputs/continual_eval/resource_recovery_20260928/alf-expert-diagnostic-train0034.json",
+        "expert_diagnostic_sha256": "b272a5a8e1a3255f954a2a4067c6581f3807d36a042e1aa99adc6dec94f5c07e"
+      }
+    },
+    "remote_source_snapshot": "/root/continual-alf-qualification-v4-20260928",
+    "source_archive": "outputs/continual_eval/resource_recovery_20260928/source-v4.tar.gz",
+    "source_archive_sha256": "c299c3b2bfa1adca513215deb02a3e955b03af0780bbdf603203ae9e36021bf7",
+    "requirements_before_formal_collection": [
+      "Use the ALFWorld-specific Python environment and set ALFWORLD_DATA to the frozen resource root in the launched process.",
+      "Freeze the task/family partition, exact source and assets, episode budget, solver settings and output directory before model calls.",
+      "The controls used development tasks only; final tasks were not executed."
+    ]
+  },
+  "bigcodebench": {
+    "resource_status": "official_image_loaded_tiny_native_controls_completed_dataset_not_qualified",
+    "official_image_reference": "bigcodebench/bigcodebench-evaluate@sha256:1327bddf60be9bc241648c59e6060cac4ca50248a0588ab735cd0200b17cc8c2",
+    "image_id": "sha256:b13b0bb97861eb3a2f3f9ead1e8718d1410882613f84e088bb31338c343149fa",
+    "os": "linux",
+    "architecture": "amd64",
+    "docker_data_root": "/data/docker",
+    "image_size_bytes": 15141631437,
+    "downloaded_archive_bytes": 9273521664,
+    "verified_compressed_and_uncompressed_layers": 19,
+    "expected_layers": 19,
+    "uncompressed_layer_tar_bytes": 15261517312,
+    "archive_audit_receipt": "outputs/continual_eval/resource_recovery_20260928/bcb-archive-audit.json",
+    "archive_audit_sha256": "d697b397fda1d839807285445857c4815926555dc907e713550c33194217e4bf",
+    "package_version": "0.2.4",
+    "official_interface": "untrusted_check(code, test_code, entry_point, max_as_limit, max_data_limit, max_stack_limit, min_time_limit=10, gt_time_limit=60)",
+    "interface_matches_native_worker": true,
+    "controls": {
+      "v1": {
+        "status": "qualification_script_error_after_successful_interface_and_import_probes",
+        "scoring_controls_executed": 0,
+        "error_type": "TypeError",
+        "reason": "Temporary host qualification script supplied the keyword-only runtime parameter positionally to backends.score(). This was not an official scorer signature incompatibility or model failure.",
+        "receipt": "outputs/continual_eval/resource_recovery_20260928/bcb-native-controls-v1.json",
+        "receipt_sha256": "91582463134d5b5c9d2b5ab0f71bf73450b751f17432c580c27ab8b10e71c47c"
+      },
+      "v2": {
+        "status": "qualified_for_tiny_engineering_controls_only",
+        "qualification_script_fix": "Pass runtime as a keyword argument; preserve v1 receipt.",
+        "authored_fixtures": 2,
+        "positive_fixture": {"expected_status": "pass", "observed_status": "pass"},
+        "negative_fixture": {"expected_status": "fail", "observed_status": "fail"},
+        "native_readiness_plus_scoring_container_calls": 3,
+        "native_readiness_plus_scoring_cleanup_confirmed": 3,
+        "reported_native_execution_seconds_subtotal": 12.932484,
+        "cost_subtotal_excludes": ["Image download/load", "Separate interface-inspection container", "Preserved v1 qualification attempt"],
+        "runtime": {"timeout_seconds": 300, "memory_mb": 4096, "cpus": 1},
+        "model_calls": 0,
+        "receipt": "outputs/continual_eval/resource_recovery_20260928/bcb-native-controls-v2.json",
+        "receipt_sha256": "83fd30d8948803851fa100d6d12823433f2e8ed8db4664b8c71c57144181a5a4"
+      }
+    },
+    "real_benchmark_dataset_evaluated": false,
+    "all_dataset_dependencies_qualified": false,
+    "requirements_before_formal_collection": [
+      "Import and freeze an official dataset revision and outcome-blind task/family partition.",
+      "Qualify representative official reference solutions and dependencies with the intended runtime budget.",
+      "Freeze a new formal-run configuration; do not equate the tiny-fixture 4 GiB budget with the upstream full-benchmark protocol.",
+      "Keep generated-code execution in the existing hardened no-network Docker boundary."
+    ],
+    "remote_preparation_root": "/root/continual-bcb-prep-20260928"
+  },
+  "local_implementation_checks": {
+    "changed_production_scope": "ALFWorld portions of skillopt/continual_eval/backends.py only",
+    "changed_tests": "ALFWorld tests in tests/test_continual_eval_backends.py",
+    "test_command": "/Users/dulin/miniconda3/envs/skill/bin/python -m pytest -q tests/test_continual_eval_*.py",
+    "passed": 157,
+    "failed": 0,
+    "ruff": "passed",
+    "git_diff_check": "passed"
+  },
+  "limitations": [
+    "This report contains no No-Skill, SkillOpt, Research or generalization effect estimate.",
+    "Positive and negative engineering controls are not a representative benchmark score.",
+    "The different versions are preserved, not retroactively rewritten or pooled as independent samples.",
+    "No existing frozen KOR or SearchQA source snapshot, output, credentials or protocol was modified.",
+    "Runtime readiness does not establish data-partition independence, full dependency coverage or statistical sufficiency."
+  ]
+}

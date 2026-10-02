@@ -1,0 +1,64 @@
+{
+  "evidence_kind": "frozen_real_model_artifact_rescoring_not_new_generation",
+  "status": "complete",
+  "model_provenance": "original BigModel glm-5.3 low / 65536 No-Skill outputs",
+  "data_provenance": "historically exposed SpreadsheetBench development panel; 80 tasks x 2 repeats",
+  "qualification": {
+    "record_hash": "acab35733790bb0d94ae26223e4f37b0783868621fc80ed1821909dc6b2c2385",
+    "engine_controls": {"passed": 41, "total": 41},
+    "original_score_controls": {"passed": 18, "total": 18},
+    "link_specific_score_controls": {"passed": 2, "total": 2},
+    "reused_original_A_fixture_bytes_and_expectations": true,
+    "execution": {
+      "closed_workbooks": 50,
+      "containers_attempted": 38,
+      "reported_wall_seconds": 88.32880229689181,
+      "open_workbook_intents": 0,
+      "cleanup_unconfirmed": 0,
+      "model_api_calls": 0
+    }
+  },
+  "protocol_hash": "83ad35061c2ac59f6ff3791faa07022c0c3bc3346b74a255937be616ec55ec9a",
+  "report_hash": "e31678bb2b218c237ec05218a32d595370899f2b32e65168d822736364fed44e",
+  "positions": 160,
+  "completed": 160,
+  "counts": {"pass": 79, "fail": 55, "unknown": 26},
+  "previous_C_counts": {"pass": 79, "fail": 55, "unknown": 26},
+  "previous_transitions": {"pass->pass": 79, "fail->fail": 55, "unknown->unknown": 26},
+  "known_preservation": {"expected_positions": 134, "replayed": 134, "unchanged": 134},
+  "unknown_reasons": {
+    "original_no_delivered_workbook:native_exception:FileNotFoundError": 1,
+    "original_no_delivered_workbook:native_exception:AttributeError": 2,
+    "known_reference_dispute": 2,
+    "prediction:unsupported_external_structured_or_volatile_formula": 4,
+    "prediction:recalculation_changed_literal_cell": 4,
+    "original_no_delivered_workbook:output.xlsx_not_produced": 1,
+    "prediction:numeric_literal_sheet_missing:before_calculate": 2,
+    "prediction:recalculation_changed_formula": 1,
+    "original_no_delivered_workbook:native_exception:TypeError": 1,
+    "original_no_delivered_workbook:native_exception:ValueError": 1,
+    "prediction:recalculation_changed_defined_names": 1,
+    "original_no_delivered_workbook:model_response_truncated": 1,
+    "original_no_delivered_workbook:native_exception:SyntaxError": 1,
+    "prediction:passive_hyperlink_execution_unverified": 2,
+    "prediction:unsupported_active_or_external_workbook": 2
+  },
+  "replay_execution": {
+    "closed_workbooks": 150,
+    "containers_attempted": 144,
+    "reported_wall_seconds": 681.5064672492445,
+    "open_workbook_intents": 0,
+    "cleanup_unconfirmed": 0,
+    "model_api_calls": 0,
+    "reference_engine_calls": 0
+  },
+  "source_sha256": {
+    "sheet_passive_links.py": "9cc4d46a3a01baefcef8be3d9bb4dd5f20cef3134fa75c30d082d0793db312d1",
+    "replay_sheet_passive_links.py": "2344b4dd1615c43d5831d90bc7c826a2b6e27967fc38b5d10eb51f611795e7b0"
+  },
+  "truth_basis": "frozen_benchmark_label_not_independent_oracle",
+  "historical_scores_replaced": false,
+  "feedback_allowed": false,
+  "method_improvement_claimed": false,
+  "conclusion": "Qualified engineering capability did not recover any additional unknown in the full natural panel. All prior known judgments were retained."
+}

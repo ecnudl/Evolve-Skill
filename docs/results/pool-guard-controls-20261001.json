@@ -1,0 +1,279 @@
+{
+  "version": "pool-guard-engineering-controls-public-summary-v2",
+  "date": "2026-10-01",
+  "status": "completed",
+  "evidence_kind": "authored_engineering_compatibility_controls",
+  "sources": {
+    "study_root": "/root/continual-pool-guard-controls-v2-20261001-study",
+    "protocol_hash": "fa4c28b36198d7eb54657fd3d794b435aee24583d0deb65ce8fda807eece43a7",
+    "full_report_hash": "07d71eda2a61427118893f21cfe215fffec3cad2eb083cd55344704513c7cfb4",
+    "source_hashes": {
+      "/root/continual-pool-guard-controls-v2-20261001-ops/pool_guard_controls.py": "332e915fca96124e63491155b487f216545a199ea9291c45b9ff0ad8d6aabbda",
+      "/root/continual-pool-guard-controls-v2-20261001-ops/pool_guard_control_worker.py": "2e0fdbacdfeb676f9e32d7fc2e743d74600599f26bddaad4ee00a3e78253963a",
+      "/root/continual-baselines-long-20261001-source/skillopt/skill_validation/sandbox.py": "8a88a3a5664ac305d8ae499955462d202304dd38ba7b27f105bb4728da6502ce",
+      "/root/continual-baselines-long-20261001-source/skillopt/continual_eval/backends.py": "0994684925e13fefc204076a00bd8b9fc4a7983130507b33990cd0ce47960333",
+      "/root/continual-baselines-long-20261001-source/skillopt/continual_eval/core.py": "3cece62af9708c06931b332433d775551293bcf2450680300516e3325481e84e"
+    },
+    "sdk_source_hashes": {
+      "sdk_utils": "9061f74fe937c4eb7a1b2bc423f7acab547ae01804d5e25933e2aa8a3cc2d685",
+      "pool": "1539ad7e8aa4b8df03778f1fe5381d928928c5837be7172747bf07c3e6cb4a78",
+      "popen_fork": "0a09db57e7fab7061c01a61778feea6e2b6bb02ccbc150332f2960b05258ef95"
+    },
+    "images": {
+      "original": "sha256:b13b0bb97861eb3a2f3f9ead1e8718d1410882613f84e088bb31338c343149fa",
+      "data_only": "sha256:4e8c8cb8cb1ed55daf980203da45ef5e4c3eff1cfcf44121968bd52f82f851c8"
+    },
+    "record_hashes": [
+      "262c90ae281940671482574ca538a8aa0aa82b55512c30451e73daf67cb320c2",
+      "5eea2e83db8e565a0fccce9ef6f9bf7d88076dbb07fbb73ab3944468a9beef61",
+      "f9d50b97d3bb91bf5cce1280048e5191e7d0b596d4d416eda6d25abc077a951d",
+      "b2676837e1981ca9d8e55fef744e69045d76f750f3a53328b550c27f82c8524d",
+      "68a75b5a7976afca7fef03c1f96783b5198e143c177f314e20fa92df39f3310a",
+      "cbff0db6406cfc022e25e10d058b03300ee88f451457c697c9749fb8a13d6373",
+      "e63f50a08ad2c3ecf46fe2f943a81c303c4a46aaa0447fc527c699b5c47b0188",
+      "28f453946f37365d462e64959be0f4d98192976a9c61c82794b5574c280e7bf6",
+      "52bfc3fd57412aaa2d88502133fe41366a5dd0894adc11df83538bd33291aaab",
+      "86bcc765968d519e94539acf54c516e585f61da621ccdf00f30735b8eb6ae4f7",
+      "5d3df242c7516ad7f36f6e436f5dd29162ba0ec9aeecf019f1cfc7af8a25e33b",
+      "c147face732a90e30185a4c9952d38ff414d7c078d1aa22d37979dd1fe99bba1",
+      "9bf01a5e115cb38c6fc0a64d9a6fbabf501aa21da594636bf5ecb77f206960ff",
+      "80066c60b48368da8f1246dc849dbd406ec87ea043df6e56ddbac8b6a62586b0",
+      "c9e2e8738a9cb9f8d7ba08782f809e963b6ecc145b1108a05e428a3353da0b24",
+      "072ba627a3f31a9eb5f799fb5c1b6d0858f497d377f98d76a41ee1b143c15656",
+      "6b46ad6fc48eeb4064026bb2af99af81b336e6c837d6515b0fabf3e176623127",
+      "12451379edc79ef849f09dacfdf0e0dfb17dba04db7cf41361138d035fc02a6c",
+      "6d0b89e8958109818e98ba51f4304b9bad2ae252525c7552f8994b511e2d8c29",
+      "c0eadd27e1ddd5ae78af738cf37f9eaae9e2de656429bd8dd410d64d48ea9814",
+      "150b9e07b2f2b403ffaa7153e8decac10c1e55fd8e68faf886b350f55f2a63b8",
+      "c86ece7b3be297c96a676940c29d1c3dbec9870cd1a0f490a1284744918d8dd8",
+      "0b1fbb5eb873146946dc5fb07c0a78ae798d4484243117a657dc2240f89f5573",
+      "d618f966c4debca01e52ec9a5f920d292aeadaecda7da754ae578a16e21c211d"
+    ]
+  },
+  "design": {
+    "matrix": "2 fixed images x guard on/off x quick_map/busy_exit x 3 repeats",
+    "planned": 24,
+    "outer_timeout_seconds": 20,
+    "cleanup_timeout_seconds": 10,
+    "busy_workload_seconds": 60,
+    "busy_work_started_before_exit": true,
+    "same_original_docker_isolation": true,
+    "hostile_task_or_benchmark_code_used": false,
+    "guard_only_difference": "official safe_environment versus nullcontext"
+  },
+  "results": {
+    "closed": 24,
+    "counts": {
+      "completed": 17,
+      "outer_timeout": 7
+    },
+    "by_control": [
+      {
+        "image": "original",
+        "guard": false,
+        "case": "quick_map",
+        "repeats": 3,
+        "counts": {
+          "completed": 3
+        },
+        "sdk_verified": 3,
+        "busy_worker_confirmed": 0,
+        "after_pool_exit": 3,
+        "kill_denial_messages": [
+          0,
+          0,
+          0
+        ],
+        "wall_seconds_including_cleanup": [
+          1.630039,
+          1.727354,
+          0.98473
+        ]
+      },
+      {
+        "image": "original",
+        "guard": true,
+        "case": "quick_map",
+        "repeats": 3,
+        "counts": {
+          "completed": 2,
+          "outer_timeout": 1
+        },
+        "sdk_verified": 3,
+        "busy_worker_confirmed": 0,
+        "after_pool_exit": 2,
+        "kill_denial_messages": [
+          2,
+          1,
+          2
+        ],
+        "wall_seconds_including_cleanup": [
+          0.846986,
+          3.356323,
+          20.173284
+        ]
+      },
+      {
+        "image": "data_only",
+        "guard": false,
+        "case": "quick_map",
+        "repeats": 3,
+        "counts": {
+          "completed": 3
+        },
+        "sdk_verified": 3,
+        "busy_worker_confirmed": 0,
+        "after_pool_exit": 3,
+        "kill_denial_messages": [
+          0,
+          0,
+          0
+        ],
+        "wall_seconds_including_cleanup": [
+          1.139487,
+          1.687518,
+          0.858506
+        ]
+      },
+      {
+        "image": "data_only",
+        "guard": true,
+        "case": "quick_map",
+        "repeats": 3,
+        "counts": {
+          "completed": 3
+        },
+        "sdk_verified": 3,
+        "busy_worker_confirmed": 0,
+        "after_pool_exit": 3,
+        "kill_denial_messages": [
+          2,
+          2,
+          2
+        ],
+        "wall_seconds_including_cleanup": [
+          1.297016,
+          1.691284,
+          0.817876
+        ]
+      },
+      {
+        "image": "original",
+        "guard": false,
+        "case": "busy_exit",
+        "repeats": 3,
+        "counts": {
+          "completed": 3
+        },
+        "sdk_verified": 3,
+        "busy_worker_confirmed": 3,
+        "after_pool_exit": 3,
+        "kill_denial_messages": [
+          0,
+          0,
+          0
+        ],
+        "wall_seconds_including_cleanup": [
+          1.309802,
+          1.607257,
+          0.592903
+        ]
+      },
+      {
+        "image": "original",
+        "guard": true,
+        "case": "busy_exit",
+        "repeats": 3,
+        "counts": {
+          "outer_timeout": 3
+        },
+        "sdk_verified": 3,
+        "busy_worker_confirmed": 3,
+        "after_pool_exit": 0,
+        "kill_denial_messages": [
+          2,
+          2,
+          1
+        ],
+        "wall_seconds_including_cleanup": [
+          20.832712,
+          20.365918,
+          20.244203
+        ]
+      },
+      {
+        "image": "data_only",
+        "guard": false,
+        "case": "busy_exit",
+        "repeats": 3,
+        "counts": {
+          "completed": 3
+        },
+        "sdk_verified": 3,
+        "busy_worker_confirmed": 3,
+        "after_pool_exit": 3,
+        "kill_denial_messages": [
+          0,
+          0,
+          0
+        ],
+        "wall_seconds_including_cleanup": [
+          1.059054,
+          1.046148,
+          1.040209
+        ]
+      },
+      {
+        "image": "data_only",
+        "guard": true,
+        "case": "busy_exit",
+        "repeats": 3,
+        "counts": {
+          "outer_timeout": 3
+        },
+        "sdk_verified": 3,
+        "busy_worker_confirmed": 3,
+        "after_pool_exit": 0,
+        "kill_denial_messages": [
+          2,
+          2,
+          2
+        ],
+        "wall_seconds_including_cleanup": [
+          20.427206,
+          20.377542,
+          21.156051
+        ]
+      }
+    ],
+    "sdk_source_verified": 24,
+    "cleanup_confirmed": 24
+  },
+  "costs": {
+    "model_calls": 0,
+    "control_container_calls": 24,
+    "wall_seconds_including_cleanup": 166.26940800000003
+  },
+  "logs": {
+    "private_bounded_stdout_and_stderr_preserved": true,
+    "maximum_bytes_per_stream": 32768,
+    "path_size_and_sha_bound_to_each_record": true,
+    "raw_logs_exported": false
+  },
+  "superseded_preparation": {
+    "version": "pool-guard-engineering-controls-v1",
+    "protocol_hash": "5e54604614fda8af95cb586baf571fbf3649f5edc0234bc75b32562e0b65a51a",
+    "control_executions": 0,
+    "reason": "Stopped before execution after identifying decorated-function source fingerprint bug; old source and preparation remain unchanged."
+  },
+  "interpretation": {
+    "supported": "The official process-control guard can prevent terminating multiprocessing.Pool workers in both unchanged-package images. Busy-exit controls time out in 6/6 guarded and 0/6 unguarded cases; quick-map controls time out in 1/6 guarded and 0/6 unguarded cases. Completed map work can usually exit naturally despite denied kill requests, but one original-image repeat also hung after the map completed.",
+    "not_established": "These authored controls support an existing timing-dependent guard/Pool cleanup incompatibility. They do not prove the exact stack or schedule of any previous canonical-task timeout, or that the data-only image caused that timeout.",
+    "benchmark_scores_changed": false,
+    "reference_qualification_reauthorized": false,
+    "skill_gate_authorized": false,
+    "model_or_skill_effect_claimed": false,
+    "next_action": "Keep previous unknowns and the qualification gate Pending; any future safe cleanup repair requires a separate reviewed runtime version and fresh qualification."
+  },
+  "record_hash": "8b5eb8c936ec43062fa7af9be07e7c704e9618cc1a2aa6edeb68b19d97a4def0"
+}

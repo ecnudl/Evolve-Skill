@@ -1,0 +1,128 @@
+{
+  "version": "bcb-nltk-data-overlay-build-audit-v1",
+  "date": "2026-10-01",
+  "evidence_kind": "real_data_only_image_build_not_benchmark_qualification",
+  "model_calls": 0,
+  "build_attempts": [
+    {
+      "source_root": "/root/continual-nltk-overlay-20261001-source",
+      "output_root": "/root/continual-nltk-overlay-20261001-study/resources",
+      "version": "bcb-nltk-data-overlay-v1",
+      "status": "build_failed_or_unverified",
+      "manifest_hash": "a41d06b5240840c07e5a1314b285791d5467b10a3fa0e25a69ecd8978b7e91ce",
+      "manifest_file_sha256": "0271d8e1fc8c31c600f6c4d9c2b1f86b01b6730fb14577f002784aae0be61158",
+      "receipt_hash": "fcfa276689c2e62486c8e05f41d7bb18d7af093b05b9f412517e2f69e9234365",
+      "receipt_file_sha256": "e9a458a7bb81e47db7adaf1fd4e2a4a5f87b998c1559e6b96be4fbdd4ec82332",
+      "build_log_sha256": "6b315cf7a70de7354cbd310a039840a444d8c8105b22652096ec4428ed40e590",
+      "wall_seconds": 31.772926,
+      "builder": {
+        "engine": "default_buildkit"
+      },
+      "source": {
+        "module_sha256": "7dfae02b5bc48680b13bbf947b3607d779822f30b94e8c10327229e271195a37",
+        "dockerfile_sha256": "a27636975952531666ca6810946cf4d4fe1f85d78f61d919411fe1d76a2d9e61"
+      },
+      "image_id": null,
+      "base_image": "sha256:b13b0bb97861eb3a2f3f9ead1e8718d1410882613f84e088bb31338c343149fa",
+      "base_created": null,
+      "failure_type": "CalledProcessError",
+      "downloaded_archive_bytes": 13943088,
+      "verified_packages": [
+        {
+          "name": "punkt",
+          "subdir": "tokenizers",
+          "bytes": 13905355,
+          "expanded_max": 37245719,
+          "sha256": "51c3078994aeaf650bfc8e028be4fb42b4a0d177d41c012b6a983979653660ec",
+          "required_member": "punkt/PY3/english.pickle",
+          "url": "https://raw.githubusercontent.com/nltk/nltk_data/550b6625bcef1f2abff2ff770a5a0d272c9c6b2a/packages/tokenizers/punkt.zip",
+          "members": 41,
+          "expanded_bytes": 37245719
+        },
+        {
+          "name": "stopwords",
+          "subdir": "corpora",
+          "bytes": 37733,
+          "expanded_max": 89446,
+          "sha256": "48c0e52d8b52546e827f53761fb30300c0ab94f70660d28bd65ba0a86270946b",
+          "required_member": "stopwords/english",
+          "url": "https://raw.githubusercontent.com/nltk/nltk_data/550b6625bcef1f2abff2ff770a5a0d272c9c6b2a/packages/corpora/stopwords.zip",
+          "members": 34,
+          "expanded_bytes": 89446
+        }
+      ]
+    },
+    {
+      "source_root": "/root/continual-nltk-overlay-v2-20261001-source",
+      "output_root": "/root/continual-nltk-overlay-v2-20261001-study/resources",
+      "version": "bcb-nltk-data-overlay-v2",
+      "status": "built_not_qualified",
+      "manifest_hash": "a2b6c851738443a4a9ed00f2d9ac6961f1125384ddf3d1ad272aa81f7ad404cd",
+      "manifest_file_sha256": "dbcec5d0f62f6f3da74f9dcec068f8aca8c631cde3c413e247e51ee9d0933504",
+      "receipt_hash": "e3cbc911813e480e88ed33e76723257402adc0ad75bd31582100d59f6b6df39b",
+      "receipt_file_sha256": "635c8ca3fc92d730d0a2d8f37eda7fb77daceba2256e772bf030cf6807a64fc0",
+      "build_log_sha256": "e4056600590a263e50fd707bfb2f6a809807801a7c78686c39b0e3192fddc778",
+      "wall_seconds": 5.700824,
+      "builder": {
+        "engine": "legacy",
+        "child_environment": {
+          "DOCKER_BUILDKIT": "0"
+        }
+      },
+      "source": {
+        "module_sha256": "d2d2dbbb368a48a5303287c7facae42b59b2d5feffded07c00351ffa78a0d831",
+        "dockerfile_sha256": "a27636975952531666ca6810946cf4d4fe1f85d78f61d919411fe1d76a2d9e61"
+      },
+      "image_id": "sha256:4e8c8cb8cb1ed55daf980203da45ef5e4c3eff1cfcf44121968bd52f82f851c8",
+      "base_image": "sha256:b13b0bb97861eb3a2f3f9ead1e8718d1410882613f84e088bb31338c343149fa",
+      "base_created": "2025-02-23T17:15:18.677039212Z",
+      "failure_type": null,
+      "downloaded_archive_bytes": 13943088,
+      "verified_packages": [
+        {
+          "name": "punkt",
+          "subdir": "tokenizers",
+          "bytes": 13905355,
+          "expanded_max": 37245719,
+          "sha256": "51c3078994aeaf650bfc8e028be4fb42b4a0d177d41c012b6a983979653660ec",
+          "required_member": "punkt/PY3/english.pickle",
+          "url": "https://raw.githubusercontent.com/nltk/nltk_data/550b6625bcef1f2abff2ff770a5a0d272c9c6b2a/packages/tokenizers/punkt.zip",
+          "members": 41,
+          "expanded_bytes": 37245719
+        },
+        {
+          "name": "stopwords",
+          "subdir": "corpora",
+          "bytes": 37733,
+          "expanded_max": 89446,
+          "sha256": "48c0e52d8b52546e827f53761fb30300c0ab94f70660d28bd65ba0a86270946b",
+          "required_member": "stopwords/english",
+          "url": "https://raw.githubusercontent.com/nltk/nltk_data/550b6625bcef1f2abff2ff770a5a0d272c9c6b2a/packages/corpora/stopwords.zip",
+          "members": 34,
+          "expanded_bytes": 89446
+        }
+      ]
+    }
+  ],
+  "total_build_wall_seconds": 37.47375,
+  "resource_revision": "550b6625bcef1f2abff2ff770a5a0d272c9c6b2a",
+  "official_resource_index": "https://raw.githubusercontent.com/nltk/nltk_data/550b6625bcef1f2abff2ff770a5a0d272c9c6b2a/index.xml",
+  "new_image_status": "built_not_qualified",
+  "new_reference_tasks_executed": 0,
+  "old_predictions_rescored": 0,
+  "old_image_or_baseline_modified": false,
+  "native_worker_modified": false,
+  "package_upgrades": false,
+  "local_v2_tests_passed": 24,
+  "independent_peer_v2_tests_passed": 24,
+  "linux_v2_tests_passed": 24,
+  "limitations": [
+    "The fixed current resource revision is a NEW data version, not proven identical to the resources used in the original BCB paper or image build.",
+    "Data-only means package and scorer code are unchanged, not that resource semantics are historically identical.",
+    "The first BuildKit attempt treated the image ID as a registry reference and failed during metadata resolution; its original failure is preserved.",
+    "The successful second attempt froze the legacy builder in a new protocol and changed only its child-process DOCKER_BUILDKIT environment.",
+    "No downloaded pickle was loaded on the host; archive byte hashes, member paths, expansion, file permissions and derived context were checked.",
+    "No new-image task qualification, baseline re-scoring, Skill gate or model call is included here."
+  ],
+  "record_hash": "fbd1937000e198b4e3632e171b300430e8b7de26ecf6324fdb0add63acddfefd"
+}

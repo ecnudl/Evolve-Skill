@@ -1,0 +1,322 @@
+{
+  "version": "spreadsheet-long-noskill-final-v1",
+  "status": "completed_single_benchmark_stage0",
+  "evidence_kind": "real_model_development_baseline_not_skill_effect",
+  "method": "no_skill",
+  "history": "h0",
+  "stage": 0,
+  "model": {
+    "provider": "BigModel",
+    "name": "glm-5.3",
+    "reasoning_effort": "low",
+    "max_tokens": 65536,
+    "stream": true,
+    "read_timeout_seconds": 300,
+    "stream_wall_seconds": 1800,
+    "workers": 2
+  },
+  "data": {
+    "selection_rule": "entire_original_80_task_roster_not_selected_by_old_result",
+    "partition": "development",
+    "tasks": 80,
+    "declared_lexical_families": 80,
+    "repeats_per_task": 2,
+    "expected_positions": 160,
+    "terminal_positions": 160,
+    "scored_positions": 160,
+    "missing_positions": 0,
+    "old_answers_imported": false,
+    "old_scores_modified": false,
+    "new_model_generated_positions": 160
+  },
+  "scorer": {
+    "profile": "qualified_lo_recalc_v5_v1",
+    "qualification_hash": "efc2d85c08527961ac14b3d7ad0aa042b12b16b513600c5a059a2c401d1b8ada",
+    "qualification_file_sha256": "6685e4ddd9ca402996eb539ac3885fb50b330b76ddb04ca60ab2b39920a90acf",
+    "libreoffice_versions": [
+      "LibreOffice 25.2.3.2 520(Build:2)"
+    ],
+    "timeout_seconds_per_workbook": 120,
+    "memory_mb": 1024,
+    "cpus": 1,
+    "independent_reference_and_prediction_recalculation": true,
+    "excel_equivalence_proven": false,
+    "no_gold_cache_fill": true
+  },
+  "results": {
+    "pass": 63,
+    "fail": 44,
+    "unknown": 53,
+    "confirmed_success_on_full_roster": {
+      "numerator": 63,
+      "denominator": 160,
+      "value": 0.39375,
+      "unknown_is_not_semantic_failure": true
+    },
+    "accuracy_on_evaluable_positions": {
+      "numerator": 63,
+      "denominator": 107,
+      "value": 0.5887850467289719
+    },
+    "evaluable_coverage": {
+      "numerator": 107,
+      "denominator": 160,
+      "value": 0.66875
+    },
+    "unknown_distinct_tasks": 29,
+    "unknown_stage_buckets": {
+      "model_response_delivery": 1,
+      "native_program_execution_or_missing_deliverable": 7,
+      "delivered_workbook_scoring_compatibility": 45,
+      "delivered_workbook_unknown_distinct_tasks": 23
+    },
+    "per_repeat": {
+      "0": {
+        "positions": 80,
+        "unknown": 26,
+        "pass": 33,
+        "fail": 21
+      },
+      "1": {
+        "positions": 80,
+        "fail": 23,
+        "unknown": 27,
+        "pass": 30
+      }
+    },
+    "same_task_repeat_pairs": {
+      "task_denominator": 80,
+      "counts": {
+        "fail_fail": 18,
+        "unknown_unknown": 24,
+        "pass_pass": 28,
+        "pass_unknown": 2,
+        "pass_fail": 3,
+        "unknown_fail": 2,
+        "fail_unknown": 1,
+        "fail_pass": 2
+      },
+      "independent_positions_claimed": false
+    },
+    "unknown_reasons": {
+      "model_response_truncated": {
+        "positions": 1,
+        "tasks": 1
+      },
+      "native_exception:AttributeError": {
+        "positions": 2,
+        "tasks": 2
+      },
+      "native_exception:FileNotFoundError": {
+        "positions": 1,
+        "tasks": 1
+      },
+      "native_exception:SyntaxError": {
+        "positions": 1,
+        "tasks": 1
+      },
+      "native_exception:TypeError": {
+        "positions": 1,
+        "tasks": 1
+      },
+      "native_exception:ValueError": {
+        "positions": 1,
+        "tasks": 1
+      },
+      "output.xlsx_not_produced": {
+        "positions": 1,
+        "tasks": 1
+      },
+      "prediction:recalculation_changed_literal_cell": {
+        "positions": 2,
+        "tasks": 1
+      },
+      "reference:numeric_literal_sheet_missing:before_calculate": {
+        "positions": 2,
+        "tasks": 1
+      },
+      "reference:recalculation_changed_literal_cell": {
+        "positions": 8,
+        "tasks": 4
+      },
+      "reference:unsupported_active_or_external_workbook": {
+        "positions": 3,
+        "tasks": 2
+      },
+      "reference:unsupported_extended_function": {
+        "positions": 18,
+        "tasks": 9
+      },
+      "reference:unsupported_external_or_volatile_defined_name": {
+        "positions": 2,
+        "tasks": 1
+      },
+      "reference:unsupported_external_relationship": {
+        "positions": 2,
+        "tasks": 1
+      },
+      "reference:unsupported_external_structured_or_volatile_formula": {
+        "positions": 6,
+        "tasks": 3
+      },
+      "reference_native_cache_drift_or_unavailable": {
+        "positions": 2,
+        "tasks": 1
+      }
+    }
+  },
+  "delivery": {
+    "model_calls_closed": 160,
+    "workbook_delivered": 152,
+    "workbook_not_delivered": 8,
+    "single_workbook_case_per_delivered_or_attempted_position_verified": true,
+    "finish_reasons": {
+      "stop": 159,
+      "length": 1
+    },
+    "incomplete_streams": 0,
+    "unavailable_records": [
+      {
+        "position": "148cd5df198b92f95154286e53e054b71e01d881308641f8be2ba8f596bf6534",
+        "prediction_hash": "baaa6c10209f911c467b706056798be7a86cfb7d3ee75640403f6dfce8cf16a3",
+        "reason": "native_exception:AttributeError",
+        "compile_only_audit": "compiles_without_execution_runtime_cause_not_inferred"
+      },
+      {
+        "position": "3c04a2215edc42b59648dc0b479357078380bfe904e88e1e1683b8e4d73b6f3b",
+        "prediction_hash": "63d3a7a719bcb0d72cfa77e720e272776370fce5a3a38976c67affd469600f72",
+        "reason": "model_response_truncated",
+        "compile_only_audit": "not_applicable_model_delivery"
+      },
+      {
+        "position": "46aa37bd9ff2a87d9750754022e432f1cdc1a5a8a1646e07705576b764161a63",
+        "prediction_hash": "85cf60fb930c26cd583f3255c83a203a2f5630c6de83abf17caf0ebe18e99dc0",
+        "reason": "native_exception:ValueError",
+        "compile_only_audit": "compiles_without_execution_runtime_cause_not_inferred"
+      },
+      {
+        "position": "6a6f20b2f04db1d21b1c6a05db1ebcc4c6c770686d20c27c29fdd89e8049217e",
+        "prediction_hash": "7184c64eb2347a3252648f263458bf3e24d745b870b9ec9c91f140c1dfbab6eb",
+        "reason": "native_exception:AttributeError",
+        "compile_only_audit": "compiles_without_execution_runtime_cause_not_inferred"
+      },
+      {
+        "position": "b8bb5b8443a61c95936321863988ebbbe22c638792f8b13d4e5eb7971cf7c153",
+        "prediction_hash": "e20619e8038d4b7a738e7514da1608efcaa3c757e05d1dc6ba234f3d1ffd7b2b",
+        "reason": "native_exception:SyntaxError",
+        "compile_only_audit": "confirmed_generated_code_SyntaxError_without_execution"
+      },
+      {
+        "position": "ba0f525863af4077983bb95c8af38fcd4fa60ddca4bee8efa709e1f9ac0de401",
+        "prediction_hash": "06f4c01a7f083fbab64d211b5518a18e6dc96950eafef252f09abe86f641ea01",
+        "reason": "native_exception:TypeError",
+        "compile_only_audit": "compiles_without_execution_runtime_cause_not_inferred"
+      },
+      {
+        "position": "bd83c22111ac2af14b91e3bcac0a490f07bcddbe17d7c02ea80076b9ee0a1ec9",
+        "prediction_hash": "699f1f5ba6a1958569df6c212da1b7e6d3b39c5733f71aa3a8fe7840a3f10ed7",
+        "reason": "native_exception:FileNotFoundError",
+        "compile_only_audit": "compiles_without_execution_runtime_cause_not_inferred"
+      },
+      {
+        "position": "f509c6495572ced3c82938fd03ab393b6b9792603c7271169868c098c56b0533",
+        "prediction_hash": "ed030ecca63a31866cc5962354f9caee3a5b73873a482dfeee1c4703ce60752d",
+        "reason": "output.xlsx_not_produced",
+        "compile_only_audit": "compiles_without_execution_runtime_cause_not_inferred"
+      }
+    ],
+    "exception_stack_retention": "historical_worker_stores_exception_class_only_no_traceback",
+    "diagnosis": "One compile-confirmed generated SyntaxError, one completed execution without required output, five runtime exceptions with insufficient attribution evidence, one model length truncation; historical unknown labels unchanged."
+  },
+  "costs": {
+    "model": {
+      "logical_calls": 160,
+      "http_attempts": 160,
+      "reported_tokens": 326508,
+      "usage_complete": true,
+      "unclosed_calls": 0,
+      "retry_inclusive_usage_known": true,
+      "scope": "all_positions_including_unscored_and_interrupted",
+      "reserved_positions": 160,
+      "terminal_predictions": 160,
+      "scored_positions": 160,
+      "prompt_tokens": 120944,
+      "completion_tokens": 205564,
+      "wall_seconds_sum": 3261.656880928669
+    },
+    "generation": {
+      "container_calls": 159,
+      "wall_seconds_sum_including_cleanup": 395.78722099999993,
+      "cleanup_unconfirmed": 0,
+      "image_id": "sha256:0a0a5dcb7dd4e56215c729d2ccdd6a8862d1a644bb6f992f8bb591d4e0a0f0dd"
+    },
+    "recalculation": {
+      "receipt_count": 263,
+      "container_calls": 232,
+      "wall_seconds_sum_including_cleanup": 1254.6343253045343,
+      "cleanup_unconfirmed": 0,
+      "receipt_reason_counts": {
+        "independently_recalculated": 230,
+        "unsupported_extended_function": 18,
+        "numeric_literal_sheet_missing:before_calculate": 2,
+        "unsupported_external_structured_or_volatile_formula": 6,
+        "unsupported_active_or_external_workbook": 3,
+        "unsupported_external_relationship": 2,
+        "unsupported_external_or_volatile_defined_name": 2
+      },
+      "image_id": "sha256:f7f6f598c4f0b16ea514614c22325e8b3a2d5d0317f423757dcdfa1bb2c4d790"
+    },
+    "qualification_separate_from_run": {
+      "controls": 17,
+      "passed": 17,
+      "container_calls": 15,
+      "wall_seconds_sum": 35.69489540532231,
+      "model_api_calls": 0
+    },
+    "started_at": "2026-10-01T07:36:12+08:00",
+    "finished_at": "2026-10-01T08:30:38+08:00",
+    "launch_elapsed_seconds_excluding_queue": 3266.0,
+    "pricing_or_money_estimate_not_inferred": true,
+    "reasoning_and_cached_token_metadata_present_calls": 160,
+    "reasoning_tokens_included_in_completion": 136682,
+    "cached_prompt_tokens_included_in_prompt": 15296
+  },
+  "archive": {
+    "run_root": "/root/continual-spreadsheet-long-20261001-study/baseline/run",
+    "source_root": "/root/continual-spreadsheet-long-20261001-source",
+    "plan_hash": "0cf09e040779c170c36903cb695fce95b91440b2c389f74ffe9c041ea321b04d",
+    "plan_file_sha256": "409544dbce5347371df39153713a81e335a311b8577a169d58cdbd40aa2675c4",
+    "report_hash": "5864962a9e411679e8957cff6e9ec3abfb5812351bf9fa2fa305c16f339763b4",
+    "report_file_sha256": "eab0873aaed96cc8efad5ef64609f10bec1c0bfc19868f578f162483a2898423",
+    "model_service_hash": "f620c95268f45c845e44e7d1f0d679510fbd53557aeb6930aca4ce0015cb87dc",
+    "prediction_inventory_hash": "69f4736724271c7a5e6b10f645bd58517c33ecef7adae4592efda5a83b6ed5d3",
+    "score_inventory_hash": "fde4a8d0d676a78c54797f0d2c852e175f0d648725ad0058da9b43ccd9dce646",
+    "api_cache_inventory_hash": "306a240a8104cadb6ea35364d50c1a33b71d62fb1fc6f586c0899896c7f6f42d",
+    "recalculation_receipt_inventory_hash": "501f0f04036c3db025eb9320136006d1ec723fbb1c5e2f50cda06a7224d4a9a4",
+    "source_identity_hash": "bc07da00d1634e9f41624019446e5e16c080ee205e85306be707126b87898e6d",
+    "launcher_sha256": "4c7f3ab42b2cc1acfb163c05c15a11642b55d1de3548b68cb7d8902871a9bb5e"
+  },
+  "audit": {
+    "all_score_prediction_task_repeat_bindings_verified": true,
+    "full_original_report_recomputed_equal": true,
+    "launch_stages": {
+      "generation_exit": 0,
+      "score_exit": 0,
+      "report_exit": 0,
+      "service_exit": 0
+    },
+    "source_verified_by_frozen_plan_loader": true,
+    "no_new_api_or_container_during_final_audit": true,
+    "compile_only_never_executes_generated_code": true
+  },
+  "limitations": [
+    "Fresh No-Skill baseline, not Skill evolution or independent method-effect evidence.",
+    "Already-exposed development roster; 80 tasks repeated twice are not 160 independent tasks.",
+    "Qualified LibreOffice scoring is not proof of Excel equivalence; conservative compatibility unknowns retained.",
+    "New output budget and qualified scorer jointly differ from the original old baseline; not a token-budget-only causal comparison.",
+    "Unknowns are separated from confirmed semantic failures; evaluable-only accuracy does not describe all 160 positions.",
+    "No retries of truncated, undelivered, or scoring-unknown positions; no historical scores replaced.",
+    "Spreadsheet learning remains unsupported by the current Coding-only learning adapter."
+  ],
+  "record_hash": "37b0ad8ad5e0302ce0b5660c685b620d45c91ea1f9ffaea3afbbb3bb8d14f3c9"
+}

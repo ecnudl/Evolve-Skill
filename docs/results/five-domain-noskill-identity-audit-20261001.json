@@ -1,0 +1,256 @@
+{
+  "version": "five-domain-noskill-readonly-identity-audit-v1",
+  "record_hash": "9f4be940ee778517d63093ae19edb28fa18d7377c8fb45d9f4b4c211b24e44f8",
+  "checked_at": "2026-10-01T00:35:42Z",
+  "status": "completed_identity_audit_with_legacy_sheet_preview_limitation",
+  "evidence_kind": "read_only_audit_of_real_model_development_baselines_not_new_method_effect",
+  "condition": {
+    "method": "no_skill",
+    "history": "h0",
+    "stage": 0,
+    "skill_text_empty": true,
+    "partition": "development",
+    "model": "glm-5.3",
+    "max_tokens": 65536
+  },
+  "audit_actions": {
+    "new_model_calls": 0,
+    "new_native_executions": 0,
+    "original_protocol_or_score_edits": 0,
+    "hidden_answer_text_exported": false,
+    "private_answer_values_read_for_semantic_analysis": false,
+    "formal_reports_read_without_rescoring": true
+  },
+  "totals": {
+    "benchmark_panels": 5,
+    "tasks": 1419,
+    "declared_families_summed_within_domains": 968,
+    "repeats_per_task": 2,
+    "terminal_positions": 2838,
+    "scored_positions": 2838,
+    "verified_call_wrappers": 4115,
+    "verified_actual_api_cache_receipts": 4115,
+    "http_attempts": 4115,
+    "unclosed_model_calls": 0,
+    "missing_scores": 0,
+    "unexpected_or_duplicate_position_or_api_cache_keys": 0,
+    "task_repeat_or_condition_binding_mismatches": 0,
+    "semantic_independence_of_declared_families_not_certified": true,
+    "heterogeneous_scores_not_combined_into_method_accuracy": true
+  },
+  "checks": [
+    "Frozen source identity and sealed plan; panel canonical full-task hashes mapped by hash, not row ordering.",
+    "Task ID, family, partition and project identity agree with the frozen roster; both repetitions resolve to the exact canonical position digest.",
+    "No-Skill h0/S0 checkpoint has an empty Skill and no parent.",
+    "Position intent, call intent, call wrapper, nested request hash and actual API-cache receipt agree.",
+    "Model, frozen service, max_tokens, repeat and turn identities agree; successful responses return the requested model.",
+    "Prediction digest is bound by score intent and score; score task/repeat/checkpoint/method/history/stage agree.",
+    "Per-position costs are recomputed from distinct receipts; full prediction, score, intent and API-cache rosters have no missing or extra entries.",
+    "Unknown remains score=null; known outcomes are not substituted for incomplete calls.",
+    "Official report identities and denominators are checked without executing model outputs or hidden tests."
+  ],
+  "domains": [
+    {
+      "benchmark": "bigcodebench",
+      "tasks": 400,
+      "declared_families": 399,
+      "repeats": 2,
+      "positions": 800,
+      "checks_verified": {
+        "task_and_checkpoint_positions": 800,
+        "position_intents": 800,
+        "predictions": 800,
+        "score_intents": 800,
+        "scores": 800,
+        "model_call_wrappers": 800,
+        "actual_api_cache_receipts": 800,
+        "exact_system_prompts": 800
+      },
+      "observed_outcomes": {
+        "pass": 400,
+        "fail": 399,
+        "unknown": 1
+      },
+      "plan_hash": "4cfc9177817f833198d9c7bac2b77ac1d5dabcf61d372ac10f5e51e5e9b44056",
+      "report_hash": "2e7f7440ab7a3ddfc0628cdbce607c1a2ddcb21ecfeec967cbff8d86e8b61211",
+      "source_identity_hash": "bbe7e21002d44c8d50628a5e7b1f0d328293f7ebc1de39cdd1ffdd90374d84a8",
+      "archived_result": "noskill-long-final-20261001.json"
+    },
+    {
+      "benchmark": "searchqa",
+      "tasks": 400,
+      "declared_families": 400,
+      "repeats": 2,
+      "positions": 800,
+      "checks_verified": {
+        "task_and_checkpoint_positions": 800,
+        "position_intents": 800,
+        "predictions": 800,
+        "score_intents": 800,
+        "scores": 800,
+        "model_call_wrappers": 800,
+        "actual_api_cache_receipts": 800,
+        "exact_system_prompts": 800
+      },
+      "observed_outcomes": {
+        "pass": 560,
+        "fail": 234,
+        "unknown": 6
+      },
+      "plan_hash": "73fb8aa8815535642264ba280425916dfa811371e612bc59fe308947acd476be",
+      "report_hash": "ec5b26cc1cfa7ac7b26a922c9fe9bcd7afa36eb2aaeb25bd7f812928d40eb99b",
+      "source_identity_hash": "bbe7e21002d44c8d50628a5e7b1f0d328293f7ebc1de39cdd1ffdd90374d84a8",
+      "archived_result": "noskill-searchqa-long-final-20261001.json"
+    },
+    {
+      "benchmark": "korbench",
+      "tasks": 500,
+      "declared_families": 50,
+      "repeats": 2,
+      "positions": 1000,
+      "checks_verified": {
+        "task_and_checkpoint_positions": 1000,
+        "position_intents": 1000,
+        "predictions": 1000,
+        "score_intents": 1000,
+        "scores": 1000,
+        "model_call_wrappers": 1000,
+        "actual_api_cache_receipts": 1000,
+        "exact_system_prompts": 1000
+      },
+      "observed_outcomes": {
+        "pass": 746,
+        "fail": 243,
+        "unknown": 11
+      },
+      "plan_hash": "e3f33c0ad7257cefc67d00b278a36e5631087661d010532c8f6949c6d5b9c35b",
+      "report_hash": "787d14f4fe12e8306bfce8081059f6ef60be842e262be23eab738b61f7aa4752",
+      "source_identity_hash": "bbe7e21002d44c8d50628a5e7b1f0d328293f7ebc1de39cdd1ffdd90374d84a8",
+      "archived_result": "noskill-korbench-long-final-20261001.json"
+    },
+    {
+      "benchmark": "alfworld",
+      "tasks": 39,
+      "declared_families": 39,
+      "repeats": 2,
+      "positions": 78,
+      "checks_verified": {
+        "task_and_checkpoint_positions": 78,
+        "position_intents": 78,
+        "predictions": 78,
+        "score_intents": 78,
+        "scores": 78,
+        "model_call_wrappers": 1355,
+        "actual_api_cache_receipts": 1355,
+        "exact_system_prompts": 1355
+      },
+      "observed_outcomes": {
+        "pass": 65,
+        "fail": 13,
+        "unknown": 0
+      },
+      "plan_hash": "e31ebec5e4c09ff88cd6f6b3230b0a9751c5ce3491a81130b5f2cc421dd4dec8",
+      "report_hash": "d381a898ffde9096a83b256b5974169fe71378c10e131219838629b96542e9f2",
+      "source_identity_hash": "bbe7e21002d44c8d50628a5e7b1f0d328293f7ebc1de39cdd1ffdd90374d84a8",
+      "archived_result": "alfworld-long-baseline-final-20261001.json"
+    },
+    {
+      "benchmark": "spreadsheetbench",
+      "tasks": 80,
+      "declared_families": 80,
+      "repeats": 2,
+      "positions": 160,
+      "checks_verified": {
+        "task_and_checkpoint_positions": 160,
+        "position_intents": 160,
+        "predictions": 160,
+        "score_intents": 160,
+        "scores": 160,
+        "model_call_wrappers": 160,
+        "actual_api_cache_receipts": 160,
+        "exact_system_prompts": 160
+      },
+      "observed_outcomes": {
+        "pass": 63,
+        "fail": 44,
+        "unknown": 53
+      },
+      "plan_hash": "0cf09e040779c170c36903cb695fce95b91440b2c389f74ffe9c041ea321b04d",
+      "report_hash": "5864962a9e411679e8957cff6e9ec3abfb5812351bf9fa2fa305c16f339763b4",
+      "source_identity_hash": "bc07da00d1634e9f41624019446e5e16c080ee205e85306be707126b87898e6d",
+      "archived_result": "spreadsheet-long-baseline-final-20261001.json"
+    }
+  ],
+  "public_prompt_replay": {
+    "bigcodebench": {
+      "exact_canonical_public_user": 800
+    },
+    "searchqa": {
+      "exact_canonical_public_user": 800
+    },
+    "korbench": {
+      "exact_canonical_public_user": 1000
+    },
+    "alfworld": {
+      "dynamic_public_views_checked": 1355,
+      "episode_initial_observation_retained": 78,
+      "unexpected_keysets": 0,
+      "recent_history_matches_public_trace_last_five": true,
+      "not_reconstructed_from_static_task_only": true,
+      "trajectory_audit": "alfworld-public-trajectory-audit-20261001.json"
+    },
+    "spreadsheetbench": {
+      "public_input_asset_hashes_verified": 160,
+      "exact_reconstructed_users": 158,
+      "users_with_only_arrayformula_object_address_differences": 2,
+      "affected_tasks": 1,
+      "affected_task_hash": "9cbaa31d37f77dcaa559a60d4b177aa92620768f10c7e030c0bad5940ca461f9",
+      "affected_repeats": [
+        0,
+        1
+      ],
+      "affected_cells_per_position": 3,
+      "object_type": "openpyxl.worksheet.formula.ArrayFormula",
+      "data_table_object_differences_observed": 0,
+      "non_preview_user_fields_unchanged": true,
+      "interpretation": "Legacy str(cell.value) exposed object representation instead of formula text/range for this preview. This is a lossy and nondeterministic public-view limitation, not an observed task/call/score swap. The current frozen responses and scores remain unchanged.",
+      "stable_generation_roster_hash": "88f7c249b416a1569f4a64d3b746320f1c73a4a46d52661ad9822ec300e88247",
+      "terminal_score_roster_hash": "2a703e5c470fe1c1beb0e9a447ddf317a38b31dd4058136d2a1faf4db95c862e",
+      "generation_roster_definition": "digest of plan-order task/repeat records containing position, prediction_hash and call wrapper record_hash",
+      "score_roster_definition": "digest of position-sorted records containing position and score_hash"
+    }
+  },
+  "kor_unknown_joint_audit": {
+    "total_unknown": 11,
+    "category_by_finish_reason": {
+      "cipher": {
+        "length": 1
+      },
+      "puzzle": {
+        "length": 9,
+        "network_error": 1
+      }
+    },
+    "cipher_length_task_hash": "44be2f04fb2e6c251bccf08682042254fbfb3c53036d62ae2444a21d8d60b272",
+    "cipher_length_repeat": 0,
+    "network_error_task_hash": "ef47a794fc5faa179992dbba97bc696bddaf3dfb0bf3756c2b16019d372e85e9",
+    "network_error_repeat": 0,
+    "diagnostic_wrapper_task_and_original_receipt_match": true,
+    "finding": "The earlier prose incorrectly joined category and cause marginal counts. Cipher has one length unknown; Puzzle has nine length unknowns and one network_error unknown. Canonical task hashes, source scores and published marginal counts are unchanged.",
+    "answer_values_inspected": false
+  },
+  "code_references": [
+    "skillopt/continual_eval/core.py:source_identity, load_plan, load_checkpoint, panel_tasks, public_view",
+    "skillopt/continual_eval/runner.py:position, _stored_calls, _costs, PositionCalls, score_checkpoint, report",
+    "skillopt/continual_eval/backends.py:_public_view, _sheet_preview, solve",
+    "scripts/diagnose_kor_deliverables.py:run uses tasks[item['task_hash']]; prefix zip is a saved-record integrity comparison, not task/score pairing"
+  ],
+  "limits": [
+    "Identity integrity is not proof that every native evaluator or dependency is correct; known BigCodeBench environment limitations remain.",
+    "These are exposed development panels, not independent final evidence of Skill generalization or a complete continual-learning trajectory.",
+    "Repeated positions are not independent tasks; family IDs are declared grouping rather than certified semantic independence.",
+    "The legacy Sheet preview discrepancy is retained explicitly. The separately reviewed opt-in stable preview has not been applied to these frozen runs.",
+    "Native scores and unknowns were not recomputed, repaired or retroactively relabeled by this audit.",
+    "Only safe aggregate counts, hashes and code references are published; prompts, model outputs, workbooks, references and hidden tests remain private."
+  ]
+}

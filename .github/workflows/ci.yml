@@ -46,7 +46,29 @@ jobs:
       - name: Install research test dependencies
         run: pip install -e ".[dev,searchqa,cross-domain,validator-pilot]"
       - name: Pytest (synthetic data, mocked API and native executor)
-        run: python -m pytest -q tests/test_coevolution_v18_*.py tests/test_skill_validation_*.py tests/test_resume_natural_validation.py tests/test_spreadsheetbench_evaluator.py tests/test_research_evidence_demo.py
+        run: >-
+          python -m pytest -q
+          tests/test_coevolution_v18_*.py tests/test_skill_validation_*.py
+          tests/test_continual_eval_*.py tests/test_continual_learning_*.py
+          tests/test_long_*.py tests/test_bcb_public_examples.py
+          tests/test_monitor_experiment_jobs.py tests/test_kor_deliverable_diagnostic.py
+          tests/test_native_handoff.py tests/test_process_handoff.py tests/test_pool_guard_controls.py
+          tests/test_full_delivery_recovery.py tests/test_native_unknown_replay.py
+          tests/test_sheet_v6_replay.py tests/test_sheet_v7_replay.py
+          tests/test_sheet_functions_replay.py
+          tests/test_sheet_passive_links_replay.py
+          tests/test_fivebench_continuation.py tests/test_fivebench_continuation_integration.py
+          tests/test_fivebench_generalization_report.py tests/test_bigmodel_budget_probe.py
+          tests/test_sheet_frozen_gold_replay.py tests/test_sheet_frozen_gold_review.py
+          tests/test_sheet_frozen_gold_metadata.py tests/test_sheet_frozen_gold_metadata_review.py
+          tests/test_sheet_delivery_outcomes_report.py tests/test_sheet_delivery_outcomes_review.py
+          tests/test_fenced_delivery_replay.py
+          tests/test_replay_fenced_with_frozen_h.py
+          tests/test_sheet_length_recovery.py
+          tests/test_prepare_learned_checkpoint.py tests/test_compare_baseline_checkpoints.py
+          tests/test_validator_pilot_api.py
+          tests/test_resume_natural_validation.py tests/test_spreadsheetbench_evaluator.py
+          tests/test_research_evidence_demo.py
         env:
           HF_HUB_OFFLINE: "1"
           HF_DATASETS_OFFLINE: "1"
@@ -81,6 +103,8 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install
-        run: pip install -e ".[docs]"
+        run: pip install -e ".[docs]" pytest
+      - name: Check publication boundary
+        run: python -m pytest tests/test_docs_publication_boundary.py -q
       - name: Build docs (strict)
         run: mkdocs build --strict

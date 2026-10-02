@@ -1,0 +1,9 @@
+# Build once, record the installed package version and immutable image ID.
+# The protocol accepts only that image ID, never this mutable build tag.
+FROM python:3.11-slim
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libreoffice-calc python3-uno \
+    && apt-get clean
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+USER 65534:65534
+ENTRYPOINT ["/usr/bin/python3", "/worker.py"]

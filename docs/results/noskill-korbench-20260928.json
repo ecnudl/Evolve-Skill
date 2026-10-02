@@ -1,0 +1,646 @@
+{
+  "version": "continual-run-public-aggregate-v1",
+  "generated_at_utc": "2026-09-28T10:44:03.319796+00:00",
+  "plan_hash": "2cafefa8e2392d67629e91d263c21b6e25ca4ffba1a8e6aeeb5d972da7da97c6",
+  "checkpoint_hash": "36f3c3ded01d963ea8f4e9aa7bfb8c9afb5a673d8750674359d2b730990d2c6e",
+  "method": "no_skill",
+  "history": "h0",
+  "stage": 0,
+  "model": {
+    "provider": "bigmodel",
+    "name": "glm-5.3",
+    "max_tokens": 4096,
+    "reasoning_effort": "low"
+  },
+  "evidence_kind": "partial_or_development_evaluation",
+  "protocol_complete": false,
+  "partition": "development",
+  "benchmarks": {
+    "korbench": {
+      "overall": {
+        "tasks": 500,
+        "declared_families": 50,
+        "repeats": 2,
+        "expected_positions": 1000,
+        "status": "complete",
+        "prediction_counts": {
+          "available": 840,
+          "unknown": 160,
+          "open_intent": 0,
+          "not_started": 0
+        },
+        "score_counts": {
+          "pass": 639,
+          "fail": 201,
+          "unknown": 160,
+          "missing": 0
+        },
+        "unknown_prediction_reasons": {
+          "model_response_truncated": 160
+        },
+        "unknown_score_reasons": {
+          "model_response_truncated": 160
+        },
+        "score_sum_known": 639.0,
+        "score_evaluable": {
+          "numerator": 639.0,
+          "denominator": 840,
+          "value": 0.7607142857142857
+        },
+        "score_all_attempt_lower_bound": 0.639,
+        "score_all_attempt_upper_bound": 0.799,
+        "completion_coverage": {
+          "numerator": 1000,
+          "denominator": 1000,
+          "value": 1.0
+        },
+        "evaluable_coverage": {
+          "numerator": 840,
+          "denominator": 1000,
+          "value": 0.84
+        },
+        "native_metrics": {
+          "accuracy": {
+            "sum": 639.0,
+            "reported_positions": 840,
+            "mean_reported": 0.7607142857142857
+          }
+        },
+        "api_cost": {
+          "logical_calls": 1000,
+          "terminal_receipts": 1000,
+          "unclosed_calls": 0,
+          "receipts_with_unknown_usage": 0,
+          "prompt_tokens_known_subtotal": 643770,
+          "completion_tokens_known_subtotal": 875803,
+          "http_attempts_known_subtotal": 1016,
+          "receipts_with_retries": 15,
+          "reported_tokens_known_subtotal": 1519573,
+          "reported_tokens_total": 1519573,
+          "usage_complete": true,
+          "retry_inclusive_usage_known": false,
+          "http_final_statuses": {
+            "200": 1000
+          },
+          "error_types": {
+            "none": 840,
+            "truncated_content": 160
+          },
+          "note": "Receipt-reported tokens; retry-inclusive billing remains unknown when retries occurred. No monetary estimate."
+        },
+        "native_score_cost": {
+          "container_calls": 840,
+          "wall_seconds_subtotal": 2001.893303,
+          "scope": "Scoring only; excludes generation-side native episodes/workbooks and preparation"
+        }
+      },
+      "by_repeat": {
+        "0": {
+          "tasks": 500,
+          "declared_families": 50,
+          "repeats": 1,
+          "expected_positions": 500,
+          "status": "complete",
+          "prediction_counts": {
+            "available": 420,
+            "unknown": 80,
+            "open_intent": 0,
+            "not_started": 0
+          },
+          "score_counts": {
+            "pass": 319,
+            "fail": 101,
+            "unknown": 80,
+            "missing": 0
+          },
+          "unknown_prediction_reasons": {
+            "model_response_truncated": 80
+          },
+          "unknown_score_reasons": {
+            "model_response_truncated": 80
+          },
+          "score_sum_known": 319.0,
+          "score_evaluable": {
+            "numerator": 319.0,
+            "denominator": 420,
+            "value": 0.7595238095238095
+          },
+          "score_all_attempt_lower_bound": 0.638,
+          "score_all_attempt_upper_bound": 0.798,
+          "completion_coverage": {
+            "numerator": 500,
+            "denominator": 500,
+            "value": 1.0
+          },
+          "evaluable_coverage": {
+            "numerator": 420,
+            "denominator": 500,
+            "value": 0.84
+          },
+          "native_metrics": {
+            "accuracy": {
+              "sum": 319.0,
+              "reported_positions": 420,
+              "mean_reported": 0.7595238095238095
+            }
+          },
+          "api_cost": {
+            "logical_calls": 500,
+            "terminal_receipts": 500,
+            "unclosed_calls": 0,
+            "receipts_with_unknown_usage": 0,
+            "prompt_tokens_known_subtotal": 321885,
+            "completion_tokens_known_subtotal": 433175,
+            "http_attempts_known_subtotal": 510,
+            "receipts_with_retries": 9,
+            "reported_tokens_known_subtotal": 755060,
+            "reported_tokens_total": 755060,
+            "usage_complete": true,
+            "retry_inclusive_usage_known": false,
+            "http_final_statuses": {
+              "200": 500
+            },
+            "error_types": {
+              "none": 420,
+              "truncated_content": 80
+            },
+            "note": "Receipt-reported tokens; retry-inclusive billing remains unknown when retries occurred. No monetary estimate."
+          },
+          "native_score_cost": {
+            "container_calls": 420,
+            "wall_seconds_subtotal": 1014.331328,
+            "scope": "Scoring only; excludes generation-side native episodes/workbooks and preparation"
+          }
+        },
+        "1": {
+          "tasks": 500,
+          "declared_families": 50,
+          "repeats": 1,
+          "expected_positions": 500,
+          "status": "complete",
+          "prediction_counts": {
+            "available": 420,
+            "unknown": 80,
+            "open_intent": 0,
+            "not_started": 0
+          },
+          "score_counts": {
+            "pass": 320,
+            "fail": 100,
+            "unknown": 80,
+            "missing": 0
+          },
+          "unknown_prediction_reasons": {
+            "model_response_truncated": 80
+          },
+          "unknown_score_reasons": {
+            "model_response_truncated": 80
+          },
+          "score_sum_known": 320.0,
+          "score_evaluable": {
+            "numerator": 320.0,
+            "denominator": 420,
+            "value": 0.7619047619047619
+          },
+          "score_all_attempt_lower_bound": 0.64,
+          "score_all_attempt_upper_bound": 0.8,
+          "completion_coverage": {
+            "numerator": 500,
+            "denominator": 500,
+            "value": 1.0
+          },
+          "evaluable_coverage": {
+            "numerator": 420,
+            "denominator": 500,
+            "value": 0.84
+          },
+          "native_metrics": {
+            "accuracy": {
+              "sum": 320.0,
+              "reported_positions": 420,
+              "mean_reported": 0.7619047619047619
+            }
+          },
+          "api_cost": {
+            "logical_calls": 500,
+            "terminal_receipts": 500,
+            "unclosed_calls": 0,
+            "receipts_with_unknown_usage": 0,
+            "prompt_tokens_known_subtotal": 321885,
+            "completion_tokens_known_subtotal": 442628,
+            "http_attempts_known_subtotal": 506,
+            "receipts_with_retries": 6,
+            "reported_tokens_known_subtotal": 764513,
+            "reported_tokens_total": 764513,
+            "usage_complete": true,
+            "retry_inclusive_usage_known": false,
+            "http_final_statuses": {
+              "200": 500
+            },
+            "error_types": {
+              "none": 420,
+              "truncated_content": 80
+            },
+            "note": "Receipt-reported tokens; retry-inclusive billing remains unknown when retries occurred. No monetary estimate."
+          },
+          "native_score_cost": {
+            "container_calls": 420,
+            "wall_seconds_subtotal": 987.561975,
+            "scope": "Scoring only; excludes generation-side native episodes/workbooks and preparation"
+          }
+        }
+      },
+      "by_category": {
+        "cipher": {
+          "tasks": 100,
+          "declared_families": 10,
+          "repeats": 2,
+          "expected_positions": 200,
+          "status": "complete",
+          "prediction_counts": {
+            "available": 164,
+            "unknown": 36,
+            "open_intent": 0,
+            "not_started": 0
+          },
+          "score_counts": {
+            "pass": 110,
+            "fail": 54,
+            "unknown": 36,
+            "missing": 0
+          },
+          "unknown_prediction_reasons": {
+            "model_response_truncated": 36
+          },
+          "unknown_score_reasons": {
+            "model_response_truncated": 36
+          },
+          "score_sum_known": 110.0,
+          "score_evaluable": {
+            "numerator": 110.0,
+            "denominator": 164,
+            "value": 0.6707317073170732
+          },
+          "score_all_attempt_lower_bound": 0.55,
+          "score_all_attempt_upper_bound": 0.73,
+          "completion_coverage": {
+            "numerator": 200,
+            "denominator": 200,
+            "value": 1.0
+          },
+          "evaluable_coverage": {
+            "numerator": 164,
+            "denominator": 200,
+            "value": 0.82
+          },
+          "native_metrics": {
+            "accuracy": {
+              "sum": 110.0,
+              "reported_positions": 164,
+              "mean_reported": 0.6707317073170732
+            }
+          },
+          "api_cost": {
+            "logical_calls": 200,
+            "terminal_receipts": 200,
+            "unclosed_calls": 0,
+            "receipts_with_unknown_usage": 0,
+            "prompt_tokens_known_subtotal": 193146,
+            "completion_tokens_known_subtotal": 234105,
+            "http_attempts_known_subtotal": 202,
+            "receipts_with_retries": 2,
+            "reported_tokens_known_subtotal": 427251,
+            "reported_tokens_total": 427251,
+            "usage_complete": true,
+            "retry_inclusive_usage_known": false,
+            "http_final_statuses": {
+              "200": 200
+            },
+            "error_types": {
+              "none": 164,
+              "truncated_content": 36
+            },
+            "note": "Receipt-reported tokens; retry-inclusive billing remains unknown when retries occurred. No monetary estimate."
+          },
+          "native_score_cost": {
+            "container_calls": 164,
+            "wall_seconds_subtotal": 375.556448,
+            "scope": "Scoring only; excludes generation-side native episodes/workbooks and preparation"
+          }
+        },
+        "counterfactual": {
+          "tasks": 100,
+          "declared_families": 10,
+          "repeats": 2,
+          "expected_positions": 200,
+          "status": "complete",
+          "prediction_counts": {
+            "available": 200,
+            "unknown": 0,
+            "open_intent": 0,
+            "not_started": 0
+          },
+          "score_counts": {
+            "pass": 176,
+            "fail": 24,
+            "unknown": 0,
+            "missing": 0
+          },
+          "unknown_prediction_reasons": {},
+          "unknown_score_reasons": {},
+          "score_sum_known": 176.0,
+          "score_evaluable": {
+            "numerator": 176.0,
+            "denominator": 200,
+            "value": 0.88
+          },
+          "score_all_attempt_lower_bound": 0.88,
+          "score_all_attempt_upper_bound": 0.88,
+          "completion_coverage": {
+            "numerator": 200,
+            "denominator": 200,
+            "value": 1.0
+          },
+          "evaluable_coverage": {
+            "numerator": 200,
+            "denominator": 200,
+            "value": 1.0
+          },
+          "native_metrics": {
+            "accuracy": {
+              "sum": 176.0,
+              "reported_positions": 200,
+              "mean_reported": 0.88
+            }
+          },
+          "api_cost": {
+            "logical_calls": 200,
+            "terminal_receipts": 200,
+            "unclosed_calls": 0,
+            "receipts_with_unknown_usage": 0,
+            "prompt_tokens_known_subtotal": 234938,
+            "completion_tokens_known_subtotal": 2227,
+            "http_attempts_known_subtotal": 200,
+            "receipts_with_retries": 0,
+            "reported_tokens_known_subtotal": 237165,
+            "reported_tokens_total": 237165,
+            "usage_complete": true,
+            "retry_inclusive_usage_known": true,
+            "http_final_statuses": {
+              "200": 200
+            },
+            "error_types": {
+              "none": 200
+            },
+            "note": "Receipt-reported tokens; retry-inclusive billing remains unknown when retries occurred. No monetary estimate."
+          },
+          "native_score_cost": {
+            "container_calls": 200,
+            "wall_seconds_subtotal": 465.966683,
+            "scope": "Scoring only; excludes generation-side native episodes/workbooks and preparation"
+          }
+        },
+        "logic": {
+          "tasks": 100,
+          "declared_families": 10,
+          "repeats": 2,
+          "expected_positions": 200,
+          "status": "complete",
+          "prediction_counts": {
+            "available": 197,
+            "unknown": 3,
+            "open_intent": 0,
+            "not_started": 0
+          },
+          "score_counts": {
+            "pass": 123,
+            "fail": 74,
+            "unknown": 3,
+            "missing": 0
+          },
+          "unknown_prediction_reasons": {
+            "model_response_truncated": 3
+          },
+          "unknown_score_reasons": {
+            "model_response_truncated": 3
+          },
+          "score_sum_known": 123.0,
+          "score_evaluable": {
+            "numerator": 123.0,
+            "denominator": 197,
+            "value": 0.6243654822335025
+          },
+          "score_all_attempt_lower_bound": 0.615,
+          "score_all_attempt_upper_bound": 0.63,
+          "completion_coverage": {
+            "numerator": 200,
+            "denominator": 200,
+            "value": 1.0
+          },
+          "evaluable_coverage": {
+            "numerator": 197,
+            "denominator": 200,
+            "value": 0.985
+          },
+          "native_metrics": {
+            "accuracy": {
+              "sum": 123.0,
+              "reported_positions": 197,
+              "mean_reported": 0.6243654822335025
+            }
+          },
+          "api_cost": {
+            "logical_calls": 200,
+            "terminal_receipts": 200,
+            "unclosed_calls": 0,
+            "receipts_with_unknown_usage": 0,
+            "prompt_tokens_known_subtotal": 127786,
+            "completion_tokens_known_subtotal": 34929,
+            "http_attempts_known_subtotal": 202,
+            "receipts_with_retries": 2,
+            "reported_tokens_known_subtotal": 162715,
+            "reported_tokens_total": 162715,
+            "usage_complete": true,
+            "retry_inclusive_usage_known": false,
+            "http_final_statuses": {
+              "200": 200
+            },
+            "error_types": {
+              "none": 197,
+              "truncated_content": 3
+            },
+            "note": "Receipt-reported tokens; retry-inclusive billing remains unknown when retries occurred. No monetary estimate."
+          },
+          "native_score_cost": {
+            "container_calls": 197,
+            "wall_seconds_subtotal": 444.89299,
+            "scope": "Scoring only; excludes generation-side native episodes/workbooks and preparation"
+          }
+        },
+        "operation": {
+          "tasks": 100,
+          "declared_families": 10,
+          "repeats": 2,
+          "expected_positions": 200,
+          "status": "complete",
+          "prediction_counts": {
+            "available": 199,
+            "unknown": 1,
+            "open_intent": 0,
+            "not_started": 0
+          },
+          "score_counts": {
+            "pass": 178,
+            "fail": 21,
+            "unknown": 1,
+            "missing": 0
+          },
+          "unknown_prediction_reasons": {
+            "model_response_truncated": 1
+          },
+          "unknown_score_reasons": {
+            "model_response_truncated": 1
+          },
+          "score_sum_known": 178.0,
+          "score_evaluable": {
+            "numerator": 178.0,
+            "denominator": 199,
+            "value": 0.8944723618090452
+          },
+          "score_all_attempt_lower_bound": 0.89,
+          "score_all_attempt_upper_bound": 0.895,
+          "completion_coverage": {
+            "numerator": 200,
+            "denominator": 200,
+            "value": 1.0
+          },
+          "evaluable_coverage": {
+            "numerator": 199,
+            "denominator": 200,
+            "value": 0.995
+          },
+          "native_metrics": {
+            "accuracy": {
+              "sum": 178.0,
+              "reported_positions": 199,
+              "mean_reported": 0.8944723618090452
+            }
+          },
+          "api_cost": {
+            "logical_calls": 200,
+            "terminal_receipts": 200,
+            "unclosed_calls": 0,
+            "receipts_with_unknown_usage": 0,
+            "prompt_tokens_known_subtotal": 27088,
+            "completion_tokens_known_subtotal": 23343,
+            "http_attempts_known_subtotal": 201,
+            "receipts_with_retries": 1,
+            "reported_tokens_known_subtotal": 50431,
+            "reported_tokens_total": 50431,
+            "usage_complete": true,
+            "retry_inclusive_usage_known": false,
+            "http_final_statuses": {
+              "200": 200
+            },
+            "error_types": {
+              "none": 199,
+              "truncated_content": 1
+            },
+            "note": "Receipt-reported tokens; retry-inclusive billing remains unknown when retries occurred. No monetary estimate."
+          },
+          "native_score_cost": {
+            "container_calls": 199,
+            "wall_seconds_subtotal": 523.55986,
+            "scope": "Scoring only; excludes generation-side native episodes/workbooks and preparation"
+          }
+        },
+        "puzzle": {
+          "tasks": 100,
+          "declared_families": 10,
+          "repeats": 2,
+          "expected_positions": 200,
+          "status": "complete",
+          "prediction_counts": {
+            "available": 80,
+            "unknown": 120,
+            "open_intent": 0,
+            "not_started": 0
+          },
+          "score_counts": {
+            "pass": 52,
+            "fail": 28,
+            "unknown": 120,
+            "missing": 0
+          },
+          "unknown_prediction_reasons": {
+            "model_response_truncated": 120
+          },
+          "unknown_score_reasons": {
+            "model_response_truncated": 120
+          },
+          "score_sum_known": 52.0,
+          "score_evaluable": {
+            "numerator": 52.0,
+            "denominator": 80,
+            "value": 0.65
+          },
+          "score_all_attempt_lower_bound": 0.26,
+          "score_all_attempt_upper_bound": 0.86,
+          "completion_coverage": {
+            "numerator": 200,
+            "denominator": 200,
+            "value": 1.0
+          },
+          "evaluable_coverage": {
+            "numerator": 80,
+            "denominator": 200,
+            "value": 0.4
+          },
+          "native_metrics": {
+            "accuracy": {
+              "sum": 52.0,
+              "reported_positions": 80,
+              "mean_reported": 0.65
+            }
+          },
+          "api_cost": {
+            "logical_calls": 200,
+            "terminal_receipts": 200,
+            "unclosed_calls": 0,
+            "receipts_with_unknown_usage": 0,
+            "prompt_tokens_known_subtotal": 60812,
+            "completion_tokens_known_subtotal": 581199,
+            "http_attempts_known_subtotal": 211,
+            "receipts_with_retries": 10,
+            "reported_tokens_known_subtotal": 642011,
+            "reported_tokens_total": 642011,
+            "usage_complete": true,
+            "retry_inclusive_usage_known": false,
+            "http_final_statuses": {
+              "200": 200
+            },
+            "error_types": {
+              "none": 80,
+              "truncated_content": 120
+            },
+            "note": "Receipt-reported tokens; retry-inclusive billing remains unknown when retries occurred. No monetary estimate."
+          },
+          "native_score_cost": {
+            "container_calls": 80,
+            "wall_seconds_subtotal": 191.917322,
+            "scope": "Scoring only; excludes generation-side native episodes/workbooks and preparation"
+          }
+        }
+      }
+    }
+  },
+  "verified_report_hashes": [
+    "0d1197faafa0e96e79e493af5d6d4f1e8fe84a8203fb7a20d42deb18622afce8"
+  ],
+  "integrity_scope": "Verifies record seals and task/repeat/checkpoint/receipt identity; does not re-execute scorers or audit external assets.",
+  "snapshot_scope": "Read-only evolving-run snapshot, not an atomic completion marker; rerun after collector/scorer completes for final accounting.",
+  "open_intent_semantics": "An intent lacks a terminal record; its call may still be running. This alone is not evidence of interruption.",
+  "available_is_not_correct": true,
+  "independent_final_claim": false,
+  "privacy": "Explicit count/metadata whitelist; no task text, answers, code, trajectories, Skill content, raw prompts or credentials."
+}

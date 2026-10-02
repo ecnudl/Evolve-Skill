@@ -1,0 +1,740 @@
+{
+  "version": "spreadsheet-frozen-gold-full-replay-v1",
+  "status": "qualified",
+  "protocol_hash": "76be97fbe2218fd4959a4aeb6efad0de9a6b9119d2945a9e24ef7531a2237bf8",
+  "engine": {
+    "version": "spreadsheet-independent-lo-recalculation-v8b",
+    "image_id": "sha256:f7f6f598c4f0b16ea514614c22325e8b3a2d5d0317f423757dcdfa1bb2c4d790",
+    "timeout_seconds": 120,
+    "memory_mb": 1024,
+    "cpus": 1,
+    "pids_limit": 128,
+    "network": "none",
+    "root_read_only": true,
+    "source_read_only": true,
+    "user": "65534:65534",
+    "macros": "never_execute",
+    "links": "no_update",
+    "sources": {
+      "/root/continual-unknown-frozen-gold-b-20261002-source/skillopt/continual_eval/sheet_recalc.py": "ae9bd26cda8e220240538cde96713c6809bab6286301993f88505b6e02cae35b",
+      "/root/continual-unknown-frozen-gold-b-20261002-source/skillopt/continual_eval/sheet_recalc_worker.py": "e357b987205ed597e500c6f0866979dd9e3d58ea681ef851aa66dfa942cba231",
+      "/root/continual-unknown-frozen-gold-b-20261002-source/skillopt/continual_eval/spreadsheet_compat.py": "4b81345fa88eed55172ffb5d3f801804dff0067fbfe0e45d1fa4985b39370a47",
+      "/root/continual-unknown-frozen-gold-b-20261002-source/skillopt/envs/spreadsheetbench/evaluator.py": "405c4204688593eb71b4603c8483a5b2b20927f15e0dc0c4878aa4636a0cfb6c",
+      "/root/continual-unknown-frozen-gold-b-20261002-source/skillopt/skill_validation/sandbox.py": "8a88a3a5664ac305d8ae499955462d202304dd38ba7b27f105bb4728da6502ce",
+      "/root/continual-unknown-frozen-gold-b-20261002-source/skillopt/continual_eval/sheet_recalc_v6.py": "9440f1279dc781c5424809708798238e5d4c7e6430211fb94dd2e578816dfa99",
+      "/root/continual-unknown-frozen-gold-b-20261002-source/skillopt/continual_eval/sheet_recalc_v7.py": "717bfb2e3363cf79ee803bff93746c47b262f2d6831839afd56d2f5558ae523d",
+      "/root/continual-unknown-frozen-gold-b-20261002-source/skillopt/continual_eval/sheet_recalc_functions.py": "64a465d8da0adf482e9ceb24a9849654223c8eae1d0fce13598a9d38f7f9b8c0"
+    },
+    "comparison_view": "original-general-formula-numeric-read-view-v1",
+    "function_alias_view": "native-ifna-aggregate-screen-only-v2",
+    "qualified_function_execution": "original_bytes_namespace_preserved"
+  },
+  "sources": {
+    "/root/continual-unknown-frozen-gold-b-20261002-source/scripts/replay_sheet_frozen_gold.py": "243f81c818ed0f02b1864cf79685ed7691c34f867fb66d9cb398fd8299944465",
+    "/root/continual-unknown-frozen-gold-b-20261002-source/skillopt/continual_eval/sheet_frozen_gold.py": "e0cbff8c05165433e9653863b3f70b7d81fccd3a6ab68bee28fad7c1254994a3",
+    "/root/continual-unknown-frozen-gold-b-20261002-source/scripts/replay_sheet_v6.py": "bd71af36ab0876f2b8407338e8e5c8d4b42929ac1ebd0c66085b582aea12792f"
+  },
+  "score_qualification": {
+    "version": "spreadsheet-frozen-dataset-cache-h-v2",
+    "status": "qualified",
+    "engine": {
+      "version": "spreadsheet-independent-lo-recalculation-v8b",
+      "image_id": "sha256:f7f6f598c4f0b16ea514614c22325e8b3a2d5d0317f423757dcdfa1bb2c4d790",
+      "timeout_seconds": 120,
+      "memory_mb": 1024,
+      "cpus": 1,
+      "pids_limit": 128,
+      "network": "none",
+      "root_read_only": true,
+      "source_read_only": true,
+      "user": "65534:65534",
+      "macros": "never_execute",
+      "links": "no_update",
+      "sources": {
+        "/root/continual-unknown-frozen-gold-b-20261002-source/skillopt/continual_eval/sheet_recalc.py": "ae9bd26cda8e220240538cde96713c6809bab6286301993f88505b6e02cae35b",
+        "/root/continual-unknown-frozen-gold-b-20261002-source/skillopt/continual_eval/sheet_recalc_worker.py": "e357b987205ed597e500c6f0866979dd9e3d58ea681ef851aa66dfa942cba231",
+        "/root/continual-unknown-frozen-gold-b-20261002-source/skillopt/continual_eval/spreadsheet_compat.py": "4b81345fa88eed55172ffb5d3f801804dff0067fbfe0e45d1fa4985b39370a47",
+        "/root/continual-unknown-frozen-gold-b-20261002-source/skillopt/envs/spreadsheetbench/evaluator.py": "405c4204688593eb71b4603c8483a5b2b20927f15e0dc0c4878aa4636a0cfb6c",
+        "/root/continual-unknown-frozen-gold-b-20261002-source/skillopt/skill_validation/sandbox.py": "8a88a3a5664ac305d8ae499955462d202304dd38ba7b27f105bb4728da6502ce",
+        "/root/continual-unknown-frozen-gold-b-20261002-source/skillopt/continual_eval/sheet_recalc_v6.py": "9440f1279dc781c5424809708798238e5d4c7e6430211fb94dd2e578816dfa99",
+        "/root/continual-unknown-frozen-gold-b-20261002-source/skillopt/continual_eval/sheet_recalc_v7.py": "717bfb2e3363cf79ee803bff93746c47b262f2d6831839afd56d2f5558ae523d",
+        "/root/continual-unknown-frozen-gold-b-20261002-source/skillopt/continual_eval/sheet_recalc_functions.py": "64a465d8da0adf482e9ceb24a9849654223c8eae1d0fce13598a9d38f7f9b8c0"
+      },
+      "comparison_view": "original-general-formula-numeric-read-view-v1",
+      "function_alias_view": "native-ifna-aggregate-screen-only-v2",
+      "qualified_function_execution": "original_bytes_namespace_preserved"
+    },
+    "module_sha256": "e0cbff8c05165433e9653863b3f70b7d81fccd3a6ab68bee28fad7c1254994a3",
+    "fixtures_hash": "8067c1c6db9b51a1b5bb9f901ebb3b1a6f3c7e1eb3a5940d9b302d08ccb25d25",
+    "controls": [
+      {
+        "name": "numeric_correct",
+        "expected": "pass",
+        "result": {
+          "reference_manifest_hash": "c45a0057347ed74fffad5a86e0b41fde8df33b9429129ff871857d0230b95926",
+          "receipts": {
+            "prediction": "d0691384b30366eb250ceac83f836a45fb9d60fe3f071b41ffb514b2050f3509"
+          },
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_executed": false,
+          "model_api_calls": 0,
+          "feedback_allowed": false,
+          "status": "pass",
+          "reason": "",
+          "evidence": {
+            "reference_empty_string_caches_used": 0,
+            "prediction_empty_string_caches_used": 0,
+            "unavailable_cells": 0,
+            "formula_recalculation_performed": false,
+            "cache_freshness_established": false,
+            "target_resolution": "strict"
+          }
+        },
+        "reference_manifest": {
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_sha256": "fb73e9602dbd275ab8b0ef25c300f5cef9040295cc443824133ed17945988165",
+          "answer_position": "S!B1",
+          "provenance": {
+            "source_protocol_hash": "8067c1c6db9b51a1b5bb9f901ebb3b1a6f3c7e1eb3a5940d9b302d08ccb25d25",
+            "task_id": "numeric_correct",
+            "evidence_kind": "engineering_fixture"
+          },
+          "known_reference_dispute": false,
+          "host_only": true,
+          "reference_recalculated": false,
+          "cache_freshness_established": false,
+          "truth_basis": "frozen_benchmark_label_not_independent_oracle",
+          "model_api_calls": 0,
+          "status": "available",
+          "reason": "frozen_label_cache_complete",
+          "target_resolution": "strict",
+          "target_cells": 1,
+          "cache_counts": {
+            "literal": 1
+          },
+          "target_values_sha256": "62dc982ef4eed635acc90bca9f5dd53a0957a8ed1d0fc679496e796b41648be2",
+          "missing_cache_locations_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "record_hash": "c45a0057347ed74fffad5a86e0b41fde8df33b9429129ff871857d0230b95926"
+        },
+        "qualified": true
+      },
+      {
+        "name": "numeric_wrong",
+        "expected": "fail",
+        "result": {
+          "reference_manifest_hash": "9c257bc53d1fda00c9406aaf15075dd1be539ca34d1f0322ab68e9498947fa60",
+          "receipts": {
+            "prediction": "e06fb6a362722e7981feb1d467f9781c18dbbb7799896ca86e6908b7eeb386be"
+          },
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_executed": false,
+          "model_api_calls": 0,
+          "feedback_allowed": false,
+          "status": "fail",
+          "reason": "value@S!B1: mismatch",
+          "evidence": {
+            "reference_empty_string_caches_used": 0,
+            "prediction_empty_string_caches_used": 0,
+            "unavailable_cells": 0,
+            "formula_recalculation_performed": false,
+            "cache_freshness_established": false,
+            "target_resolution": "strict"
+          }
+        },
+        "reference_manifest": {
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_sha256": "fb73e9602dbd275ab8b0ef25c300f5cef9040295cc443824133ed17945988165",
+          "answer_position": "S!B1",
+          "provenance": {
+            "source_protocol_hash": "8067c1c6db9b51a1b5bb9f901ebb3b1a6f3c7e1eb3a5940d9b302d08ccb25d25",
+            "task_id": "numeric_wrong",
+            "evidence_kind": "engineering_fixture"
+          },
+          "known_reference_dispute": false,
+          "host_only": true,
+          "reference_recalculated": false,
+          "cache_freshness_established": false,
+          "truth_basis": "frozen_benchmark_label_not_independent_oracle",
+          "model_api_calls": 0,
+          "status": "available",
+          "reason": "frozen_label_cache_complete",
+          "target_resolution": "strict",
+          "target_cells": 1,
+          "cache_counts": {
+            "literal": 1
+          },
+          "target_values_sha256": "62dc982ef4eed635acc90bca9f5dd53a0957a8ed1d0fc679496e796b41648be2",
+          "missing_cache_locations_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "record_hash": "9c257bc53d1fda00c9406aaf15075dd1be539ca34d1f0322ab68e9498947fa60"
+        },
+        "qualified": true
+      },
+      {
+        "name": "stale_correct_cache",
+        "expected": "fail",
+        "result": {
+          "reference_manifest_hash": "7c83ca7375f1452d2fa56b5051088d3f1208ea7342148fa5c7d9bafec30362d3",
+          "receipts": {
+            "prediction": "319c339db64e0b1d5bb039063ca43081e1ff1cc4cc1561e7ae0b08c5c1a9f242"
+          },
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_executed": false,
+          "model_api_calls": 0,
+          "feedback_allowed": false,
+          "status": "fail",
+          "reason": "value@S!B1: mismatch",
+          "evidence": {
+            "reference_empty_string_caches_used": 0,
+            "prediction_empty_string_caches_used": 0,
+            "unavailable_cells": 0,
+            "formula_recalculation_performed": false,
+            "cache_freshness_established": false,
+            "target_resolution": "strict"
+          }
+        },
+        "reference_manifest": {
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_sha256": "0bfb803565a8549072f8a300e14faa8aaeb8742e646600470f4589d4e844db18",
+          "answer_position": "S!B1",
+          "provenance": {
+            "source_protocol_hash": "8067c1c6db9b51a1b5bb9f901ebb3b1a6f3c7e1eb3a5940d9b302d08ccb25d25",
+            "task_id": "stale_correct_cache",
+            "evidence_kind": "engineering_fixture"
+          },
+          "known_reference_dispute": false,
+          "host_only": true,
+          "reference_recalculated": false,
+          "cache_freshness_established": false,
+          "truth_basis": "frozen_benchmark_label_not_independent_oracle",
+          "model_api_calls": 0,
+          "status": "available",
+          "reason": "frozen_label_cache_complete",
+          "target_resolution": "strict",
+          "target_cells": 1,
+          "cache_counts": {
+            "literal": 1
+          },
+          "target_values_sha256": "62dc982ef4eed635acc90bca9f5dd53a0957a8ed1d0fc679496e796b41648be2",
+          "missing_cache_locations_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "record_hash": "7c83ca7375f1452d2fa56b5051088d3f1208ea7342148fa5c7d9bafec30362d3"
+        },
+        "qualified": true
+      },
+      {
+        "name": "empty_string",
+        "expected": "pass",
+        "result": {
+          "reference_manifest_hash": "b4afc2bef0772cba504b58aff69282afcac705259242a9c9fdd3cae892cafc38",
+          "receipts": {
+            "prediction": "10a9994a05ccbffd09f8a15d431eebe67d45badcd89fda7b4ef6bf087dc370a3"
+          },
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_executed": false,
+          "model_api_calls": 0,
+          "feedback_allowed": false,
+          "status": "pass",
+          "reason": "",
+          "evidence": {
+            "reference_empty_string_caches_used": 1,
+            "prediction_empty_string_caches_used": 1,
+            "unavailable_cells": 0,
+            "formula_recalculation_performed": false,
+            "cache_freshness_established": false,
+            "target_resolution": "strict"
+          }
+        },
+        "reference_manifest": {
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_sha256": "4c4374c97c0f9eb36b0e3c0410ba7de45581d9acf01dc9bf088e79f0a9b42bfb",
+          "answer_position": "S!B1",
+          "provenance": {
+            "source_protocol_hash": "8067c1c6db9b51a1b5bb9f901ebb3b1a6f3c7e1eb3a5940d9b302d08ccb25d25",
+            "task_id": "empty_string",
+            "evidence_kind": "engineering_fixture"
+          },
+          "known_reference_dispute": false,
+          "host_only": true,
+          "reference_recalculated": false,
+          "cache_freshness_established": false,
+          "truth_basis": "frozen_benchmark_label_not_independent_oracle",
+          "model_api_calls": 0,
+          "status": "available",
+          "reason": "frozen_label_cache_complete",
+          "target_resolution": "strict",
+          "target_cells": 1,
+          "cache_counts": {
+            "explicit_empty_calculated_string": 1
+          },
+          "target_values_sha256": "2c384d47d014a1a491885c539d814c1999dc060799cf6626c0e19baba415e330",
+          "missing_cache_locations_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "record_hash": "b4afc2bef0772cba504b58aff69282afcac705259242a9c9fdd3cae892cafc38"
+        },
+        "qualified": true
+      },
+      {
+        "name": "missing_formula_cache",
+        "expected": "unknown",
+        "result": {
+          "reference_manifest_hash": "533f17f189975f5c87352e3986bddf39d22a003e6fc24287a7e44cd8826568b7",
+          "receipts": {},
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_executed": false,
+          "model_api_calls": 0,
+          "feedback_allowed": false,
+          "status": "unknown",
+          "reason": "reference_target_cache_incomplete"
+        },
+        "reference_manifest": {
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_sha256": "99d153a3fd61d4aa4df87e7e116d686f67f714a86d86a509217482b7ecc082f1",
+          "answer_position": "S!B1:B2",
+          "provenance": {
+            "source_protocol_hash": "8067c1c6db9b51a1b5bb9f901ebb3b1a6f3c7e1eb3a5940d9b302d08ccb25d25",
+            "task_id": "missing_formula_cache",
+            "evidence_kind": "engineering_fixture"
+          },
+          "known_reference_dispute": false,
+          "host_only": true,
+          "reference_recalculated": false,
+          "cache_freshness_established": false,
+          "truth_basis": "frozen_benchmark_label_not_independent_oracle",
+          "model_api_calls": 0,
+          "status": "unknown",
+          "reason": "reference_target_cache_incomplete",
+          "target_resolution": "strict",
+          "target_cells": 2,
+          "cache_counts": {
+            "missing_calculated_cache": 1,
+            "literal": 1
+          },
+          "target_values_sha256": "da3491675206f69d808e16d54cb72c1f6641d10259d31d9a7343adb448d8cc12",
+          "missing_cache_locations_sha256": "7157d2308f2b80ce84e812df39d66ef13b867d5cd3450653e81e42e924ad6ef4",
+          "record_hash": "533f17f189975f5c87352e3986bddf39d22a003e6fc24287a7e44cd8826568b7"
+        },
+        "qualified": true
+      },
+      {
+        "name": "missing_array_follower",
+        "expected": "unknown",
+        "result": {
+          "reference_manifest_hash": "4096ab4f8c7d0dc3248679ed49bea46edf94a2476f8a38e8180a71a8ec046ae5",
+          "receipts": {},
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_executed": false,
+          "model_api_calls": 0,
+          "feedback_allowed": false,
+          "status": "unknown",
+          "reason": "reference_target_cache_incomplete"
+        },
+        "reference_manifest": {
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_sha256": "e7a1bce8f3a5862c43d9972d47a0eaad741c3ca982bb36346a7062eaf66508a9",
+          "answer_position": "S!B1:B2",
+          "provenance": {
+            "source_protocol_hash": "8067c1c6db9b51a1b5bb9f901ebb3b1a6f3c7e1eb3a5940d9b302d08ccb25d25",
+            "task_id": "missing_array_follower",
+            "evidence_kind": "engineering_fixture"
+          },
+          "known_reference_dispute": false,
+          "host_only": true,
+          "reference_recalculated": false,
+          "cache_freshness_established": false,
+          "truth_basis": "frozen_benchmark_label_not_independent_oracle",
+          "model_api_calls": 0,
+          "status": "unknown",
+          "reason": "reference_target_cache_incomplete",
+          "target_resolution": "strict",
+          "target_cells": 2,
+          "cache_counts": {
+            "available_calculated_cache": 1,
+            "missing_calculated_cache": 1
+          },
+          "target_values_sha256": "f22f46e793a5d02fe60db2d336937b9376c4f4f2830835c9b3bf2c5fb3b0c7b0",
+          "missing_cache_locations_sha256": "05fc6e36ece22f45e685a796842549086dc3c1d7dda46237485eb7812a4994b8",
+          "record_hash": "4096ab4f8c7d0dc3248679ed49bea46edf94a2476f8a38e8180a71a8ec046ae5"
+        },
+        "qualified": true
+      },
+      {
+        "name": "array_zero_false",
+        "expected": "pass",
+        "result": {
+          "reference_manifest_hash": "e4c973bfa7cbe41bb5897b1e9cd172e9e9799724d5a634c47164175900f40a4e",
+          "receipts": {
+            "prediction": "f7d1b570d673309f100c5ee0ca66e960592d99f89fc972ebdf77b67a1e31a144"
+          },
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_executed": false,
+          "model_api_calls": 0,
+          "feedback_allowed": false,
+          "status": "pass",
+          "reason": "",
+          "evidence": {
+            "reference_empty_string_caches_used": 0,
+            "prediction_empty_string_caches_used": 0,
+            "unavailable_cells": 0,
+            "formula_recalculation_performed": false,
+            "cache_freshness_established": false,
+            "target_resolution": "strict"
+          }
+        },
+        "reference_manifest": {
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_sha256": "f4a51c412c4e24f9dbcba769d0bdb22b4b849640b2d1ec96230e458ca336c8a4",
+          "answer_position": "S!B1:B2",
+          "provenance": {
+            "source_protocol_hash": "8067c1c6db9b51a1b5bb9f901ebb3b1a6f3c7e1eb3a5940d9b302d08ccb25d25",
+            "task_id": "array_zero_false",
+            "evidence_kind": "engineering_fixture"
+          },
+          "known_reference_dispute": false,
+          "host_only": true,
+          "reference_recalculated": false,
+          "cache_freshness_established": false,
+          "truth_basis": "frozen_benchmark_label_not_independent_oracle",
+          "model_api_calls": 0,
+          "status": "available",
+          "reason": "frozen_label_cache_complete",
+          "target_resolution": "strict",
+          "target_cells": 2,
+          "cache_counts": {
+            "available_calculated_cache": 2
+          },
+          "target_values_sha256": "65e658a036ed482ebdc58270a0aed2f8869f163571492571bf605fecc6812c28",
+          "missing_cache_locations_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "record_hash": "e4c973bfa7cbe41bb5897b1e9cd172e9e9799724d5a634c47164175900f40a4e"
+        },
+        "qualified": true
+      },
+      {
+        "name": "reference_unsupported_but_cached",
+        "expected": "pass",
+        "result": {
+          "reference_manifest_hash": "35f88ee8eceb0ca5515fd672925ce98b3e15cddd86144bc2980f3fc9a397942e",
+          "receipts": {
+            "prediction": "6a0769ca504ae904cda5cc81866c65f2599234413eb077aa751932e580702e3d"
+          },
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_executed": false,
+          "model_api_calls": 0,
+          "feedback_allowed": false,
+          "status": "pass",
+          "reason": "",
+          "evidence": {
+            "reference_empty_string_caches_used": 0,
+            "prediction_empty_string_caches_used": 0,
+            "unavailable_cells": 0,
+            "formula_recalculation_performed": false,
+            "cache_freshness_established": false,
+            "target_resolution": "strict"
+          }
+        },
+        "reference_manifest": {
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_sha256": "949c07f0a5adce0b5338b08fd18f8375d816255294c9eeb3a31541ac855fa0aa",
+          "answer_position": "S!B1",
+          "provenance": {
+            "source_protocol_hash": "8067c1c6db9b51a1b5bb9f901ebb3b1a6f3c7e1eb3a5940d9b302d08ccb25d25",
+            "task_id": "reference_unsupported_but_cached",
+            "evidence_kind": "engineering_fixture"
+          },
+          "known_reference_dispute": false,
+          "host_only": true,
+          "reference_recalculated": false,
+          "cache_freshness_established": false,
+          "truth_basis": "frozen_benchmark_label_not_independent_oracle",
+          "model_api_calls": 0,
+          "status": "available",
+          "reason": "frozen_label_cache_complete",
+          "target_resolution": "strict",
+          "target_cells": 1,
+          "cache_counts": {
+            "available_calculated_cache": 1
+          },
+          "target_values_sha256": "62dc982ef4eed635acc90bca9f5dd53a0957a8ed1d0fc679496e796b41648be2",
+          "missing_cache_locations_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "record_hash": "35f88ee8eceb0ca5515fd672925ce98b3e15cddd86144bc2980f3fc9a397942e"
+        },
+        "qualified": true
+      },
+      {
+        "name": "known_reference_dispute",
+        "expected": "unknown",
+        "result": {
+          "reference_manifest_hash": "9d46efd421d924581e005dea7ac2aa48b2f5858246f98ecaafa8c55011a9bef9",
+          "receipts": {},
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_executed": false,
+          "model_api_calls": 0,
+          "feedback_allowed": false,
+          "status": "unknown",
+          "reason": "known_reference_dispute"
+        },
+        "reference_manifest": {
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_sha256": "31e742f0df0d27fbb9ec657878ad376a17d8a4fed29726040281a84eed0d8102",
+          "answer_position": "S!B1",
+          "provenance": {
+            "source_protocol_hash": "8067c1c6db9b51a1b5bb9f901ebb3b1a6f3c7e1eb3a5940d9b302d08ccb25d25",
+            "task_id": "known_reference_dispute",
+            "evidence_kind": "engineering_fixture"
+          },
+          "known_reference_dispute": true,
+          "host_only": true,
+          "reference_recalculated": false,
+          "cache_freshness_established": false,
+          "truth_basis": "frozen_benchmark_label_not_independent_oracle",
+          "model_api_calls": 0,
+          "status": "unknown",
+          "reason": "known_reference_dispute",
+          "target_resolution": "strict",
+          "target_cells": 1,
+          "cache_counts": {
+            "literal": 1
+          },
+          "target_values_sha256": "62dc982ef4eed635acc90bca9f5dd53a0957a8ed1d0fc679496e796b41648be2",
+          "missing_cache_locations_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "record_hash": "9d46efd421d924581e005dea7ac2aa48b2f5858246f98ecaafa8c55011a9bef9"
+        },
+        "qualified": true
+      },
+      {
+        "name": "reference_error_literal",
+        "expected": "pass",
+        "result": {
+          "reference_manifest_hash": "0d37902734011b1736949a4811ad88f6844758f59fc37c824e6c7c391f24510a",
+          "receipts": {
+            "prediction": "6a034775268783ca2b57408079702d310cc4d135f908a8d92f566bf98914b7cd"
+          },
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_executed": false,
+          "model_api_calls": 0,
+          "feedback_allowed": false,
+          "status": "pass",
+          "reason": "",
+          "evidence": {
+            "reference_empty_string_caches_used": 0,
+            "prediction_empty_string_caches_used": 0,
+            "unavailable_cells": 0,
+            "formula_recalculation_performed": false,
+            "cache_freshness_established": false,
+            "target_resolution": "strict"
+          }
+        },
+        "reference_manifest": {
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_sha256": "6653dcd08f35d6a5128fdbb9be1c48fa6830a2cbdbc146300f90e544380ad636",
+          "answer_position": "S!B1",
+          "provenance": {
+            "source_protocol_hash": "8067c1c6db9b51a1b5bb9f901ebb3b1a6f3c7e1eb3a5940d9b302d08ccb25d25",
+            "task_id": "reference_error_literal",
+            "evidence_kind": "engineering_fixture"
+          },
+          "known_reference_dispute": false,
+          "host_only": true,
+          "reference_recalculated": false,
+          "cache_freshness_established": false,
+          "truth_basis": "frozen_benchmark_label_not_independent_oracle",
+          "model_api_calls": 0,
+          "status": "available",
+          "reason": "frozen_label_cache_complete",
+          "target_resolution": "strict",
+          "target_cells": 1,
+          "cache_counts": {
+            "literal": 1
+          },
+          "target_values_sha256": "d8f1860806a014dbb9bfdb1c612fb1ec3279c3e364496a2b1b0f5759e9e66c60",
+          "missing_cache_locations_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "record_hash": "0d37902734011b1736949a4811ad88f6844758f59fc37c824e6c7c391f24510a"
+        },
+        "qualified": true
+      },
+      {
+        "name": "true_date",
+        "expected": "pass",
+        "result": {
+          "reference_manifest_hash": "2f1d1d42c0b4645c2ee96c5501f4b4f052f16e55d820d1b0cf7d6b75b4c79013",
+          "receipts": {
+            "prediction": "7fa62771337903f2df3049f7c5ece02b89bded653456c468aedfbcb630d02aea"
+          },
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_executed": false,
+          "model_api_calls": 0,
+          "feedback_allowed": false,
+          "status": "pass",
+          "reason": "",
+          "evidence": {
+            "reference_empty_string_caches_used": 0,
+            "prediction_empty_string_caches_used": 0,
+            "unavailable_cells": 0,
+            "formula_recalculation_performed": false,
+            "cache_freshness_established": false,
+            "target_resolution": "strict"
+          }
+        },
+        "reference_manifest": {
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_sha256": "65722f68285bfe2d89d91ebdba455330ca69cb1248dedb9bcd245933f9dec354",
+          "answer_position": "S!B1",
+          "provenance": {
+            "source_protocol_hash": "8067c1c6db9b51a1b5bb9f901ebb3b1a6f3c7e1eb3a5940d9b302d08ccb25d25",
+            "task_id": "true_date",
+            "evidence_kind": "engineering_fixture"
+          },
+          "known_reference_dispute": false,
+          "host_only": true,
+          "reference_recalculated": false,
+          "cache_freshness_established": false,
+          "truth_basis": "frozen_benchmark_label_not_independent_oracle",
+          "model_api_calls": 0,
+          "status": "available",
+          "reason": "frozen_label_cache_complete",
+          "target_resolution": "strict",
+          "target_cells": 1,
+          "cache_counts": {
+            "literal": 1
+          },
+          "target_values_sha256": "2734501ed00048f4fd43dd1182d8d57b46d6a49ace1b18cecd5db20f73c95f41",
+          "missing_cache_locations_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "record_hash": "2f1d1d42c0b4645c2ee96c5501f4b4f052f16e55d820d1b0cf7d6b75b4c79013"
+        },
+        "qualified": true
+      },
+      {
+        "name": "candidate_unsupported",
+        "expected": "unknown",
+        "result": {
+          "reference_manifest_hash": "e60fb40ba253d1cf9cc0db864b707e130532ed3c4f1a463c410faf99f7d6d647",
+          "receipts": {
+            "prediction": "b4de04953833e8873eaf7fbbb7f217c6aa09f4a0f06514723332798fd43b5209"
+          },
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_executed": false,
+          "model_api_calls": 0,
+          "feedback_allowed": false,
+          "status": "unknown",
+          "reason": "prediction:unsupported_extended_function"
+        },
+        "reference_manifest": {
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_sha256": "31e742f0df0d27fbb9ec657878ad376a17d8a4fed29726040281a84eed0d8102",
+          "answer_position": "S!B1",
+          "provenance": {
+            "source_protocol_hash": "8067c1c6db9b51a1b5bb9f901ebb3b1a6f3c7e1eb3a5940d9b302d08ccb25d25",
+            "task_id": "candidate_unsupported",
+            "evidence_kind": "engineering_fixture"
+          },
+          "known_reference_dispute": false,
+          "host_only": true,
+          "reference_recalculated": false,
+          "cache_freshness_established": false,
+          "truth_basis": "frozen_benchmark_label_not_independent_oracle",
+          "model_api_calls": 0,
+          "status": "available",
+          "reason": "frozen_label_cache_complete",
+          "target_resolution": "strict",
+          "target_cells": 1,
+          "cache_counts": {
+            "literal": 1
+          },
+          "target_values_sha256": "62dc982ef4eed635acc90bca9f5dd53a0957a8ed1d0fc679496e796b41648be2",
+          "missing_cache_locations_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "record_hash": "e60fb40ba253d1cf9cc0db864b707e130532ed3c4f1a463c410faf99f7d6d647"
+        },
+        "qualified": true
+      },
+      {
+        "name": "missing_target_sheet",
+        "expected": "unknown",
+        "result": {
+          "reference_manifest_hash": "98387000228fc36e8b41c5a9faa8ff5f4a5b84525ec0655804a0d0ae6023ce88",
+          "receipts": {},
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_executed": false,
+          "model_api_calls": 0,
+          "feedback_allowed": false,
+          "status": "unknown",
+          "reason": "reference_static_evidence_error:CompatibilityError"
+        },
+        "reference_manifest": {
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_sha256": "31e742f0df0d27fbb9ec657878ad376a17d8a4fed29726040281a84eed0d8102",
+          "answer_position": "Absent!B1",
+          "provenance": {
+            "source_protocol_hash": "8067c1c6db9b51a1b5bb9f901ebb3b1a6f3c7e1eb3a5940d9b302d08ccb25d25",
+            "task_id": "missing_target_sheet",
+            "evidence_kind": "engineering_fixture"
+          },
+          "known_reference_dispute": false,
+          "host_only": true,
+          "reference_recalculated": false,
+          "cache_freshness_established": false,
+          "truth_basis": "frozen_benchmark_label_not_independent_oracle",
+          "model_api_calls": 0,
+          "status": "unknown",
+          "reason": "reference_static_evidence_error:CompatibilityError",
+          "record_hash": "98387000228fc36e8b41c5a9faa8ff5f4a5b84525ec0655804a0d0ae6023ce88"
+        },
+        "qualified": true
+      },
+      {
+        "name": "candidate_boolean_literal_limit",
+        "expected": "unknown",
+        "result": {
+          "reference_manifest_hash": "e579ea193fb8ebebd9797288c2a8a043e3f09ed54d4ae43026385736804b6cb9",
+          "receipts": {
+            "prediction": "57e7a0afeb473fe0b04d060e38a2cca281b85d34eb648b712fd3753598c632d6"
+          },
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_executed": false,
+          "model_api_calls": 0,
+          "feedback_allowed": false,
+          "status": "unknown",
+          "reason": "prediction:recalculation_changed_literal_cell"
+        },
+        "reference_manifest": {
+          "version": "spreadsheet-frozen-dataset-cache-h-v2",
+          "reference_sha256": "ccaba0da825efa93c2c650dddb4e7fe623e3e0f1fe6134fa782d76fab2fcd4b0",
+          "answer_position": "S!B1:B2",
+          "provenance": {
+            "source_protocol_hash": "8067c1c6db9b51a1b5bb9f901ebb3b1a6f3c7e1eb3a5940d9b302d08ccb25d25",
+            "task_id": "candidate_boolean_literal_limit",
+            "evidence_kind": "engineering_fixture"
+          },
+          "known_reference_dispute": false,
+          "host_only": true,
+          "reference_recalculated": false,
+          "cache_freshness_established": false,
+          "truth_basis": "frozen_benchmark_label_not_independent_oracle",
+          "model_api_calls": 0,
+          "status": "available",
+          "reason": "frozen_label_cache_complete",
+          "target_resolution": "strict",
+          "target_cells": 2,
+          "cache_counts": {
+            "literal": 2
+          },
+          "target_values_sha256": "65e658a036ed482ebdc58270a0aed2f8869f163571492571bf605fecc6812c28",
+          "missing_cache_locations_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "record_hash": "e579ea193fb8ebebd9797288c2a8a043e3f09ed54d4ae43026385736804b6cb9"
+        },
+        "qualified": true
+      }
+    ],
+    "evidence_kind": "engineering_fixture",
+    "model_api_calls": 0,
+    "feedback_allowed": false,
+    "record_hash": "d667c6356726ffe122c3e06256f84ba01283a90928ffc86d483e37a54775e781"
+  },
+  "execution": {
+    "closed_workbooks": 10,
+    "open_workbook_intents": 0,
+    "containers_attempted": 9,
+    "reported_wall_seconds": 23.216166363097727,
+    "cleanup_unconfirmed": 0,
+    "model_api_calls": 0
+  },
+  "evidence_kind": "engineering_fixture",
+  "model_api_calls": 0,
+  "record_hash": "d575c30e6050ac90d7309006e81992d5fd439f1a9c38cf1a88d47c45bc841460"
+}

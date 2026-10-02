@@ -6,17 +6,17 @@ repo_name: microsoft/SkillOpt
 
 # This site retains the upstream guide. Versioned research records are read
 # directly on GitHub; they may reference intentionally unpublished run assets.
+# Only these root Markdown pages belong to the product site. New research
+# reports must not be automatically published or require a growing denylist.
+# Keep local-only files excluded at every depth, including static assets.
 exclude_docs: |
-  coevolution*.md
-  cross-domain-*.md
-  current-workflow.md
-  experiment-report-*.md
-  research-overview.md
-  research-progress-*.md
-  results-and-lessons.md
-  results/
-  skill-validation*.md
-  validator-*-protocol-*.md
+  /*.md
+  !/index.md
+  !/contributing.md
+  !/review_guidelines.md
+  /results/
+  /superpowers/
+  *.local.*
 
 theme:
   name: material

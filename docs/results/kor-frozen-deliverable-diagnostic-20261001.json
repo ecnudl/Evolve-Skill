@@ -1,0 +1,153 @@
+{
+  "version": "kor-frozen-deliverable-public-summary-v1",
+  "date": "2026-10-01",
+  "status": "completed",
+  "evidence_kind": "posthoc_frozen_output_engineering_diagnostic",
+  "sources": {
+    "study_root": "/root/continual-kor-deliverables-20261001-study",
+    "protocol_hash": "250a060a3d49d7e3d99be781aac0375949d8d2555ca77be032efd17efd8845d0",
+    "full_report_hash": "6112a1013c5a0fee9f54fb730d2d03045c3a5df20173c3063e6a2540ee1488c0",
+    "script_sha256": "58edbf271a9b8a24c2959f20675e96f2433333416f554b23e4869edbffb70c8a",
+    "original_plan_hash": "e3f33c0ad7257cefc67d00b278a36e5631087661d010532c8f6949c6d5b9c35b",
+    "original_report_hash": "787d14f4fe12e8306bfce8081059f6ef60be842e262be23eab738b61f7aa4752",
+    "native_sources_hash": "92460b7a83a1391ea19292aed14aab74f28b596de748614652a15cf834be08fd",
+    "native_image_id": "sha256:0a0a5dcb7dd4e56215c729d2ccdd6a8862d1a644bb6f992f8bb591d4e0a0f0dd",
+    "record_hashes": [
+      "a80fa9aa8d39128dbe23421611ee731284295298c3eedf63ffb22c2d6064b0da",
+      "0cd642432164a872910056caf8bf7e0f1d391f1c7839fa90eb18a9a027815344",
+      "821110317aec4f392250229bc17d395ae0e6600a0793e7a69e57e01a40ce563a",
+      "8a03685f3dc7f18ff5b8816066e9d78772dc178f48a5955d487aa4e45e192be5",
+      "594e3f02053274c301ebea2f04af168838e72662d0a35e8b3a96cf21ef012b52",
+      "487c0ac8468ca0aa5205b11ea9989eacc6b6eb1e1377d26b9c0eb3d7e5f7529f",
+      "f651a7f2df456d67bf73318d466ce7154614ab3ae227eee8d4f2d07c5760a02a",
+      "0746cd80e550585f6dcd9398566fc3ca68e8771418d22ceeb8eed5c7a1ff3b7a",
+      "4f98f4661d8ea1c9fac026fd860a9ae2eed65a78e0ab835a465f433cf9117989",
+      "1d50c16c6fe5b9d71adf4db25a549a29b27352634af77fac8cda27e29d2869ec"
+    ]
+  },
+  "data": {
+    "original_positions": 1000,
+    "selected_all_length_positions": 10,
+    "selected_tasks": 9,
+    "complete_wrapper_and_size_eligible": 1,
+    "excluded_finish_reasons": {
+      "stop": 989,
+      "network_error": 1
+    }
+  },
+  "results": {
+    "diagnostic_counts": {
+      "pass": 1,
+      "unknown": 9
+    },
+    "cases": [
+      {
+        "task_hash": "44be2f04fb2e6c251bccf08682042254fbfb3c53036d62ae2444a21d8d60b272",
+        "repeat": 0,
+        "raw_response_sha256": "e875f002c98896387b98149e9bc89c8523ab1f89ae753492be1b803df791e499",
+        "eligible": true,
+        "diagnostic_status": "pass",
+        "original_status_unchanged": "unknown"
+      },
+      {
+        "task_hash": "56f28084e59338408a2051858c0e454eb8d70ea8bf691b93b605f4d6954ba7a4",
+        "repeat": 0,
+        "raw_response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "eligible": false,
+        "diagnostic_status": "unknown",
+        "original_status_unchanged": "unknown"
+      },
+      {
+        "task_hash": "ed51b32a1987b932271c53ee32fc1ad1c220f1a4df470d46a57f966dbbea8e28",
+        "repeat": 1,
+        "raw_response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "eligible": false,
+        "diagnostic_status": "unknown",
+        "original_status_unchanged": "unknown"
+      },
+      {
+        "task_hash": "9ef73241b453b72848c23f5c7cf8526a683657a39d920d05ed64fb0cb0841ff4",
+        "repeat": 1,
+        "raw_response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "eligible": false,
+        "diagnostic_status": "unknown",
+        "original_status_unchanged": "unknown"
+      },
+      {
+        "task_hash": "a13c230bb9a7a9bc18c1849e59db4b3f878eb7241fcc2b16ec6d524510ba1fed",
+        "repeat": 0,
+        "raw_response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "eligible": false,
+        "diagnostic_status": "unknown",
+        "original_status_unchanged": "unknown"
+      },
+      {
+        "task_hash": "e9d78a72654fd0cdb53bace3cb384e010e514545ca857cd0b96137a52b11f381",
+        "repeat": 0,
+        "raw_response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "eligible": false,
+        "diagnostic_status": "unknown",
+        "original_status_unchanged": "unknown"
+      },
+      {
+        "task_hash": "e9d78a72654fd0cdb53bace3cb384e010e514545ca857cd0b96137a52b11f381",
+        "repeat": 1,
+        "raw_response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "eligible": false,
+        "diagnostic_status": "unknown",
+        "original_status_unchanged": "unknown"
+      },
+      {
+        "task_hash": "594eadb1ab9dc49661bf32f12d2814dc276076e252c9135c0444ae06550aa676",
+        "repeat": 0,
+        "raw_response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "eligible": false,
+        "diagnostic_status": "unknown",
+        "original_status_unchanged": "unknown"
+      },
+      {
+        "task_hash": "3cf86b22440e457be1d31383ec0a7d5ebe9fc47ba42e30b9a69ee6ad901f7b0e",
+        "repeat": 1,
+        "raw_response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "eligible": false,
+        "diagnostic_status": "unknown",
+        "original_status_unchanged": "unknown"
+      },
+      {
+        "task_hash": "66541458404caf2aff319c48de16e4e6bacdc59b59c5bf59875e4d4507cf8cb0",
+        "repeat": 1,
+        "raw_response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "eligible": false,
+        "diagnostic_status": "unknown",
+        "original_status_unchanged": "unknown"
+      }
+    ],
+    "original_full1000_counts_unchanged": {
+      "pass": 746,
+      "fail": 243,
+      "unknown": 11
+    }
+  },
+  "costs": {
+    "new_model_calls": 0,
+    "native_container_calls": 1,
+    "native_cleanup_confirmed": 1,
+    "native_wall_seconds": 2.759362
+  },
+  "checks": {
+    "all_original_json_file_hashes_unchanged": true,
+    "all_length_replies_selected_before_new_scoring": true,
+    "original_entire_response_used": true,
+    "no_answer_rewrite_or_gold_based_selection": true,
+    "alf_owned_process_handoff_verified": true,
+    "new_model_calls": 0
+  },
+  "interpretation": {
+    "diagnostic_only": true,
+    "original_scores_unchanged": true,
+    "deployment_authorized": false,
+    "new_method_effect_claimed": false,
+    "note": "KOR-specific posthoc delivery diagnostic: a complete answer wrapper can be adjudicated by the pinned official scorer without regenerating or rewriting the output. This does not authorize scoring incomplete code, alter the original strict-length baseline, or establish a Skill/Research benefit."
+  },
+  "record_hash": "fbd51f05a8486220631819ee3f79e75719a74bc9cf3f5e099b669a0277f5a81d"
+}

@@ -1,0 +1,167 @@
+{
+  "version": "skillopt-reproposal-safe-terminal-summary-v1",
+  "status": "completed",
+  "reason": "new_proposal_native_development_selection",
+  "date": "2026-10-01",
+  "evidence_kind": "natural_development_learning",
+  "run_root": "/root/continual-skillopt-reproposal-20261001-study/run",
+  "source_root": "/root/continual-skillopt-reproposal-20261001-source",
+  "full_result_hash": "a8adef864a9874e2258f381958735a00c87c3e429ba7c3155e63168d19805a5c",
+  "protocol_hash": "8823dc55f1b81e4f717222d7bb8f794e54a730cda1eeddd586c51968f731bf87",
+  "manifest_hash": "54e671037f731d864fa83e9e22d7d6070aa44f9db9734c70a7855ed4b57a0743",
+  "parent_result_hash": "430ae45099dadd5283ad8d3fb34896290794512fe3cec321c0190283701f08bb",
+  "source_identity_hash": "fa4f2304beb51ccaaf767622d69ca614d744ec7e55321020bfc0ab7e99a630df",
+  "data": {
+    "benchmark": "bigcodebench",
+    "partition": "development",
+    "authorized_tasks": 129,
+    "authorized_roles": {
+      "train": 65,
+      "selection": 64
+    },
+    "panel_hash": "d0f8fb0bdbe273429fbf22dcba127c8c1ba22d9ea05d1748528b4678c71974ad",
+    "selection_tasks": 64,
+    "selection_dataset_family_ids": 64,
+    "semantic_family_independence_certified": false,
+    "family_definition": "Frozen importer family identifiers; no new semantic independence audit."
+  },
+  "model": {
+    "provider": "bigmodel",
+    "name": "glm-5.3",
+    "max_tokens": 65536,
+    "reasoning_effort": "low",
+    "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+    "transport": {
+      "stream": true,
+      "read_timeout_seconds": 300,
+      "stream_wall_seconds": 1800,
+      "initial_health_policy": "completed_response_v1"
+    }
+  },
+  "remaining_budget_after_inherited_costs": {
+    "max_metric_calls": 383,
+    "max_reflection_calls": 23,
+    "max_api_calls": 462,
+    "max_reported_tokens": 1896576,
+    "max_iterations": 1,
+    "minibatch_size": 8,
+    "solver_max_tokens": 65536,
+    "reflection_max_tokens": 4096
+  },
+  "original_budget": {
+    "max_metric_calls": 512,
+    "max_reflection_calls": 32,
+    "max_api_calls": 600,
+    "max_reported_tokens": 2000000,
+    "max_iterations": 2,
+    "minibatch_size": 8,
+    "solver_max_tokens": 65536,
+    "reflection_max_tokens": 4096
+  },
+  "original_parent_empty": true,
+  "candidate_ready": true,
+  "candidate_utf8_bytes": 5038,
+  "candidate_sha256": "d96417b882365e85d626d985e3f85890741598ca8f585baf39d2e0d6baff5a44",
+  "selected_skill_nonempty": false,
+  "selected_skill_utf8_bytes": 0,
+  "selected_skill_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "gate_action": "reject",
+  "parent_selection_score": 0.515625,
+  "candidate_selection_score": 0.484375,
+  "selection": {
+    "planned": 64,
+    "closed": 64,
+    "statuses": {
+      "fail": 33,
+      "pass": 31
+    },
+    "pairs_vs_parent": {
+      "wins": 2,
+      "losses": 4,
+      "ties": 58,
+      "unknown": 0,
+      "missing": 0
+    },
+    "unknown_reasons": {},
+    "unknown_diagnostics": []
+  },
+  "new_costs": {
+    "logical_calls": 70,
+    "terminal_calls": 70,
+    "unclosed_calls": 0,
+    "http_attempts": 70,
+    "http_attempts_known_subtotal": 70,
+    "http_attempts_total": 70,
+    "http_attempts_semantics": "known_subtotal_total_unknown_if_unclosed",
+    "reported_tokens_known_subtotal": 112794,
+    "missing_usage_calls": 0,
+    "usage_complete": true,
+    "retry_inclusive_usage_known": true,
+    "reflection_calls": 6,
+    "solver_calls": 64
+  },
+  "inherited_costs": {
+    "logical_calls": 138,
+    "terminal_calls": 138,
+    "unclosed_calls": 0,
+    "http_attempts": 138,
+    "http_attempts_known_subtotal": 138,
+    "http_attempts_total": 138,
+    "http_attempts_semantics": "known_subtotal_total_unknown_if_unclosed",
+    "reported_tokens_known_subtotal": 103424,
+    "missing_usage_calls": 0,
+    "usage_complete": true,
+    "retry_inclusive_usage_known": true,
+    "reflection_calls": 9,
+    "solver_calls": 129
+  },
+  "total_logical_calls": 208,
+  "reported_tokens_known_subtotal_including_inherited": 216218,
+  "new_calls_by_stage": {
+    "new_analyst": 2,
+    "merge": 3,
+    "ranking": 1,
+    "solver": 64
+  },
+  "new_finish_reasons": {
+    "stop": 70
+  },
+  "max_new_completion_tokens_by_role": {
+    "reflection": 1770,
+    "solver": 398
+  },
+  "reused_solver_evaluations": 129,
+  "reused_analyst_responses": 7,
+  "started_at_utc": "2026-09-30T19:11:00.464244+00:00",
+  "completed_at_utc": "2026-09-30T19:25:24.408104+00:00",
+  "wall_seconds": 863.9438600540161,
+  "audit": {
+    "source_runtime_and_parent_lineage_verified": true,
+    "receipts_caches_and_costs_verified": true,
+    "native_artifacts_verified": true,
+    "selection_identities_verified": true,
+    "new_model_calls": 0,
+    "new_native_evaluations": 0,
+    "old_results_modified": false,
+    "native_image_and_cleanup_verified_positions": 64
+  },
+  "semantics_preserving_repair": false,
+  "optimizer_resumed": false,
+  "new_s1_evaluation_performed": false,
+  "limitations": [
+    "Bounded new proposals after malformed reflection JSON; not a semantics-preserving repair.",
+    "Development selection only; no independent final or cross-domain evidence.",
+    "Inherited failed-format calls remain charged; new and inherited costs are separate.",
+    "No-update retains parent scores without resampling; Pending never authorizes S1."
+  ],
+  "deployment_authorized": false,
+  "scope_expansion_authorized": false,
+  "native_execution_costs": {
+    "container_calls": 64,
+    "wall_seconds_including_cleanup": 571.862043,
+    "image_id": "sha256:b13b0bb97861eb3a2f3f9ead1e8718d1410882613f84e088bb31338c343149fa",
+    "scope": "new 64 selection evaluations only; inherited native costs not counted here"
+  },
+  "selection_outcome": "Candidate rejected on the frozen development selection set; empty parent retained, so no new S1 samples were launched.",
+  "record_hash": "ce26c7cc0eec82c917b7702881c781fd0e91f8b922beacb12f71a1817cdb1a8f"
+}

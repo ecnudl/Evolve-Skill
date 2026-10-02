@@ -1,0 +1,33 @@
+{
+  "version": "evaluation-environment-recovery-launch-v1",
+  "snapshot_at": "2026-09-30T17:39:00+08:00",
+  "evidence_kind": "real_model_selected_failure_recovery_not_method_effect",
+  "status": "running_first_response_health_barriers",
+  "started_at": "2026-09-30T17:38:13+08:00",
+  "provider": "BigModel", "model": "glm-5.3", "reasoning_effort": "low",
+  "transport": {"stream": true, "read_idle_seconds": 300, "http_attempt_deadline_seconds": 1800,
+    "max_http_attempts_per_logical_call": 3, "raw_stream_byte_limit": 32000000,
+    "partial_response_used_for_scoring": false},
+  "parent_protocol_hash": "143ad3d567a6ca02977139ad1c304f24b2bea412782d516b1d3b287762346ec9",
+  "parent_positions": 105,
+  "branches": {
+    "length": {"protocol_hash": "85cd07aafaefb47e39df2473c77ac05d68e762bd6faaedbd2b7731c851220fe0",
+      "positions": 16, "tasks": 14, "families": 7, "max_tokens": 65536, "maximum_workers": 4,
+      "completed": 0, "inflight": 1, "unsubmitted": 15},
+    "timeout": {"protocol_hash": "2247aa3d00ce68942cc729d0f91b698c8335f095ead8c757b2e3ca1236826836",
+      "positions": 7, "tasks": 6, "families": 5, "max_tokens": 32768, "maximum_workers": 3,
+      "completed": 0, "inflight": 1, "unsubmitted": 6}
+  },
+  "unselected_parent_complete_responses": 82,
+  "source_sha256": {
+    "skillopt/validator_pilot/api.py": "d6f729952d452681c99bd33677b3c93fdefc4e6fb1ac0631c7a184385fc56f2d",
+    "skillopt/continual_eval/truncation_recovery.py": "054504d8729cb9f076b8764915b9b0941d64cf495a19c6f734ca096602e7c67e"
+  },
+  "tests": {"local_related": 317, "linux_api_recovery": 221,
+    "additional_local_cli_datasets_metrics_compat": {"passed": 123, "skipped": 1,
+      "skip_reason": "Optional pinned GEPA not installed"}},
+  "costs_complete": false,
+  "historical_results_overwritten": false,
+  "optimizer_resumed": false,
+  "spreadsheet_replay_started_at_snapshot": false
+}

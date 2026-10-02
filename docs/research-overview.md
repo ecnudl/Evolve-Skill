@@ -1,12 +1,28 @@
 # 跨域安全 Skill 进化：研究索引
 
-索引更新：2026-09-27。目标是通过 **Coding Rubric + 有界 Research** 提高 Skill 学习与范围判断的质量，兼顾多领域收益和负迁移，而不是逐域追求最高分。
+索引更新：2026-10-02。目标是通过 **Coding Rubric + 有界 Research** 提高 Skill 学习与范围判断的质量，兼顾多领域收益和负迁移，而不是逐域追求最高分。
 
 从现在起优先维护两份主文档：[当前完整流程](current-workflow.md)记录每环节输入输出、初始化及实现状态；[结果与经验账本](results-and-lessons.md)精选重要实验、完整关键对照及数据来源。本页保留历史导航，以下代码地图和证据表为截至 9/23 的索引，不代替主文档的最新状态。9/24 新增规则学习与课程的真实试跑仍 Pending，尚无新 Skill 确认成绩，见[课程报告](skill-validation-capability-curriculum-20260924.md)。
 
 9/25[同课程机制归纳对照及后续实验](skill-validation-mechanism-study-20260925.md)已完成：30题开发/78题确认、3历史。local比Base多20个通过位置，19来自截断减少、1来自不终止代码消失；mechanism全no_update，没有机制策略优势。修复轨迹已真实进入更新，96个后续实际规则注入位置未观察到干扰，但没有语义增益证据；新增源码修改面板No-Skill满分，再次暴露难度天花板。C逐例候选确认净增9项均涉及交付；G预算诊断显示预算扩大后原始分差从18/156降至8/156。独立回执复核完成，[结果JSON](results/skill-validation-mechanism-20260925.json)保留分母/成本。无Research独有增益或跨域结论。
 
 ## 阅读顺序
+
+首次接手按 [AGENTS.md](../AGENTS.md) → [当前完整流程](current-workflow.md) → [结果与经验账本](results-and-lessons.md) → [新 D：SkillOpt 五域补跑与 No-Skill 对比](skillopt-generalization-20261002.md)阅读；[无上下文代码代理指南](agent-start-here.md)补充目标、代码地图和安全边界。两份主文档维护当前状态，日期报告及实际回执提供具体证据，本索引不另立实验账本。
+
+**10/2 22:18 核验：新 D 前三来源阶段 Pending，KOR 阶段进行中，尚无完整五阶段学习或方法收益结论。** 新序列 v2 显式启用学习 v4，仅运行原生 SkillOpt；学习端有限恢复与新资格化 v7 工作簿评分另立身份，全域评测仍匹配原 No-Skill 的模型、预算、源码、环境和评分器。它不是 Research/Rubric 双门主线完成，也不是独立 final。
+
+[旧 C baseline 接续实录](baseline-continuation-20261002.md)保留17:51启动及后续历史快照；旧 C 的 SkillOpt 五阶段尝试已终止、完整学习 **0/5**，25格只是携空父后复用旧观测。新 D 使用新目录，不改旧 C。工作簿被动链接 B 的独立诊断仍为79/55/26，工程资格通过未产生该面板的新覆盖收益；它及下文 H-C 评分诊断不等于学习阶段结果。
+
+10/2[未知结果修复与复测](unknown-recovery-results-20261002.md)：最新冻结参考标签H v3经34＋18项资格，完整80题×2旧产物零API重评为**79通过/55失败/26未知**；较v8b70/48/42恢复16未知，118旧已知保持。过粗元数据预筛B为51/41/68，负结果保留。交付分轴另列回顾性79/61/20，不改内容分或旧基线；H缓存标签不等于新鲜真值。KOR10次截断恢复7/2/1。两项均为环境/交付诊断，不是Skill进化收益。[全量新终态](results/unknown-sheet-frozen-gold-c-replay-final-20261002.json)
+
+10/1[长输出配置、新基线与工作簿兼容性](long-response-baselines-20261001.md)、[夜间监控与修复](overnight-baselines-20261001.md)：共同65,536-token配置下五域1,419题×2已完成，[聚合数据](results/noskill-fivebench-long-20261001.json)保留分母/成本。Coding No-Skill为400通过/399失败/1未知，SearchQA为560/234/6，各400题×2且无截断；KOR全500×2为746/243/11，ALF全39×2为65/13/0，Sheet80×2为63/44/53。Sheet未知中45项是交付后兼容限制、8项未交付，只有1次截断，仍不适合用总体平均掩盖覆盖不足。GEPA候选28/64、SkillOpt有限重提31/64、条件化shadow32/64，均未超过空父33/64；普通归纳34通过/29失败/1未知，原Pending不改，不能凭小分差断言效果。全400参考的数据层修复后397通过/2失败/1未知，5个资源缺口修复，但1个原通过参考超时使资格仍Pending；24控制发现已有进程池安全包装兼容问题，不改旧成绩。公式预览/ALF日志已补可选工程修复、未部署为新效果实验；下一步优先可信具体反例反馈对照，不把环境和交付改善当泛化收益。
+
+最新评测入口：[9/28五基准、六检查点评测流](skill-validation-continual-evaluation-20260928.md)。统一数据导入、冻结检查点、公开求解、原生隐藏评分和迁移/配对报告。它接收外部冻结Skill，不替代协同进化和两道门；真实资源就绪范围见报告。
+
+9/29[五域No-Skill开发面板](noskill-baseline-results-20260929.md)全部终态已齐备，[聚合JSON](results/noskill-fivebench-20260929.json)保留1419题×2的分母、unknown及成本缺失。Sheet大量不可判定、ALF中断等限制不能被平均分隐藏；这不是五域独立final。SkillOpt第一轮选择28/64低于空父39/64、被gate拒绝；第二轮截断Pending，GEPA未启动。[最新结果总表](experiment-results-20260929.md)与[学习JSON](results/skillopt-learning-20260929.json)保留完整/部分结果，暂无独立方法收益结论。
+
+后续[No-Skill SearchQA开发基线及基线安排](skill-validation-baselines-20260928.md)已完成：400题×2、EM69.00%，0Skill/Research更新；[聚合数据](results/noskill-searchqa-20260928.json)保留重复差异、6个HTTP400未知和不完整成本。不能把这项单域已曝光数据结果称为五域独立评测。
 
 最新工程补充：[9/27可靠求解配置与Linux验收](skill-validation-solver-reliability-20260927.md)；[验收JSON](results/skill-validation-solver-reliability-20260927.json)。它统一预算/格式、单次公开修订和回归保护，不改变9/25的历史效果结论，不改评测体系。
 

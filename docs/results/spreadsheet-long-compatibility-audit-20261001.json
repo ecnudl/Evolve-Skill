@@ -1,0 +1,306 @@
+{
+  "version": "spreadsheet-long-compatibility-audit-v1",
+  "evidence_kind": "read_only_posthoc_metadata_not_score_change",
+  "frozen_report_hash": "5864962a9e411679e8957cff6e9ec3abfb5812351bf9fa2fa305c16f339763b4",
+  "full_result_summary_hash": "37b0ad8ad5e0302ce0b5660c685b620d45c91ea1f9ffaea3afbbb3bb8d14f3c9",
+  "selection_rule": "All 10 closed literal-preservation unknowns and both sheet-missing unknowns; no outcomes relabeled.",
+  "positions": 12,
+  "distinct_tasks": 6,
+  "rows": [
+    {
+      "position": "087d260a2f7faa86a4fa87208dc57ed06ca9efa59bc7f5d0356d12461076ab7e",
+      "score_hash": "0d14c7edeee2e9653dc517acef3ba602c623dd72c9c6a19796695c1020a2e31e",
+      "reason": "reference:numeric_literal_sheet_missing:before_calculate",
+      "metadata": {
+        "sheets": 2,
+        "name_over_31": 0,
+        "name_contains_control_char": 0,
+        "name_has_leading_or_trailing_space": 0,
+        "name_contains_excel_forbidden_punctuation": 0,
+        "name_starts_or_ends_apostrophe": 0
+      }
+    },
+    {
+      "position": "36784985bb1b5f6e04e0573b9fb35b35692eb9dcb706ef67314e364edbe2937e",
+      "score_hash": "10224c03e2b7313451f87ea09008616d5f4e94ec3e6839648e51727efcc74dde",
+      "reason": "prediction:recalculation_changed_literal_cell",
+      "first_literal_mismatch_metadata": {
+        "original_value_type": "int",
+        "recalculated_value_type": "datetime",
+        "original_number_format_id": 30,
+        "recalculated_number_format_id": 166,
+        "original_is_date": false,
+        "recalculated_is_date": true,
+        "original_excel_data_type": "n",
+        "recalculated_excel_data_type": "d",
+        "recalculated_formula_view_type": "d",
+        "original_is_empty_string": false,
+        "original_is_nonempty_whitespace_string": false,
+        "cached_python_value_equal": false,
+        "literal_became_boolean_constant_formula": false
+      }
+    },
+    {
+      "position": "565c6a8e80134dd464b0a907b3042df6fb4e762acf3f72deb1b6024a57036afe",
+      "score_hash": "691b95c4542a031dedffcbffa1f76a3389a2dd6d7fa397dd29f77b682dc3c824",
+      "reason": "reference:recalculation_changed_literal_cell",
+      "first_literal_mismatch_metadata": {
+        "original_value_type": "str",
+        "recalculated_value_type": "NoneType",
+        "original_number_format_id": 0,
+        "recalculated_number_format_id": 0,
+        "original_is_date": false,
+        "recalculated_is_date": false,
+        "original_excel_data_type": "s",
+        "recalculated_excel_data_type": "n",
+        "recalculated_formula_view_type": "n",
+        "original_is_empty_string": true,
+        "original_is_nonempty_whitespace_string": false,
+        "cached_python_value_equal": false,
+        "literal_became_boolean_constant_formula": false
+      }
+    },
+    {
+      "position": "62c01396c93c629d455d1507f0b0f27fee4283f4ca789b85caa346f0b0fcfc4c",
+      "score_hash": "62fe063887acc5463abae8abf7199f98eb3201820bbbd3c4e30043fdf17f1b57",
+      "reason": "reference:recalculation_changed_literal_cell",
+      "first_literal_mismatch_metadata": {
+        "original_value_type": "str",
+        "recalculated_value_type": "str",
+        "original_number_format_id": 0,
+        "recalculated_number_format_id": 0,
+        "original_is_date": false,
+        "recalculated_is_date": false,
+        "original_excel_data_type": "e",
+        "recalculated_excel_data_type": "e",
+        "recalculated_formula_view_type": "f",
+        "original_is_empty_string": false,
+        "original_is_nonempty_whitespace_string": false,
+        "cached_python_value_equal": true,
+        "literal_became_boolean_constant_formula": false
+      }
+    },
+    {
+      "position": "a55032be2b60cb4bba0eb059c59f14079af78a3d39455cab2e2fd40cc4d04b2f",
+      "score_hash": "f54e6cc8759a47217f81f5e88ca2019f45cdfc8c1c1ad87dec26aeb056665f9b",
+      "reason": "reference:numeric_literal_sheet_missing:before_calculate",
+      "metadata": {
+        "sheets": 2,
+        "name_over_31": 0,
+        "name_contains_control_char": 0,
+        "name_has_leading_or_trailing_space": 0,
+        "name_contains_excel_forbidden_punctuation": 0,
+        "name_starts_or_ends_apostrophe": 0
+      }
+    },
+    {
+      "position": "b58ede9bb26fd64e5ba170dca62b3c7b683edb54583a9a75ef7abb6c3bbe94dc",
+      "score_hash": "3153d289e421a7de6e99afeefc5db58e4bab824f5a625835514336ce36cd4c10",
+      "reason": "prediction:recalculation_changed_literal_cell",
+      "first_literal_mismatch_metadata": {
+        "original_value_type": "int",
+        "recalculated_value_type": "datetime",
+        "original_number_format_id": 30,
+        "recalculated_number_format_id": 166,
+        "original_is_date": false,
+        "recalculated_is_date": true,
+        "original_excel_data_type": "n",
+        "recalculated_excel_data_type": "d",
+        "recalculated_formula_view_type": "d",
+        "original_is_empty_string": false,
+        "original_is_nonempty_whitespace_string": false,
+        "cached_python_value_equal": false,
+        "literal_became_boolean_constant_formula": false
+      }
+    },
+    {
+      "position": "e23c423d006a9580679a2dcafd2a292477dd93544e0dc8a0789574a61ae76411",
+      "score_hash": "241d3a94d7e416ffcda3ec479b72d355a1099567b2583393f7a23f024215cee6",
+      "reason": "reference:recalculation_changed_literal_cell",
+      "first_literal_mismatch_metadata": {
+        "original_value_type": "str",
+        "recalculated_value_type": "NoneType",
+        "original_number_format_id": 0,
+        "recalculated_number_format_id": 0,
+        "original_is_date": false,
+        "recalculated_is_date": false,
+        "original_excel_data_type": "s",
+        "recalculated_excel_data_type": "n",
+        "recalculated_formula_view_type": "n",
+        "original_is_empty_string": true,
+        "original_is_nonempty_whitespace_string": false,
+        "cached_python_value_equal": false,
+        "literal_became_boolean_constant_formula": false
+      }
+    },
+    {
+      "position": "e669d5db15ccfc94f77e66eff7e68f6b727710760911880d5c9c51ac89f3dcdd",
+      "score_hash": "016e4e8570fe44e16e2cfaff628a1c130902045b1ad89c64f1753f286b85dba0",
+      "reason": "reference:recalculation_changed_literal_cell",
+      "first_literal_mismatch_metadata": {
+        "original_value_type": "str",
+        "recalculated_value_type": "NoneType",
+        "original_number_format_id": 0,
+        "recalculated_number_format_id": 0,
+        "original_is_date": false,
+        "recalculated_is_date": false,
+        "original_excel_data_type": "s",
+        "recalculated_excel_data_type": "n",
+        "recalculated_formula_view_type": "n",
+        "original_is_empty_string": true,
+        "original_is_nonempty_whitespace_string": false,
+        "cached_python_value_equal": false,
+        "literal_became_boolean_constant_formula": false
+      }
+    },
+    {
+      "position": "e6bd499614ac4c42aa14e5c91041acaff1fa6d73f7a462c7399e506e852de562",
+      "score_hash": "90c3355c91bdcd372e3fdf4581aaace97aba5bd01fa469e26dd335a511bb64de",
+      "reason": "reference:recalculation_changed_literal_cell",
+      "first_literal_mismatch_metadata": {
+        "original_value_type": "str",
+        "recalculated_value_type": "str",
+        "original_number_format_id": 0,
+        "recalculated_number_format_id": 0,
+        "original_is_date": false,
+        "recalculated_is_date": false,
+        "original_excel_data_type": "e",
+        "recalculated_excel_data_type": "e",
+        "recalculated_formula_view_type": "f",
+        "original_is_empty_string": false,
+        "original_is_nonempty_whitespace_string": false,
+        "cached_python_value_equal": true,
+        "literal_became_boolean_constant_formula": false
+      }
+    },
+    {
+      "position": "e7da17b0ea8be6084348a652ca41a25898f6574d4026fae595ab3d30965b044c",
+      "score_hash": "a6fc5bb65c5d126d0d2ec5a2c4f1a87af285c882bf29cb2c2bd64cd06324a6b3",
+      "reason": "reference:recalculation_changed_literal_cell",
+      "first_literal_mismatch_metadata": {
+        "original_value_type": "str",
+        "recalculated_value_type": "str",
+        "original_number_format_id": 0,
+        "recalculated_number_format_id": 0,
+        "original_is_date": false,
+        "recalculated_is_date": false,
+        "original_excel_data_type": "e",
+        "recalculated_excel_data_type": "e",
+        "recalculated_formula_view_type": "f",
+        "original_is_empty_string": false,
+        "original_is_nonempty_whitespace_string": false,
+        "cached_python_value_equal": true,
+        "literal_became_boolean_constant_formula": false
+      }
+    },
+    {
+      "position": "ed7122ed79be76d07395610cbfa3debba998dc3ed171965f5a763d279e43b751",
+      "score_hash": "395f70c4b739b00ce425ccb0713ced090a918e243e8b5b0681760e425ab1a7a6",
+      "reason": "reference:recalculation_changed_literal_cell",
+      "first_literal_mismatch_metadata": {
+        "original_value_type": "str",
+        "recalculated_value_type": "str",
+        "original_number_format_id": 0,
+        "recalculated_number_format_id": 0,
+        "original_is_date": false,
+        "recalculated_is_date": false,
+        "original_excel_data_type": "e",
+        "recalculated_excel_data_type": "e",
+        "recalculated_formula_view_type": "f",
+        "original_is_empty_string": false,
+        "original_is_nonempty_whitespace_string": false,
+        "cached_python_value_equal": true,
+        "literal_became_boolean_constant_formula": false
+      }
+    },
+    {
+      "position": "f6b244321f2971c89823444b40ae1080afaae557e949b4007589bc76c486e68d",
+      "score_hash": "cc1a9594f81b91c02fd5e46afb73abfd4c23f468ec589d21e6287441be04147b",
+      "reason": "reference:recalculation_changed_literal_cell",
+      "first_literal_mismatch_metadata": {
+        "original_value_type": "str",
+        "recalculated_value_type": "NoneType",
+        "original_number_format_id": 0,
+        "recalculated_number_format_id": 0,
+        "original_is_date": false,
+        "recalculated_is_date": false,
+        "original_excel_data_type": "s",
+        "recalculated_excel_data_type": "n",
+        "recalculated_formula_view_type": "n",
+        "original_is_empty_string": true,
+        "original_is_nonempty_whitespace_string": false,
+        "cached_python_value_equal": false,
+        "literal_became_boolean_constant_formula": false
+      }
+    }
+  ],
+  "literal_categories": [
+    {
+      "metadata": {
+        "cached_python_value_equal": false,
+        "literal_became_boolean_constant_formula": false,
+        "original_excel_data_type": "n",
+        "original_is_date": false,
+        "original_is_empty_string": false,
+        "original_is_nonempty_whitespace_string": false,
+        "original_number_format_id": 30,
+        "original_value_type": "int",
+        "recalculated_excel_data_type": "d",
+        "recalculated_formula_view_type": "d",
+        "recalculated_is_date": true,
+        "recalculated_number_format_id": 166,
+        "recalculated_value_type": "datetime"
+      },
+      "positions": 2,
+      "distinct_tasks": 1
+    },
+    {
+      "metadata": {
+        "cached_python_value_equal": false,
+        "literal_became_boolean_constant_formula": false,
+        "original_excel_data_type": "s",
+        "original_is_date": false,
+        "original_is_empty_string": true,
+        "original_is_nonempty_whitespace_string": false,
+        "original_number_format_id": 0,
+        "original_value_type": "str",
+        "recalculated_excel_data_type": "n",
+        "recalculated_formula_view_type": "n",
+        "recalculated_is_date": false,
+        "recalculated_number_format_id": 0,
+        "recalculated_value_type": "NoneType"
+      },
+      "positions": 4,
+      "distinct_tasks": 2
+    },
+    {
+      "metadata": {
+        "cached_python_value_equal": true,
+        "literal_became_boolean_constant_formula": false,
+        "original_excel_data_type": "e",
+        "original_is_date": false,
+        "original_is_empty_string": false,
+        "original_is_nonempty_whitespace_string": false,
+        "original_number_format_id": 0,
+        "original_value_type": "str",
+        "recalculated_excel_data_type": "e",
+        "recalculated_formula_view_type": "f",
+        "recalculated_is_date": false,
+        "recalculated_number_format_id": 0,
+        "recalculated_value_type": "str"
+      },
+      "positions": 4,
+      "distinct_tasks": 2
+    }
+  ],
+  "no_model_or_container_execution": true,
+  "limitations": [
+    "First mismatch metadata only, not proof that all later cells are compatible.",
+    "Number-format-30 type conversion needs a separately qualified protocol; no date equivalence assumed.",
+    "Empty strings and blanks may differ under valid formulas; equality must not be silently relaxed.",
+    "A cached error constant and a formula producing that error are not universally equivalent.",
+    "Sheet-name metadata has no obvious invalid name; UNO import root cause remains unproven.",
+    "Posthoc compatibility diagnosis does not alter the frozen 63 pass / 44 fail / 53 unknown results."
+  ],
+  "record_hash": "c970791eaf6b2fc452129359c6a1f60a300b004d1ee7e82c573d16fb22b4bf41"
+}

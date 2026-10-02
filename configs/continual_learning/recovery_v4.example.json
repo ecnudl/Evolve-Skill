@@ -1,0 +1,40 @@
+{
+  "version": "continual-learning-v4",
+  "method": "skillopt",
+  "parent_skill": "",
+  "seed": 20261002,
+  "train_families": ["REPLACE_WITH_DEVELOPMENT_TRAIN_FAMILY"],
+  "selection_families": ["REPLACE_WITH_DISJOINT_SELECTION_FAMILY"],
+  "model": {
+    "provider": "bigmodel",
+    "name": "glm-5.3",
+    "max_tokens": 65536,
+    "reasoning_effort": "low",
+    "transport": {
+      "stream": true,
+      "read_timeout_seconds": 300,
+      "stream_wall_seconds": 3600,
+      "initial_health_policy": "completed_response_v1"
+    }
+  },
+  "budget": {
+    "max_metric_calls": 512,
+    "max_reflection_calls": 64,
+    "max_api_calls": 3000,
+    "max_reported_tokens": 6000000,
+    "max_iterations": 2,
+    "minibatch_size": 8,
+    "solver_max_tokens": 65536,
+    "reflection_max_tokens": 4096
+  },
+  "recovery_policy": {
+    "version": "closed-delivery-recovery-v1",
+    "reflection_parser": "strict-json-invalid-escape-v1",
+    "network_retry": "closed_network_error_v1",
+    "length_retries": 1,
+    "length_max_tokens": 131072,
+    "filtered_response": "pending_no_retry",
+    "unknown_score": "pending_never_zero"
+  },
+  "runtime": {}
+}

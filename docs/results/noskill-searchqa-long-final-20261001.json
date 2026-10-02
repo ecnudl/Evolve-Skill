@@ -1,0 +1,406 @@
+{
+  "schema": "noskill-searchqa-safe-final-summary-v1",
+  "record_hash": "a69c5c597b101817e9f2b131c4b45f8232125e9413d7fc65648d8e57051c11ac",
+  "run": "continual-searchqa-long-20261001-study",
+  "status": "completed",
+  "audit_date": "2026-10-01",
+  "evidence_kind": "real_model_development_baseline",
+  "benchmark": "searchqa",
+  "method": "no_skill",
+  "history": "h0",
+  "stage": 0,
+  "skill_text_empty": true,
+  "protocol": {
+    "version": "continual-eval-v2",
+    "plan_hash": "73fb8aa8815535642264ba280425916dfa811371e612bc59fe308947acd476be",
+    "preparation_hash": "494a1fe5acce5d6594f14a1c80b5b1c4fbb49c6df2e3e23e9e6ab812f68667b6",
+    "checkpoint_hash": "260b2645eef160bc493647d664ea8426b894ea141379627dcb056847ee9b2a46",
+    "full_report_hash": "ec5b26cc1cfa7ac7b26a922c9fe9bcd7afa36eb2aaeb25bd7f812928d40eb99b",
+    "source_identity_hash": "bbe7e21002d44c8d50628a5e7b1f0d328293f7ebc1de39cdd1ffdd90374d84a8",
+    "private_run_root": "/root/continual-searchqa-long-20261001-study/run",
+    "private_frozen_source_root": "/root/continual-baselines-long-20261001-source"
+  },
+  "data": {
+    "partition": "development",
+    "dataset_revision": "local-searchqa-train-20260928",
+    "panel_hash": "4c82f13f9b3f1cc03218e3be31fd8002cef037a70567e144e884395b036bd539",
+    "independent_tasks": 400,
+    "independent_families": 400,
+    "family_definition": "Distinct question-family identifiers supplied by the current importer; not an independently audited semantic near-duplicate partition.",
+    "semantic_family_independence_certified": false,
+    "repeats": 2,
+    "expected_positions": 800,
+    "provenance": "The complete previously exposed local SearchQA development panel; not a new independent final split."
+  },
+  "configuration": {
+    "provider": "bigmodel",
+    "model": "glm-5.3",
+    "max_tokens": 65536,
+    "reasoning_effort": "low",
+    "stream": true,
+    "read_timeout_seconds": 300,
+    "stream_wall_seconds_per_http_attempt": 1800,
+    "workers": 6,
+    "first_real_response_before_concurrent_fanout": true,
+    "first_response": {
+      "request_hash": "3d94d3abe6b6f6f095bf6b6bc27910644d13004484306c927a6508359b9b2acd",
+      "ok": true,
+      "returned_model": "glm-5.3",
+      "finish_reason": "stop",
+      "stream_complete": true,
+      "http_attempts": 1,
+      "reported_tokens": 1079,
+      "wall_seconds": 1.0716454512439668
+    }
+  },
+  "timing": {
+    "launch_started_at": "2026-10-01T02:04:24+08:00",
+    "completed_report_written_at": "2026-10-01T02:08:18.915247+08:00",
+    "finish_timestamp_basis": "Filesystem mtime of the sealed completed native report; not a reconstructed model timestamp."
+  },
+  "scoring": {
+    "implementation": "skillopt/envs/searchqa/evaluator.py via continual_eval.backends.score",
+    "hard_pass_rule": "Normalized exact match (EM), not substring match",
+    "f1_rule": "Token-level F1 after the repository's SQuAD-style normalization; maximum across reference answers.",
+    "substring_em_note": "Auxiliary symmetric substring containment. It is more permissive and is not the pass/fail criterion.",
+    "native_scores_reexecuted_in_this_audit": false
+  },
+  "overall": {
+    "expected_positions": 800,
+    "scored_positions": 800,
+    "available_responses": 794,
+    "pass": 560,
+    "fail": 234,
+    "unknown": 6,
+    "missing": 0,
+    "unclosed": 0,
+    "evaluable": 794,
+    "em": {
+      "sum_on_evaluable": 560,
+      "evaluable": {
+        "numerator": 560,
+        "denominator": 794,
+        "value": 0.7052896725440806
+      },
+      "all_attempt_lower_bound": {
+        "numerator": 560,
+        "denominator": 800,
+        "value": 0.7
+      },
+      "all_attempt_upper_bound": {
+        "numerator": 566,
+        "denominator": 800,
+        "value": 0.7075
+      }
+    },
+    "f1": {
+      "sum_on_evaluable": 644.6576288631837,
+      "evaluable": {
+        "numerator": 644.6576288631837,
+        "denominator": 794,
+        "value": 0.8119113713642112
+      },
+      "all_attempt_lower_bound": {
+        "numerator": 644.6576288631837,
+        "denominator": 800,
+        "value": 0.8058220360789796
+      },
+      "all_attempt_upper_bound": {
+        "numerator": 650.6576288631836,
+        "denominator": 800,
+        "value": 0.8133220360789796
+      }
+    },
+    "substring_em_auxiliary": {
+      "sum_on_evaluable": 753,
+      "evaluable": {
+        "numerator": 753,
+        "denominator": 794,
+        "value": 0.9483627204030227
+      },
+      "all_attempt_lower_bound": {
+        "numerator": 753,
+        "denominator": 800,
+        "value": 0.94125
+      },
+      "all_attempt_upper_bound": {
+        "numerator": 759,
+        "denominator": 800,
+        "value": 0.94875
+      }
+    },
+    "evaluable_coverage": {
+      "numerator": 794,
+      "denominator": 800,
+      "value": 0.9925
+    }
+  },
+  "per_repeat": [
+    {
+      "repeat": 0,
+      "expected_positions": 400,
+      "pass": 275,
+      "fail": 122,
+      "unknown": 3,
+      "evaluable": 397,
+      "em": {
+        "sum_on_evaluable": 275,
+        "evaluable": {
+          "numerator": 275,
+          "denominator": 397,
+          "value": 0.6926952141057935
+        },
+        "all_attempt_lower_bound": {
+          "numerator": 275,
+          "denominator": 400,
+          "value": 0.6875
+        },
+        "all_attempt_upper_bound": {
+          "numerator": 278,
+          "denominator": 400,
+          "value": 0.695
+        }
+      },
+      "f1": {
+        "sum_on_evaluable": 317.36762594215816,
+        "evaluable": {
+          "numerator": 317.36762594215816,
+          "denominator": 397,
+          "value": 0.7994146749172749
+        },
+        "all_attempt_lower_bound": {
+          "numerator": 317.36762594215816,
+          "denominator": 400,
+          "value": 0.7934190648553954
+        },
+        "all_attempt_upper_bound": {
+          "numerator": 320.36762594215816,
+          "denominator": 400,
+          "value": 0.8009190648553954
+        }
+      },
+      "substring_em_auxiliary": {
+        "sum_on_evaluable": 376,
+        "evaluable": {
+          "numerator": 376,
+          "denominator": 397,
+          "value": 0.947103274559194
+        },
+        "all_attempt_lower_bound": {
+          "numerator": 376,
+          "denominator": 400,
+          "value": 0.94
+        },
+        "all_attempt_upper_bound": {
+          "numerator": 379,
+          "denominator": 400,
+          "value": 0.9475
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "expected_positions": 400,
+      "pass": 285,
+      "fail": 112,
+      "unknown": 3,
+      "evaluable": 397,
+      "em": {
+        "sum_on_evaluable": 285,
+        "evaluable": {
+          "numerator": 285,
+          "denominator": 397,
+          "value": 0.7178841309823678
+        },
+        "all_attempt_lower_bound": {
+          "numerator": 285,
+          "denominator": 400,
+          "value": 0.7125
+        },
+        "all_attempt_upper_bound": {
+          "numerator": 288,
+          "denominator": 400,
+          "value": 0.72
+        }
+      },
+      "f1": {
+        "sum_on_evaluable": 327.2900029210256,
+        "evaluable": {
+          "numerator": 327.2900029210256,
+          "denominator": 397,
+          "value": 0.8244080678111475
+        },
+        "all_attempt_lower_bound": {
+          "numerator": 327.2900029210256,
+          "denominator": 400,
+          "value": 0.818225007302564
+        },
+        "all_attempt_upper_bound": {
+          "numerator": 330.2900029210256,
+          "denominator": 400,
+          "value": 0.8257250073025639
+        }
+      },
+      "substring_em_auxiliary": {
+        "sum_on_evaluable": 377,
+        "evaluable": {
+          "numerator": 377,
+          "denominator": 397,
+          "value": 0.9496221662468514
+        },
+        "all_attempt_lower_bound": {
+          "numerator": 377,
+          "denominator": 400,
+          "value": 0.9425
+        },
+        "all_attempt_upper_bound": {
+          "numerator": 380,
+          "denominator": 400,
+          "value": 0.95
+        }
+      }
+    }
+  ],
+  "repeat_stability": {
+    "unit": "400 independent tasks, each evaluated twice; repeats are not extra tasks",
+    "transition_counts": {
+      "pass_to_pass": 263,
+      "fail_to_pass": 22,
+      "fail_to_fail": 100,
+      "pass_to_fail": 12,
+      "unknown_to_unknown": 3
+    },
+    "evaluable_tasks": 397,
+    "changed_hard_outcome_tasks": 34,
+    "interpretation": "Variation between two No-Skill repetitions is observable. These transitions are not Skill-induced gains or regressions."
+  },
+  "delivery": {
+    "http_200": 800,
+    "successful_stop_complete": 794,
+    "provider_sensitive_empty": 6,
+    "length": 0,
+    "timeout": 0,
+    "http_400": 0,
+    "unknown_reason_counts": {
+      "model_call_unavailable": 6
+    },
+    "unknown_details": {
+      "classification": "provider_content_filter_delivery_unknown",
+      "http_status": 200,
+      "finish_reason": "sensitive",
+      "error_type": "empty_content",
+      "independent_affected_tasks": 3,
+      "independent_affected_families": 3,
+      "unknown_positions": 6,
+      "repeated_on_both_repeats": true,
+      "automatic_retries_performed": false,
+      "interpretation": "Retained as delivery unknown, not a semantic failure, truncation, timeout or evidence of invalid credentials."
+    },
+    "affected_tasks": [
+      {
+        "task_hash": "c848cca5e065f23aa83e0446f641ae4fde1829e39e7d0bc1a9a292f45847ff82",
+        "family_hash": "c19e48c364c372ce74e2afa156c9a7174ba52cfdc3e8b29f0fef806f9ef5303f",
+        "repeats": [
+          0,
+          1
+        ],
+        "request_hashes": [
+          "0760fde4bc7e6a11341eb21a49ff53cc758790babe8441246690baefceed4e3a",
+          "b60e54c8e84a0109de094b104865430c18504bd59696eb3fe43c6907ec88e6d8"
+        ],
+        "score_hashes": [
+          "445838f388554a8ebd307a19b6feecec621eb721986239c8ad784bb218690ae9",
+          "98770f8e19523348843c18e968cbe198f05db272b136866207004343ef40f33d"
+        ]
+      },
+      {
+        "task_hash": "70582b05628eb5db1b9e1366fd8d7e74c44c9de139576c25a1e8aeff52fcc804",
+        "family_hash": "cf5d4420578496389f1e117f833b239e5214b419e9e5f8b3210f9afb3e883c3b",
+        "repeats": [
+          0,
+          1
+        ],
+        "request_hashes": [
+          "f59a8c32f050426508c44f1d9ae3d237636a7cb526ce7cd55e38ba51a82276ee",
+          "b3212a4dd68534df02ebefc75e2b35ed8deaea3affe09015ea817885eb125225"
+        ],
+        "score_hashes": [
+          "f73d800c5430abc5cbc506b014d6fc87ccc7a29adbfd7162a68a4f2a302ffdac",
+          "58fa57d7adeea8e61a92ce4b35fdc4645fa6a78d4957c46f0e9a469f34807edf"
+        ]
+      },
+      {
+        "task_hash": "fe5d8ba32f54bc6116ad89b760781b7ca77bfe412fa2b533d691bf0f2a136048",
+        "family_hash": "8019c7a0eed82b99f7c8cc69c1aa5e87f9bf43346127538a0e17bd70a866cfad",
+        "repeats": [
+          0,
+          1
+        ],
+        "request_hashes": [
+          "417ff4b815625210042510be0107f6451209032d994ce807c9c081d481ced4de",
+          "7bb3b0fcfef56f341860f540e73c6e12d8aaf172162cd0eaf01f208906ffacee"
+        ],
+        "score_hashes": [
+          "3b89eb9ac1c0a8cc41c22681a65252a5f9a78bff78f4ba2081658ed900941190",
+          "de9e6a6a77da5cc73dff35dd3b697e2f5a08330920598a4d6d25c7c6ed371ed2"
+        ]
+      }
+    ]
+  },
+  "costs": {
+    "logical_calls": 800,
+    "http_attempts": 800,
+    "unique_request_hashes": 800,
+    "unclosed_calls": 0,
+    "usage_reported_calls": 794,
+    "missing_usage_calls": 6,
+    "usage_complete": false,
+    "retry_inclusive_usage_known": false,
+    "reported_tokens_total": null,
+    "reported_tokens_known_subtotal": 875617,
+    "prompt_tokens_known_subtotal": 860290,
+    "completion_tokens_known_subtotal": 15327,
+    "reasoning_tokens_reported_subtotal": 2553,
+    "cached_tokens_reported_subtotal": 17088,
+    "maximum_reported_completion_tokens": 869,
+    "currency_cost": null,
+    "caveat": "Six content-filtered calls have no usage. 875617 is a known subtotal, not a complete billable token total; no price was independently verified."
+  },
+  "previous_configuration_context": {
+    "old_plan_hash": "c85dd295f33a8ccbaa776e083629d920a2a8d5c9eca73bbecfc8a66805495097",
+    "old_model": "glm-5.3",
+    "old_max_tokens": 4096,
+    "same_panel_hash": true,
+    "prior_model_responses_or_scores_read": false,
+    "causal_budget_effect_claimed": false,
+    "interpretation": "Configuration/provenance comparison only. This run does not isolate token-budget causality; no observed response approached 4096 completion tokens."
+  },
+  "audit": {
+    "mode": "read_only_sealed_metadata_and_source_binding",
+    "frozen_source_files_verified": 27,
+    "preparation_original_files_verified": true,
+    "preparation_prepared_files_verified": true,
+    "source_and_host_runtime_validated": true,
+    "paired_task_repeat_score_prediction_intent_binding_verified": 800,
+    "request_and_api_cache_binding_verified": 800,
+    "actual_model_and_65536_request_budget_verified": 800,
+    "persisted_em_equals_hard_score_verified": 794,
+    "shared_existing_writer_lock_used": true,
+    "original_records_modified": false,
+    "new_model_calls": 0,
+    "published_task_text": false,
+    "published_answer_text": false,
+    "published_reasoning_text": false,
+    "published_credentials": false,
+    "limitation": "Checks verify frozen sources, receipts and persisted scoring consistency; this is not an independent rerun of the native grader."
+  },
+  "conclusions": [
+    "The full 400-task, two-repeat No-Skill SearchQA baseline is complete under the common long-response configuration.",
+    "EM is 560/794 on evaluable responses; with all 800 planned positions retained, its unknown-aware interval is 560/800 to 566/800.",
+    "The six unknown positions are provider-sensitive empty responses on three tasks, not token-length failures.",
+    "No Skill was learned or applied. This run supplies a baseline, not evidence of Skill improvement, transfer or generalization."
+  ],
+  "deployment_authorized": false,
+  "independent_final_evidence": false,
+  "skill_effect_claimed": false
+}

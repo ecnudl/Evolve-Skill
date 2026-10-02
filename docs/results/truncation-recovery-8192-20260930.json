@@ -1,0 +1,85 @@
+{
+  "version": "truncation-recovery-public-summary-v1",
+  "verified_date": "2026-09-30",
+  "evidence_kind": "real_model_selected_truncation_retry_diagnostic",
+  "model": "glm-5.3",
+  "provider": "BigModel",
+  "reasoning_effort": "low",
+  "max_tokens": 8192,
+  "read_timeout_seconds": 300,
+  "workers": 10,
+  "source_partition": "development",
+  "source_budget": 4096,
+  "run_c": {
+    "protocol_hash": "8d1b27551163b103c38ecab6c4ec99eb9c48099db655d0b69387fc73e5c8a593",
+    "started_at": "2026-09-29T19:25:11+08:00",
+    "finished_at": "2026-09-29T20:02:44+08:00",
+    "status": "completed",
+    "positions": 148,
+    "terminal_positions": 148,
+    "unclosed_calls": 0,
+    "available_responses": 43,
+    "truncated_responses": 105,
+    "empty_body_among_truncations": 105,
+    "counts": {
+      "korbench": {"positions": 144, "pass": 24, "fail": 16, "unknown": 104, "truncated": 104},
+      "spreadsheetbench": {"positions": 1, "pass": 0, "fail": 0, "unknown": 1, "truncated": 1},
+      "bigcodebench": {"positions": 1, "pass": 1, "fail": 0, "unknown": 0, "condition": "original_second_skillopt_candidate"},
+      "alfworld": {"positions": 2, "available_action_responses": 2, "episode_scores_recovered": 0, "unknown_episode_scores": 2}
+    },
+    "cost": {
+      "logical_calls": 148,
+      "http_attempts": 154,
+      "reported_tokens": 1124047,
+      "terminal_usage_complete": true,
+      "retry_inclusive_billing_known": false,
+      "calls_with_one_http_attempt": 142,
+      "calls_with_two_http_attempts": 6
+    },
+    "truncated_usage": {"completion_tokens": 860160, "reasoning_tokens": 859464}
+  },
+  "original_164_position_accounting": {
+    "a_completed_kor": {"positions": 5, "pass": 2, "fail": 3, "reported_tokens": 5741},
+    "a_interrupted": {"positions": 10, "terminal_receipt_available": false, "billing_known": false},
+    "b_timeout": {"positions": 1, "http_attempts": 3, "reported_tokens": null},
+    "c_completed_positions": 148,
+    "total": 164,
+    "native_pass": 27,
+    "native_fail": 19,
+    "unknown_or_not_episode_scored": 118,
+    "known_reported_retry_tokens_a_plus_c": 1129788,
+    "complete_billing_known": false,
+    "separate_short_health_check_tokens": 24
+  },
+  "next_budget_selection": {
+    "positions": 105,
+    "independent_tasks": 68,
+    "independent_families": 15,
+    "independence_key": "benchmark plus task_id or family_id",
+    "korbench": 104,
+    "spreadsheetbench": 1,
+    "categories": {"puzzle": 88, "cipher": 16, "spreadsheetbench": 1},
+    "selection_requires": "completed, bound HTTP200 length truncated_content terminal receipt in frozen C",
+    "selection_not_based_on_score": true
+  },
+  "pause_request": {
+    "requested_at_local": "2026-09-29 20:16 Asia/Shanghai",
+    "delivered": false,
+    "experiment_had_already_completed": true
+  },
+  "claims": {
+    "whole_8192_benchmark_baseline": false,
+    "causal_token_budget_improvement": false,
+    "skill_evolution_gain": false,
+    "optimizer_resumed": false,
+    "old_scores_replaced": false
+  },
+  "limitations": [
+    "The selected subset contains prior 4096-token truncations, not a random benchmark sample.",
+    "C uses read300 while original/A/B used read120; generation budget is not the only changed setting.",
+    "Fresh sampling and budget effects cannot be separated without an equal-budget repeat control.",
+    "ALFWorld recovery is action-call-only; no episode was resumed.",
+    "The passed BigCodeBench candidate case does not complete its original 64-position learning panel or authorize a Skill.",
+    "A/B failures and missing usage remain preserved and are not counted as zero-cost model errors."
+  ]
+}

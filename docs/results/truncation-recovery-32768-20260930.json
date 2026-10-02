@@ -1,0 +1,62 @@
+{
+  "version": "truncation-budget-launch-summary-v1",
+  "snapshot_at": "2026-09-30T15:15:57+08:00",
+  "status": "running",
+  "evidence_kind": "real_model_selected_truncation_retry_diagnostic",
+  "protocol_version": "truncation-recovery-v3",
+  "protocol_hash": "143ad3d567a6ca02977139ad1c304f24b2bea412782d516b1d3b287762346ec9",
+  "parent_protocol_hash": "8d1b27551163b103c38ecab6c4ec99eb9c48099db655d0b69387fc73e5c8a593",
+  "started_at": "2026-09-30T15:11:36+08:00",
+  "provider": "BigModel",
+  "model": "glm-5.3",
+  "reasoning_effort": "low",
+  "temperature": 0,
+  "stream": false,
+  "max_tokens": 32768,
+  "read_timeout_seconds": 600,
+  "maximum_workers": 10,
+  "maximum_http_attempts_per_logical_call": 3,
+  "selected_positions": 105,
+  "selected_benchmarks": {"korbench": 104, "spreadsheetbench": 1},
+  "independent_tasks": 68,
+  "independent_families": 15,
+  "independence_key": "benchmark plus task_id or family_id",
+  "parent_positions": 148,
+  "excluded_parent_positions": 43,
+  "selection": "all completed and bound HTTP200 length truncations from parent C",
+  "progress_at_snapshot": {"completed": 1, "inflight": 10, "unsubmitted": 94},
+  "first_response": {
+    "http_status": 200,
+    "finish_reason": "stop",
+    "error_type": null,
+    "http_attempt_count": 1,
+    "wall_seconds": 239.94461014214903,
+    "prompt_tokens": 343,
+    "completion_tokens": 11328,
+    "reasoning_tokens": 11259,
+    "total_tokens": 11671,
+    "prediction_status": "available",
+    "native_score_status": "fail"
+  },
+  "full_batch_cost_available": false,
+  "tests": {
+    "local_related": {"passed": 312, "failed": 0, "skipped": 0},
+    "linux_api_and_recovery_subset": {"passed": 178, "failed": 0, "skipped": 0},
+    "additional_local_cli_data_metrics": {"passed": 89, "failed": 0, "skipped": 1, "skip_reason": "Optional pinned GEPA not installed"},
+    "independent_review": "no_launch_blocker_found",
+    "lint_and_shell_syntax": "passed"
+  },
+  "source_sha256": {
+    "skillopt/continual_eval/truncation_recovery.py": "a8288ebf4b457eb07958d1176f403386d865746992028a6540205860e6dbd67d",
+    "skillopt/validator_pilot/api.py": "d1e29687e90ae7368076f61968e2bf2c1b188d8ae0878c7780e903468bc2b302"
+  },
+  "claims": {
+    "pure_token_comparison": false,
+    "whole_benchmark_baseline": false,
+    "causal_budget_effect": false,
+    "accuracy_improvement": false,
+    "skill_evolution_gain": false,
+    "optimizer_resumed": false,
+    "old_results_overwritten": false
+  }
+}

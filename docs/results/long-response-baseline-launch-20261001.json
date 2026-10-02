@@ -1,0 +1,131 @@
+{
+  "version": "long-response-baseline-launch-snapshot-v1",
+  "captured_at": "2026-09-30T17:11:54.188172+00:00",
+  "snapshot_kind": "non_atomic_live_snapshot_not_final_results",
+  "evidence_kind": "real_model_development_run_not_independent_method_effect",
+  "started_at": "2026-10-01T01:03:18+08:00",
+  "preparation_hash": "04ba994e72bb595896b23c0fbfe49ed038d72acdb9b2ac4c3ed1344dd0bc31ea",
+  "evaluation_plan_hash": "4cfc9177817f833198d9c7bac2b77ac1d5dabcf61d372ac10f5e51e5e9b44056",
+  "learning_manifest_hashes": {
+    "skillopt": "03c764ab8f84c5a4c55ef976c434febf69e9644f202b88f8f963c50efcc3e6fc",
+    "gepa": "81e49bf1933706b3c7b6dad2c9d81f44d4bdb66ae466344a042fa661519e36ae"
+  },
+  "model": {
+    "provider": "bigmodel",
+    "name": "glm-5.3",
+    "max_tokens": 65536,
+    "reasoning_effort": "low",
+    "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+    "transport": {
+      "stream": true,
+      "read_timeout_seconds": 300,
+      "stream_wall_seconds": 1800,
+      "initial_health_policy": "completed_response_v1"
+    }
+  },
+  "budget_each": {
+    "max_metric_calls": 512,
+    "max_reflection_calls": 32,
+    "max_api_calls": 600,
+    "max_reported_tokens": 2000000,
+    "max_iterations": 2,
+    "minibatch_size": 8,
+    "solver_max_tokens": 65536,
+    "reflection_max_tokens": 4096
+  },
+  "data_provenance": "same_historically_exposed_development_panels_not_new_holdout",
+  "evaluation_tasks": 400,
+  "evaluation_positions": 800,
+  "train_tasks": 65,
+  "train_families": 64,
+  "selection_tasks": 64,
+  "selection_families": 64,
+  "tests": {
+    "linux_passed": 625,
+    "linux_skipped": 0
+  },
+  "executor_qualification_hash": "3c417c0ef9d5f8ae8afc533db6f6c3a363dc0db1094dd975ad69ec7a8f7dd151",
+  "runs": {
+    "no_skill": {
+      "started": true,
+      "closed_model_calls": 799,
+      "http_attempts_known": 799,
+      "reported_tokens_known": 317546,
+      "response_finish_reasons": {
+        "stop": 799
+      },
+      "scored_positions": 0,
+      "score_counts": {},
+      "final_result_exists": false
+    },
+    "learning/skillopt": {
+      "started": true,
+      "closed_model_calls": 30,
+      "http_attempts_known": 30,
+      "reported_tokens_known": 11961,
+      "response_finish_reasons": {
+        "stop": 30
+      },
+      "scored_positions": 30,
+      "score_counts": {
+        "fail": 14,
+        "pass": 16
+      },
+      "final_result_exists": false
+    },
+    "learning/gepa": {
+      "started": false,
+      "closed_model_calls": 0,
+      "http_attempts_known": 0,
+      "reported_tokens_known": 0,
+      "response_finish_reasons": {},
+      "scored_positions": 0,
+      "score_counts": {},
+      "final_result_exists": false
+    }
+  },
+  "recovery": {
+    "G": {
+      "protocol_hash": "0860c05d38b25157af3e9883c92613e5d9b57ea678b948545bfa928c685595b1",
+      "planned_positions": 3,
+      "closed_positions": 3,
+      "counts": {
+        "fail": 2,
+        "pass": 1
+      },
+      "closed_model_calls": 3,
+      "http_attempts_known": 3,
+      "reported_tokens_known": 119371,
+      "completion_tokens": [
+        18780,
+        34349,
+        65079
+      ],
+      "response_finish_reasons": {
+        "stop": 3
+      },
+      "is_equal_budget_effect_evidence": false
+    },
+    "H": {
+      "protocol_hash": "7909b1ef430998da6c8fee2700223b43653e2d99e8e7a4314713f9312a38b460",
+      "planned_positions": 4,
+      "closed_positions": 1,
+      "counts": {
+        "pass": 1
+      },
+      "closed_model_calls": 1,
+      "http_attempts_known": 1,
+      "reported_tokens_known": 58785,
+      "completion_tokens": [
+        58377
+      ],
+      "response_finish_reasons": {
+        "stop": 1
+      },
+      "is_equal_budget_effect_evidence": false
+    }
+  },
+  "historical_scores_replaced": false,
+  "deployment_authorized": false,
+  "record_hash": "b60ca946a6808b2d59e3cef0b3aa939583ecfe0b83ce2ae8325d37d4d36761a4"
+}

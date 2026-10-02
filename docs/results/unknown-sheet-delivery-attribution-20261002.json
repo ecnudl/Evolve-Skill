@@ -1,0 +1,126 @@
+{
+  "version": "spreadsheet-delivery-static-attribution-v1",
+  "status": "completed_static_attribution",
+  "date": "2026-10-02",
+  "benchmark": "spreadsheetbench",
+  "condition": "no_skill",
+  "model": "glm-5.3",
+  "evidence_kind": "static_analysis_of_frozen_real_model_outputs_and_completed_native_replays",
+  "selected_positions": 6,
+  "independent_tasks": 5,
+  "selection": "All five original execution exceptions plus the sole missing-output position from the completed seven-position native diagnostic; parser error and model truncation are separate diagnostics.",
+  "source_report": "unknown-sheet-native-replay-20261001.json",
+  "source_report_hash": "b5c8157a0bfd24872559fc7a3508a0d413a34be8f1dc77abc5f4c4431356c80e",
+  "counts": {
+    "generated_program_defect": 5,
+    "task_delivery_contract_ambiguity": 1,
+    "new_semantic_scores": 0
+  },
+  "verification": {
+    "original_prediction_hashes_matched": 6,
+    "generated_code_hashes_matched": 6,
+    "code_matched_original_closed_response_extraction": 6,
+    "diagnostic_records_matched_source_report": 6,
+    "prior_native_execution_cleanup_confirmed": 6,
+    "additional_public_workbook_sha256": "8bd7bcadb80576ee92da8be8dbe9721b5fa9a6eea6264a45bf739a009f7f4450",
+    "public_workbook_inspection_library": "openpyxl 3.1.5",
+    "candidate_programs_executed_in_this_audit": 0
+  },
+  "rows": [
+    {
+      "task_id": "58949",
+      "repeat": 1,
+      "code_sha256": "3ba0abbf055c1aaac8a5cbb4259c40fd74cd045ad665beb0bab1270dd6a06e90",
+      "prediction_hash": "06f4c01a7f083fbab64d211b5518a18e6dc96950eafef252f09abe86f641ea01",
+      "original_call_record_hash": "5a80e1a60452dbcd83974519fb37c87e9d443e5bf89ebe32b4da8a11996f1c2b",
+      "diagnostic_record_hash": "9c0342ee67bfaef430525b8daad369d7732ab9b3241152420e4aa216e37c6ea9",
+      "exception_type": "TypeError",
+      "generated_line": 22,
+      "attribution": "generated_program_defect",
+      "finding": "The generated condition performs a membership test against None. A later false conjunction cannot prevent evaluation of that invalid membership operation. This directly matches the completed native TypeError at the same generated line.",
+      "evidence_limit": "The program was not edited or reexecuted in this audit; this is attribution of an observed execution failure, not evidence that a repaired program would solve the task."
+    },
+    {
+      "task_id": "82-30",
+      "repeat": 1,
+      "code_sha256": "105c43e788eabc4a1099657ff210f1a83c82d7e0f7bc90a458a3bd284b72c58a",
+      "prediction_hash": "7184c64eb2347a3252648f263458bf3e24d745b870b9ec9c91f140c1dfbab6eb",
+      "original_call_record_hash": "331458fe2ff68f3bfe7ccb30b44e39df7f687f83b69b93b604cdbe485cafca76",
+      "diagnostic_record_hash": "d3046f825d1ee84e8f3f79e3c576db91e20ae9d49f46c01e9dcfeb453e548982",
+      "exception_type": "AttributeError",
+      "generated_line": 11,
+      "attribution": "generated_program_defect",
+      "finding": "The generated program reads Worksheet.max_col instead of the supported max_column property. The replay reached this generated statement and reproduced AttributeError after loading the workbook.",
+      "evidence_limit": "This supports API misuse in the generated program, not a claim about the model's internal reasoning or the correctness of an otherwise repaired solution."
+    },
+    {
+      "task_id": "51090",
+      "repeat": 0,
+      "code_sha256": "90b983e3c3bba81807eb55977f8237b3920c5eeb3e6ede365dc15fa2b8990e4e",
+      "prediction_hash": "699f1f5ba6a1958569df6c212da1b7e6d3b39c5733f71aa3a8fe7840a3f10ed7",
+      "original_call_record_hash": "ebb52bcc4f39b5e052a8b2f7b8fa47f1bba73698b06d8dfc23744650341a9eda",
+      "diagnostic_record_hash": "be0159c81e12fbe8a2f029e101b007b7ee8011fac6535c4ccf61c7d3a6df7a4c",
+      "exception_type": "FileNotFoundError",
+      "generated_line": 41,
+      "attribution": "generated_program_defect",
+      "finding": "The program opens the required new output workbook in append mode without first creating or copying it. Earlier copy operations concern in-memory data frames, not the output file. The public execution contract supplies the input workbook and an output destination; it does not supply a preexisting output file.",
+      "evidence_limit": "The missing resource is the program's intended output, not an unavailable hidden reference or API credential. No file was precreated to repair the candidate."
+    },
+    {
+      "task_id": "45372",
+      "repeat": 0,
+      "code_sha256": "a983fc58fa383499549b320ad55b785a290962830dd541f3afe586492b96c6ef",
+      "prediction_hash": "baaa6c10209f911c467b706056798be7a86cfb7d3ee75640403f6dfce8cf16a3",
+      "original_call_record_hash": "f70db7344dd4263edec95f73f35c823627dac5b43f6f90955856fc48587a8ee3",
+      "diagnostic_record_hash": "d5ba014f4a1df6162655e72757840f07cda154da730d691e9f7efd1d9f35c3fd",
+      "exception_type": "AttributeError",
+      "generated_line": 17,
+      "attribution": "generated_program_defect",
+      "finding": "The program assumes every nonblank time-column value has hour/minute attributes. The byte-verified public input contains time values in A2:A13, a blank A14 and ordinary text in A15. The program skips the blank but reaches the text, matching the observed AttributeError. These cells contain no formulas.",
+      "evidence_limit": "Input types were inspected read-only with openpyxl, not by running the candidate. The public answer region includes the boundary rows; silently shortening the task would change the contract."
+    },
+    {
+      "task_id": "45372",
+      "repeat": 1,
+      "code_sha256": "91c649dbe3ac1f1809cf1a5c6516a78337db5a9f07bff73554a2f060ddb3210f",
+      "prediction_hash": "85cf60fb930c26cd583f3255c83a203a2f5630c6de83abf17caf0ebe18e99dc0",
+      "original_call_record_hash": "d958090ddc26ee984d6115598e3b6cfe97d0b5289b32e748d9a736f9afe5fcc7",
+      "diagnostic_record_hash": "60847c72df11edbdacce3066c089a0bdd09cbc015d7f33017c8ed051c0594ee2",
+      "exception_type": "ValueError",
+      "generated_line": 19,
+      "attribution": "generated_program_defect",
+      "finding": "This repeat handles time objects but sends every other value through string splitting and integer conversion without a blank-value guard. The first non-time value in the byte-verified loop range is blank A14; converting its textual representation to an integer explains the observed ValueError.",
+      "evidence_limit": "This is a second repeat of the same input task, not another independent task. There is no evidence that formula recalculation or a larger token budget is required to fix this exception."
+    },
+    {
+      "task_id": "262-17",
+      "repeat": 1,
+      "code_sha256": "dea838e4c7e0b00cb6b8adc32e561386c224ef17873660eecac6658e36f82cc0",
+      "prediction_hash": "ed030ecca63a31866cc5962354f9caee3a5b73873a482dfeee1c4703ce60752d",
+      "original_call_record_hash": "83b612f1c3c67dbc9f03062667ab3cf165106a68538f2d3d14613b8ddfbf3a68",
+      "diagnostic_record_hash": "4b15c81bbcd8f7b64512df56060c0dc11f2e8f8bdff06a1250e0c5d27f406d29",
+      "exception_type": null,
+      "generated_line": null,
+      "attribution": "task_delivery_contract_ambiguity",
+      "finding": "The program only constructs and prints VBA source text; it never saves a workbook. This explains the clean native return with missing output. The source task asks for a VBA macro while the harness asks for a Python program and provides a required workbook output path. The adaptation does not clearly resolve the text-answer versus executed-workbook distinction.",
+      "evidence_limit": "Missing workbook delivery is confirmed. Whether the VBA itself solves the source request has not been evaluated. This case must not be labelled a pure model reasoning failure or silently repaired by executing/replacing its answer."
+    }
+  ],
+  "interpretation": {
+    "why_legacy_unknown_remains": "The historical workbook scorer requires a delivered workbook to assign a semantic score. Its replay deliberately preserves original undelivered states; independent diagnostics do not replace frozen artifacts or scores.",
+    "supported_new_protocol_improvement": "Separate delivery outcomes, semantic correctness and causal attribution. Confirmed program execution defects and missing deliverables need not be conflated with unavailable infrastructure, but contract conflicts must remain explicit.",
+    "public_contract_improvement": "In a new frozen solver profile, explicitly require applying the requested transformation to the supplied workbook, producing the required output artifact and preserving relevant workbook identity; state how source requests for formulas or VBA map to that artifact. Compare conditions under the same revised contract.",
+    "not_supported": "Changing all unknown labels to fail, treating these six positions as six independent tasks, replacing failed answers, or claiming Skill improvement from this baseline diagnostic."
+  },
+  "new_costs": {
+    "model_api_calls": 0,
+    "container_calls": 0,
+    "new_model_tokens": 0
+  },
+  "original_scores_unchanged": true,
+  "answers_modified": false,
+  "feedback_authorized": false,
+  "is_method_effect": false,
+  "raw_code_or_task_text_published": false,
+  "record_hash": "ac0144053c52ae2de6e069bc6e5f4154654dd280ce7336e0e2d9a1224280c246"
+}

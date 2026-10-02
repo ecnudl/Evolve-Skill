@@ -1,0 +1,23 @@
+{
+  "version": "alfworld-public-goal-prompt-audit-v1",
+  "date": "2026-09-28",
+  "remote_source": "/root/continual-noskill-alf-20260928-a/run/predictions/*/call_intents/*.json",
+  "plan_hash": "f21770e1e7a812a53f404999f0a8fe30813b8f65b819a96e02d4700626efb0ba",
+  "evidence_kind": "read_only_diagnostic_of_saved_real_model_call_intents",
+  "rule": "Check serialized public user prompt for the case-insensitive markers 'your task is to:' or 'your task is to '.",
+  "positions_with_saved_intents": 78,
+  "positions_with_at_least_one_missing_goal_after_turn_5": 67,
+  "turn_0_through_5_intents": 448,
+  "turn_0_through_5_goal_present": 448,
+  "turn_6_or_later_intents": 1826,
+  "turn_6_or_later_goal_absent": 1826,
+  "total_call_intents": 2274,
+  "model_calls_added_by_this_audit": 0,
+  "task_text_or_observations_in_this_artifact": false,
+  "finding": "Initial observation was present through a five-transition sliding history, then omitted. Every inspected turn >= 6 lacked the public goal marker. This supports a solver input-protocol defect; it is not evidence that the model or No-Skill inherently cannot solve these tasks.",
+  "limitations": [
+    "Counts refer to saved intents, not billing receipts or HTTP attempts.",
+    "The audit does not claim the lost goal caused every observed failure.",
+    "Do not pool protocol A with the corrected persistent-initial-observation protocol."
+  ]
+}

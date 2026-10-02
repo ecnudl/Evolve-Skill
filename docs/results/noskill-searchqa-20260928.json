@@ -1,0 +1,118 @@
+{
+  "version": "continual-noskill-development-result-v1",
+  "date": "2026-09-28",
+  "run_id": "noskill-searchqa-20260928-b",
+  "status": "complete",
+  "evidence_kind": "real_model_development_baseline_not_independent_final",
+  "benchmark": "searchqa",
+  "partition": "development",
+  "data_source": "existing data/searchqa_split/train/items.json",
+  "historically_exposed": true,
+  "tasks": 400,
+  "declared_question_families": 400,
+  "semantic_family_independence_certified": false,
+  "histories": 1,
+  "repeats": 2,
+  "positions": 800,
+  "method": "no_skill",
+  "checkpoint": "S0_empty",
+  "model": {
+    "provider": "BigModel",
+    "name": "glm-5.3",
+    "temperature": 0,
+    "reasoning_effort": "low",
+    "max_output_tokens": 4096,
+    "concurrency": 10,
+    "execution": "PJLAB_Linux_background",
+    "network": "proxy_on_and_explicit_approved_PJLAB_gateway"
+  },
+  "solver_profile": "one_shot_public_context_no_repair_no_research",
+  "counts": {"pass": 552, "fail": 242, "unknown": 6, "missing": 0},
+  "em_all_attempt_lower_bound": {"numerator": 552, "denominator": 800, "value": 0.69},
+  "em_all_attempt_upper_bound": 0.6975,
+  "em_evaluable": {"numerator": 552, "denominator": 794, "value": 0.6952141057934509},
+  "f1": {
+    "sum_known": 636.7601167833794,
+    "all_attempt_lower_bound": 0.7959501459792243,
+    "evaluable_mean": 0.8019648825987147
+  },
+  "substring_match": {
+    "successes_known": 749,
+    "all_attempt_lower_bound": 0.93625,
+    "evaluable_mean": 0.9433249370277078,
+    "primary_metric": false,
+    "note": "Lenient bidirectional normalized substring criterion; not exact correctness."
+  },
+  "by_repeat": [
+    {"repeat": 0, "tasks": 400, "pass": 272, "fail": 125, "unknown": 3, "em_all_attempt_lower_bound": 0.68},
+    {"repeat": 1, "tasks": 400, "pass": 280, "fail": 117, "unknown": 3, "em_all_attempt_lower_bound": 0.70}
+  ],
+  "same_task_repeat_pairs": {
+    "pass_pass": 258,
+    "fail_fail": 103,
+    "fail_pass": 22,
+    "pass_fail": 14,
+    "unknown_unknown": 3,
+    "evaluable_task_pairs": 397,
+    "discordant_evaluable_pairs": 36,
+    "note": "Repeat is not a treatment; these are variability counts, not Skill wins/losses."
+  },
+  "costs": {
+    "logical_model_calls": 800,
+    "http_attempts": 804,
+    "final_http_200": 794,
+    "final_http_400": 6,
+    "transport_attempts_without_http_status": 4,
+    "known_reported_token_subtotal": 875172,
+    "calls_without_usage": 6,
+    "total_tokens": null,
+    "retry_inclusive_usage_known": false,
+    "note": "Do not treat the known subtotal as a complete billed total; failed/retried attempt usage is unavailable."
+  },
+  "unknowns": {
+    "positions": 6,
+    "distinct_tasks": 3,
+    "reason": "HTTP_400_no_successful_response",
+    "provider_error_detail": "not_recorded_by_frozen_client",
+    "resampled": false
+  },
+  "excluded_launch_a": {
+    "classification": "infrastructure_failure_not_model_accuracy",
+    "actual_logical_calls": 1,
+    "http_attempts": 3,
+    "successful_responses": 0,
+    "error_type": "direct_connection_timeout",
+    "wall_seconds": 126.1177253657952,
+    "reserved_unknown_positions": 800,
+    "positions_not_submitted_to_http": 799,
+    "total_tokens": null,
+    "note": "Preserved unchanged. Triggered first-request fanout protection fix; B is a new frozen transport/source run."
+  },
+  "provenance": {
+    "plan_hash": "c85dd295f33a8ccbaa776e083629d920a2a8d5c9eca73bbecfc8a66805495097",
+    "report_hash": "215ca04770a89278a8ca4d9bb5e5249694af6da156757408f343f33c46e4e5ce",
+    "local_private_archive": "outputs/continual_eval/noskill_searchqa_20260928_launch_b/run-evidence.tar.gz",
+    "archive_sha256": "6ffef6500097e7bd5d637a80d67b0972dbab49493cba16e764df76a1277a62ab",
+    "verified_prediction_records": 800,
+    "verified_score_records": 800,
+    "contains_env_file": false
+  },
+  "code_verification": {
+    "final_related_tests": {"passed": 2697, "failed": 0, "skipped": 0, "wall_seconds": 165.47},
+    "first_outer_sandbox_run": {"passed": 2681, "failed": 12, "reason": "macOS_nested_sandbox_execution_denied"},
+    "affected_module_authorized_rerun": {"passed": 60, "failed": 0},
+    "pending_first_resume_regressions": 4,
+    "old_guard_negative_controls_failed_as_expected": 4,
+    "ruff": "passed",
+    "git_diff_check": "passed",
+    "public_summary_matches_archived_scores": true,
+    "note": "Final tests include post-launch local resume hardening; the completed B source snapshot was not rewritten."
+  },
+  "limitations": [
+    "No Skill was learned or compared; no claim of method improvement.",
+    "Only SearchQA development data were evaluated; other four benchmarks remain pending.",
+    "An EM failure is not automatically a reasoning failure; alternate forms and verbosity require separate diagnosis.",
+    "No LLM judge, answer repair, best-of retry or score-driven sample selection was used.",
+    "Post-launch local resume hardening is not retroactively attributed to the frozen B run."
+  ]
+}

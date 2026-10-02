@@ -1,0 +1,100 @@
+{
+  "version": "continual-evaluation-engineering-report-v1",
+  "date": "2026-09-28",
+  "evidence_kind": "engineering_only_not_method_effect",
+  "protocol": "continual-eval-v1",
+  "benchmarks": ["bigcodebench", "spreadsheetbench", "searchqa", "korbench", "alfworld"],
+  "checkpoints": [0, 1, 2, 3, 4, 5],
+  "formal_baseline_model_runs": 0,
+  "actual_model_calls": 0,
+  "actual_model_tokens": 0,
+  "model_configuration_for_future_runs": {
+    "model": "glm-5.3", "max_tokens": 4096, "reasoning_effort": "low",
+    "note": "A configured model is not an executed model experiment."
+  },
+  "offline_final_acceptance": {
+    "provenance": "five_authored_fixtures_mock_solver_four_mock_scorers_native_searchqa_scorer",
+    "benchmarks": 5,
+    "checkpoints": 6,
+    "positions": 30,
+    "first_run_new_positions": 30,
+    "replay_new_positions": 0,
+    "report_hash": "6f47b81c1ef0c77fe08377742d87ab45c93d82780da8fd930f2461500fd999c9",
+    "local_archive": "outputs/continual_eval/offline_acceptance_20260928_final",
+    "real_benchmark_tasks": 0,
+    "native_generated_code_executions": 0
+  },
+  "native_final_acceptance": {
+    "provenance": "three_authored_workbook_controls_real_linux_docker",
+    "location": "PJLAB_Linux",
+    "local_archive": "outputs/continual_eval/native_smoke_20260928_final/report.json",
+    "receipt_file_sha256": "c1d5aed32d7d3ccd559b29660fb4474d74b76c1ba4b47e48e3ce9659b5fd2470",
+    "image_id": "sha256:0a0a5dcb7dd4e56215c729d2ccdd6a8862d1a644bb6f992f8bb591d4e0a0f0dd",
+    "architecture": "amd64",
+    "source_sha256": {
+      "backends.py": "d91e5a05272b3a4426bae1ac7aad1d2a004c683455128bcd056ca48716d8a737",
+      "native_worker.py": "0d7bc1d0e9a6d5fa77167f138ea32ff82646037ea980ca97ae1860882d136708",
+      "runtime/smoke_native.py": "44cd60adce930eb4cad34d26925dd5cecc766433f3c82e7737d9771c115abb69"
+    },
+    "cases": [
+      {"id": "positive", "expected": "pass", "observed": "pass"},
+      {"id": "wrong_cell", "expected": "fail", "observed": "fail"},
+      {"id": "missing_dependency", "expected": "unknown", "observed": "unknown"}
+    ],
+    "controls_matching_expectation": 3,
+    "controls_total": 3,
+    "container_calls": 5,
+    "dependency_probe_calls_included": 2,
+    "cleanup_confirmed_calls": 5,
+    "wall_seconds_including_cleanup": 5.567729,
+    "bigcodebench_full_environment": "unsupported_not_installed",
+    "kor_official_scoring": "not_exercised",
+    "alfworld_episode": "not_exercised",
+    "real_benchmark_tasks": 0,
+    "model_calls": 0
+  },
+  "earlier_native_engineering_run": {
+    "local_archive": "outputs/continual_eval/native_smoke_20260928/report.json",
+    "container_calls": 5,
+    "wall_seconds_including_cleanup": 5.704224,
+    "model_calls": 0,
+    "note": "Same controls before final source formatting; not independent method evidence. Total native calls across both runs: 10."
+  },
+  "real_data_import": {
+    "benchmark": "searchqa",
+    "source": "data/searchqa_split/train/items.json",
+    "source_status": "existing_previously_used_training_data",
+    "tasks": 400,
+    "declared_exact_question_families": 400,
+    "partition": "development",
+    "panel_hash": "4c82f13f9b3f1cc03218e3be31fd8002cef037a70567e144e884395b036bd539",
+    "local_archive": "outputs/continual_eval/searchqa_prepare_20260928",
+    "frozen_plan_hash": "cb05ebe25a9b080700fc41e9e8e2ff2f991246ca9cbc91883d447c0a56b38f4b",
+    "generated_positions": 0,
+    "independent_final_data": false,
+    "note": "Declared family count does not establish semantic independence. ID-only source correctly rejected before this import."
+  },
+  "verification": {
+    "new_suite": {"passed": 130, "failed": 0, "skipped": 0},
+    "related_suite_first_run": {"passed": 2555, "failed": 0, "skipped": 0},
+    "related_suite_final_run": {"passed": 2556, "failed": 0, "skipped": 0, "wall_seconds": 174.07},
+    "ruff": "passed",
+    "compileall": "passed",
+    "git_diff_check": "passed",
+    "strict_documentation_build": {
+      "status": "passed_clean_tracked_plus_current_change_snapshot",
+      "environment": "existing_dedicated_mkdocs_environment",
+      "initial_workspace_result": "failed_with_26_warnings_from_unrelated_preexisting_untracked_research_documents",
+      "note": "Those local files were preserved; the publishable snapshot builds without disabling strict mode. Default skill Python lacks mkdocs."
+    }
+  },
+  "limits": [
+    "No formal five-benchmark No-Skill, SkillOpt or Our result yet.",
+    "Checkpoint registration does not implement or authenticate multi-stage learning, retrieval or deployment gates.",
+    "All five natural panels, complete native runtime acceptance and historical exposure review remain necessary before formal baselines.",
+    "Static benchmarks currently use a common one-shot profile, not the DSL reliable_v1 public-repair profile.",
+    "Statistics are descriptive; no confidence intervals, significance or universal non-regression guarantee.",
+    "host_only is a logical interface boundary, not an operating-system access-control boundary.",
+    "Private raw caches, workbooks and third-party task texts are not published in this summary."
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "version": "spreadsheet-independent-lo-recalculation-v2",
+  "protocol_hash": "2adf75919f48318ea77f316d34dc3063aafe72e61033e8d669aaacf987f4d270",
+  "status": "complete",
+  "positions": 160,
+  "completed": 160,
+  "old_counts": {
+    "pass": 59,
+    "unknown": 62,
+    "fail": 39
+  },
+  "counts": {
+    "pass": 54,
+    "fail": 40,
+    "unknown": 66
+  },
+  "transitions": {
+    "pass->pass": 38,
+    "unknown->pass": 16,
+    "fail->fail": 24,
+    "unknown->fail": 16,
+    "pass->unknown": 21,
+    "unknown->unknown": 30,
+    "fail->unknown": 15
+  },
+  "unknown_reasons": {
+    "reference:unsupported_extended_function": 16,
+    "original_no_delivered_workbook:native_exception:ValueError": 2,
+    "reference:unsupported_external_or_volatile_defined_name": 2,
+    "reference:recalculation_changed_formula": 2,
+    "prediction:recalculation_changed_literal_cell": 2,
+    "prediction:recalculation_changed_formula": 1,
+    "reference:recalculation_changed_literal_cell": 13,
+    "reference:unsupported_workbook_structure": 4,
+    "reference:recalculation_sheet_identity_changed": 2,
+    "reference_native_cache_drift_or_unavailable": 2,
+    "original_no_delivered_workbook:native_exception:SyntaxError": 1,
+    "original_no_delivered_workbook:output.xlsx_not_produced": 1,
+    "reference:unsupported_active_or_external_workbook": 4,
+    "reference:unsupported_external_structured_or_volatile_formula": 6,
+    "original_no_delivered_workbook:native_exception:TypeError": 1,
+    "original_no_delivered_workbook:native_exception:AttributeError": 3,
+    "original_no_delivered_workbook:native_exception:KeyError": 1,
+    "original_no_delivered_workbook:model_response_truncated": 1,
+    "reference:unsupported_external_relationship": 2
+  },
+  "original_undelivered_categories": {
+    "generated_code_execution_exception": 8,
+    "missing_deliverable": 1,
+    "generation_truncation": 1
+  },
+  "recalculation_costs": {
+    "unique_workbook_receipts": 177,
+    "containers_attempted": 159,
+    "duration_seconds_sum": 319.08435862744227,
+    "cleanup_unconfirmed": 0,
+    "libreoffice_versions": [
+      "LibreOffice 25.2.3.2 520(Build:2)"
+    ]
+  },
+  "model_api_calls": 0,
+  "historical_scores_replaced": false,
+  "feedback_allowed": false,
+  "excel_equivalence_proven": false,
+  "is_method_effect": false,
+  "record_hash": "1ae0a5d7324acdbe2f97266305ac6e9459227e5b23827e0737a716d5ff6df2f1"
+}

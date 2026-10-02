@@ -1,0 +1,335 @@
+{
+  "version": "noskill-long-bcb-final-summary-v1",
+  "checked_at": "2026-09-30T18:38:46.092396+00:00",
+  "status": "completed_bigcodebench_no_skill_s0_only",
+  "benchmark": "bigcodebench",
+  "method": "no_skill",
+  "history": "h0",
+  "stage": 0,
+  "skill": "empty",
+  "partition": "development",
+  "evidence_kind": "natural_model_run",
+  "model": {
+    "provider": "bigmodel",
+    "name": "glm-5.3",
+    "reasoning_effort": "low",
+    "temperature": 0,
+    "max_tokens": 65536,
+    "stream": true,
+    "read_timeout_seconds": 300,
+    "stream_wall_seconds": 1800
+  },
+  "data": {
+    "dataset_revision": "bigcode/bigcodebench@b74c0d0bf70d2c0bc459be537895cca163007f1a:v0.1.4:instruct",
+    "panel_hash": "55188f2ca4cbcd274b9a1c1f2976ce7361233faa9015915eafc563936b8fc55a",
+    "same_historical_development_panel": true,
+    "new_independent_holdout": false,
+    "tasks": 400,
+    "families": 399,
+    "repeats_per_task": 2,
+    "positions": 800,
+    "tasks_per_family_histogram": {
+      "1": 398,
+      "2": 1
+    },
+    "repeats_are_not_independent_tasks": true
+  },
+  "result": {
+    "counts": {
+      "pass": 400,
+      "fail": 399,
+      "unknown": 1
+    },
+    "by_repeat": [
+      {
+        "repeat": 0,
+        "tasks": 400,
+        "families": 399,
+        "positions": 400,
+        "counts": {
+          "pass": 204,
+          "fail": 195,
+          "unknown": 1
+        }
+      },
+      {
+        "repeat": 1,
+        "tasks": 400,
+        "families": 399,
+        "positions": 400,
+        "counts": {
+          "pass": 196,
+          "fail": 204,
+          "unknown": 0
+        }
+      }
+    ],
+    "task_repeat_patterns": [
+      {
+        "repeat_0": "fail",
+        "repeat_1": "fail",
+        "tasks": 180
+      },
+      {
+        "repeat_0": "fail",
+        "repeat_1": "pass",
+        "tasks": 15
+      },
+      {
+        "repeat_0": "pass",
+        "repeat_1": "fail",
+        "tasks": 23
+      },
+      {
+        "repeat_0": "pass",
+        "repeat_1": "pass",
+        "tasks": 181
+      },
+      {
+        "repeat_0": "unknown",
+        "repeat_1": "fail",
+        "tasks": 1
+      }
+    ],
+    "all_attempt_accuracy_lower_bound": 0.5,
+    "all_attempt_accuracy_upper_bound": 0.50125,
+    "two_repeat_consistency": {
+      "tasks": 400,
+      "families": 399,
+      "known_task_pairs": 399,
+      "same_known_outcome_tasks": 361,
+      "different_known_outcome_tasks": 38,
+      "unknown_task_pairs": 1,
+      "discordance_rate_all_tasks": 0.095,
+      "discordance_rate_known_task_pairs": 0.09523809523809523,
+      "repeats_are_not_independent_tasks": true
+    },
+    "evaluable_accuracy": {
+      "numerator": 400,
+      "denominator": 799,
+      "value": 0.5006257822277848
+    },
+    "family_macro": {
+      "families": 399,
+      "aggregation": "equal_family_mean_over_task_repeat_positions",
+      "lower_bound": 0.49874686716791977,
+      "upper_bound": 0.5
+    },
+    "reasons": {
+      "official_bigcodebench_untrusted_check": 799,
+      "native_timeout": 1
+    },
+    "native_timeouts": [
+      {
+        "task_id": "BigCodeBench/205",
+        "repeat": 0,
+        "status": "unknown",
+        "score_hash": "d45ebe74006875c4feb4357c00562e7c45fde4a3791db0b7ef634829459c4126",
+        "cleanup_confirmed": true,
+        "native_result": "timeout",
+        "wall_seconds_including_cleanup": 242.823946,
+        "historical_same_position_status": "unknown",
+        "historical_same_position_reason": "native_timeout"
+      }
+    ],
+    "fail_diagnostics": {
+      "failed_positions": 399,
+      "allowlisted_named_exception_mentions_nonexclusive": {
+        "TypeError": 37,
+        "FileNotFoundError": 17,
+        "AssertionError": 267,
+        "AttributeError": 13,
+        "KeyError": 28,
+        "ValueError": 64,
+        "IndexError": 12,
+        "OSError": 2
+      },
+      "failed_positions_without_allowlisted_exception": 16,
+      "interpretation": "Exception classes in native diagnostics only; counts are not mutually exclusive or verified causal attributions."
+    }
+  },
+  "costs": {
+    "official_run_accounting": {
+      "logical_calls": 800,
+      "http_attempts": 800,
+      "reported_tokens": 324867,
+      "usage_complete": true,
+      "unclosed_calls": 0,
+      "retry_inclusive_usage_known": true,
+      "scope": "all_positions_including_unscored_and_interrupted",
+      "reserved_positions": 800,
+      "terminal_predictions": 800,
+      "scored_positions": 800
+    },
+    "prompt_tokens": 168756,
+    "completion_tokens": 156111,
+    "native_container_calls": 800,
+    "native_wall_seconds_including_cleanup": 4105.526772999995,
+    "native_execution_cost_records": 800,
+    "cleanup_confirmed_positions": 800,
+    "runtime_budget": {
+      "image": "sha256:b13b0bb97861eb3a2f3f9ead1e8718d1410882613f84e088bb31338c343149fa",
+      "timeout_seconds": 300,
+      "memory_mb": 8192,
+      "cpus": 1
+    },
+    "wall_time_is_not_cpu_time": true,
+    "monetary_cost_not_estimated": true
+  },
+  "generation_integrity_audit": {
+    "paired_positions": 800,
+    "prompt_and_model_mismatch_counts": {
+      "system": 0,
+      "user": 0,
+      "model": 0,
+      "kind": 0,
+      "repeat": 0,
+      "returned_model": 0
+    },
+    "shared_service_fields_equal": [
+      "provider",
+      "host",
+      "path",
+      "model",
+      "temperature",
+      "thinking",
+      "reasoning_effort",
+      "generation_seed",
+      "proxy",
+      "initial_health_policy"
+    ],
+    "temperature_zero_does_not_guarantee_determinism": true,
+    "new_http_200_stop_complete_streams": 800,
+    "old_http_stop_calls": 800,
+    "old": {
+      "positions": 800,
+      "code_utf8_bytes": {
+        "minimum": 152,
+        "p25_order_statistic": 423,
+        "median": 640.5,
+        "p75_order_statistic": 889,
+        "maximum": 2640
+      },
+      "ast_parse_errors": {},
+      "missing_top_level_function": 0
+    },
+    "new": {
+      "positions": 800,
+      "code_utf8_bytes": {
+        "minimum": 152,
+        "p25_order_statistic": 430,
+        "median": 650,
+        "p75_order_statistic": 895,
+        "maximum": 2477
+      },
+      "ast_parse_errors": {},
+      "missing_top_level_function": 0
+    },
+    "identical_code_positions": 44,
+    "identical_code_status_agreement": 44,
+    "identical_code_status_transitions": [
+      {
+        "old": "fail",
+        "new": "fail",
+        "positions": 10
+      },
+      {
+        "old": "pass",
+        "new": "pass",
+        "positions": 33
+      },
+      {
+        "old": "unknown",
+        "new": "unknown",
+        "positions": 1
+      }
+    ],
+    "native_worker_source_identical": true,
+    "runtime_config_identical": true,
+    "source_review": "BCB public prompt, code extraction, solver and native worker unchanged; backends changes add exception/cleanup guards and unrelated Sheet/ALF support. Normal BCB scoring path unchanged.",
+    "stream_integrity_limit": "Receipt completion and AST checks show no visible missing-content defect, not a proof of server-side chunk completeness."
+  },
+  "historical_configuration_comparison": {
+    "old_max_tokens": 4096,
+    "new_max_tokens": 65536,
+    "old_counts": {
+      "pass": 416,
+      "fail": 382,
+      "unknown": 2
+    },
+    "old_reported_tokens": 318182,
+    "old_accuracy_lower_bound": 0.52,
+    "paired_comparison": {
+      "direction": "new_65536_configuration_vs_old_4096_configuration",
+      "positions": 800,
+      "tasks": 400,
+      "families": 399,
+      "win": 26,
+      "loss": 43,
+      "tie": 729,
+      "unknown": 2,
+      "unknown_not_counted_as_loss_or_semantic_failure": true
+    },
+    "paired_status_transitions": [
+      {
+        "old": "fail",
+        "new": "fail",
+        "positions": 356
+      },
+      {
+        "old": "fail",
+        "new": "pass",
+        "positions": 26
+      },
+      {
+        "old": "pass",
+        "new": "fail",
+        "positions": 43
+      },
+      {
+        "old": "pass",
+        "new": "pass",
+        "positions": 373
+      },
+      {
+        "old": "unknown",
+        "new": "pass",
+        "positions": 1
+      },
+      {
+        "old": "unknown",
+        "new": "unknown",
+        "positions": 1
+      }
+    ],
+    "interpretation": "Descriptive comparison of budget plus transport configuration and a fresh sample; neither causal token-budget benefit nor Skill effect."
+  },
+  "source": {
+    "run": "/root/continual-baselines-long-20261001-study/no_skill",
+    "source_root": "/root/continual-baselines-long-20261001-source",
+    "plan_hash": "4cfc9177817f833198d9c7bac2b77ac1d5dabcf61d372ac10f5e51e5e9b44056",
+    "plan_file_sha256": "048ea30a4394a0dbb63145b8c0195238fd6d7d3ae267a6cf51586f2d74bd4eb4",
+    "checkpoint_hash": "841a6dee5bb8ae3f2e4eba0eb2dd2cdebfa141f1f42a0a574a81db2688bf1e91",
+    "report_hash": "2e7f7440ab7a3ddfc0628cdbce607c1a2ddcb21ecfeec967cbff8d86e8b61211",
+    "report_path": "/root/continual-baselines-long-20261001-study/no_skill/host_only/reports/2e7f7440ab7a3ddfc0628cdbce607c1a2ddcb21ecfeec967cbff8d86e8b61211.json",
+    "source_identity_digest": "bbe7e21002d44c8d50628a5e7b1f0d328293f7ebc1de39cdd1ffdd90374d84a8",
+    "scored_receipt_roster_digest": "cc569f67d11f44bf2c17f2ebe322852c8d1e655282d74eda561cf883d85f3da4",
+    "historical_run": "/root/continual-noskill-bcb-20260928-a/run",
+    "historical_plan_hash": "d6b3a86a8557793a2aa1c7c6016139fc081b53c3b0bcbb9bf957eb16b63087d4",
+    "historical_report_hash": "715e3c66937d7bef16e0827b1ed2d3c17ec6207a06f9738bd812f028aa2995a0",
+    "historical_scored_receipt_roster_digest": "7ab1863903ddbbc7c726ac4da71dc891ca0cfd5bea5ad187822435b9dacbe49b"
+  },
+  "limitations": [
+    "Only the 400-task BCB S0 baseline is complete; other domains and later Skill checkpoints are not evaluated here.",
+    "These are already exposed development tasks, not independent generalization evidence.",
+    "Native timeout remains unknown, never a semantic failure or a deleted denominator.",
+    "Outer Docker execution cap is 300 seconds; the unchanged official checker receives test_timeout=60 and can return TIMEOUT earlier.",
+    "No Skill was present, learned, accepted or deployed in this run.",
+    "No tasks or model calls were retried or resampled during this audit."
+  ],
+  "raw_task_text_prompts_responses_hidden_tests_published": false,
+  "deployment_authorized": false,
+  "skill_effect_claimed": false,
+  "causal_budget_effect_claimed": false,
+  "record_hash": "b63b54f08f8bdd2450f8ff31bb5c64c23e7e14682995b862294d1f51412d1f31"
+}

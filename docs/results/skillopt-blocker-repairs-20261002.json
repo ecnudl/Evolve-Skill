@@ -1,0 +1,187 @@
+{
+  "version": "skillopt-blocker-repair-evidence-v1",
+  "date": "2026-10-02",
+  "model": "BigModel glm-5.3 low",
+  "smoke": {
+    "version": "skillopt-recovery-smoke-v1",
+    "results": [
+      {
+        "benchmark": "bigcodebench",
+        "status": "completed",
+        "reason": "native_skillopt_development_selection",
+        "costs": {
+          "logical_calls": 9,
+          "terminal_calls": 9,
+          "unclosed_calls": 0,
+          "http_attempts": 9,
+          "http_attempts_known_subtotal": 9,
+          "http_attempts_total": 9,
+          "http_attempts_semantics": "known_subtotal_total_unknown_if_unclosed",
+          "reported_tokens_known_subtotal": 8228,
+          "missing_usage_calls": 0,
+          "usage_complete": true,
+          "retry_inclusive_usage_known": true,
+          "reflection_calls": 3,
+          "solver_calls": 6,
+          "missing_attempt_usage": 0
+        },
+        "learning_result_hash": "ddc9220e7958ab2597f15873fd406b9c4a3c0cd08e5b72754ce48e632e10e339",
+        "train_tasks": 2,
+        "selection_tasks": 2,
+        "steps": 1,
+        "candidate_nonempty": false,
+        "evidence_kind": "real_model_engineering_smoke_not_method_effect",
+        "accuracy_improvement_claimed": false,
+        "historical_records_modified": false,
+        "record_hash": "a1055009a84250be3e09cafa8745d075def4b43633f627fa4b0f7f289a6116ec"
+      },
+      {
+        "benchmark": "searchqa",
+        "status": "completed",
+        "reason": "native_skillopt_development_selection",
+        "costs": {
+          "logical_calls": 8,
+          "terminal_calls": 8,
+          "unclosed_calls": 0,
+          "http_attempts": 8,
+          "http_attempts_known_subtotal": 8,
+          "http_attempts_total": 8,
+          "http_attempts_semantics": "known_subtotal_total_unknown_if_unclosed",
+          "reported_tokens_known_subtotal": 12813,
+          "missing_usage_calls": 0,
+          "usage_complete": true,
+          "retry_inclusive_usage_known": true,
+          "reflection_calls": 2,
+          "solver_calls": 6,
+          "missing_attempt_usage": 0
+        },
+        "learning_result_hash": "8e13f5d5f9a503a083583a865b893261d9b73f91d57659eecf3ae645d41ab3f9",
+        "train_tasks": 2,
+        "selection_tasks": 2,
+        "steps": 1,
+        "candidate_nonempty": false,
+        "evidence_kind": "real_model_engineering_smoke_not_method_effect",
+        "accuracy_improvement_claimed": false,
+        "historical_records_modified": false,
+        "record_hash": "e537c1046e45d7c829e3946e4368e42678e0c2f6ef7818bdd5ae501a13d0f4dc"
+      },
+      {
+        "benchmark": "korbench",
+        "status": "completed",
+        "reason": "native_skillopt_development_selection",
+        "costs": {
+          "logical_calls": 7,
+          "terminal_calls": 7,
+          "unclosed_calls": 0,
+          "http_attempts": 7,
+          "http_attempts_known_subtotal": 7,
+          "http_attempts_total": 7,
+          "http_attempts_semantics": "known_subtotal_total_unknown_if_unclosed",
+          "reported_tokens_known_subtotal": 15061,
+          "missing_usage_calls": 0,
+          "usage_complete": true,
+          "retry_inclusive_usage_known": true,
+          "reflection_calls": 1,
+          "solver_calls": 6,
+          "missing_attempt_usage": 0
+        },
+        "learning_result_hash": "23c0987296f9a69e03fe0c5d9b77a22e69fd6a7e657522e3245311adb1a4d569",
+        "train_tasks": 2,
+        "selection_tasks": 2,
+        "steps": 1,
+        "candidate_nonempty": false,
+        "evidence_kind": "real_model_engineering_smoke_not_method_effect",
+        "accuracy_improvement_claimed": false,
+        "historical_records_modified": false,
+        "record_hash": "270ad0e8a09f8bf558ade0386c9ff4af67fdda384dbbf784207f885fde94bc7f"
+      }
+    ],
+    "completed_domains": 3,
+    "attempted_domains": 3,
+    "method_effect_claimed": false,
+    "record_hash": "b0891cda7c085aa854d81b4bfc47f3c2f68361a875207ee8b72d3774217d67f1"
+  },
+  "paired_smoke_diagnostics": [
+    {
+      "benchmark": "bigcodebench",
+      "counts": {
+        "pass": 4,
+        "fail": 2
+      },
+      "parent_score": 1.0,
+      "candidate_score": 0.5,
+      "gate_action": "reject",
+      "replay_equal": true
+    },
+    {
+      "benchmark": "searchqa",
+      "counts": {
+        "pass": 5,
+        "fail": 1
+      },
+      "parent_score": 1.0,
+      "candidate_score": 1.0,
+      "gate_action": "reject",
+      "replay_equal": true
+    },
+    {
+      "benchmark": "korbench",
+      "counts": {
+        "pass": 6
+      },
+      "parent_score": 1.0,
+      "candidate_score": 1.0,
+      "gate_action": "reject",
+      "replay_equal": true
+    }
+  ],
+  "completed_replay_added_calls": 0,
+  "completed_replay_changed_json": false,
+  "alfworld": {
+    "status": "native_reset_step_ready",
+    "manifest_hash": "cf50e8085a15a8f71853d5e887ca2a5088c05afdf8f8673f0fb7f2a47c6cb8cc",
+    "task_hash": "f6f2ffb4d25d94080edf6d8fbe89509909e1588c53269cd5833ec618056d5276",
+    "cleanup_confirmed": true,
+    "new_live_child_processes": 0,
+    "environment_restored": true,
+    "model_calls": 0,
+    "evidence_kind": "native_environment_smoke_not_model_effect",
+    "historical_result_modified": false,
+    "record_hash": "6842386d5079e2d8f68bc1149dfcc781f5e40d1114b12c658927cfcf65af66c0"
+  },
+  "spreadsheet": {
+    "version": "sheet-learning-numeric-smoke-v1",
+    "evidence_kind": "historical_replay",
+    "source_evaluation_hash": "3a09b4f04883f8def5abb3aba8ef73d463ffa39ecaf2925717b6834b2a49eb71",
+    "task_hash": "9712e479a4a4b5963f40d3504bfe26a56275ccb4a606c6a596feb8cd21a6422a",
+    "qualification_hash": "1b4517386ced86f31b573a63f79c16003695b4618bce35c071f9e15bf2ea42af",
+    "scorer_profile": "qualified_lo_recalc_v7_v1",
+    "before": {
+      "status": "unknown",
+      "reasons": [
+        "prediction:recalculation_changed_literal_cell"
+      ]
+    },
+    "after": {
+      "status": "fail",
+      "reasons": [
+        "value@Total (2)!K40: mismatch"
+      ]
+    },
+    "execution_costs": {
+      "container_calls": 2,
+      "wall_seconds": 9.44480809289962,
+      "includes_cleanup": true,
+      "image_id": "sha256:f7f6f598c4f0b16ea514614c22325e8b3a2d5d0317f423757dcdfa1bb2c4d790"
+    },
+    "cleanup_confirmed": true,
+    "cached_replay_equal": true,
+    "model_api_calls": 0,
+    "original_score_changed": false,
+    "optimizer_resumed": false,
+    "reference_answer_exposed_to_learner": false,
+    "record_hash": "061559512f9f4e92eee3d3a6d3c7b2d483da45038acf7d91f84fad429398542b"
+  },
+  "method_effect_claimed": false,
+  "record_hash": "f69d4ddde77412c16505e1df1320bb2e3c4f7dd3af39f1827315857b01b6fb84"
+}

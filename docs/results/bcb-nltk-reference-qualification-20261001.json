@@ -1,0 +1,252 @@
+{
+  "version": "bcb-nltk-full-reference-qualification-audit-v1",
+  "date": "2026-10-01",
+  "evidence_kind": "engineering_reference_environment_qualification_not_model_or_method_effect",
+  "execution_status": "completed",
+  "qualification_status": "pending",
+  "model_calls": 0,
+  "identity": {
+    "source_root": "/root/continual-reference-qualification-20261001-source",
+    "run_root": "/root/continual-reference-nltk-20261001-study/run",
+    "protocol_hash": "fbe23c15237d68f8f543813b9cef94e1f51d29e4e9c0bccc1d2e1426daff72cf",
+    "protocol_file_sha256": "b26f1b47c4602a6e9a9b85a0775df1271a3cac5283865c276582696f183ef05d",
+    "report_hash": "c06af9641e15743dacbec4c0f988d8d784800983999a9689249b0794ac1206d4",
+    "report_file_sha256": "c964dfccadd61d0b7c57742540cf524f031fd68f05aef4ac35d8b1bb802d7873",
+    "old_reference_report_hash": "f8fa5dc7cc663da7b1f1deb4a5ba92110d5bb35766279f046e6e135382314fd7",
+    "metadata_plan_hash": "14fda5dc8cb937b0727bcad7da275cd87733f4b8adea9a634e8deec3ca1ac5d0",
+    "original_model_plan_hash": "4cfc9177817f833198d9c7bac2b77ac1d5dabcf61d372ac10f5e51e5e9b44056",
+    "source_identity_hash": "57ccf192087b6699eb08591fdaaaacbf7e4e5d220e2c3725df6a179ddd5a5896",
+    "overlay_manifest_hash": "a2b6c851738443a4a9ed00f2d9ac6961f1125384ddf3d1ad272aa81f7ad404cd",
+    "overlay_receipt_hash": "e3cbc911813e480e88ed33e76723257402adc0ad75bd31582100d59f6b6df39b"
+  },
+  "data": {
+    "tasks": 400,
+    "families": 399,
+    "repeats": 1,
+    "partition": "development",
+    "same_original_roster_public_private_reference_bytes": true,
+    "source_revision": "b74c0d0bf70d2c0bc459be537895cca163007f1a",
+    "split": "v0.1.4",
+    "source_selection": "all400_original_roster_not_failure_subset"
+  },
+  "runtime": {
+    "image": "sha256:4e8c8cb8cb1ed55daf980203da45ef5e4c3eff1cfcf44121968bd52f82f851c8",
+    "timeout_seconds": 300,
+    "memory_mb": 8192,
+    "cpus": 1
+  },
+  "old_runtime": {
+    "image": "sha256:b13b0bb97861eb3a2f3f9ead1e8718d1410882613f84e088bb31338c343149fa",
+    "timeout_seconds": 300,
+    "memory_mb": 8192,
+    "cpus": 1
+  },
+  "execution": {
+    "pass": 397,
+    "fail": 2,
+    "unknown": 1,
+    "closed": 400,
+    "cleanup_confirmed": 400,
+    "container_calls": 400,
+    "container_wall_seconds": 2281.1065,
+    "first_intent_utc": "2026-09-30T21:12:10.431190+00:00",
+    "terminal_result_utc": "2026-09-30T21:50:54.144285+00:00"
+  },
+  "old_to_new_reference_status": {
+    "pass__pass": 392,
+    "fail__pass": 5,
+    "fail__fail": 2,
+    "pass__unknown": 1
+  },
+  "predeclared_acceptance": {
+    "rule": "393_original_passes_must_remain_pass_AND_5_fixed_nltk_targets_must_pass",
+    "retention": {
+      "tasks": 393,
+      "pass": 392,
+      "fail": 0,
+      "unknown": 1
+    },
+    "resource_targets": {
+      "tasks": 5,
+      "pass": 5,
+      "fail": 0,
+      "unknown": 0
+    },
+    "other_original_isolation_limitations": {
+      "tasks": 2,
+      "pass": 0,
+      "fail": 2,
+      "unknown": 0
+    },
+    "unknown_is_not_semantic_failure": true,
+    "posthoc_threshold_or_resource_change": false
+  },
+  "changed_or_nonpass_cases": [
+    {
+      "task_hash": "31862e48b800fd0f05fb9f6b4b1309dc059cec07720d10c02dcbeb68556d2041",
+      "old_status": "fail",
+      "new_status": "pass",
+      "old_record_hash": "8d475b95ba7afa2b26f9bd9651093ce63b5c38045a15868da284bd675542daec",
+      "new_record_hash": "07a85affd3175aa475db4e181befa228b873451503ce018d473a3e3404e19724",
+      "qualification_group": "nltk_target",
+      "new_reason": "official_bigcodebench_untrusted_check",
+      "cleanup_confirmed": true,
+      "container_wall_seconds": 5.113109,
+      "errno_numbers": [],
+      "missing_nltk_resources": []
+    },
+    {
+      "task_hash": "333af9ee177ffd08c759d530ede1e404a8368d1fb1e699c5e3e7619aec7c2a68",
+      "old_status": "fail",
+      "new_status": "fail",
+      "old_record_hash": "54dbd49ae8fe0b17108ec2a379de3a870c971eb1fbf5faf64882cf0e97bfa8c6",
+      "new_record_hash": "1f2333a8ff6cf38df47f862bdac3bbc0c963d798f60a32a903ff7b73830d0dcb",
+      "qualification_group": "other_original_limitation",
+      "new_reason": "official_bigcodebench_untrusted_check",
+      "cleanup_confirmed": true,
+      "container_wall_seconds": 3.998989,
+      "errno_numbers": [],
+      "missing_nltk_resources": []
+    },
+    {
+      "task_hash": "418ca04cf8660f2c34b30cd5d87cc313ee9c0477a1e2be2d0cf9c0c0a08c0b55",
+      "old_status": "pass",
+      "new_status": "unknown",
+      "old_record_hash": "ae24c650aa1a1e5ba9d0cbae3090fd9eb542d75db8eabbc3e21cfd374eafe2bb",
+      "new_record_hash": "a8fd3b6e5f7b04953600729f7a179e5b5fda8f0e97daf28b9fcabbb59571f1b5",
+      "qualification_group": "retention",
+      "new_reason": "native_timeout",
+      "cleanup_confirmed": true,
+      "container_wall_seconds": 243.218111,
+      "errno_numbers": [],
+      "missing_nltk_resources": []
+    },
+    {
+      "task_hash": "91eafa8ae412c33a4cd36384d33cc07823564c76de52f4da9648c79c1ba88122",
+      "old_status": "fail",
+      "new_status": "pass",
+      "old_record_hash": "173231f689518850550fc43d2c94f412d5dc45f7dbfa92133b813ba6f3f20d0a",
+      "new_record_hash": "7e73fa2e09fd78b3165123bd41b01ba2184be84dd491880a9fc7d52128d59e0c",
+      "qualification_group": "nltk_target",
+      "new_reason": "official_bigcodebench_untrusted_check",
+      "cleanup_confirmed": true,
+      "container_wall_seconds": 4.474572,
+      "errno_numbers": [],
+      "missing_nltk_resources": []
+    },
+    {
+      "task_hash": "9b851b172a229de55457b7ecc7e159a72f8fccdcd72ea7812a02dda4606dfce1",
+      "old_status": "fail",
+      "new_status": "pass",
+      "old_record_hash": "f01193d542cda80c3d5ef64c9e40697b4cb60a4be03f06efe91113ec696e92fa",
+      "new_record_hash": "5661fbc4d24504db377b114e7d00fd3558372615c21b351695508ea115618488",
+      "qualification_group": "nltk_target",
+      "new_reason": "official_bigcodebench_untrusted_check",
+      "cleanup_confirmed": true,
+      "container_wall_seconds": 5.034634,
+      "errno_numbers": [],
+      "missing_nltk_resources": []
+    },
+    {
+      "task_hash": "acc94715637c5ae57c5cf530d7842e651e0e36c99cd75fc9b6972004e9639288",
+      "old_status": "fail",
+      "new_status": "pass",
+      "old_record_hash": "e8a1b5a244ce45f299beeb85b24022920ff9a931dd3386c16f84ea2963dc1a58",
+      "new_record_hash": "800439f7d60426c5047d9f458960eb0cb45c5d11f78f296dab58b56854bd8149",
+      "qualification_group": "nltk_target",
+      "new_reason": "official_bigcodebench_untrusted_check",
+      "cleanup_confirmed": true,
+      "container_wall_seconds": 4.014976,
+      "errno_numbers": [],
+      "missing_nltk_resources": []
+    },
+    {
+      "task_hash": "b33f9282181b6ee92c0b02841bc5759c539e8842ee2959852fa17bf3d0abbe9f",
+      "old_status": "fail",
+      "new_status": "pass",
+      "old_record_hash": "e6e7a4f0d2a27a289724f9873a46429e5b864eab16aec1cfaa9ef07e4773c1e6",
+      "new_record_hash": "3d1ac0152066601a2faa39f11df41fed50b3b7ea945d1d8336be20489207ab2d",
+      "qualification_group": "nltk_target",
+      "new_reason": "official_bigcodebench_untrusted_check",
+      "cleanup_confirmed": true,
+      "container_wall_seconds": 5.341922,
+      "errno_numbers": [],
+      "missing_nltk_resources": []
+    },
+    {
+      "task_hash": "be6acd91c02e806e1c109bb1f4d6b5313a07233a649b5f45b21d36e15ff45019",
+      "old_status": "fail",
+      "new_status": "fail",
+      "old_record_hash": "03725db06f9db5bd62ed094e190ddf2dcd1ffc6c24fb058d626faf15372ba16d",
+      "new_record_hash": "3c9e478f3727d293c52a472abeba47af223409b439eae1265ed1e5217bf54689",
+      "qualification_group": "other_original_limitation",
+      "new_reason": "official_bigcodebench_untrusted_check",
+      "cleanup_confirmed": true,
+      "container_wall_seconds": 3.612071,
+      "errno_numbers": [
+        "30"
+      ],
+      "missing_nltk_resources": []
+    }
+  ],
+  "downstream": {
+    "all800_model_prediction_rescore_started": false,
+    "old_scores_replaced": false,
+    "skill_gate_modified": false,
+    "rescore_code_deployed_and_offline_tested": true,
+    "rescore_requires_full_predeclared_qualification": true
+  },
+  "limitations": [
+    "Completed execution is not accepted environment qualification.",
+    "A new reference timeout does not prove the NLTK data caused harm; repeated execution can vary.",
+    "Added NLTK data has a newly frozen upstream revision, not proven identical to original paper resources.",
+    "No model calls, Skill improvements, or cross-environment learner superiority are demonstrated.",
+    "Original model/learning scores and gates remain unchanged.",
+    "Toy Pool controls support a guard/fork compatibility mechanism in both images, but do not relabel the canonical timeout or waive qualification."
+  ],
+  "rescore_engineering_checks": {
+    "v2_source_root": "/root/continual-frozen-rescore-v2-20261001-source",
+    "v2_test_sha256": "36fd53dff83404d68d3bb2412aee874ed0e1b23f2ba200d34f4430598350e3e5",
+    "local_tests_passed": 18,
+    "independent_tests_passed": 18,
+    "actual_readonly_qualification_refusal": {
+      "qualification_status": "pending",
+      "gate_rejected_preparation": true,
+      "cause": "retention_contains_one_unknown",
+      "exception_type": "ValueError",
+      "output_directory_created": false,
+      "model_calls": 0,
+      "container_calls": 0,
+      "source_module_sha256": "a019adc361ec0d254d176a30d33755280e810f6650da20dee2d5cc3dc2821f31"
+    },
+    "frozen_source_comparison": {
+      "old_source_files_preserved": true,
+      "changed_old_paths": [],
+      "new_paths": [
+        "skillopt/continual_eval/frozen_rescore.py",
+        "tests/test_continual_eval_frozen_rescore.py"
+      ]
+    },
+    "preserved_v1_control": {
+      "source_root": "/root/continual-frozen-rescore-20261001-source",
+      "source_module_sha256": "9d6716e9e5e534c48e581af4cbc5dc72b53de0dffc049580c60f9b50b93c33da",
+      "exception_type": "ValueError",
+      "message": "Predeclared qualification scope differs",
+      "cause": "Serializing nested traceback details via str(dict) escaped ANSI bytes and hid five explicit resource messages.",
+      "actual_old_repr_resource_hits": 0,
+      "actual_string_leaf_resource_hits": 5,
+      "output_directory_created": false,
+      "model_calls": 0,
+      "container_calls": 0
+    },
+    "linux_tests_passed": 36
+  },
+  "related_evidence": {
+    "original_reference_audit": "bcb-reference-qualification-20261001.json",
+    "data_overlay_audit": "bcb-nltk-overlay-20261001.json",
+    "pool_guard_controls": "pool-guard-controls-20261001.json",
+    "pool_control_full_report_hash": "07d71eda2a61427118893f21cfe215fffec3cad2eb083cd55344704513c7cfb4",
+    "pool_control_summary": "Both fixed images showed guard-related busy-Pool exit timeouts; toy controls are separate from the canonical qualification."
+  },
+  "record_hash": "0d4b7ec10715e8f4806f6bb6649950b6335dbafe54f7d6aedd0f73f696e66298"
+}

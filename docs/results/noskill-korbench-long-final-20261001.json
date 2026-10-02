@@ -1,0 +1,502 @@
+{
+  "version": "no-skill-korbench-long-public-summary-v1",
+  "date": "2026-10-01",
+  "status": "completed",
+  "evidence_kind": "real_model_natural_development_baseline",
+  "sources": {
+    "run_root": "/root/continual-korbench-long-20261001-study/run",
+    "source_root": "/root/continual-baselines-long-20261001-source",
+    "preparation_hash": "295ba9a22afd9b8b79c4607cde2a6a8387055646bc0f1a36777774b4b3453a81",
+    "plan_hash": "e3f33c0ad7257cefc67d00b278a36e5631087661d010532c8f6949c6d5b9c35b",
+    "full_report_hash": "787d14f4fe12e8306bfce8081059f6ef60be842e262be23eab738b61f7aa4752",
+    "checkpoint_hash": "23762517fdcea80593992bf3e17802aff0a3cf7a29d33b010f74297128d6901e",
+    "panel_hash": "81694612b9180c8d266f92808c70eeb0b700c1a1c080f07f8c79abfd2c80a19f",
+    "source_identity_hash": "bbe7e21002d44c8d50628a5e7b1f0d328293f7ebc1de39cdd1ffdd90374d84a8",
+    "native_scorer_sources_hash": "92460b7a83a1391ea19292aed14aab74f28b596de748614652a15cf834be08fd",
+    "native_image_id": "sha256:0a0a5dcb7dd4e56215c729d2ccdd6a8862d1a644bb6f992f8bb591d4e0a0f0dd"
+  },
+  "model": {
+    "provider": "bigmodel",
+    "name": "glm-5.3",
+    "reasoning_effort": "low",
+    "max_tokens": 65536,
+    "transport": {
+      "stream": true,
+      "read_timeout_seconds": 300,
+      "stream_wall_seconds": 1800,
+      "initial_health_policy": "completed_response_v1"
+    }
+  },
+  "data": {
+    "benchmark": "korbench",
+    "partition": "development",
+    "tasks": 500,
+    "families": 50,
+    "repeats": 2,
+    "positions": 1000,
+    "dataset_revision": "bb8194dff8e51e2e2247cf62aa9932c3d57d53d7",
+    "category_tasks": {
+      "cipher": 100,
+      "counterfactual": 100,
+      "logic": 100,
+      "operation": 100,
+      "puzzle": 100
+    },
+    "family_definition": "frozen KORBench rule-family groups; repeats are not independent tasks",
+    "semantic_family_independence_certified": false,
+    "historically_exposed_panel": true
+  },
+  "results": {
+    "positions": 1000,
+    "counts": {
+      "pass": 746,
+      "fail": 243,
+      "unknown": 11
+    },
+    "tasks": 500,
+    "families": 50,
+    "known_denominator": 989,
+    "accuracy_known": 0.7542972699696663,
+    "accuracy_bounds": {
+      "lower": 0.746,
+      "upper": 0.757
+    }
+  },
+  "by_repeat": {
+    "0": {
+      "positions": 500,
+      "counts": {
+        "pass": 375,
+        "fail": 119,
+        "unknown": 6
+      },
+      "tasks": 500,
+      "families": 50,
+      "known_denominator": 494,
+      "accuracy_known": 0.7591093117408907,
+      "accuracy_bounds": {
+        "lower": 0.75,
+        "upper": 0.762
+      }
+    },
+    "1": {
+      "positions": 500,
+      "counts": {
+        "pass": 371,
+        "fail": 124,
+        "unknown": 5
+      },
+      "tasks": 500,
+      "families": 50,
+      "known_denominator": 495,
+      "accuracy_known": 0.7494949494949495,
+      "accuracy_bounds": {
+        "lower": 0.742,
+        "upper": 0.752
+      }
+    }
+  },
+  "by_category": {
+    "cipher": {
+      "positions": 200,
+      "counts": {
+        "pass": 151,
+        "fail": 48,
+        "unknown": 1
+      },
+      "tasks": 100,
+      "families": 10,
+      "known_denominator": 199,
+      "accuracy_known": 0.7587939698492462,
+      "accuracy_bounds": {
+        "lower": 0.755,
+        "upper": 0.76
+      }
+    },
+    "counterfactual": {
+      "positions": 200,
+      "counts": {
+        "pass": 177,
+        "fail": 23,
+        "unknown": 0
+      },
+      "tasks": 100,
+      "families": 10,
+      "known_denominator": 200,
+      "accuracy_known": 0.885,
+      "accuracy_bounds": {
+        "lower": 0.885,
+        "upper": 0.885
+      }
+    },
+    "logic": {
+      "positions": 200,
+      "counts": {
+        "pass": 128,
+        "fail": 72,
+        "unknown": 0
+      },
+      "tasks": 100,
+      "families": 10,
+      "known_denominator": 200,
+      "accuracy_known": 0.64,
+      "accuracy_bounds": {
+        "lower": 0.64,
+        "upper": 0.64
+      }
+    },
+    "operation": {
+      "positions": 200,
+      "counts": {
+        "pass": 176,
+        "fail": 24,
+        "unknown": 0
+      },
+      "tasks": 100,
+      "families": 10,
+      "known_denominator": 200,
+      "accuracy_known": 0.88,
+      "accuracy_bounds": {
+        "lower": 0.88,
+        "upper": 0.88
+      }
+    },
+    "puzzle": {
+      "positions": 200,
+      "counts": {
+        "pass": 114,
+        "fail": 76,
+        "unknown": 10
+      },
+      "tasks": 100,
+      "families": 10,
+      "known_denominator": 190,
+      "accuracy_known": 0.6,
+      "accuracy_bounds": {
+        "lower": 0.57,
+        "upper": 0.62
+      }
+    }
+  },
+  "unknown_reasons": {
+    "model_response_truncated": 10,
+    "model_call_unavailable": 1
+  },
+  "unknown_causes": {
+    "output_truncation": {
+      "positions": 10,
+      "counts": {
+        "pass": 0,
+        "fail": 0,
+        "unknown": 10
+      },
+      "tasks": 9,
+      "families": 5,
+      "known_denominator": 0,
+      "accuracy_known": null,
+      "accuracy_bounds": {
+        "lower": 0,
+        "upper": 1
+      }
+    },
+    "provider_reported_network_error": {
+      "positions": 1,
+      "counts": {
+        "pass": 0,
+        "fail": 0,
+        "unknown": 1
+      },
+      "tasks": 1,
+      "families": 1,
+      "known_denominator": 0,
+      "accuracy_known": null,
+      "accuracy_bounds": {
+        "lower": 0,
+        "upper": 1
+      }
+    }
+  },
+  "length_deliverable_diagnostic": {
+    "kind": "syntax_and_metadata_only_not_rescoring",
+    "positions": 10,
+    "tasks": 9,
+    "items": [
+      {
+        "task_hash": "44be2f04fb2e6c251bccf08682042254fbfb3c53036d62ae2444a21d8d60b272",
+        "repeat": 0,
+        "status": 200,
+        "stream_complete": true,
+        "http_attempt_count": 1,
+        "completion_tokens": 65536,
+        "provider_reasoning_tokens": 158,
+        "final_characters": 122207,
+        "final_utf8_bytes": 152687,
+        "complete_double_bracket_segments": 2177,
+        "first_complete_start": 0,
+        "first_complete_span_length": 5,
+        "characters_after_first_complete": 122202,
+        "tail32k_token_count": 15798,
+        "tail32k_distinct_tokens": 11,
+        "gold_accessed": false,
+        "official_score_executed": false,
+        "raw_text_exported": false,
+        "frozen_unknown_unchanged": true
+      },
+      {
+        "task_hash": "56f28084e59338408a2051858c0e454eb8d70ea8bf691b93b605f4d6954ba7a4",
+        "repeat": 0,
+        "status": 200,
+        "stream_complete": true,
+        "http_attempt_count": 1,
+        "completion_tokens": 65536,
+        "provider_reasoning_tokens": 65535,
+        "final_characters": 0,
+        "final_utf8_bytes": 0,
+        "complete_double_bracket_segments": 0,
+        "first_complete_start": null,
+        "first_complete_span_length": null,
+        "characters_after_first_complete": null,
+        "tail32k_token_count": 0,
+        "tail32k_distinct_tokens": 0,
+        "gold_accessed": false,
+        "official_score_executed": false,
+        "raw_text_exported": false,
+        "frozen_unknown_unchanged": true
+      },
+      {
+        "task_hash": "ed51b32a1987b932271c53ee32fc1ad1c220f1a4df470d46a57f966dbbea8e28",
+        "repeat": 1,
+        "status": 200,
+        "stream_complete": true,
+        "http_attempt_count": 1,
+        "completion_tokens": 65536,
+        "provider_reasoning_tokens": 65528,
+        "final_characters": 0,
+        "final_utf8_bytes": 0,
+        "complete_double_bracket_segments": 0,
+        "first_complete_start": null,
+        "first_complete_span_length": null,
+        "characters_after_first_complete": null,
+        "tail32k_token_count": 0,
+        "tail32k_distinct_tokens": 0,
+        "gold_accessed": false,
+        "official_score_executed": false,
+        "raw_text_exported": false,
+        "frozen_unknown_unchanged": true
+      },
+      {
+        "task_hash": "9ef73241b453b72848c23f5c7cf8526a683657a39d920d05ed64fb0cb0841ff4",
+        "repeat": 1,
+        "status": 200,
+        "stream_complete": true,
+        "http_attempt_count": 1,
+        "completion_tokens": 65536,
+        "provider_reasoning_tokens": 65533,
+        "final_characters": 0,
+        "final_utf8_bytes": 0,
+        "complete_double_bracket_segments": 0,
+        "first_complete_start": null,
+        "first_complete_span_length": null,
+        "characters_after_first_complete": null,
+        "tail32k_token_count": 0,
+        "tail32k_distinct_tokens": 0,
+        "gold_accessed": false,
+        "official_score_executed": false,
+        "raw_text_exported": false,
+        "frozen_unknown_unchanged": true
+      },
+      {
+        "task_hash": "a13c230bb9a7a9bc18c1849e59db4b3f878eb7241fcc2b16ec6d524510ba1fed",
+        "repeat": 0,
+        "status": 200,
+        "stream_complete": true,
+        "http_attempt_count": 1,
+        "completion_tokens": 65536,
+        "provider_reasoning_tokens": 65533,
+        "final_characters": 0,
+        "final_utf8_bytes": 0,
+        "complete_double_bracket_segments": 0,
+        "first_complete_start": null,
+        "first_complete_span_length": null,
+        "characters_after_first_complete": null,
+        "tail32k_token_count": 0,
+        "tail32k_distinct_tokens": 0,
+        "gold_accessed": false,
+        "official_score_executed": false,
+        "raw_text_exported": false,
+        "frozen_unknown_unchanged": true
+      },
+      {
+        "task_hash": "e9d78a72654fd0cdb53bace3cb384e010e514545ca857cd0b96137a52b11f381",
+        "repeat": 0,
+        "status": 200,
+        "stream_complete": true,
+        "http_attempt_count": 1,
+        "completion_tokens": 65536,
+        "provider_reasoning_tokens": 65535,
+        "final_characters": 0,
+        "final_utf8_bytes": 0,
+        "complete_double_bracket_segments": 0,
+        "first_complete_start": null,
+        "first_complete_span_length": null,
+        "characters_after_first_complete": null,
+        "tail32k_token_count": 0,
+        "tail32k_distinct_tokens": 0,
+        "gold_accessed": false,
+        "official_score_executed": false,
+        "raw_text_exported": false,
+        "frozen_unknown_unchanged": true
+      },
+      {
+        "task_hash": "e9d78a72654fd0cdb53bace3cb384e010e514545ca857cd0b96137a52b11f381",
+        "repeat": 1,
+        "status": 200,
+        "stream_complete": true,
+        "http_attempt_count": 1,
+        "completion_tokens": 65536,
+        "provider_reasoning_tokens": 65530,
+        "final_characters": 0,
+        "final_utf8_bytes": 0,
+        "complete_double_bracket_segments": 0,
+        "first_complete_start": null,
+        "first_complete_span_length": null,
+        "characters_after_first_complete": null,
+        "tail32k_token_count": 0,
+        "tail32k_distinct_tokens": 0,
+        "gold_accessed": false,
+        "official_score_executed": false,
+        "raw_text_exported": false,
+        "frozen_unknown_unchanged": true
+      },
+      {
+        "task_hash": "594eadb1ab9dc49661bf32f12d2814dc276076e252c9135c0444ae06550aa676",
+        "repeat": 0,
+        "status": 200,
+        "stream_complete": true,
+        "http_attempt_count": 1,
+        "completion_tokens": 65536,
+        "provider_reasoning_tokens": 65534,
+        "final_characters": 0,
+        "final_utf8_bytes": 0,
+        "complete_double_bracket_segments": 0,
+        "first_complete_start": null,
+        "first_complete_span_length": null,
+        "characters_after_first_complete": null,
+        "tail32k_token_count": 0,
+        "tail32k_distinct_tokens": 0,
+        "gold_accessed": false,
+        "official_score_executed": false,
+        "raw_text_exported": false,
+        "frozen_unknown_unchanged": true
+      },
+      {
+        "task_hash": "3cf86b22440e457be1d31383ec0a7d5ebe9fc47ba42e30b9a69ee6ad901f7b0e",
+        "repeat": 1,
+        "status": 200,
+        "stream_complete": true,
+        "http_attempt_count": 1,
+        "completion_tokens": 65536,
+        "provider_reasoning_tokens": 65536,
+        "final_characters": 0,
+        "final_utf8_bytes": 0,
+        "complete_double_bracket_segments": 0,
+        "first_complete_start": null,
+        "first_complete_span_length": null,
+        "characters_after_first_complete": null,
+        "tail32k_token_count": 0,
+        "tail32k_distinct_tokens": 0,
+        "gold_accessed": false,
+        "official_score_executed": false,
+        "raw_text_exported": false,
+        "frozen_unknown_unchanged": true
+      },
+      {
+        "task_hash": "66541458404caf2aff319c48de16e4e6bacdc59b59c5bf59875e4d4507cf8cb0",
+        "repeat": 1,
+        "status": 200,
+        "stream_complete": true,
+        "http_attempt_count": 1,
+        "completion_tokens": 65536,
+        "provider_reasoning_tokens": 65531,
+        "final_characters": 0,
+        "final_utf8_bytes": 0,
+        "complete_double_bracket_segments": 0,
+        "first_complete_start": null,
+        "first_complete_span_length": null,
+        "characters_after_first_complete": null,
+        "tail32k_token_count": 0,
+        "tail32k_distinct_tokens": 0,
+        "gold_accessed": false,
+        "official_score_executed": false,
+        "raw_text_exported": false,
+        "frozen_unknown_unchanged": true
+      }
+    ],
+    "interpretation": "A syntactically closed answer wrapper does not establish correctness. The frozen length outcomes remain unknown; no answer content, gold lookup or scorer execution is used by this diagnosis."
+  },
+  "repeat_diagnostics": {
+    "same_outcome_tasks": 420,
+    "different_outcome_tasks": 80,
+    "tasks_with_unknown": 10
+  },
+  "costs": {
+    "accounting": {
+      "logical_calls": 1000,
+      "http_attempts": 1000,
+      "reported_tokens": null,
+      "usage_complete": false,
+      "unclosed_calls": 0,
+      "retry_inclusive_usage_known": false
+    },
+    "token_known_subtotals": {
+      "prompt_tokens": 643482,
+      "completion_tokens": 3562875
+    },
+    "missing_usage_calls": 1,
+    "finish_reasons": {
+      "stop": 989,
+      "length": 10,
+      "network_error": 1
+    },
+    "returned_models": {
+      "glm-5.3": 1000
+    },
+    "max_completion_tokens": 65536,
+    "provider_reasoning_metadata": {
+      "calls_with_reasoning_token_count": 999,
+      "reasoning_tokens_known": 3468711,
+      "nonreasoning_completion_tokens_for_same_calls": 94164,
+      "missing_reasoning_token_metadata_calls": 1,
+      "hidden_reasoning_content_read_or_exported": false
+    },
+    "final_content_metadata": {
+      "characters_sum": 165465,
+      "characters_max": 122207,
+      "empty_content_calls": 10,
+      "raw_text_exported": false
+    },
+    "http_status_counts": {
+      "200": 1000
+    },
+    "stream_complete_calls": 1000,
+    "native_execution": {
+      "calls": 989,
+      "cleanup_confirmed": 989
+    },
+    "native_wall_seconds": 1886.3132699999992
+  },
+  "checks": {
+    "complete_roster_and_receipts_verified": true,
+    "sources_and_host_runtime_verified": true,
+    "native_scores_and_cleanup_verified": true,
+    "original_preparation_inputs_unchanged": true
+  },
+  "interpretation": {
+    "skill_updated": false,
+    "independent_final_evaluation": false,
+    "deployment_authorized": false,
+    "causal_budget_effect_claimed": false,
+    "note": "Fresh full-panel No-Skill at frozen long-response settings; old answers not imported. No Skill/generalization effect or isolated token-budget causal claim."
+  },
+  "record_hash": "d98fa09c631e70984f847d3e4578b4222468b6b975654f46cc54a4d681f73e6d"
+}

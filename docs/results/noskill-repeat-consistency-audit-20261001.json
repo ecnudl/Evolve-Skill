@@ -1,0 +1,67 @@
+{
+  "version": "noskill-repeat-consistency-audit-v1",
+  "date": "2026-10-01",
+  "evidence_kind": "real_model_development_readonly_reanalysis",
+  "new_model_calls": 0,
+  "new_native_executions": 0,
+  "baseline_root": "/root/continual-baselines-long-20261001-study/no_skill",
+  "baseline_plan_hash": "4cfc9177817f833198d9c7bac2b77ac1d5dabcf61d372ac10f5e51e5e9b44056",
+  "learning_manifest_hash": "03c764ab8f84c5a4c55ef976c434febf69e9644f202b88f8f963c50efcc3e6fc",
+  "score_records_hash": "0c94123ea9a9a04b9fdd40d0221fdda5b121110eef1d74690265a2e8718e797c",
+  "source_identity_hash": "bbe7e21002d44c8d50628a5e7b1f0d328293f7ebc1de39cdd1ffdd90374d84a8",
+  "model": {
+    "provider": "bigmodel",
+    "name": "glm-5.3",
+    "max_tokens": 65536,
+    "reasoning_effort": "low",
+    "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+    "transport": {
+      "stream": true,
+      "read_timeout_seconds": 300,
+      "stream_wall_seconds": 1800,
+      "initial_health_policy": "completed_response_v1"
+    }
+  },
+  "runtime": {
+    "bigcodebench": {
+      "image": "sha256:b13b0bb97861eb3a2f3f9ead1e8718d1410882613f84e088bb31338c343149fa",
+      "timeout_seconds": 300,
+      "memory_mb": 8192,
+      "cpus": 1
+    }
+  },
+  "groups": {
+    "all_400": {
+      "tasks": 400,
+      "both_known": 399,
+      "same_status": 361,
+      "same_code": 19,
+      "same_code_same_status": 18,
+      "same_ast": 24,
+      "same_ast_same_status": 23,
+      "different_status": 39,
+      "has_unknown": 1,
+      "same_code_different_status": 1,
+      "same_code_has_unknown": 1,
+      "same_ast_different_status": 1,
+      "same_ast_has_unknown": 1
+    },
+    "selection_64": {
+      "tasks": 64,
+      "both_known": 63,
+      "same_status": 55,
+      "different_status": 9,
+      "has_unknown": 1,
+      "same_code": 4,
+      "same_code_different_status": 1,
+      "same_code_has_unknown": 1,
+      "same_ast": 5,
+      "same_ast_different_status": 1,
+      "same_ast_has_unknown": 1,
+      "same_ast_same_status": 4,
+      "same_code_same_status": 3
+    }
+  },
+  "interpretation": "Byte/AST equality is measured on already-generated artifacts. Differences in code or AST do not by themselves identify a semantic mechanism or a causal Skill effect. This is not an independent final assessment and does not change labels or gates.",
+  "record_hash": "2802d222e8ca3a9a7e242ab43c078dfeea5bc5bd88b0a55784e1d6563cd1013d"
+}

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import threading
 import time
@@ -511,6 +512,89 @@ def test_bigmodel_explicit_payload_identity_and_cache(bigmodel_configured, monke
                          reasoning_effort="low")
 
 
+def test_bigmodel_larger_budget_preserves_payload_and_separates_cache(bigmodel_configured, monkeypatch):
+    payloads = []
+
+    def handler(request):
+        payloads.append(json.loads(request.content))
+        return response("answer")
+
+    install_client(monkeypatch, handler)
+    root = bigmodel_configured / "run"
+    with module.CachedAPI(bigmodel_configured, root, provider="bigmodel", reasoning_effort="low") as api:
+        earlier = api.call("system", "user", "unit_test", "same", max_tokens=8192)
+        expanded = api.call("system", "user", "unit_test", "same", max_tokens=32768)
+        assert api.call("system", "user", "unit_test", "same", max_tokens=8192) == earlier
+        assert api.call("system", "user", "unit_test", "same", max_tokens=32768) == expanded
+    with module.CachedAPI(bigmodel_configured, root, provider="bigmodel", reasoning_effort="low") as resumed:
+        assert resumed.call("system", "user", "unit_test", "same", max_tokens=32768) == expanded
+    assert earlier["ok"] and expanded["ok"]
+    assert len(payloads) == 2
+    assert payloads[1] == {**payloads[0], "max_tokens": 32768}
+    assert payloads[0]["max_tokens"] == 8192
+    assert expanded["request"] == {**earlier["request"], "max_tokens": 32768}
+    assert earlier["request_hash"] != expanded["request_hash"]
+    assert expanded["request_hash"] == module.digest(expanded["request"])
+    for result in (earlier, expanded):
+        path = root / "calls" / (result["request_hash"] + ".json")
+        assert json.loads(path.read_text()) == result
+
+
+@pytest.mark.parametrize("provider,fixture", [("pjlab", "configured"), ("bigmodel", "bigmodel_configured")])
+def test_token_budget_default_and_legacy_boundaries_unchanged(provider, fixture, request, monkeypatch):
+    repo = request.getfixturevalue(fixture)
+    payloads = []
+
+    def handler(request):
+        payloads.append(json.loads(request.content))
+        return response("answer")
+
+    install_client(monkeypatch, handler)
+    with module.CachedAPI(repo, repo / "run", provider=provider) as api:
+        implicit = api.call("system", "user", "unit_test", "same")
+        explicit = api.call("system", "user", "unit_test", "same", max_tokens=6000)
+        minimum = api.call("system", "user", "unit_test", "same", max_tokens=1)
+        legacy_maximum = api.call("system", "user", "unit_test", "same", max_tokens=16000)
+    assert implicit == explicit
+    assert minimum["ok"] and legacy_maximum["ok"]
+    assert [payload["max_tokens"] for payload in payloads] == [6000, 1, 16000]
+    assert implicit["request"]["service"] == {
+        "provider": "PJLAB" if provider == "pjlab" else "BIGMODEL",
+        "host": "token.pjlab.org.cn" if provider == "pjlab" else "open.bigmodel.cn",
+        "path": "/v1/chat/completions" if provider == "pjlab" else "/api/paas/v4/chat/completions",
+        "model": "glm-5.3", "temperature": 0, "trust_env": False, "follow_redirects": False,
+        "generation_seed": "not sent", "timeout_seconds": {"connect": 20, "read": 120, "write": 30, "pool": 20},
+        "max_retries": 2, "retry_statuses": [429, 500, 502, 503, 504], "retry_backoff_seconds": [2, 4],
+        "max_retry_after_seconds": 10,
+        "protocol": "pjlab-validator-pilot-v1" if provider == "pjlab" else "bigmodel-glm53-validator-pilot-v1",
+        **({"thinking": {"type": "enabled"}, "returned_model_rule": "exact_requested_model"}
+           if provider == "bigmodel" else {})}
+
+
+@pytest.mark.parametrize("provider,fixture", [("pjlab", "configured"), ("bigmodel", "bigmodel_configured")])
+@pytest.mark.parametrize("budget", [0, -1, True, 32768.0, "32768", None, 131073])
+def test_invalid_token_budget_rejected_before_request(provider, fixture, budget, request, monkeypatch):
+    repo = request.getfixturevalue(fixture)
+    requests = []
+    install_client(monkeypatch, lambda request: requests.append(request) or response())
+    root = repo / "run"
+    with module.CachedAPI(repo, root, provider=provider) as api:
+        with pytest.raises(ValueError, match="Invalid token budget"):
+            api.call("system", "user", "unit_test", "same", max_tokens=budget)
+    assert requests == []
+    assert not (root / "calls").exists()
+
+
+@pytest.mark.parametrize("budget", [16001, 32768])
+def test_pjlab_keeps_16000_token_ceiling(configured, monkeypatch, budget):
+    requests = []
+    install_client(monkeypatch, lambda request: requests.append(request) or response())
+    with module.CachedAPI(configured, configured / "run") as api:
+        with pytest.raises(ValueError, match="Invalid token budget"):
+            api.call("system", "user", "unit_test", "same", max_tokens=budget)
+    assert requests == []
+
+
 @pytest.mark.parametrize("field,value", [
     ("BIGMODEL_CHAT_URL", "http://open.bigmodel.cn/api/paas/v4/chat/completions"),
     ("BIGMODEL_CHAT_URL", "https://other.invalid/api/paas/v4/chat/completions"),
@@ -549,7 +633,8 @@ def test_bigmodel_response_model_must_match(bigmodel_configured, monkeypatch, re
     assert result["http_attempt_count"] == 1
 
 
-@pytest.mark.parametrize("proxy", ["http://127.0.0.1:7890", "http://[::1]:7892"])
+@pytest.mark.parametrize("proxy", ["http://127.0.0.1:7890", "http://[::1]:7892",
+                                 "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128"])
 def test_bigmodel_loopback_proxy_explicit_and_cache_bound(bigmodel_configured, monkeypatch, proxy):
     configurations = install_client(monkeypatch, lambda _: response("answer"))
     root = bigmodel_configured / "run"
@@ -564,6 +649,8 @@ def test_bigmodel_loopback_proxy_explicit_and_cache_bound(bigmodel_configured, m
 
 @pytest.mark.parametrize("proxy", [
     "http://proxy.example:7890", "https://127.0.0.1:7890", "http://localhost:7890",
+    "http://httpproxy-headless.kubebrain.svc.pjlab.local:7890",
+    "http://user:secret@httpproxy-headless.kubebrain.svc.pjlab.local:3128",
     "http://127.0.0.1", "http://127.0.0.1:0", "http://127.0.0.1:65536",
     "http://PRIVATE_CREDENTIAL@127.0.0.1:7890", "http://127.0.0.1:7890?key=PRIVATE_CREDENTIAL",
     "http://127.0.0.1:7890#fragment", "http://127.0.0.1:7890/path", True, "",
@@ -579,3 +666,426 @@ def test_bigmodel_proxy_rejects_credentials_or_unapproved_destinations(bigmodel_
 def test_pjlab_does_not_silently_enable_proxy(configured):
     with pytest.raises(ValueError, match="requires BigModel"):
         module.CachedAPI(configured, configured / "run", proxy="http://127.0.0.1:7890")
+
+
+def test_default_read_timeout_keeps_legacy_service_bytes(configured, monkeypatch):
+    install_client(monkeypatch, lambda _: response())
+    with module.CachedAPI(configured, configured / "default") as default:
+        implicit = call(default)
+        assert default._client.timeout.read == 120
+    with module.CachedAPI(configured, configured / "explicit", read_timeout_seconds=120) as explicit:
+        declared = call(explicit)
+    assert implicit["request"] == declared["request"]
+    assert implicit["request_hash"] == declared["request_hash"]
+    assert (configured / "default/service.json").read_bytes() == (configured / "explicit/service.json").read_bytes()
+    assert implicit["request"]["service"] == {
+        "provider": "PJLAB", "host": "token.pjlab.org.cn", "path": "/v1/chat/completions",
+        "model": "glm-5.3", "temperature": 0, "trust_env": False, "follow_redirects": False,
+        "generation_seed": "not sent", "timeout_seconds": {"connect": 20, "read": 120, "write": 30, "pool": 20},
+        "max_retries": 2, "retry_statuses": [429, 500, 502, 503, 504], "retry_backoff_seconds": [2, 4],
+        "max_retry_after_seconds": 10, "protocol": "pjlab-validator-pilot-v1"}
+
+
+@pytest.mark.parametrize("seconds", [119, 1201, 0, -1, True, 300.0, "300", None, float("nan")])
+def test_invalid_read_timeout_rejected_before_io(configured, seconds):
+    root = configured / "invalid"
+    with pytest.raises(ValueError, match="read_timeout_seconds"):
+        module.CachedAPI(configured, root, read_timeout_seconds=seconds)
+    assert not root.exists()
+
+
+def test_longer_read_timeout_is_cache_bound_not_payload_change(bigmodel_configured, monkeypatch):
+    payloads = []
+    def handler(request):
+        payloads.append(json.loads(request.content))
+        return response()
+    configurations = install_client(monkeypatch, handler)
+    results = []
+    for seconds in (120, 300):
+        with module.CachedAPI(bigmodel_configured, bigmodel_configured / str(seconds), provider="bigmodel",
+                              reasoning_effort="low", read_timeout_seconds=seconds) as api:
+            results.append(call(api))
+            assert api._client.timeout.read == seconds
+            assert api.service["timeout_seconds"] == {"connect": 20, "read": seconds, "write": 30, "pool": 20}
+    assert payloads[0] == payloads[1] and "stream" not in payloads[0]
+    assert configurations[1]["timeout"].read == 300
+    assert results[0]["request_hash"] != results[1]["request_hash"]
+    with pytest.raises(ValueError, match="Immutable"):
+        module.CachedAPI(bigmodel_configured, bigmodel_configured / "120", provider="bigmodel",
+                         reasoning_effort="low", read_timeout_seconds=300)
+
+
+class AsyncStreamBytes(httpx.AsyncByteStream):
+    def __init__(self, chunks, *, fail=None, stall=False):
+        self.chunks, self.fail, self.stall = chunks, fail, stall
+        self.closed = False
+
+    async def __aiter__(self):
+        for chunk in self.chunks:
+            yield chunk
+        if self.stall:
+            await asyncio.Event().wait()
+        if self.fail:
+            raise self.fail
+
+    async def aclose(self):
+        self.closed = True
+
+
+def async_stream_response(chunks, *, fail=None, stall=False, status=200):
+    return httpx.Response(status, headers={"content-type": "text/event-stream"},
+                          stream=AsyncStreamBytes(chunks, fail=fail, stall=stall))
+
+
+def install_async_client(monkeypatch, handler):
+    real_client = httpx.AsyncClient
+    configurations = []
+
+    def client(**kwargs):
+        configurations.append(dict(kwargs))
+        kwargs.pop("proxy", None)
+        return real_client(transport=httpx.MockTransport(handler), **kwargs)
+
+    monkeypatch.setattr(module.httpx, "AsyncClient", client)
+    return configurations
+
+
+def test_bigmodel_65536_budget_and_long_stream_service_identity(bigmodel_configured, monkeypatch):
+    payloads = []
+
+    async def handler(request):
+        payloads.append(json.loads(request.content))
+        return async_stream_response([sse_event("answer", finish="stop"), b"data: [DONE]\n\n"])
+
+    install_client(monkeypatch, lambda _: response())
+    configurations = install_async_client(monkeypatch, handler)
+    root = bigmodel_configured / "long"
+    with module.CachedAPI(bigmodel_configured, bigmodel_configured / "old", provider="bigmodel",
+                          reasoning_effort="low") as old:
+        old_service = dict(old.service)
+    with module.CachedAPI(bigmodel_configured, root, provider="bigmodel", stream=True,
+                          stream_wall_seconds=1800, read_timeout_seconds=300,
+                          reasoning_effort="low") as api:
+        result = api.call("system", "user", "unit_test", "same", max_tokens=65536)
+        assert api.call("system", "user", "unit_test", "same", max_tokens=65536) == result
+        assert api.service == module.long_stream_service(old_service, read_timeout_seconds=300,
+                                                        stream_wall_seconds=1800)
+    assert result["ok"] and result["response"] == "answer"
+    assert result["stream_complete"]
+    assert payloads[0]["max_tokens"] == 65536 and payloads[0]["reasoning_effort"] == "low"
+    assert len(payloads) == 1
+    assert configurations[0]["timeout"].read == 300
+    assert configurations[0]["trust_env"] is False
+    assert configurations[0]["follow_redirects"] is False
+    assert old_service["timeout_seconds"]["read"] == 120 and "stream" not in old_service
+    with pytest.raises(ValueError, match="Immutable"):
+        module.CachedAPI(bigmodel_configured, root, provider="bigmodel", stream=True,
+                         stream_wall_seconds=1200, read_timeout_seconds=300, reasoning_effort="low")
+    for path in root.rglob("*.json"):
+        assert "SYNTHETIC_TEST_CREDENTIAL" not in path.read_text()
+        assert "Authorization" not in path.read_text()
+
+
+def test_long_stream_proxy_is_explicit_and_applied(bigmodel_configured, monkeypatch):
+    install_client(monkeypatch, lambda _: response())
+    configurations = install_async_client(monkeypatch, lambda _: async_stream_response(
+        [sse_event("answer", finish="stop"), b"data: [DONE]\n\n"]))
+    proxy = "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128"
+    with module.CachedAPI(bigmodel_configured, bigmodel_configured / "run", provider="bigmodel",
+                          stream=True, stream_wall_seconds=1800, proxy=proxy) as api:
+        result = call(api)
+    assert result["ok"] and configurations[0]["proxy"] == proxy
+    assert result["request"]["service"]["proxy"] == proxy
+
+
+def test_long_stream_legacy_default_identity_unchanged(configured, monkeypatch):
+    install_client(monkeypatch, lambda _: stream_response(
+        [sse_event("answer", finish="stop"), b"data: [DONE]\n\n"]))
+    with module.CachedAPI(configured, configured / "plain", stream=True) as old:
+        result = call(old)
+        service = result["request"]["service"]
+    assert service["stream_max_wall_seconds"] == 300
+    assert "stream_transport" not in service and "stream_deadline_scope" not in service
+    assert "stream_max_bytes" not in service
+    with module.CachedAPI(configured, configured / "explicit_none", stream=True,
+                          stream_wall_seconds=None) as explicit:
+        assert call(explicit)["request_hash"] == result["request_hash"]
+
+
+@pytest.mark.parametrize("seconds", [299, 3601, True, 1800.0, "1800", 0])
+def test_invalid_long_stream_settings_before_io(configured, seconds):
+    root = configured / "invalid"
+    with pytest.raises(ValueError, match="stream_wall_seconds"):
+        module.CachedAPI(configured, root, stream=True, stream_wall_seconds=seconds)
+    assert not root.exists()
+
+
+def test_long_stream_setting_requires_stream(configured):
+    with pytest.raises(ValueError, match="requires stream=True"):
+        module.CachedAPI(configured, configured / "invalid", stream_wall_seconds=1800)
+    assert not (configured / "invalid").exists()
+
+
+def test_long_stream_accepts_1200_read_timeout(configured, monkeypatch):
+    install_client(monkeypatch, lambda _: response())
+    with module.CachedAPI(configured, configured / "run", read_timeout_seconds=1200) as api:
+        assert api._client.timeout.read == 1200
+        assert api.service["timeout_seconds"]["read"] == 1200
+
+
+def test_long_stream_split_bytes_unicode_multiline_and_no_reasoning(configured, monkeypatch):
+    text = (b":heartbeat\r\n\r\n" + sse_event(reasoning="PRIVATE_REASONING_NOT_AN_ANSWER")
+            + sse_event("中文") + b'data: {"choices":\r\n'
+            + b'data: [{"index":0,"delta":{"content":" result"},"finish_reason":"stop"}]}\r\n\r\n'
+            + b'data: {"choices":[],"usage":{"prompt_tokens":1,"completion_tokens":5,"total_tokens":6}}\n\n'
+            + b"data: [DONE]")
+    chunks = [text[index:index + 1] for index in range(len(text))]
+    install_client(monkeypatch, lambda _: response())
+    install_async_client(monkeypatch, lambda _: async_stream_response(chunks))
+    with module.CachedAPI(configured, configured / "run", stream=True, stream_wall_seconds=1800) as api:
+        result = call(api)
+    assert result["ok"] and result["response"] == "中文 result"
+    assert result["usage"]["total_tokens"] == 6
+    assert "PRIVATE_REASONING" not in json.dumps(result)
+
+
+@pytest.mark.parametrize("parts,error", [
+    ([sse_event("partial"), sse_event(finish="stop")], "incomplete_stream"),
+    ([sse_event("partial"), b"data: [DONE]\n\n"], "missing_stream_finish"),
+    ([sse_event(reasoning="PRIVATE_REASONING", finish="length"), b"data: [DONE]\n\n"], "truncated_content"),
+    ([b'data: {"error":{"message":"PRIVATE_ERROR_BODY"}}\n\n'], "upstream_stream_error"),
+    ([b"data: NOT_JSON\n\n"], "invalid_response_schema"),
+    ([sse_event("x", finish="stop"), sse_event("after"), b"data: [DONE]\n\n"], "content_after_stream_finish"),
+    ([sse_event("x" * 200001)], "stream_content_limit"),
+    ([b"x" * 32_000_001], "stream_size_limit"),
+])
+def test_long_stream_invalid_responses_not_success(configured, monkeypatch, parts, error):
+    install_client(monkeypatch, lambda _: response())
+    install_async_client(monkeypatch, lambda _: async_stream_response(parts))
+    with module.CachedAPI(configured, configured / "run", stream=True, stream_wall_seconds=1800) as api:
+        result = call(api)
+    assert not result["ok"] and result["error_type"] == error
+    assert result["http_attempt_count"] == 1
+    assert "PRIVATE_" not in json.dumps(result)
+
+
+@pytest.mark.parametrize("phase", ["connect_or_headers", "body"])
+def test_long_stream_deadline_cancels_headers_or_stalled_body(configured, monkeypatch, phase):
+    streams = []
+    cancellations = []
+
+    async def handler(request):
+        if phase == "connect_or_headers":
+            try:
+                await asyncio.Event().wait()
+            finally:
+                cancellations.append(True)
+        value = async_stream_response([sse_event("PRIVATE_PARTIAL_ANSWER")], stall=True)
+        streams.append(value.stream)
+        return value
+
+    # Real asyncio cancellation, with only the test deadline accelerated.
+    real_wait_for = asyncio.wait_for
+    limits = []
+
+    async def quick_wait_for(awaitable, timeout):
+        limits.append(timeout)
+        return await real_wait_for(awaitable, timeout=0.01)
+
+    install_client(monkeypatch, lambda _: response())
+    install_async_client(monkeypatch, handler)
+    monkeypatch.setattr(module.asyncio, "wait_for", quick_wait_for)
+    monkeypatch.setattr(module.time, "sleep", lambda _: None)
+    with module.CachedAPI(configured, configured / "run", stream=True, stream_wall_seconds=1800) as api:
+        result = call(api)
+        assert call(api) == result
+    assert limits == [1800, 1800, 1800]
+    assert not result["ok"] and result["error_type"] == "timeout"
+    assert result["timeout_subtype"] == "wall" and result["timeout_phase"] == phase
+    assert result["response"] == "" and result["usage"] == {}
+    assert result["status"] == (200 if phase == "body" else None)
+    assert result["http_attempt_count"] == 3
+    if phase == "body":
+        assert len(streams) == 3 and all(stream.closed for stream in streams)
+    else:
+        assert len(cancellations) == 3
+    assert "PRIVATE_PARTIAL_ANSWER" not in json.dumps(result)
+
+
+@pytest.mark.parametrize("exception,subtype", [(httpx.ReadTimeout, "read"), (httpx.ConnectTimeout, "connect"),
+                                               (httpx.WriteTimeout, "write"), (httpx.PoolTimeout, "pool")])
+def test_long_stream_timeout_subtypes_are_sanitized(configured, monkeypatch, exception, subtype):
+    async def handler(request):
+        raise exception("PRIVATE_SECRET_EXCEPTION", request=request)
+
+    install_client(monkeypatch, lambda _: response())
+    install_async_client(monkeypatch, handler)
+    monkeypatch.setattr(module.time, "sleep", lambda _: None)
+    with module.CachedAPI(configured, configured / "run", stream=True, stream_wall_seconds=1800) as api:
+        result = call(api)
+    assert result["error_type"] == "timeout" and result["timeout_subtype"] == subtype
+    assert result["timeout_phase"] == "connect_or_headers"
+    assert "PRIVATE_SECRET_EXCEPTION" not in json.dumps(result)
+
+
+def test_long_stream_failed_attempt_not_concatenated(configured, monkeypatch):
+    requests, streams = [], []
+
+    async def handler(request):
+        requests.append(request)
+        value = (async_stream_response([sse_event("WRONG_PARTIAL_PREFIX")],
+                                       fail=httpx.ReadTimeout("PRIVATE_ERROR", request=request))
+                 if len(requests) == 1 else async_stream_response(
+                     [sse_event("complete", finish="stop"), b"data: [DONE]\n\n"]))
+        streams.append(value.stream)
+        return value
+
+    install_client(monkeypatch, lambda _: response())
+    install_async_client(monkeypatch, handler)
+    monkeypatch.setattr(module.time, "sleep", lambda _: None)
+    with module.CachedAPI(configured, configured / "run", stream=True, stream_wall_seconds=1800) as api:
+        result = call(api)
+    assert result["ok"] and result["response"] == "complete"
+    assert result["http_attempt_count"] == 2 and all(stream.closed for stream in streams)
+    assert result["attempts"][0]["timeout_phase"] == "body"
+    assert result["attempts"][0]["timeout_subtype"] == "read"
+    assert "timeout_subtype" not in result
+    assert "WRONG_PARTIAL_PREFIX" not in json.dumps(result)
+    assert "PRIVATE_ERROR" not in json.dumps(result)
+
+
+def test_long_stream_accepts_more_than_legacy_raw_limit_without_retaining_reasoning(configured, monkeypatch):
+    part = sse_event(reasoning="PRIVATE_LONG_REASONING_" + "x" * 100_000)
+    parts = [part] * 90 + [sse_event("answer", finish="stop"), b"data: [DONE]\n\n"]
+    install_client(monkeypatch, lambda _: response())
+    install_async_client(monkeypatch, lambda _: async_stream_response(parts))
+    with module.CachedAPI(configured, configured / "run", stream=True, stream_wall_seconds=1800) as api:
+        result = call(api)
+    assert result["ok"] and result["response"] == "answer"
+    assert result["stream_characters"] > 8_000_000
+    assert result["request"]["service"]["stream_max_bytes"] == 32_000_000
+    assert "PRIVATE_LONG_REASONING" not in json.dumps(result)
+    assert len(json.dumps(result)) < 10_000
+
+
+def test_long_stream_concurrent_worker_loops_and_cache(configured, monkeypatch):
+    requests = []
+    lock = threading.Lock()
+
+    async def handler(request):
+        with lock:
+            requests.append(request)
+        await asyncio.sleep(0)
+        return async_stream_response([sse_event("answer", finish="stop"), b"data: [DONE]\n\n"])
+
+    install_client(monkeypatch, lambda _: response())
+    install_async_client(monkeypatch, handler)
+    with module.CachedAPI(configured, configured / "run", stream=True, stream_wall_seconds=1800,
+                          workers=4) as api:
+        results = api.parallel(range(8), lambda index: call(api, str(index)), "test")
+        assert api.parallel(range(8), lambda index: call(api, str(index)), "test") == results
+    assert all(result["ok"] for result in results)
+    assert len(requests) == 8
+
+
+def test_long_stream_http_errors_retry_without_private_body(configured, monkeypatch):
+    sleeps = []
+    install_client(monkeypatch, lambda _: response())
+    configurations = install_async_client(monkeypatch, lambda _: httpx.Response(
+        503, headers={"retry-after": "900"}, json={"error": "PRIVATE_GATEWAY_BODY"}))
+    monkeypatch.setattr(module.time, "sleep", sleeps.append)
+    with module.CachedAPI(configured, configured / "run", stream=True, stream_wall_seconds=1800) as api:
+        result = call(api)
+    assert not result["ok"] and result["http_attempt_count"] == 3
+    assert result["error_type"] == "http_status" and result["status"] == 503
+    assert len(configurations) == 3 and sleeps == [10, 10]
+    assert "PRIVATE_GATEWAY_BODY" not in json.dumps(result)
+
+
+def test_long_stream_sync_api_rejects_running_event_loop_without_network(configured, monkeypatch):
+    requests = []
+    install_client(monkeypatch, lambda _: response())
+    install_async_client(monkeypatch, lambda request: requests.append(request) or response())
+
+    async def run():
+        with module.CachedAPI(configured, configured / "run", stream=True, stream_wall_seconds=1800) as api:
+            return call(api)
+
+    result = asyncio.run(run())
+    assert not result["ok"] and result["error_type"] == "sync_client_in_async_loop"
+    assert requests == []
+
+
+@pytest.mark.parametrize("stream,wall", [(False, None), (True, None), (True, 1800), (True, 3599)])
+@pytest.mark.parametrize("budget", [65537, 131072])
+def test_extended_budget_requires_explicit_one_hour_stream(bigmodel_configured, monkeypatch, stream, wall, budget):
+    requests = []
+    install_client(monkeypatch, lambda request: requests.append(request) or response())
+    install_async_client(monkeypatch, lambda request: requests.append(request) or response())
+    root = bigmodel_configured / "run"
+    with module.CachedAPI(bigmodel_configured, root, provider="bigmodel", stream=stream,
+                          stream_wall_seconds=wall) as api:
+        with pytest.raises(ValueError, match="Extended token budgets require"):
+            api.call("system", "user", "unit_test", "same", max_tokens=budget)
+    assert requests == [] and not (root / "calls").exists()
+
+
+def test_extended_budget_actual_payload_and_frozen_cache(bigmodel_configured, monkeypatch):
+    requests = []
+
+    def handler(request):
+        requests.append(json.loads(request.content))
+        return async_stream_response([sse_event("answer", finish="stop"), b"data: [DONE]\n\n"])
+
+    install_client(monkeypatch, lambda _: response())
+    install_async_client(monkeypatch, handler)
+    root = bigmodel_configured / "run"
+    with module.CachedAPI(bigmodel_configured, root, provider="bigmodel", stream=True,
+                          reasoning_effort="low", stream_wall_seconds=3600,
+                          read_timeout_seconds=300) as api:
+        service_before = dict(api.service)
+        old = api.call("system", "user", "unit_test", "same", max_tokens=65536)
+        extended = api.call("system", "user", "unit_test", "same", max_tokens=131072)
+        assert api.call("system", "user", "unit_test", "same", max_tokens=131072) == extended
+        assert api.service == service_before
+    assert old["ok"] and extended["ok"] and len(requests) == 2
+    assert requests[1] == {**requests[0], "max_tokens": 131072}
+    assert extended["request"] == {**old["request"], "max_tokens": 131072}
+    assert old["request_hash"] != extended["request_hash"]
+    assert extended["request"]["service"]["stream_max_wall_seconds"] == 3600
+    assert extended["request"]["service"]["stream_max_bytes"] == 32_000_000
+    assert extended["request"]["service"]["reasoning_effort"] == "low"
+    assert requests[1]["thinking"] == {"type": "enabled"}
+
+
+def test_standard_maximum_keeps_nonstream_service_identity(bigmodel_configured, monkeypatch):
+    requests = []
+    install_client(monkeypatch, lambda request: requests.append(json.loads(request.content)) or response())
+    with module.CachedAPI(bigmodel_configured, bigmodel_configured / "run", provider="bigmodel") as api:
+        old = api.call("system", "user", "unit_test", "same", max_tokens=32768)
+        maximum = api.call("system", "user", "unit_test", "same", max_tokens=65536)
+    assert maximum["ok"] and len(requests) == 2
+    assert maximum["request"] == {**old["request"], "max_tokens": 65536}
+    assert requests[1] == {**requests[0], "max_tokens": 65536}
+    assert "stream" not in maximum["request"]["service"]
+
+
+@pytest.mark.parametrize("budget", [131073, True, 131072.0])
+def test_extended_profile_still_rejects_invalid_budgets(bigmodel_configured, monkeypatch, budget):
+    requests = []
+    install_client(monkeypatch, lambda request: requests.append(request) or response())
+    install_async_client(monkeypatch, lambda request: requests.append(request) or response())
+    with module.CachedAPI(bigmodel_configured, bigmodel_configured / "run", provider="bigmodel", stream=True,
+                          stream_wall_seconds=3600) as api:
+        with pytest.raises(ValueError, match="Invalid token budget"):
+            api.call("system", "user", "unit_test", "same", max_tokens=budget)
+    assert requests == []
+
+
+def test_extended_profile_does_not_raise_pjlab_token_limit(configured, monkeypatch):
+    requests = []
+    install_client(monkeypatch, lambda request: requests.append(request) or response())
+    with module.CachedAPI(configured, configured / "run", stream=True, stream_wall_seconds=3600) as api:
+        with pytest.raises(ValueError, match="Invalid token budget"):
+            api.call("system", "user", "unit_test", "same", max_tokens=131072)
+    assert requests == []

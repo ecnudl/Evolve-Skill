@@ -1,0 +1,353 @@
+{
+  "version": "spreadsheet-v6-independent-replay-v1",
+  "status": "qualified",
+  "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+  "engine": {
+    "version": "spreadsheet-independent-lo-recalculation-v8b",
+    "image_id": "sha256:f7f6f598c4f0b16ea514614c22325e8b3a2d5d0317f423757dcdfa1bb2c4d790",
+    "timeout_seconds": 120,
+    "memory_mb": 1024,
+    "cpus": 1,
+    "pids_limit": 128,
+    "network": "none",
+    "root_read_only": true,
+    "source_read_only": true,
+    "user": "65534:65534",
+    "macros": "never_execute",
+    "links": "no_update",
+    "sources": {
+      "/root/continual-unknown-sheet-v8b-20261002-source/skillopt/continual_eval/sheet_recalc.py": "ae9bd26cda8e220240538cde96713c6809bab6286301993f88505b6e02cae35b",
+      "/root/continual-unknown-sheet-v8b-20261002-source/skillopt/continual_eval/sheet_recalc_worker.py": "e357b987205ed597e500c6f0866979dd9e3d58ea681ef851aa66dfa942cba231",
+      "/root/continual-unknown-sheet-v8b-20261002-source/skillopt/continual_eval/spreadsheet_compat.py": "4b81345fa88eed55172ffb5d3f801804dff0067fbfe0e45d1fa4985b39370a47",
+      "/root/continual-unknown-sheet-v8b-20261002-source/skillopt/envs/spreadsheetbench/evaluator.py": "405c4204688593eb71b4603c8483a5b2b20927f15e0dc0c4878aa4636a0cfb6c",
+      "/root/continual-unknown-sheet-v8b-20261002-source/skillopt/skill_validation/sandbox.py": "8a88a3a5664ac305d8ae499955462d202304dd38ba7b27f105bb4728da6502ce",
+      "/root/continual-unknown-sheet-v8b-20261002-source/skillopt/continual_eval/sheet_recalc_v6.py": "9440f1279dc781c5424809708798238e5d4c7e6430211fb94dd2e578816dfa99",
+      "/root/continual-unknown-sheet-v8b-20261002-source/skillopt/continual_eval/sheet_recalc_v7.py": "717bfb2e3363cf79ee803bff93746c47b262f2d6831839afd56d2f5558ae523d",
+      "/root/continual-unknown-sheet-v8b-20261002-source/skillopt/continual_eval/sheet_recalc_functions.py": "64a465d8da0adf482e9ceb24a9849654223c8eae1d0fce13598a9d38f7f9b8c0"
+    },
+    "comparison_view": "original-general-formula-numeric-read-view-v1",
+    "function_alias_view": "native-ifna-aggregate-screen-only-v2",
+    "qualified_function_execution": "original_bytes_namespace_preserved"
+  },
+  "engine_profile": "v8",
+  "controls": [
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "array_correct",
+      "qualified": true,
+      "receipt_hash": "92bde32fae5dacdc5c9ee485f484b5610d5c0e7869aa4cb9412ce9a7a85ae1ad",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "4d494c23c43b2ba68b785ece5772df1a893cb51b59eb0c7a1c9325a4968857f7"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "array_wrong",
+      "qualified": true,
+      "receipt_hash": "b0769d8b0e137b2a91c99538c4b3d81e732333c771cfe92f20a2da17987e7b09",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "b20a433e1cb6990012e52b2e281c508686a98ea20620138ebfbbe82962c9e0eb"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "boolean_false",
+      "qualified": true,
+      "receipt_hash": "bc07cc12e8cfa22656c5b52d0ad30052e94edc35a502efbacccdc5d8403a5f2c",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "b1a9e9bd6263926825c1205ba61f78a9680dc5943f1ea4a1808d04b5033574f6"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "boolean_string_wrong",
+      "qualified": true,
+      "receipt_hash": "ebd0f8873f840b7ad8a7f3e7a957a320145d89b9136e0c424887d0ec987534c5",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "ce6da9a076805c13e9970ca7341de792418e5a3d33724f190578c692c0d9143e"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "boolean_true",
+      "qualified": true,
+      "receipt_hash": "d19abbc37eb624fed0f77428c4c31bedefdb7313b65f4619288b0ec8edcb18aa",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "eeefdc79781903f466896ea2fde18fdd21cebdb5e4b4a67ef15c76a9754c0168"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "boolean_wrong",
+      "qualified": true,
+      "receipt_hash": "54247b1403db8952f8e83b6974460674fa6743295f1163d3aa1872c00a81f534",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "c567399c7d7fd612c898915913553b90dc3f9dd5a8e90f0c7f287fcc192359b6"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "correct",
+      "qualified": true,
+      "receipt_hash": "54f2d75bc1a20b04cd01b1ceac4d6918270f1e757a32fcefc487c453116a57a2",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "5afe5257d3c57cce5de378fed7caae8c7729d0ff2ecee71d571783b325108c9d"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "empty_string",
+      "qualified": true,
+      "receipt_hash": "c66baa04d6257e8c81a2db64962e5cf49549f5c2faea73e774516fb38068b11b",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "d87b0f84f8ca8f216f1f0c755ff0690a7b96cc3323511fe656c1323176d6a13b"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "format30_correct",
+      "qualified": true,
+      "receipt_hash": "1777f108699ec15ec4a1b0fef631f86a51df58a2bc93ceacee3359e5449a7d75",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "ae16e845e68a931e67358fabfe03ee21dff3b63d04fb248ada07ef80b60b209b"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "format30_observer",
+      "qualified": true,
+      "receipt_hash": "866c62a2039ef78df76061c09ff1d6246b3b87b826f63413eb7a11700395ee89",
+      "cleanup_confirmed": true,
+      "reason": "recalculation_changed_literal_cell",
+      "record_hash": "9bb5b08eefb5f0efaf4d9897d38041b0720518c1597196d6aa9fbd9056b452f1"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "format30_wrong",
+      "qualified": true,
+      "receipt_hash": "454c19c5e935cad66ea55bb548915c3c09a936e360c4de1815a4f332f3a87f6e",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "8dcef63663e922a0ce7d09be0f2f57a5f1c707803a722b028b1eac12403b3037"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "general_wrong_numeric",
+      "qualified": true,
+      "receipt_hash": "9cbe7ea27ac078582c01d46aa87f48c59d5ebcf0eb29c34812e6e0630ea8449b",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "4647f99a85201ad0f221e2380bb4c0f31b440a40dd2ebfee448edcf9b061b725"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "numeric_roundtrip",
+      "qualified": true,
+      "receipt_hash": "99bd0b00a8ad197f84500ed80d51a3217fb8ea973667da7a0cec8c4d67c20cd6",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "b77886fcbe9e0f41128aa9d0097fcef5b8f9931151fec11c2a78c7b4d5ae0b91"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "numeric_wrong",
+      "qualified": true,
+      "receipt_hash": "9703e407406d11e6b0aa92089beebf8cbfcf565d613f2d5da9440157c6a5c5e9",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "8c1873c9902cb834f5426937e6bb94ad01f715feae828894e42425563f4ef9ae"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "original_date_formula",
+      "qualified": true,
+      "receipt_hash": "197dfd9d693eda3bd4aa7053f456880018986cc3f5946176425d6a4d2dd7245b",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "178ab976c7c6e5aa7ea673bfeec718d24f4f74e7ca9d8cd6e42785e9661ff998"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "original_date_literal",
+      "qualified": true,
+      "receipt_hash": "b98c573b18d251c8619db2ebdfaccd02b2be5feedd1619c7a3197e95c46a6a65",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "901a3ea8121b6a3856669909d1e40d9f68f2dd309452907b8860591516691959"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "retained_dependency",
+      "qualified": true,
+      "receipt_hash": "f33265e56f04f6bd18a9fff2d0c62158586bd1c726b9cd60056e9882ff0e1e36",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "4b8dc30d4e27f2839c0a2802bdcae5b4049b6dec2db6dfa52e3188532dd4937f"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "unsupported",
+      "qualified": true,
+      "receipt_hash": "e3fe0d3afcdbaa44e3149e5869a998cdb0f0e5eafe2a45a8ce08be3fbd54f469",
+      "cleanup_confirmed": true,
+      "reason": "recalculation_changed_formula",
+      "record_hash": "39c7244c682646e3d2e6ba6894e8ccf116f20c90bebd501d5e5c463b916423eb"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "utf16_doctype",
+      "qualified": true,
+      "receipt_hash": "d8bbd46300d7e369726577fad809b2e799fc527cfe7979a32f4e28dffaaf435a",
+      "cleanup_confirmed": true,
+      "reason": "unsupported_workbook_structure",
+      "record_hash": "a2bd9b4b51fed1458c7eaf6a85f217fbe9a3595d9a825edc8d05eb70993a529c"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "utf16_external",
+      "qualified": true,
+      "receipt_hash": "3bdf8e4810e56537083e6b58774c4a2e27b8f61754e37282839b099550e9e422",
+      "cleanup_confirmed": true,
+      "reason": "unsupported_external_relationship",
+      "record_hash": "00ae04b74cc5d0ddeb1824f813e3e48fb12c84077b1ce7ea18b2f76ed08c763a"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "utf16be_metadata",
+      "qualified": true,
+      "receipt_hash": "69c6c3d752284e04555cfc140d0be15f712479ad209f8aca5f7dce22842aa96c",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "f734d3aaebeb7bcd5fcc920e16c6c2b1ada372e0f783325f02bd4b669e2543c1"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "utf16le_metadata",
+      "qualified": true,
+      "receipt_hash": "4347d4f446f4e2d6ad8b05f5f5f47d64ff140eac23bdb55888556eef3c77536b",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "6b2e70af8be15cef03bff2c1d8b5d7eb348c7bdbced4e49aea945a459202e4b2"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "wrong",
+      "qualified": true,
+      "receipt_hash": "d8824f34ac6c2a3aeeb45f0ff26f198c37b7735204f4cfada2ca9c845b8a25a8",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "cb3f05ea6b047c9bc10a2bfbc92d0410b9796cfe71cd1ab67fdbecacab5f3dd6"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "aggregate_array_filter",
+      "qualified": true,
+      "receipt_hash": "2d93c01a39e0687e1530aed9ad5b6da7ddff4ef402fc6cc8d4abff9b27e9cb65",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "c230639b476917411529ef8537f4fc20ab657438ff2f356d85a5239b2445eb3c"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "aggregate_ignore_error",
+      "qualified": true,
+      "receipt_hash": "49e9d999f742f9bdc1266e10f43c83a45b306321544b785064f52041c5827094",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "c8b3a43b544870808f011eb81c6a7561e44e0804e7fe1ef5633f358ca0d7ac9c"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "aggregate_wrong",
+      "qualified": true,
+      "receipt_hash": "51ac5b7deb5ceb87028307003e20b67628b6a0bfff5f0674dc95103bbf6691ee",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "a4c1c82f1920d921f2eab1837eb19d31ff7c3a793163375afb04c4f7b08029da"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "alias_named_formula_rejected",
+      "qualified": true,
+      "receipt_hash": "ab21eebc25714ec52ef1563615aa70c2bd88f29611021599be28e3fd9ec95812",
+      "cleanup_confirmed": true,
+      "reason": "unsupported_extended_function",
+      "record_hash": "85ea3218b49e0b85765c4948e716871bf856acd29cb5d9c5ada69e6262f0568a"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "alias_observer_rejected",
+      "qualified": true,
+      "receipt_hash": "e493c0580b928205b22f3efaff37aa80bc2f210c91280ca3d84a8c082dc0904f",
+      "cleanup_confirmed": true,
+      "reason": "unsupported_extended_function",
+      "record_hash": "89c9dbd4d59f33cb5f72ebf78e128beddf75ba2d6aeb0ec9e08a81ccfd733658"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "alias_text_not_rewritten",
+      "qualified": true,
+      "receipt_hash": "e8224cb30081c345d2b6bdcf4ff3df50215a927efea60bbefc91ce29a9c962b8",
+      "cleanup_confirmed": true,
+      "reason": "unsupported_extended_function",
+      "record_hash": "55a1bc79d606e95119f6d103a257850c754583a22570181a78d4a6cd1f1c7739"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "ifna_error_not_na",
+      "qualified": true,
+      "receipt_hash": "69b9864c9072acdc0c0241b32c1784e7ebe983f8e0bc38ec249bc48923497f85",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "10212dc9cbd04133e6b8c11daf5b73e4619abc1a70ea35036da8696230fadf76"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "ifna_fallback",
+      "qualified": true,
+      "receipt_hash": "89fe57930d565cdfbae2e937f29e66d95d4361c9f7fd12437c6a1900c1309adc",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "d076393ed19b0e32cb444be0b69538e3357eca3772f2f6dde50b538048723001"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "ifna_fixed_array",
+      "qualified": true,
+      "receipt_hash": "e4eaf96e184770657a5ba7aec0fefe019dfac18c46fd0a6ba7dbbbe16eac9a44",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "931b6ee062656fca3536729ebda266ab947afa92c64dba0f7f9b910a5738657c"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "ifna_passthrough",
+      "qualified": true,
+      "receipt_hash": "4f9c3607c13682d3614531fcab614ba085a08b83cb2a21b98a9b03998f5fb598",
+      "cleanup_confirmed": true,
+      "reason": null,
+      "record_hash": "8c5c8e708c1cc45eb4644b621bdc09f7329122c95ec995f96bf84ee2619763d7"
+    },
+    {
+      "protocol_hash": "e5394f3d17a6a2da2ccac569d291f962c4ee5f0fcab87231e140a4b098d243d1",
+      "name": "unknown_extended_rejected",
+      "qualified": true,
+      "receipt_hash": "b48c699d495978f0dfc05519731966c6ea8a2623dd28b6b9da9be13750e0f4d4",
+      "cleanup_confirmed": true,
+      "reason": "unsupported_extended_function",
+      "record_hash": "535237f2e943a45ff319e352f9e0fcf13a0ba8103fa75cc781d301519d6c070f"
+    }
+  ],
+  "execution": {
+    "closed_workbooks": 34,
+    "open_workbook_intents": 0,
+    "containers_attempted": 28,
+    "reported_wall_seconds": 65.26764831226319,
+    "cleanup_unconfirmed": 0,
+    "model_api_calls": 0
+  },
+  "evidence_kind": "engineering_fixture",
+  "model_api_calls": 0,
+  "excel_equivalence_proven": false,
+  "record_hash": "93595b31960110a3ab4692925c3339ad34cecb245a4bff0815a489d06768b8e2"
+}

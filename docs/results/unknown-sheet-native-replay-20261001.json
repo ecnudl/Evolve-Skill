@@ -1,0 +1,30 @@
+{
+  "version": "native-unknown-replay-v1",
+  "protocol_hash": "b38d137548921359da2889fed83739c690d681bfe13dfdde510351683535c10b",
+  "benchmark": "spreadsheetbench",
+  "status": "completed",
+  "counts": {
+    "unknown": 5,
+    "missing_output": 1,
+    "invalid_program": 1
+  },
+  "selected_cases": 7,
+  "selected_positions": 7,
+  "closed_cases": 7,
+  "record_hashes": {
+    "b4235f45897e422d6dc923a32979fbcc7cd848d00f3b9978a6636e7f066a950a": "be0159c81e12fbe8a2f029e101b007b7ee8011fac6535c4ccf61c7d3a6df7a4c",
+    "25d8ab4246856705f9f9e299e6d69b477e1b559755e3528972c3beec04ef0a82": "d3046f825d1ee84e8f3f79e3c576db91e20ae9d49f46c01e9dcfeb453e548982",
+    "76246174b26516c0e2d3d04ecbb4ee795374077fcd8d503631f71ad2936e57be": "4b15c81bbcd8f7b64512df56060c0dc11f2e8f8bdff06a1250e0c5d27f406d29",
+    "02411f1f736d67d31147c7e7972cdba93e5161b0314d9ea149d687da8b83d1d0": "9c0342ee67bfaef430525b8daad369d7732ab9b3241152420e4aa216e37c6ea9",
+    "37b8f29de73e2a671e9e5116c44eb972899a5176c44d08480dad8f9b42d10161": "d5ba014f4a1df6162655e72757840f07cda154da730d691e9f7efd1d9f35c3fd",
+    "0bd8001fec213b467062082a81d53612140f08ccda21c2b361f2fc690b85a493": "60847c72df11edbdacce3066c089a0bdd09cbc015d7f33017c8ed051c0594ee2",
+    "408cb92443ef77b3c7244c8881700bda344f644b9d797ef1697647c659869999": "86b9053a7bcc1b6bafb8313bad0b02528a5e86b8c80065a3b106263e7d8f722c"
+  },
+  "new_model_calls": 0,
+  "container_calls": 6,
+  "native_wall_seconds": 32.936586,
+  "original_scores_unchanged": true,
+  "diagnostic_only": true,
+  "deployment_authorized": false,
+  "record_hash": "b5c8157a0bfd24872559fc7a3508a0d413a34be8f1dc77abc5f4c4431356c80e"
+}

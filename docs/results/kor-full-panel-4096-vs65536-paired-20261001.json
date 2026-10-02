@@ -1,0 +1,388 @@
+{
+  "version": "kor-full-panel-budget-resample-paired-v1",
+  "date": "2026-10-01",
+  "evidence_kind": "readonly_posthoc_same_panel_cross_configuration_resampling_diagnostic",
+  "old": {
+    "root": "/root/continual-noskill-next-20260928-a/korbench-run",
+    "plan_hash": "2cafefa8e2392d67629e91d263c21b6e25ca4ffba1a8e6aeeb5d972da7da97c6",
+    "full_report_hash": "0d1197faafa0e96e79e493af5d6d4f1e8fe84a8203fb7a20d42deb18622afce8",
+    "checkpoint_hash": "36f3c3ded01d963ea8f4e9aa7bfb8c9afb5a673d8750674359d2b730990d2c6e",
+    "source_identity_hash": "5dda319283756497c210e388803e6f6be52a58f0ec0f92b715a53d36700a4dfd",
+    "host_runtime_hash": "0c77d8f08b848e31c118d8d0e31158b7a1ae5eef21ac68c1bb28cab17309c514",
+    "model": {
+      "provider": "bigmodel",
+      "name": "glm-5.3",
+      "max_tokens": 4096,
+      "reasoning_effort": "low",
+      "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128"
+    },
+    "service_identity_hash": "793062b0a955383ca84d38da0e22287160b6080baee1d59ceb4cbfc1ca331d12",
+    "counts": {
+      "pass": 639,
+      "fail": 201,
+      "unknown": 160
+    },
+    "costs": {
+      "logical_calls": 1000,
+      "http_attempts": 1016,
+      "reported_tokens": 1519573,
+      "usage_complete": true,
+      "unclosed_calls": 0,
+      "retry_inclusive_usage_known": false,
+      "known_reported_token_subtotal": 1519573
+    },
+    "score_hashes_digest": "7ae1932d62b8775a85f53d2cd4fae6613c4119098d5433f912dbb88cb9048bcc",
+    "native_execution_count": 840,
+    "native_unknown_count": 0,
+    "all_original_json_hashes_digest": "c23ff8121e28f0fd0eb982c978d869a18e37b82d89e796d8e6cfd46f306e3bc0"
+  },
+  "new": {
+    "root": "/root/continual-korbench-long-20261001-study/run",
+    "plan_hash": "e3f33c0ad7257cefc67d00b278a36e5631087661d010532c8f6949c6d5b9c35b",
+    "full_report_hash": "787d14f4fe12e8306bfce8081059f6ef60be842e262be23eab738b61f7aa4752",
+    "checkpoint_hash": "23762517fdcea80593992bf3e17802aff0a3cf7a29d33b010f74297128d6901e",
+    "source_identity_hash": "bbe7e21002d44c8d50628a5e7b1f0d328293f7ebc1de39cdd1ffdd90374d84a8",
+    "host_runtime_hash": "0c77d8f08b848e31c118d8d0e31158b7a1ae5eef21ac68c1bb28cab17309c514",
+    "model": {
+      "provider": "bigmodel",
+      "name": "glm-5.3",
+      "max_tokens": 65536,
+      "reasoning_effort": "low",
+      "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+      "transport": {
+        "stream": true,
+        "read_timeout_seconds": 300,
+        "stream_wall_seconds": 1800,
+        "initial_health_policy": "completed_response_v1"
+      }
+    },
+    "service_identity_hash": "f620c95268f45c845e44e7d1f0d679510fbd53557aeb6930aca4ce0015cb87dc",
+    "counts": {
+      "pass": 746,
+      "fail": 243,
+      "unknown": 11
+    },
+    "costs": {
+      "logical_calls": 1000,
+      "http_attempts": 1000,
+      "reported_tokens": null,
+      "usage_complete": false,
+      "unclosed_calls": 0,
+      "retry_inclusive_usage_known": false,
+      "known_reported_token_subtotal": 4206357
+    },
+    "score_hashes_digest": "5011478bea9e45d8e8fcace1269b9b2fdf20d26d0c377841f36eeee174b429d2",
+    "native_execution_count": 989,
+    "native_unknown_count": 0,
+    "all_original_json_hashes_digest": "5c6162c67c7c85c2b1f0b6d712a190adcc30f9b6589ab17fa5640145d1cde55b"
+  },
+  "data": {
+    "tasks": 500,
+    "declared_rule_families": 50,
+    "repeats": 2,
+    "positions": 1000,
+    "partition": "development",
+    "semantic_family_independence_certified": false
+  },
+  "paired": {
+    "positions": 1000,
+    "tasks": 500,
+    "families": 50,
+    "transition_matrix": {
+      "pass": {
+        "pass": 597,
+        "fail": 41,
+        "unknown": 1
+      },
+      "fail": {
+        "pass": 64,
+        "fail": 136,
+        "unknown": 1
+      },
+      "unknown": {
+        "pass": 85,
+        "fail": 66,
+        "unknown": 9
+      }
+    },
+    "known_pairs": {
+      "denominator": 838,
+      "new_win": 64,
+      "new_loss": 41,
+      "tie": 733
+    },
+    "old_unknown_tasks": 93,
+    "old_unknown_families": 18,
+    "nonempty_byte_identical_replies": 571,
+    "byte_identical_both_known": 571,
+    "byte_identical_both_known_label_disagreements": 0,
+    "same_public_prompt_positions": 1000
+  },
+  "by_category": {
+    "cipher": {
+      "positions": 200,
+      "tasks": 100,
+      "families": 10,
+      "transition_matrix": {
+        "pass": {
+          "pass": 93,
+          "fail": 16,
+          "unknown": 1
+        },
+        "fail": {
+          "pass": 32,
+          "fail": 22,
+          "unknown": 0
+        },
+        "unknown": {
+          "pass": 26,
+          "fail": 10,
+          "unknown": 0
+        }
+      },
+      "known_pairs": {
+        "denominator": 163,
+        "new_win": 32,
+        "new_loss": 16,
+        "tie": 115
+      },
+      "old_unknown_tasks": 25,
+      "old_unknown_families": 7,
+      "nonempty_byte_identical_replies": 80,
+      "byte_identical_both_known": 80,
+      "byte_identical_both_known_label_disagreements": 0,
+      "same_public_prompt_positions": 200
+    },
+    "counterfactual": {
+      "positions": 200,
+      "tasks": 100,
+      "families": 10,
+      "transition_matrix": {
+        "pass": {
+          "pass": 174,
+          "fail": 2,
+          "unknown": 0
+        },
+        "fail": {
+          "pass": 3,
+          "fail": 21,
+          "unknown": 0
+        },
+        "unknown": {
+          "pass": 0,
+          "fail": 0,
+          "unknown": 0
+        }
+      },
+      "known_pairs": {
+        "denominator": 200,
+        "new_win": 3,
+        "new_loss": 2,
+        "tie": 195
+      },
+      "old_unknown_tasks": 0,
+      "old_unknown_families": 0,
+      "nonempty_byte_identical_replies": 195,
+      "byte_identical_both_known": 195,
+      "byte_identical_both_known_label_disagreements": 0,
+      "same_public_prompt_positions": 200
+    },
+    "logic": {
+      "positions": 200,
+      "tasks": 100,
+      "families": 10,
+      "transition_matrix": {
+        "pass": {
+          "pass": 113,
+          "fail": 10,
+          "unknown": 0
+        },
+        "fail": {
+          "pass": 15,
+          "fail": 59,
+          "unknown": 0
+        },
+        "unknown": {
+          "pass": 0,
+          "fail": 3,
+          "unknown": 0
+        }
+      },
+      "known_pairs": {
+        "denominator": 197,
+        "new_win": 15,
+        "new_loss": 10,
+        "tie": 172
+      },
+      "old_unknown_tasks": 2,
+      "old_unknown_families": 2,
+      "nonempty_byte_identical_replies": 124,
+      "byte_identical_both_known": 124,
+      "byte_identical_both_known_label_disagreements": 0,
+      "same_public_prompt_positions": 200
+    },
+    "operation": {
+      "positions": 200,
+      "tasks": 100,
+      "families": 10,
+      "transition_matrix": {
+        "pass": {
+          "pass": 169,
+          "fail": 9,
+          "unknown": 0
+        },
+        "fail": {
+          "pass": 7,
+          "fail": 14,
+          "unknown": 0
+        },
+        "unknown": {
+          "pass": 0,
+          "fail": 1,
+          "unknown": 0
+        }
+      },
+      "known_pairs": {
+        "denominator": 199,
+        "new_win": 7,
+        "new_loss": 9,
+        "tie": 183
+      },
+      "old_unknown_tasks": 1,
+      "old_unknown_families": 1,
+      "nonempty_byte_identical_replies": 142,
+      "byte_identical_both_known": 142,
+      "byte_identical_both_known_label_disagreements": 0,
+      "same_public_prompt_positions": 200
+    },
+    "puzzle": {
+      "positions": 200,
+      "tasks": 100,
+      "families": 10,
+      "transition_matrix": {
+        "pass": {
+          "pass": 48,
+          "fail": 4,
+          "unknown": 0
+        },
+        "fail": {
+          "pass": 7,
+          "fail": 20,
+          "unknown": 1
+        },
+        "unknown": {
+          "pass": 59,
+          "fail": 52,
+          "unknown": 9
+        }
+      },
+      "known_pairs": {
+        "denominator": 79,
+        "new_win": 7,
+        "new_loss": 4,
+        "tie": 68
+      },
+      "old_unknown_tasks": 65,
+      "old_unknown_families": 8,
+      "nonempty_byte_identical_replies": 30,
+      "byte_identical_both_known": 30,
+      "byte_identical_both_known_label_disagreements": 0,
+      "same_public_prompt_positions": 200
+    }
+  },
+  "by_repeat": {
+    "0": {
+      "positions": 500,
+      "tasks": 500,
+      "families": 50,
+      "transition_matrix": {
+        "pass": {
+          "pass": 303,
+          "fail": 15,
+          "unknown": 1
+        },
+        "fail": {
+          "pass": 34,
+          "fail": 66,
+          "unknown": 1
+        },
+        "unknown": {
+          "pass": 38,
+          "fail": 38,
+          "unknown": 4
+        }
+      },
+      "known_pairs": {
+        "denominator": 418,
+        "new_win": 34,
+        "new_loss": 15,
+        "tie": 369
+      },
+      "old_unknown_tasks": 80,
+      "old_unknown_families": 17,
+      "nonempty_byte_identical_replies": 285,
+      "byte_identical_both_known": 285,
+      "byte_identical_both_known_label_disagreements": 0,
+      "same_public_prompt_positions": 500
+    },
+    "1": {
+      "positions": 500,
+      "tasks": 500,
+      "families": 50,
+      "transition_matrix": {
+        "pass": {
+          "pass": 294,
+          "fail": 26,
+          "unknown": 0
+        },
+        "fail": {
+          "pass": 30,
+          "fail": 70,
+          "unknown": 0
+        },
+        "unknown": {
+          "pass": 47,
+          "fail": 28,
+          "unknown": 5
+        }
+      },
+      "known_pairs": {
+        "denominator": 420,
+        "new_win": 30,
+        "new_loss": 26,
+        "tie": 364
+      },
+      "old_unknown_tasks": 80,
+      "old_unknown_families": 17,
+      "nonempty_byte_identical_replies": 286,
+      "byte_identical_both_known": 286,
+      "byte_identical_both_known_label_disagreements": 0,
+      "same_public_prompt_positions": 500
+    }
+  },
+  "checks": {
+    "full_original_panels_not_recovery_subsets": true,
+    "same_task_bytes": true,
+    "same_native_configuration": true,
+    "same_native_worker_bytes": true,
+    "same_native_host_function_AST": false,
+    "native_host_function_ast_hashes": {
+      "old": "12b2d7a3c5b5e6686d93c3d16c4bd15ad67f33759a8d5fd562b7dd7493015144",
+      "new": "e5ab625b11d8dd78f49882b86bc53ac32695c130c7c2e2cb338df5d1673f5729"
+    },
+    "native_host_difference": "New host catches Docker execution/cleanup exceptions and preserves unknown; original host did not have these exception handlers. Neither complete run recorded native unknowns; complete scoring stack is not claimed byte-identical.",
+    "native_sources_hash": "92460b7a83a1391ea19292aed14aab74f28b596de748614652a15cf834be08fd",
+    "same_entire_host_source": false,
+    "same_host_runtime": true,
+    "original_results_unchanged": true,
+    "new_api_calls": 0,
+    "new_native_executions": 0
+  },
+  "interpretation": {
+    "causal_budget_effect_claimed": false,
+    "skill_effect_claimed": false,
+    "independent_final_evaluation": false,
+    "note": "Both are complete No-Skill runs on the same historically exposed development panel. Output cap, streaming/client implementation and date differ; all replies were newly sampled. Paired transitions are descriptive, not a controlled causal estimate of budget or Skill improvement. Empty replies are excluded from byte-equality consistency statistics; unknowns remain unknown."
+  },
+  "record_hash": "b1701ba6dad6ff674db3dcdc7bbf71d40830490ee44b230daf07b738ceef0cae"
+}

@@ -1,0 +1,19 @@
+{
+  "version": "continual-eval-v1",
+  "order": ["bigcodebench", "spreadsheetbench", "searchqa", "korbench", "alfworld"],
+  "panels": {
+    "bigcodebench": "data/continual_eval/bigcodebench.json",
+    "spreadsheetbench": "data/continual_eval/spreadsheetbench.json",
+    "searchqa": "data/continual_eval/searchqa.json",
+    "korbench": "data/continual_eval/korbench.json",
+    "alfworld": "data/continual_eval/alfworld.json"
+  },
+  "partition": "final",
+  "methods": ["no_skill", "skillopt", "ours_fixed", "ours_adaptive", "ours_research"],
+  "histories": ["h0", "h1", "h2"],
+  "repeats": 2,
+  "model": {"provider": "bigmodel", "name": "glm-5.3", "max_tokens": 4096, "reasoning_effort": "low"},
+  "runtime": {},
+  "project_disjoint": false,
+  "exposure_manifest": null
+}

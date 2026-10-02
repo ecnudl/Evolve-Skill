@@ -1,0 +1,55 @@
+{
+  "version": "kor-length-wrapper-consistency-note-v1",
+  "record_hash": "6e2e5e09bd59bbd6dc3abda7f6d91512656707fde1eabde02274450705939d29",
+  "date": "2026-10-01",
+  "evidence_kind": "readonly_frozen_reply_metadata_and_pinned_scorer_inspection",
+  "sources": {
+    "diagnostic_summary": "kor-frozen-deliverable-diagnostic-20261001.json",
+    "diagnostic_summary_hash": "fbd51f05a8486220631819ee3f79e75719a74bc9cf3f5e099b669a0277f5a81d",
+    "diagnostic_protocol_hash": "250a060a3d49d7e3d99be781aac0375949d8d2555ca77be032efd17efd8845d0",
+    "task_hash": "44be2f04fb2e6c251bccf08682042254fbfb3c53036d62ae2444a21d8d60b272",
+    "repeat": 0,
+    "raw_response_sha256": "e875f002c98896387b98149e9bc89c8523ab1f89ae753492be1b803df791e499",
+    "official_eval_source_sha256": "26f7bb48911f9f49fada21358604d367e56c333921b9fe9c3c27dac998791426",
+    "category": "cipher",
+    "rule_id": "6"
+  },
+  "wrapper_consistency": {
+    "complete_double_bracket_wrappers": 2177,
+    "distinct_exact_body_values": 1,
+    "distinct_outer_whitespace_trimmed_body_values": 1,
+    "first_body_occurrences": 2177,
+    "first_and_last_body_identical": true,
+    "empty_wrappers": 0,
+    "unmatched_open_double_brackets": 0,
+    "unmatched_close_double_brackets": 0,
+    "raw_characters": 122207,
+    "raw_utf8_bytes": 152687,
+    "answer_values_or_body_hashes_exported": false
+  },
+  "actual_official_semantics": {
+    "dispatcher": "evaluate_response_vs_answer, cipher/default branch",
+    "extractor": "extract_text_from_brackets(response, clean)",
+    "selection": "First double-bracket regex match; boxed/single-bracket fallbacks are not used because double brackets exist.",
+    "normalization": "Strip outer whitespace, then remove double quotes, newlines, spaces and bracket characters from the selected body before rebuilding its wrapper.",
+    "comparison": "Compare that single normalized first result against the supplied reference answer.",
+    "any_candidate_match": false,
+    "checks_later_wrapper_agreement": false,
+    "evaluates_entire_free_text_consistency": false,
+    "official_code_executed_during_this_inspection": false
+  },
+  "interpretation": {
+    "observed_case": "All complete wrappers contain the same body, so this is repeated delivery of one bracketed answer, not multiple distinct bracketed candidates.",
+    "limitation": "The prior official pass only certifies the official first-answer comparison. This inspection does not establish that the surrounding free text is unambiguous, correct, useful, or free of contradictory statements.",
+    "future_protocol_suggestion": "Predeclare deliverable completeness and unambiguous parsed-answer rules, including repeated identical wrappers, conflicting wrappers and unbounded trailing text. Do not accept arbitrary extractable fragments or any-match candidates.",
+    "new_acceptance_policy_implemented": false,
+    "original_formal_status": "unknown",
+    "prior_separate_diagnostic_status": "pass",
+    "original_scores_or_diagnostic_modified": false,
+    "gold_values_or_hidden_reasoning_inspected": false
+  },
+  "costs": {
+    "new_model_calls": 0,
+    "new_native_executions": 0
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "version": "continual-noskill-korbench-20260928-launch-v1",
+  "status_at_publication": "generation_started_scoring_pending",
+  "evidence_type": "real_development_model_run_with_separate_engineering_controls",
+  "benchmark": "KOR-Bench",
+  "source": {
+    "url": "https://github.com/KOR-Bench/KOR-Bench",
+    "revision": "bb8194dff8e51e2e2247cf62aa9932c3d57d53d7",
+    "categories": 5,
+    "total_tasks": 1250,
+    "total_rule_families": 125,
+    "split_policy": "Per-category SHA256(continual-kor-rule-split-20260928-v1:family_id) order, 10/5/5/5 whole rules",
+    "development": {"tasks": 500, "rule_families": 50},
+    "verifier_calibration": {"tasks": 250, "rule_families": 25},
+    "skill_confirmation": {"tasks": 250, "rule_families": 25},
+    "final": {"tasks": 250, "rule_families": 25},
+    "nondevelopment_model_tasks_consumed": 0,
+    "global_exposure_or_pretraining_independence_certified": false
+  },
+  "protocol": {
+    "partition": "development",
+    "method": "no_skill",
+    "checkpoint": "h0/S0",
+    "skill_text": "",
+    "model_provider": "BigModel",
+    "model": "glm-5.3",
+    "temperature": 0,
+    "reasoning_effort": "low",
+    "max_output_tokens": 4096,
+    "repeats": 2,
+    "planned_positions": 1000,
+    "workers": 10,
+    "inference": "one_shot_no_research_no_revision",
+    "scoring": "hash_pinned_official_evaluate_response_vs_answer_in_isolated_Docker_after_generation",
+    "source_archive_sha256": "c54e07ce3fbcda1ee277a0f2376a12ed5ac430ba387e25cdf38800044556eb9d",
+    "plan_hash": "2cafefa8e2392d67629e91d263c21b6e25ca4ffba1a8e6aeeb5d972da7da97c6",
+    "development_panel_hash": "81694612b9180c8d266f92808c70eeb0b700c1a1c080f07f8c79abfd2c80a19f",
+    "split_manifest_hash": "cc9c1a99f971c78eb3530c69bb7a74a915ced89584fda279eaf5905fdac1ce70"
+  },
+  "native_controls": {
+    "version": "v2",
+    "positive": {"matched": 5, "total": 5},
+    "negative": {"matched": 5, "total": 5},
+    "container_calls_including_dependency_probe": 11,
+    "wall_seconds_including_cleanup": 66.225734,
+    "model_calls": 0,
+    "model_tokens": 0,
+    "all_cleanup_confirmed": true,
+    "record_hash": "439e17aa98003f0ad4f9419233380333599f6b574c0a02a53d1cbcdfce24d155",
+    "initial_controls_preserved": true,
+    "initial_problem": "Preparation script double-wrapped already-bracketed reference answers; two positive controls failed. No scorer, data, or model prompt was changed.",
+    "scope": "Engineering controls only; not complete rule coverage or method-effect evidence"
+  },
+  "launch_observation": {
+    "observed_utc": "2026-09-28T06:27:10Z",
+    "terminal_predictions": 15,
+    "initial_model_health_check_passed": true,
+    "scores_or_accuracy_reported": false,
+    "token_cost": null,
+    "unknown_count": null,
+    "note": "An early status snapshot, not a live progress counter or completed result. Costs and unknowns require the completed receipts."
+  },
+  "private_evidence": {
+    "linux_root": "/root/continual-noskill-next-20260928-a",
+    "run_directory": "korbench-run",
+    "log": "korbench.run.log",
+    "tmux": "continual-noskill-kor-20260928-a",
+    "local_preparation": "outputs/continual_eval/noskill_next_20260928"
+  },
+  "skill_or_research_effect_claimed": false,
+  "independent_final_claimed": false
+}

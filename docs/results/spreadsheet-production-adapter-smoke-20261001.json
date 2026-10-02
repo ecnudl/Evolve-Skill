@@ -1,0 +1,85 @@
+{
+  "version": "spreadsheet-production-adapter-smoke-public-v1",
+  "status": "complete",
+  "date": "2026-10-01",
+  "evidence_kind": "real_libreoffice_qualification_and_historical_engineering_replay",
+  "profile": "qualified_lo_recalc_v5_v1",
+  "source_root": "/root/continual-sheet-adapter-20261001-source",
+  "study_root": "/root/continual-sheet-adapter-20261001-study",
+  "cloned_frozen_source": "/root/continual-sheet-recalc-20261001-e",
+  "qualification": {
+    "controls": 17,
+    "passed": 17,
+    "receipt_count": 17,
+    "container_calls": 15,
+    "duration_seconds": 37.11819907929748,
+    "cleanup_unconfirmed": 0,
+    "record_hash": "7b093d3f24f41dfb911b9b0241a6907398907615de83fad9411fb13e2945e0ba",
+    "file_sha256": "e0bc982cb1011f03a4d44d26665a1527af122face349db7f7f7707eafccb8158"
+  },
+  "historical_smoke": {
+    "selection_rule": "First slot ID per old v5 status, distinct tasks, delivered artifacts only; frozen before new scores.",
+    "tasks": 3,
+    "lexical_families": 3,
+    "positions": 3,
+    "first_score_counts": {"pass": 1, "fail": 1, "unknown": 1},
+    "transitions_from_v5": {"pass->pass": 1, "fail->fail": 1, "unknown->unknown": 1},
+    "unknown_reason": "reference:unsupported_extended_function",
+    "workbook_receipts": 5,
+    "container_calls": 4,
+    "duration_seconds": 88.4240220040083,
+    "replay_calls": 3,
+    "replay_added_containers": 0,
+    "replay_changed_artifacts": 0,
+    "positions_and_receipts": [
+      {"position": "03992e2fad8bc59782e49fc356ec0f8ea697a16218888e57f69520e3af88a8dc", "status": "pass", "prediction_hash": "e604ab429c9f5106d1f6c06016086e5d5c86a2dabfb7a27f4d7f013c199c6a81", "score_receipt_hash": "d7b7c322ff2affd11b0b1992637eb4111a225e0b6f7dca4f89d06f4ee74e2900"},
+      {"position": "0993fd2b7710c7618ae9c014763651e62f80bd8d700974855e2291af5adbd2df", "status": "fail", "prediction_hash": "497cd7f2fbc49667b24c30b0bf29dd0dc6c30ef3a18dc5cc7651cb7bd81b2e32", "score_receipt_hash": "3823328bfd177ca2c0d6f81d98cbb74e5a9f1b48e6bfe2becc9d61c743265125"},
+      {"position": "0d95553a311c62e4502e13f67a9d6b59448ce5995f688fa0e20c7157b8b1a8c4", "status": "unknown", "prediction_hash": "ba7438dd4ce75d8b19081dc9f6f0cec1229adb9cec6c2f9983918da6c9b3266f", "score_receipt_hash": "3571f61480eb79d2e8eb3451132400cef6f25d8a7d7b50cfbe09e7f8655a8976"}
+    ]
+  },
+  "total_container_calls": 19,
+  "execution_wall_seconds": 136.17627263069153,
+  "wall_time_excludes_queue_wait": true,
+  "model_api_calls": 0,
+  "new_predictions": 0,
+  "image_id": "sha256:f7f6f598c4f0b16ea514614c22325e8b3a2d5d0317f423757dcdfa1bb2c4d790",
+  "libreoffice_version": "LibreOffice 25.2.3.2 520(Build:2)",
+  "tests": {"local_all_continual_eval_passed": 450, "linux_v5_and_adapter_passed": 150, "new_adapter_tests": 30, "independent_review": "approved", "ruff": "passed"},
+  "independent_postrun_audit": {
+    "old_source_files_verified": 325,
+    "new_source_files_verified": 327,
+    "original_inventory_files_verified": 564,
+    "selection_files_verified": 11,
+    "new_source_files_changed": 0,
+    "historical_files_changed": 0,
+    "new_api_directories": 0,
+    "all_cleanup_confirmed": true,
+    "remaining_owned_recalculation_containers": 0
+  },
+  "reviewed_overlay_sha256": {
+    "skillopt/continual_eval/sheet_recalc_adapter.py": "de94d5848051d08d475ba80ced8dffb551b6ce142ba0b489f73459a6da91716f",
+    "skillopt/continual_eval/backends.py": "13aeed2d71b6f58f31f42d3364041fb3c88f92a373bdf71437d0fd52e8a0742d",
+    "skillopt/continual_eval/core.py": "e68bf19154533565dc4d6631e7fe82d7c661a27856e32918b6bce10ebf7c18b4",
+    "skillopt/continual_eval/runner.py": "b73bf1ed6ef045dc7aefd283b675b94183fe48507e3662aa2d85a91bb163eac9",
+    "tests/test_continual_eval_sheet_recalc_adapter.py": "7ce10178f1e9a59932c1392ffb0f8c3bb1ce9669707add012c085b86edabbce7"
+  },
+  "archive_hashes": {
+    "full_run_report_record_hash": "7b33918c9c74623554cd58e27de4a29a340819fdd0234d3079bbc03a2c71f642",
+    "full_run_report_file_sha256": "dae90c574b9b1be714c3c7c4e4d2bf6cd89e39597a731a3c01b23b378c27bf4e",
+    "source_provenance_record_hash": "f7aaa1c89d9d48f6d8444fa96ad823f90973f8783d7c1f993198855aaf7bbf35",
+    "source_provenance_file_sha256": "c4db6017a0a6cde94f011f0ba70ae91f52e869e83bb9dffcec89763cbde5ae87",
+    "selection_file_sha256": "618993c5c8bc36f5e0a3f6c72c8d7a6839d73bd6df1669dbf9c1522c9cb5946c",
+    "operator_script_sha256": "88452a0de160088d19ab49ee3bb78f5fae92f3088341f4f579e9b6afd32b7fe2"
+  },
+  "limitations": [
+    "Already-consumed status-selected engineering controls, not an unbiased task sample or method-effect evidence.",
+    "Real execution tested production backends.score on old predictions; full runner collection was tested offline only.",
+    "Qualification binds the new frozen source path and image, not arbitrary source copies or Excel equivalence.",
+    "No full 160-position rerun, no new model inference, no historical score replacement.",
+    "Spreadsheet learning remains unsupported by the current Coding-only learning adapter."
+  ],
+  "independent_method_effect": false,
+  "excel_equivalence_proven": false,
+  "spreadsheet_learning_enabled": false,
+  "record_hash": "556b5f283e32f145e4e6e0bf97b44e1f2b734e8b4a63d2a48275b6ec11622cf8"
+}

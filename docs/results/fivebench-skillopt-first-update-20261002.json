@@ -1,0 +1,49 @@
+{
+  "evidence_kind": "real_model_development_selection_one_completed_update_not_full_stage",
+  "protocol_hash": "773c2efad28a31b70c3c45d6837e88b155f9790e40a64aff5c6b4624fbcf2d7d",
+  "method": "skillopt",
+  "benchmark": "bigcodebench",
+  "source_stage": 1,
+  "update_index": 0,
+  "train_tasks": 64,
+  "train_families": 64,
+  "selection_tasks": 65,
+  "selection_families": 64,
+  "repeats": 1,
+  "model": "glm-5.3",
+  "reasoning_effort": "low",
+  "solver_max_tokens": 65536,
+  "reflection_max_tokens": 4096,
+  "parent": "empty_skill",
+  "parent_selection": {"pass": 42, "fail": 23, "unknown": 0},
+  "candidate_selection": {"pass": 36, "fail": 29, "unknown": 0},
+  "paired_parent_to_candidate": {
+    "pass->pass": 32,
+    "pass->fail": 10,
+    "fail->pass": 4,
+    "fail->fail": 19
+  },
+  "gate_action": "reject",
+  "step_hash": "145707d91ab107ea19654b723c14634ead45f566b49b211a145a80b9e33967b8",
+  "proposal_hash": "7b1e1145970bbdbf7a8d5fd29283e8be6fc096b682798eec1bfa7324431048cd",
+  "candidate_skill_hash": "5b458176123e7ca4017aa1332abef5b7f53f6ff473adbae88d53dc20cf0106da",
+  "first_update_including_parent_collection_cost": {
+    "solver_calls": 194,
+    "reflection_merge_ranking_calls": 13,
+    "closed_calls": 207,
+    "http_attempts": 207,
+    "reported_tokens": 214298,
+    "all_calls_finish_reason_stop": true,
+    "missing_usage_calls": 0
+  },
+  "full_learning_stage_complete_at_observation": false,
+  "selected_new_s1_checkpoint": false,
+  "deployment_authorized": false,
+  "independent_final": false,
+  "limits": [
+    "New outcome-blind family split of historically exposed development data, not the old 65-train/64-selection split.",
+    "One shared parent, one generated candidate, one selection execution per policy/task; not a stable method comparison.",
+    "This is the first of at most two update attempts in source stage 1; do not label it the final stage or five-domain matrix.",
+    "Costs include shared parent collection and must not be added again when reporting the eventual complete stage."
+  ]
+}

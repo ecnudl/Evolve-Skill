@@ -1,0 +1,30 @@
+{
+  "version": "continual-eval-v2",
+  "order": ["bigcodebench", "spreadsheetbench", "searchqa", "korbench", "alfworld"],
+  "panels": {
+    "bigcodebench": null,
+    "spreadsheetbench": null,
+    "searchqa": null,
+    "korbench": null,
+    "alfworld": null
+  },
+  "partition": "development",
+  "methods": ["no_skill"],
+  "histories": ["h0"],
+  "repeats": 2,
+  "model": {
+    "provider": "bigmodel",
+    "name": "glm-5.3",
+    "max_tokens": 8192,
+    "reasoning_effort": "low",
+    "transport": {
+      "stream": true,
+      "read_timeout_seconds": 300,
+      "stream_wall_seconds": 1800,
+      "initial_health_policy": "completed_response_v1"
+    }
+  },
+  "runtime": {},
+  "project_disjoint": false,
+  "exposure_manifest": null
+}

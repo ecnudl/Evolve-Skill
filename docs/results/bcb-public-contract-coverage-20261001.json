@@ -1,0 +1,227 @@
+{
+  "version": "bcb-public-contract-coverage-static-v2",
+  "date": "2026-10-01",
+  "status": "static_audit_complete_execution_not_qualified",
+  "evidence_kind": "read_only_public_contract_inventory_not_model_or_method_effect",
+  "data": {
+    "tasks": 65,
+    "families": 64,
+    "authorized_role": "train",
+    "partition": "development",
+    "selection_tasks_inspected": 0,
+    "hidden_tests_inspected": 0,
+    "reference_solutions_inspected": 0,
+    "model_outputs_or_scores_used_for_selection": false
+  },
+  "source": {
+    "manifest_path": "/root/continual-baselines-long-20261001-study/manifests/skillopt.json",
+    "manifest_hash": "03c764ab8f84c5a4c55ef976c434febf69e9644f202b88f8f963c50efcc3e6fc",
+    "manifest_file_sha256": "903fbeb4d823f8b69a9196a2c202c176a5031c140b889d43a21a9e3c93640384",
+    "panel_path": "/root/continual-baselines-long-20261001-study/data/learning.json",
+    "panel_file_sha256": "dad23ce35a62e7692306dbb1245570bf95f05cf99c99f2c3caf81b33281d57ed",
+    "authorized_public_roster_digest": "286add16b13837195725f92612977700076844b7a9b12fbaf38a83d5d9886e2d",
+    "roster_digest_definition": "SHA256 canonical JSON of ordered [{task_hash:digest(full_task),public_hash:digest(task.public)}] in original panel train order; full task bytes only hashed to verify manifest authorization.",
+    "source_files_rechecked_unchanged": true
+  },
+  "scope": {
+    "fields_analyzed": [
+      "public.prompt",
+      "public.entry_point"
+    ],
+    "task_code_executed": false,
+    "public_examples_executed": false,
+    "old_report_unchanged": "bcb-public-evidence-readiness-20261001.json",
+    "categories_fixed_before_inspection": [
+      "entry_and_parameter_contract",
+      "declared_return_type_fields_or_shape",
+      "explicit_input_nonmutation_or_preservation",
+      "file_delivery_or_path_operation"
+    ],
+    "classification_rule": "AST/format recognition is separate from manually reviewed public clauses. Manual counts are conservative identified coverage, not exhaustive semantics or executable-check authorization. Unidentified tasks are not evidence of absent obligations."
+  },
+  "coverage": {
+    "entry_and_parameter_contract": {
+      "denominator": 65,
+      "unique_parseable_public_entry_signatures": 65,
+      "unresolved_signature_tasks": 0,
+      "declared_parameters": 145,
+      "tasks_with_parameter_annotations": 10,
+      "tasks_without_parameter_annotations": 55,
+      "admissible_static_check": "Entry callable name, parameter kinds and allowed call binding can be compared without running task code; do not reject harmless implementation extensions solely for differing syntax."
+    },
+    "declared_return": {
+      "denominator": 65,
+      "tasks_with_explicit_output_section_and_type_description": 65,
+      "tasks_without_that_section": 0,
+      "tasks_with_ast_return_annotation": 9,
+      "tasks_without_ast_return_annotation": 56,
+      "execution_qualified_tasks": 0,
+      "unverified_runtime_or_admissibility_tasks": 65,
+      "note": "Output sections can mix multiple components, prose and conflicting descriptions. Presence is not a mechanically certified type oracle; output type alone is insufficient for correctness."
+    },
+    "narrow_named_fields_dimensions_or_fixed_structure": {
+      "denominator": 65,
+      "manually_identified_lower_bound": 13,
+      "not_classified_by_this_narrow_review": 52,
+      "train_order_indices": [
+        0,
+        14,
+        19,
+        20,
+        29,
+        31,
+        34,
+        37,
+        39,
+        42,
+        43,
+        50,
+        58
+      ],
+      "definition": "Named output fields/columns or explicit fixed/input-relative dimensions, row mappings, or stated top-level cardinality. Broader plotting properties and inferred structures are not included.",
+      "execution_qualified_tasks": 0
+    },
+    "explicit_whole_input_nonmutation": {
+      "denominator": 65,
+      "positively_identified": 0,
+      "not_justified_as_whole_input_nonmutation": 65,
+      "note": "No blanket input-preservation check is authorized. Returning a new value/copy does not by itself justify forbidding every input-side effect."
+    },
+    "explicit_output_transformation_preservation": {
+      "denominator": 65,
+      "manually_identified": 5,
+      "not_classified": 60,
+      "train_order_indices": [
+        28,
+        41,
+        45,
+        59,
+        60
+      ],
+      "kinds": [
+        "relative_order_of_unchanged_words",
+        "subsequence_relative_order",
+        "copied_file_content",
+        "deduplicated_output_order",
+        "unchanged_characters_and_character_case"
+      ],
+      "note": "These are requested output relations, not a declaration that the entire input object must remain unchanged; the old input_state checker cannot express all of them."
+    },
+    "file_delivery_or_path_operation": {
+      "denominator": 65,
+      "manually_identified": 14,
+      "not_classified": 51,
+      "train_order_indices": [
+        10,
+        11,
+        12,
+        15,
+        18,
+        20,
+        22,
+        25,
+        34,
+        38,
+        45,
+        50,
+        55,
+        59
+      ],
+      "new_file_or_download_or_log_obligation": 11,
+      "local_move_delete_edit_or_rename_obligation": 4,
+      "overlap_new_log_and_delete": 1,
+      "network_dependent_download_in_identified_count": 1,
+      "additional_remote_upload_not_counted_as_local_delivery": 1,
+      "additional_remote_upload_train_index": 26,
+      "execution_qualified_tasks": 0,
+      "note": "14 is a public-obligation count, not 14 offline-supported tasks; reads/path mentions alone are excluded. No isolation/network relaxation is proposed."
+    }
+  },
+  "keyword_vs_obligation": {
+    "file_keyword_tasks": 21,
+    "manually_identified_file_obligation_tasks": 14,
+    "old_input_mutation_keyword_tasks": 0,
+    "manually_identified_output_preservation_tasks": 5,
+    "keyword_matches_are_not_authoritative_obligations": true
+  },
+  "public_example_format_audit": {
+    "denominator": 65,
+    "tasks_with_literal_inline_marker": 10,
+    "tasks_without_literal_marker": 55,
+    "tasks_with_line_start_doctest_marker": 0,
+    "inline_marker_train_indices": [
+      0,
+      9,
+      13,
+      43,
+      44,
+      46,
+      47,
+      48,
+      50,
+      59
+    ],
+    "old_zero_meant_line_anchored_or_supported_parser_coverage_not_no_public_examples": true,
+    "strict_direct_entry_json_literal_pair": {
+      "tasks": 1,
+      "examples": 1,
+      "train_order_indices": [
+        59
+      ],
+      "definition": "Direct named-entry call with literal JSON-compatible positional/keyword arguments and the entire following output span parseable as a literal JSON-compatible expected value.",
+      "task_hash": "f524fbdd73b78832ed04702f02d25c115dd3270c357df0cb74b073b790aee639",
+      "public_hash": "5dfc8ad1f499f8b3d0e6563834fdc786664ebc314c3a1d7807b070ad4e69305b",
+      "new_parser_implemented": false,
+      "executed_or_qualified": 0,
+      "limitation": "The task creates files using numerical/plotting dependencies. Syntactic JSON arguments/result do not qualify existing sandbox execution or all task obligations."
+    },
+    "remaining_marker_tasks": {
+      "total": 9,
+      "direct_call_with_quoted_result_then_trailing_prose": 1,
+      "assignment_then_print_scalar_results_tasks": 1,
+      "assignment_then_print_scalar_examples": 2,
+      "state_setup_or_complex_object_or_projection_tasks": 7
+    },
+    "false_positive_and_unsupported_boundaries": [
+      "A marker anywhere in flattened prose is not a standard executable doctest.",
+      "Assignments, dependent names, library constructors, print projections, ellipsis, or nonliteral object displays are not direct literal call/result pairs.",
+      "A quoted result followed by prose must not be silently truncated into an authoritative expected answer.",
+      "Printed random numerical examples do not automatically justify exact floating-point equality or deterministic-repeat checks.",
+      "At least some public clauses have conflicting type/component or behavior descriptions; the checker must keep uncertainty rather than resolve against hidden tests."
+    ],
+    "new_ready_to_run_checks": 0
+  },
+  "existing_implementation": {
+    "models": "skillopt/skill_validation/models.py",
+    "checks": "skillopt/skill_validation/checks.py",
+    "sandbox": "skillopt/skill_validation/sandbox.py",
+    "registered_methods": [
+      "public_examples",
+      "input_state",
+      "public_invariant"
+    ],
+    "reusable": "Typed obligations, contract quotes, conditional applicability, bound execution receipts, unknown semantics, review/calibration and per-version provenance.",
+    "current_limits": [
+      "CallableTask arguments/results are bounded JSON; PublicCase expects exact result or named exception; only repeat_equal relation is registered.",
+      "No registered AST signature check, return-type/field/shape predicate, partial preservation relation, or file-delivery/path checker exists in this callable path.",
+      "file_preservation model support requires a public baseline file; it does not imply support for newly created files or arbitrary filesystem state.",
+      "The existing JSON sandbox qualification does not establish pandas/NumPy/plotting/filesystem evidence support on the frozen BCB runtime."
+    ]
+  },
+  "recommendation": [
+    "Correct public-format extraction coverage first, with conservative inline segmentation and explicit admissibility review; discovering already public examples is not Research information gain.",
+    "Start with a small public-contract adapter for signature/call binding and bounded return-shape or preservation predicates; use explicit public anchors, reviewed argument construction and existing isolation/receipt interfaces.",
+    "Add only required typed data/file observation codecs; do not enforce whole-input immutability on mutation tasks, infer random determinism, expose hidden tests, or permit arbitrary checker scripts.",
+    "Freeze the adapter and compare scalar-only versus admissible executable-public-feedback updates on the same development evidence and budget; use new task families and multiple proposal histories for confirmation.",
+    "Use Research only for a separately identified external factual gap, with a distinct evidence-source label and ablation."
+  ],
+  "costs": {
+    "model_calls": 0,
+    "docker_calls": 0,
+    "task_executions": 0
+  },
+  "no_raw_task_text_examples_reference_hidden_tests_or_credentials_exported_in_this_report": true,
+  "verifier_authorization_granted": false,
+  "skill_effect_established": false,
+  "record_hash": "dbed19f8ab7c88af214cd3c136c9d195b759a5d5e833a447ab33634d3fbf2921"
+}

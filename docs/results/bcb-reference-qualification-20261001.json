@@ -1,0 +1,3936 @@
+{
+  "version": "bcb-full-reference-qualification-audit-v1",
+  "date": "2026-10-01",
+  "evidence_kind": "official_reference_environment_qualification_not_model_effect",
+  "status": "completed",
+  "model_calls": 0,
+  "data": {
+    "repository": "bigcode/bigcodebench",
+    "revision": "b74c0d0bf70d2c0bc459be537895cca163007f1a",
+    "version_split": "v0.1.4",
+    "prompt_mode": "instruct",
+    "original_roster_tasks": 400,
+    "independent_families": 399,
+    "repeats": 1,
+    "partition": "development",
+    "source_selection": "exact_outcome_blind_original_NoSkill_400_roster_not_failure_subset",
+    "reference_assembly": "complete_prompt + canonical_solution; host AST parsing only, execution inside original native sandbox"
+  },
+  "identity": {
+    "source_root": "/root/continual-reference-qualification-20261001-source",
+    "run_root": "/root/continual-reference-qualification-20261001-study/run",
+    "protocol_hash": "9dd7ca47889e8cf7134f14dd1ac527205ac757211af8c136493685a6b89e01d6",
+    "protocol_file_sha256": "85a88194607f30d76f047b7bc6c00e62d0f29d6edab5b07d59343c5a7b27135c",
+    "report_hash": "f8fa5dc7cc663da7b1f1deb4a5ba92110d5bb35766279f046e6e135382314fd7",
+    "report_file_sha256": "d8c4a3321d99717b3999662f421a880f7c420208722747de396bc00bfa463253",
+    "parent_plan_hash": "4cfc9177817f833198d9c7bac2b77ac1d5dabcf61d372ac10f5e51e5e9b44056",
+    "parent_report_hash": "2e7f7440ab7a3ddfc0628cdbce607c1a2ddcb21ecfeec967cbff8d86e8b61211",
+    "original_panel_hash": "55188f2ca4cbcd274b9a1c1f2976ce7361233faa9015915eafc563936b8fc55a",
+    "qualification_module_sha256": "654ae7c6ea41555325c0aebbcd00bfbd092aa447bfa584a3a29b49db08c531da",
+    "qualification_tests_sha256": "21040abac522e95f8013afb549fa538b6d3249100a5b21ef50d0ad2751e988c0",
+    "original_native_worker_sha256": "0d7bc1d0e9a6d5fa77167f138ea32ff82646037ea980ca97ae1860882d136708",
+    "learning_manifest_hash": "03c764ab8f84c5a4c55ef976c434febf69e9644f202b88f8f963c50efcc3e6fc",
+    "learning_panel_hash": "d0f8fb0bdbe273429fbf22dcba127c8c1ba22d9ea05d1748528b4678c71974ad",
+    "input_file_hashes": {
+      "/root/continual-baselines-long-20261001-study/no_skill/plan.json": "048ea30a4394a0dbb63145b8c0195238fd6d7d3ae267a6cf51586f2d74bd4eb4",
+      "/root/continual-baselines-long-20261001-study/data/evaluation.json": "089fec10e9b534da550551117e79ae94fe55a88de4d01b1dafcd67b7bc70c3a3",
+      "/root/continual-bcb-prep-20260928/official-v014-b74c0d0/rows.json": "d9c33b87bdccb6932899c91de2823a4c295e47d0da62cf07eb9c1c8eb2bcde01",
+      "/root/continual-bcb-prep-20260928/official-v014-b74c0d0/v0.1.4.parquet": "d9a4965821c9507ebdfb551c288656b2d5fe553234f5183044333ca8a4018267",
+      "/root/continual-bcb-prep-20260928/official-v014-b74c0d0/download-receipt.json": "d45e8d50f2dfbf51d8cb0a36a7be9ef6f8070652cf285047f2d2df9282e40eb5"
+    },
+    "source_identity_hash": "57ccf192087b6699eb08591fdaaaacbf7e4e5d220e2c3725df6a179ddd5a5896",
+    "host_runtime_hash": "0c77d8f08b848e31c118d8d0e31158b7a1ae5eef21ac68c1bb28cab17309c514"
+  },
+  "runtime": {
+    "image": "sha256:b13b0bb97861eb3a2f3f9ead1e8718d1410882613f84e088bb31338c343149fa",
+    "timeout_seconds": 300,
+    "memory_mb": 8192,
+    "cpus": 1,
+    "bigcodebench_package": "0.2.4",
+    "nltk_package": "3.8",
+    "package_version_evidence": "read_only_DIST_INFO_metadata_from_original_Docker_image_layers",
+    "task_network_enabled": false,
+    "read_only_root_filesystem": true
+  },
+  "execution": {
+    "first_intent_utc": "2026-09-30T20:22:22.680152+00:00",
+    "result_written_utc": "2026-09-30T20:57:10.323039+00:00",
+    "tasks": 400,
+    "families": 399,
+    "closed": 400,
+    "unclosed": 0,
+    "unsubmitted": 0,
+    "pass": 393,
+    "fail": 7,
+    "unknown": 0,
+    "task_pass_rate": 0.9825,
+    "family_equal_weight_pass_rate": 0.9824561403508771,
+    "container_calls": 400,
+    "container_wall_seconds": 2041.512168,
+    "cleanup_confirmed": 400,
+    "execution_costs_complete": true
+  },
+  "verification": {
+    "frozen_module_replay_equal_to_result": true,
+    "all400_source_public_private_reference_bindings_verified": true,
+    "all800_same_task_repeat_prediction_score_bindings_verified": true,
+    "all129_learning_exposure_tasks_hash_matched": true,
+    "local_and_linux_regression_tests_passed": 121,
+    "independent_new_unit_tests_passed": 18
+  },
+  "reference_nonpass_categories": {
+    "explicit_nltk_resource_missing": 5,
+    "readonly_filesystem": 1,
+    "task_network_requirement_under_offline_sandbox": 1
+  },
+  "same_task_reference_vs_original_model_position_cross_table": {
+    "pass__pass": 400,
+    "pass__fail": 385,
+    "fail__fail": 14,
+    "pass__unknown": 1
+  },
+  "original_model_denominator": {
+    "tasks": 400,
+    "families": 399,
+    "positions": 800,
+    "counts": {
+      "pass": 400,
+      "fail": 399,
+      "unknown": 1
+    }
+  },
+  "learning_exposure_groups": {
+    "other_development": {
+      "tasks": 271,
+      "reference": {
+        "pass": 266,
+        "fail": 5
+      },
+      "model_positions": {
+        "pass": 272,
+        "fail": 270
+      }
+    },
+    "train": {
+      "tasks": 65,
+      "reference": {
+        "pass": 64,
+        "fail": 1
+      },
+      "model_positions": {
+        "fail": 60,
+        "pass": 70
+      }
+    },
+    "selection": {
+      "tasks": 64,
+      "reference": {
+        "pass": 63,
+        "fail": 1
+      },
+      "model_positions": {
+        "fail": 69,
+        "pass": 58,
+        "unknown": 1
+      }
+    }
+  },
+  "original_model_explicit_nltk_missing_diagnostic": {
+    "positions": 8,
+    "tasks": 4,
+    "resource_counts_nonexclusive": {
+      "stopwords": 6,
+      "punkt": 2
+    },
+    "labels_reclassified": false
+  },
+  "nonpass_cases": [
+    {
+      "task_hash": "31862e48b800fd0f05fb9f6b4b1309dc059cec07720d10c02dcbeb68556d2041",
+      "family_hash": "e5c023f98649b8feba9c068f53aeda0c59f8802e8bc4fc064a60ee393178699b",
+      "reference_status": "fail",
+      "reference_record_hash": "8d475b95ba7afa2b26f9bd9651093ce63b5c38045a15868da284bd675542daec",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "no_skill_score_hashes": [
+        "963b4dcd638e4c53f85e10b0e40bb3d6b3a1d874512e4a5790d4def624ee6878",
+        "c931572737db80c3da429c48f2c52c79cba30c640814fbf953a496479a163459"
+      ],
+      "learning_exposure": "other_development",
+      "classification": "explicit_nltk_resource_missing",
+      "missing_resources": [
+        "stopwords"
+      ],
+      "exception_classes": [],
+      "errno_numbers": [],
+      "native_reason": "official_bigcodebench_untrusted_check",
+      "container_wall_seconds": 4.483681,
+      "cleanup_confirmed": true
+    },
+    {
+      "task_hash": "333af9ee177ffd08c759d530ede1e404a8368d1fb1e699c5e3e7619aec7c2a68",
+      "family_hash": "3b713ae99f1022b89ca9689325e9be17b89533441689722574ac516fc51ea699",
+      "reference_status": "fail",
+      "reference_record_hash": "54dbd49ae8fe0b17108ec2a379de3a870c971eb1fbf5faf64882cf0e97bfa8c6",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "no_skill_score_hashes": [
+        "e28deb34b2aec2900f729e9b67828c60d7f31172a5845444ce910fc8c23fa4d5",
+        "d042e4f4df37f1a043fad5f5aff86494bc62e892f278c57b0a224f34926966ce"
+      ],
+      "learning_exposure": "other_development",
+      "classification": "task_network_requirement_under_offline_sandbox",
+      "missing_resources": [],
+      "exception_classes": [
+        "urllib.error.URLError"
+      ],
+      "errno_numbers": [],
+      "native_reason": "official_bigcodebench_untrusted_check",
+      "container_wall_seconds": 4.082014,
+      "cleanup_confirmed": true
+    },
+    {
+      "task_hash": "91eafa8ae412c33a4cd36384d33cc07823564c76de52f4da9648c79c1ba88122",
+      "family_hash": "11ff196cff309ea46e5190dfb58ffa17a70f59ed37088752a65a49cd406ade1f",
+      "reference_status": "fail",
+      "reference_record_hash": "173231f689518850550fc43d2c94f412d5dc45f7dbfa92133b813ba6f3f20d0a",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "no_skill_score_hashes": [
+        "be4fc962ed028d1b7131be3bc17b7f8c6aeee4ccabde893f031d32be4bf7a54a",
+        "0609af9d378f41722a4cdd8cd1278b9b0f9ec173bd9cb56764a4576fac4e2241"
+      ],
+      "learning_exposure": "other_development",
+      "classification": "explicit_nltk_resource_missing",
+      "missing_resources": [
+        "punkt"
+      ],
+      "exception_classes": [
+        "LookupError"
+      ],
+      "errno_numbers": [],
+      "native_reason": "official_bigcodebench_untrusted_check",
+      "container_wall_seconds": 6.433575,
+      "cleanup_confirmed": true
+    },
+    {
+      "task_hash": "9b851b172a229de55457b7ecc7e159a72f8fccdcd72ea7812a02dda4606dfce1",
+      "family_hash": "09980a416cb9b61c67962c1447f343db368bf3042c779c75900ec85471c89f23",
+      "reference_status": "fail",
+      "reference_record_hash": "f01193d542cda80c3d5ef64c9e40697b4cb60a4be03f06efe91113ec696e92fa",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "no_skill_score_hashes": [
+        "94680c1592164db554ce22fd4afcf00e97fdd50cac423bda249996acc1b3968e",
+        "89cdf5f3e732430ab6610eb3d9862d14e4612fab9edf30fea1cc185308d885f4"
+      ],
+      "learning_exposure": "other_development",
+      "classification": "explicit_nltk_resource_missing",
+      "missing_resources": [
+        "punkt"
+      ],
+      "exception_classes": [
+        "LookupError",
+        "textblob.exceptions.MissingCorpusError"
+      ],
+      "errno_numbers": [],
+      "native_reason": "official_bigcodebench_untrusted_check",
+      "container_wall_seconds": 5.108796,
+      "cleanup_confirmed": true
+    },
+    {
+      "task_hash": "acc94715637c5ae57c5cf530d7842e651e0e36c99cd75fc9b6972004e9639288",
+      "family_hash": "baa70fe01c1df37b6e0346d9269a3e1c7580c1431941717e41bf635b3d8c4f19",
+      "reference_status": "fail",
+      "reference_record_hash": "e8a1b5a244ce45f299beeb85b24022920ff9a931dd3386c16f84ea2963dc1a58",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "no_skill_score_hashes": [
+        "3931540d35f8d2010e976ee4472b08bb41fea49243117cfd7b8d059a105dfd61",
+        "f9698458a49ed7bf9abeba4be6c84406151d32527ec81bf710dc491e16ea3f0f"
+      ],
+      "learning_exposure": "train",
+      "classification": "explicit_nltk_resource_missing",
+      "missing_resources": [
+        "stopwords"
+      ],
+      "exception_classes": [],
+      "errno_numbers": [],
+      "native_reason": "official_bigcodebench_untrusted_check",
+      "container_wall_seconds": 4.361345,
+      "cleanup_confirmed": true
+    },
+    {
+      "task_hash": "b33f9282181b6ee92c0b02841bc5759c539e8842ee2959852fa17bf3d0abbe9f",
+      "family_hash": "eeca5ec7de8103e58bcf95ee5bef15c59da1e37f3d2d60f066c960b563b713fc",
+      "reference_status": "fail",
+      "reference_record_hash": "e6e7a4f0d2a27a289724f9873a46429e5b864eab16aec1cfaa9ef07e4773c1e6",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "no_skill_score_hashes": [
+        "6790e2e35c5a866b30cee2c347a24beb4fc67adb5f52696d8df5b95f1fc2c7fb",
+        "2fa6ccc44ef5fdbd6d16bf67f73d13cd0ccd59818fa2163ef3116146a21bb8d7"
+      ],
+      "learning_exposure": "selection",
+      "classification": "explicit_nltk_resource_missing",
+      "missing_resources": [
+        "stopwords"
+      ],
+      "exception_classes": [
+        "LookupError"
+      ],
+      "errno_numbers": [],
+      "native_reason": "official_bigcodebench_untrusted_check",
+      "container_wall_seconds": 4.401471,
+      "cleanup_confirmed": true
+    },
+    {
+      "task_hash": "be6acd91c02e806e1c109bb1f4d6b5313a07233a649b5f45b21d36e15ff45019",
+      "family_hash": "0e783658fbfded920582425349e387b587969527ebec358ac4bd66fc9c99862d",
+      "reference_status": "fail",
+      "reference_record_hash": "03725db06f9db5bd62ed094e190ddf2dcd1ffc6c24fb058d626faf15372ba16d",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "no_skill_score_hashes": [
+        "a86999ee847ad47e3cc045d4c1f4eb5c8f6876614f786487469c48490453d64c",
+        "1f4aef5d2dfb13e3f1188ed842c4b0f9863e7f1d052f0804b6f1feb209f5cfac"
+      ],
+      "learning_exposure": "other_development",
+      "classification": "readonly_filesystem",
+      "missing_resources": [],
+      "exception_classes": [],
+      "errno_numbers": [
+        "30"
+      ],
+      "native_reason": "official_bigcodebench_untrusted_check",
+      "container_wall_seconds": 4.92477,
+      "cleanup_confirmed": true
+    }
+  ],
+  "all_task_hash_joins": [
+    {
+      "task_hash": "002f130f19f442e418acdfbeefa81294da01673ba75e37546375bb1f65dc0c4e",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "01017388070d386c7a377ec7da2ee7a7e4e0f186379ba2ae8cc241ee49482039",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "01c311ea455ab37964fcd7d98fd7dac379d4db847822a62c1b27a57c28e372c8",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "025d139205b6e4bf7669b1866b21fde8efee4e12b96b005e655d10be297bccaf",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "026c4ac750cba1ccae9fcaa27b337670daab06c1899349f4a61e2d68cfd2338c",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "03be7b922b4b05c9861bb291d2ebcb28bc19e920c1770a02f7d7c5ab4c90328d",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "041a05ac3c2c7756036d30614cf736ffd71d9ec736eeccc59c1dc42b5278b867",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "04a5a14fe444485865b96a2ad8114a4a1a5f6a1209ab9d4d86f4b944a7f50853",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "060b4ba88188152f87b09d2addc8ff9ae92adfa4f503173c5c6344895afae0ea",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "06f8d6807a268571fde09b6a50cc8e015d3887b1646686866017514c42818357",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "077ff1f7795b8b815282b85530e7105974e113d6fa7a4e6e4df311b6e33b1ea4",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "07e259796b551e65b8b6a035dafd388b6652e39e4ac76894104507a397021f66",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "0be4f5e231f1a46a3f74b722d689bda7cad80d4bb6aa6ab95c561606172122f1",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "0cc03e42930422b0adf4329b8d26e073f8eed740620e3d92a28629b73c119e45",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "0e7cd02de6e255cd7a55554628f585932b4f96cf02f422725c15001d457c2cd5",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "0eda04b7b4040476de00fe4c82431f6b793767b550c0f574e3de80eac4f6a078",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "0f3752cffc7de068f71e4ef5bc8d692257ce7a81c236c652145c0a195ffb6417",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "0fd8b05dc5e799f4988cd98574f292e1d66021eae342518c92bb919afb4525b4",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "0ff8943db1b939dadffbd1b4c77a203b4fbef989ef84dd3cfed2c777caea36b8",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "10b44037b685d6c3ab27e8d155e100b86145dcb793442e807604e5f00d5896c6",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "10c59f3082e2547c24e3f38fbdc6ffb59749615715d821ad5d1e1af2045c7d6b",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "123d2c7550b8f616eb929b79cc63dfe93edb9ca174724607342b3bc6a1050ece",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "123e06d16430b3f24964a0f989bde6021b0bdd3ae7693270d7200cde393181fd",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "124ea181e7027e490da17b070eba718aa275082ab3a28df5919703e3c0996688",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "14e0f00b64e1920e415e9888d5bc50c77119b225ac2d002d257fd32d069adac4",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "150796b89bf50153f1aefe3da5ce04fdd5455f7989bc2ccb2edfab6f46fa20d1",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "152c604aed1763287246418b4cfa5111ebb9a2eb46aabd17764bd9ce5370e42c",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "15352066ffdf224db48fe8ef683e40ebbdd2348cba196bae56abf5a64deea91c",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "153a535637748e3c440096ce9fa1d3660f5b9354fff6d6ffcde50121acf9eaf7",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "158cad01da5518c63c28c0ada6a4c8e086da3dbc7f858adc0e34984155fdd541",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "161a3b91739b6b025c42f2828def63cfe4de49d9afd63b5c8e1d3ed993a01106",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "17c7f8ee6053210b5a4367bc2a9bf0572bc796509c773f3e2d1fe7c23209a2a2",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "182f72cd551af00e31cf55ce94d9985072b1876ce052a1f13844c83ff1c3375f",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "185638443f3fecd42ac144734acce457a2ec674343451f3c4274569f6fbcbbcf",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "192d843fc3f609c9d8e5ef6836eabb372ca17d6fb0281dd52c49d1fa6663a14d",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "1950689119823d894c028f0c037aa61a8d7ec3bbc5e54832cffc6cfbed3d6683",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "19af47d7f8c71cf933ba34b60b75f0a27f4d23cd3c21ceaaf49760d9e3a6e6d2",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "1ae2ef3728fe7d75accc14da97b95ed9414a807b65a2253085e55175cbf5ec05",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "1b2d2758ad6eee958e142cdddfd0181f70f88eb004f3f02c6f6bee30030a96a3",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "1b44423dfbe2cd3ce24b84e23cd7ba296a88667155d31ed9d204c619a77bc051",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "1b890b1977b9e4c2c072bfef0ff7876559bfbe5e1f1440563e4fdb1fdb752c80",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "1d144f8e06376c18831f1ce8a694d8f11da816fe9b2057e54639c096b87569fe",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "1d7abf581b2176d98c14a7db6610738f3e489597c29b7197ccf33b337c546fea",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "1dcbe7a2cbb3d201d4cab09e540e54251f6d2a9847c08eb62da55ca85bc96475",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "1dcef4a92a3deab0597b98b9bd5781b1a1b6ac70de848766b2f83b10cd0f9f04",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "1ebad922b273379b8440d86a823d34898511a13d1b3df61615e9a85b0d0634a1",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "1f6ce4b41d469fe077afd98b2eeca5ad012ff1f41b323945cd4128c1a0ce49a9",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "20191c609f3c0d53cf8fb9d0610b74afdae152d17a8c30c4b1a6be8b6a473fda",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "2209b58a553ac8f846501c384ad3dd9010af3f499fff31cebf4c2b033b91ec97",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "222833cabed5c300f30b13724027fabe0622630b866f9b3c48cc66c465795d2d",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "22e2b815018064d10ab370e258ab8f3f6a0db514417bffd0c9fdd39be7ddc9c3",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "23d6b5083b14c8cfd776032d415c852500dbb3ea0771e3ac695de53946c8b71e",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "24e03a3d5698f99fdbee79e1f668b7dbb0512025b0e6bb358a67732d84db8318",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "26e4e0bd5a13f46323b7fff992e3728a4d28c8df7512cb4cebd98d55b2606f5f",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "275c57185bc3278c30195fddd22005ab6b0a2f921f58a3d5ff8ec8bc8740d0bb",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "27b4072483a71cd17b2f2743aa457c85177fd561fc3783fa2d1543a7922ca08c",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "2802a4ea9ae15355462e5469e686d0ba5edd98d5e3727ad067f75c90fe3acc97",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "2964c8410a3b0324615b2c28de113005c482ecd1f0859c2dad51d5e21f0e5cc1",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "2a9936bbe0702a1f0edf448a753708a32f4968826c7a0d2e830ade57eef4da91",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "2ac4d7c1027e1eb62c92286580f798e89242cd06edd9f3420e3772a541da3a61",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "2ad5ac0f55375d0155c6987f2385fe230567dbbcb5f5e329f34dce934bd60ee6",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "2aff1de4262d64176c8a7e83d6b15a643418deab9468f79e54cdbdc314acbe2f",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "2c88e3660bef02130ff11b11ab4bf39527e5985fc37bea1af1ac439c0eb38c23",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "2cb6b806ee2fc2155a5796eea09c04e404cb39509f47e2a5b926e5475ee9f6ee",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "2cb87f09fc6042f6be07eb0dd954c4b372789c4dbdf5906b9053bdb7dacc7b86",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "2cd762fe0f8e1a2b8b75333ec4dd7b19e5841451a92a917811664f39ec34fa85",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "2df485ebf4f62e37df9845fdefe05b2b4b8563210e320d358077e3aebfb9bc76",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "2e21ecaa3ee8b428a0f7f81982e07db5ed9eb1207f4c5e92e8f9bb9d64f13806",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "2e736c076416b2f02de56cd5ade32080b28a6d8f104f53c2103fe6e5feb83759",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "2e8c80c23882782622ce6f12e6284febabca8f35335450c800aa1294a05cf2e8",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "2f40c741c775a34e816cabbad49920f91c5b82c848afb5c98d09706b004287dd",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "2f6eeb557482ce7b2501931730a88222dadf0bccc8675c1f1e3fec495ff5b36c",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "2f742c4809d24498f4827ec26eac4fb4643a789c38b604c49f96ed831a6e0ba3",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "2f7ee66ff58f38c7fd1f1ac54634e22aec747d525d032665041fe196feac348a",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "2f9412701262121fd676cc3fc54eef7f98d7f6490d0e5a321119409f7dd6c42f",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "30144b034966327752eb8e0c0b385003c2bce511f8daf614fc9555f89f60a1ca",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "30660ce1e5349ba47a264265a0e1f58fe6c545c8a0e8429067498947e587911e",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "307c2b1e015f4839b0af9b1033f0020034b97b4b45949cef14bbab989dd7d242",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "3100f46c37c529d122eee1305f4a46809b8032a29e6b0abbd3be6876ef758cb6",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "3165367723aadc07ff41f1fddbba1fea0821ce77380ba8762b382fed12384e57",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "316730213b712123cff60b4b6bf2b306df81c0e7e305c59ed44826aa23c1ef65",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "31862e48b800fd0f05fb9f6b4b1309dc059cec07720d10c02dcbeb68556d2041",
+      "reference_status": "fail",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "31b05d3dcdd784116a50154f5c2dfb321e7777c803b01cdd3e7e1c17dfb93054",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "31baffa6643cd45fc20c2f486a00fd69dbf46d60ec2bdffb98758ab526fe5349",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "32156e867b3640d8eb894a19c621969d8494867b4077bd534c08ae2226aedf58",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "322ee372988170180b93ca89813450fcd534f66802b12f1cf73f47fae84d2211",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "3235a3726351497ad7f8f8526ebf1b6eace8fdbc60c69a9ddedc3e75ba0729be",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "333af9ee177ffd08c759d530ede1e404a8368d1fb1e699c5e3e7619aec7c2a68",
+      "reference_status": "fail",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "33f662a6a8107e88fd3c80b9d2ad20601f29b403dbcec77d9cbb2e999772706e",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "35351fd33a40a562faacb480a6022347faf5a2cf0289b3b88646070c90722898",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "35f5590bda8a16255fe0c647184cd27f31151d4c5369dc5650d1dda421c87403",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "3616e7a2d2adda965dc62c778addd05b98c8a8fa0bdd77955e7b29b7cdc92087",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "377613fe062723615b1964f607a2158f565c5b6e86a4b36de72b60a989515ec2",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "377cd498c13f5eb13a8e354d2026e41df13564ace3113802e6ee981563f414ea",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "389088060d44930c23d2cf30d0329b09be6c0fb5f044bae314e8279ba7875434",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "38f53239b1acc23a4753b9461ec3088df2012fd949e5a1c930e4ecc309e58be0",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "3a7954d6e06491edc4d485271bdbe322d333ef96bf1254a33e437eda58acbf9d",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "3ab2cf90314ed9d7672f184a4d6237bb52f48acebf5303d0aaf4dd8209bfc280",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "3ace335309e8147458715f47a988aed8a77b984ab80496bc55bd6e3c41c60660",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "3cd5a05c79abe1daa7fc28ebcec877b761a540e07794179e435f17a7cd0a7f52",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "3d2d650d063fd44905661970aca02e7f9dceda96ab4f843ddbbb15c1f9260e18",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "3f3e7ae043a5bf145c732fbad6335be4a8fe1956138079813a0c33963b9ff0d7",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "3f3ec9925370b33fce95b2487a321b7663960e56ca94f96181bc93af9ca2318a",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "3f9018c3c2e6f44ff22f899513f2e5fb270616af6b4b4d12bcb214749dcca90a",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "3fdc20757bbaf087caae467029f904300ce06b58d69246c3ef603a7eb21c77f1",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "3ffa5415df49bb12a105d841ee407e373afe868374144eb7ead2f517e1c694af",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "40a47ef94288b5af61ad8a092ded3495d230b055e849cbc98bdd6ba746dc1615",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "418ca04cf8660f2c34b30cd5d87cc313ee9c0477a1e2be2d0cf9c0c0a08c0b55",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "unknown",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "41ad419730c0f6d050df62d0873466284ea6948d607da0fc3ba410783e461b89",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "42f48106e6f7fc10c815d937fe45d17c701df4acc133a6e86736676577fd5852",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "4435dce3da6ca0db261f4845807e7a24846a8dd5933c52299123c19eeb0dcbda",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "44c8396c5881bf4bd071300cec78fff40185595a0778d41cabc39fd7aa8d8e28",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "44fabdb2f228b4fd1fd691107c3d436b173d998433cfc3dc3433f181ed6d42cb",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "45687f0dc10407a7b04038e0cff929a0912487afb1080b78630d485232f17177",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "4623b45d3995a00348c211f296a3765b3cd9a60f9770e9956d9d10026b7c054a",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "4623e0b44127054b42a500e708c26ffca99434213870da33cc2d432cc9a768a7",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "4639801a8d77e0ae72d89fafa71f74a43a7c74527cc22f684646e26bdb3da0f4",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "4728842f3e3dadf931c19a97ae715e7b01a35162668a764a8e71ea60da843169",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "48001b7b8c9aa6ac962454b72edb7f1cc818fd4faa2f5825feb7754ec7f137e7",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "4858ce1d10b5396e2c7559c270f644fa43cca8df55767889d96db97c8e0d2dd4",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "4867f72ab1841374dc4882c163115d06324adc53f6f78e9621f438dd4ba868ca",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "491e6b493771b79fceb22cb29a3adccca9131ff203ffaa2c8c9eddba7cc29803",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "492c80513cdf7ab65403333c8de1a0f15e02a58d9cd4f4a11023838d494764b4",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "4954993ac4a549ec8bc983303f8d5973f8de58f70c279aa40d565daa77793c51",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "49bbf0551e9a1bb966a83a7e6f0f5bd2ef334c8e0644ace72d29a56c60589cbf",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "4a7e07fdc1db4f4248f6e0a14fa40f324d2f245ee189f612a1d4e1567bff2878",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "4ba2e5ca0080a44358db007f497367cd069c571fe5dee80bc25e3d91e9ebfc5e",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "4c01f83167e6e2855cc235d57b44caabd0a02b3750a5b076683909c4ca0bd01c",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "4c1b401aa95f27f94b7c0eefce81f43830fa4667ada9e9ff45c0d4ea89b08683",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "4c42ba2006ebccc4d4588fdab867ade849aabc3e3d616e44e2590fbb7e710d41",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "4d458b8b0925f73042b1947c9570eb51519d0062857f14030b39013dea48f070",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "4f2ddc180f9ef6e2dbb9a1d457d14a384e64528f71336e4e0e3ca4731e37487e",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "4f4b7ee4d9817281fb9146ce3c87968ab0db57831ab6390e8a4d8f47d77997b5",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "4f81fd331f6f1f406d1ecc03715bab6360596b38e0022953fe12d440116f96dd",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "4f9b0e9323b0f04e58a09112eb46ff757afe6606785a464dbda5542fb8aea3ca",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "51b2ec05cf7d9ef596fac7abe7769c0f8e95a19961fdefc7d4bd13354395c320",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "520d8fcd86a2d7a9e730405d14678ab103f42418ad257d64bbb089fdf6e22bb1",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "524aec8e31b6feffeefc9d39d47e64c5a1ba0bfb67132eb9be2925700b7b6811",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "531a0738795a15429706a530f0c668b85a7355ee7837a840773efffb804a5fe9",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "53a4608f3b0d132dba3e58940885d434fd33f8320bcd566d9b3e67d7784721bb",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "53ab013094308e409228f19f1b07417c0ced9f3e5bb14e263f22b9d8c65c4f4c",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "54dc4cfa1b949ccf509eb538f3a0212b2f2ae3042631063aed5e326c98ca30a6",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "554ab53b4ea9a5e1cddd92b20e7a0fe61c711b51815c2092c4ecf4f69f7b8b46",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "55b6c0a79bf788ea58e996b1b9405fa6f656e8c564becb4fef039f286c4e53bd",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "56513c9b0ea662ed724c64006bc40fc5e49055e8490e7dc9337a9ff8e157aa6d",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "56dc85e847d31b4a3ca958a5cc31fd69f7ee614dca2ff505db5c325aba5e7010",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "570f57034ae4fa63bf2b205904032e85d231bd5b6bcdd42146a193b2b7347eec",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "576f5fbafae2d57ef09806a120f084e6203e353ec68729bd12e7924f37380949",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "57a260e0e4979333458c81e5b88ed20a4fb568c5c492bbe6a2ae501955ffadfd",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "58a00f9bb62b1c50563c387d1f3d7cca6db0005186366bf6382f136a9a713ac6",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "58a48a76f3ac1de4248b746fa48dc5bd3e70c2f509a569ee341c459a1af76a70",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "5958f29c122054f620d4fd1f477781a133be9549c93c380cc5d14f56ca38bbdc",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "5a610f7298d027c7f9ab81fa659bb5ab8c5604cfa9e79d5f6b94566da4807d81",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "5aa35f9001455442314a3db150eea2caab707bac3e74ea183bff06f089cc0141",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "5abdeb19d6af0f4c5f97202e7c6b13e4d10b6e5319d018f0594762975e6cecdc",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "5c60c0843131aa8b81db276cad60b45320417cce717fd07d14662569398a2804",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "5de863449a2a8ec6cea9ff3b9f9eb949f0aac902837c69219c5aa7fe26e214bf",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "5ed7239a1d470a2675050ba7cfc4a7482d4830647372f20ac9779088474aa436",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "5f154aa9b9e28f76b5a6a1958922c35750a1987f1d4730fac9bcd01c0f5400bf",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "5f58957f14192252647f09b050f984fd3b006006a45bc05ef5f70bab70a92779",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "5fdaad7855d9bf2fc7a38f5409bf245f201c15113fa6c1fd44ec82ff141dd8b8",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "6018d1f6af9840d9bae8f758631bba82b1e41365b6c9d45a2949d0279cc078d5",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "60350f8df27c6871b621034a331a5ac7f2cd8c755b2eed1edf5f7dead30fdfbb",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "60a2ae09fa77095405ae454720a27fa2d6c8994a66ee59f74fca76c0d70f2bbd",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "60ed75fd43ebf4af2839ca1c505c6d626720ca8e23e3cce2a77709c21c2869d0",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "6258cf9ac9679abd401e35f6bafd0d142c3104f4e90068fd63ba59ce122adef3",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "62e8ad44325321bb4655697c1dbc7c8ef8886cdff12ae363323310d6096ab0b1",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "634d67e36715e23c338c32367092ba1d8e45d487635be71c2db6cf14cbcfb043",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "6497c01f560ff955b1b39c9ced1aea6a54593ec36ca172e49801f3b61449af0a",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "659ebd8e8cd60686e4345d4ef11b2f697254e9396571a84b4f39ee4e5981b76c",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "671496e4d744f93c34e3e35d74f699bd5e9b384c0371027af858de7059ff0b46",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "67e0ddfbe3bdfec843461a00ab0c31d4cc912910397f5bb3cd57fb4346720582",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "696c8923b1346feeb36d947eb45a53066af5d4ecf325bb1fdeeaa45b7480d01e",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "69ace95bb54d8cbec454941caf2661fe908e62cd482ffa51cd5db4d73baec4fd",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "6a5c8e068ba68fc308950cfe57b6b7b1d86f0ee95147f280de2888b0502ae729",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "6a7aa85fc454d44309a6d6f82f7059fd539d0be1175c3abdceeacc699b4f89fc",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "6afd92f87a334f0a48c3378f79ab8e0b75c1545cfff019c791cbeef673707cdc",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "6b27e95d98487d67cb600bd878e50974d891634b5f79c8cc4f29553324f47117",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "6b2e71be36a911548d0709a8906a3dbbbee8d151f1ff1304fdab13c6cbe7130e",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "6b5fa03f4d5e64f0970fd2f6480bce46cac84b87baa2766da1212825e4b43d90",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "6c511899fbb34268618b5dba5fcdafa99d1931b6db404f0a383eaaf57516e06c",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "6dc7d1fccc6f94b439c6eaff5e47a178781202a49e8c37709ad3fe79580169b6",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "6e998d559f4ce232a140d805b5d70823edf65fb8f22ac83757cf90dbd592d78d",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "6ea3a5722e682d926a241a8fc9eec0050ad3fc757ca92f831b6653fedb163ddf",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "6f85639b980ad236255ed317d8b1f4989a3f33050dc738cf09b792772ce5bbe0",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "70078e7dd90d55192f45e53f872021721be9f279a667e1360a5aed3aba1b0bd2",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "70cfe4fd711f5f9e81bb382a86d3ab3d94329cd1f24274b5b39faa8413ee705c",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "71420933208b8854901b256a56c30d743f98766c2f332aa0b894a7cc4beac46e",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "71b4def7df313b8af5b576562a828f9172839cac39546c1d0df13d5970e85d38",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "7231593dd705941502957bd86f9fde1d959e217c4e519ca82105146e2c67638d",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "73d6d7539defa06e7f32f2cf52c52de144b56b97ca377d33a6dcc692e142c7b8",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "740ae9d2f4fe375910e76116062de78a44b900492c4d4209c6d910e450bab43b",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "7491a40956b126e628cbfd02f68a560292490621ea7cd3e35074c5cb267e075b",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "754edffa4de515b6f960eb10951e8ab8e90d72063eb835dbb8189f16af905756",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "756b84d287304241b8683c5cab598120f497e41bbad1f9cefed9758c6d62bb66",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "76d6ae9a6f9bc6c9988bdddb5bd4fe6117de37e3cd9c0c92cb96abd9cbc9c321",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "76e8cda8c7cfc26af1de7d7a13b1337e528f47903bd47e135cf7968ec04b787c",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "77187aa1cf553ea7ea156a738280c40a7b2ea17a2f4b8a2e9a1880a95b734970",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "77cad9d2173fbede151014d082140cb777b151d4c4f40b6588a566fc37230e73",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "7857623c6b82e1b2dbf79d26aed90077864319575d6e1f5992fc2882535792ad",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "791a73afa40ee14dd6b081dbd43cc34815af87e6aa3e71264fadc1f07b78b488",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "7a10f1c04b47968e8607dad96e0a2a7f7d7571742f7f7f0be3a416533de6a4e3",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "7a7247299eeedb966064fad939f07f0cf012b4920b800aa9c65e368dc7113a42",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "7be75fe58a7a98c1769ae0ffd4c23bc1e488738581e89234a2085dda8ccdef41",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "7c29b84da1a21b8e022608bb4fcc6f26736c2291d231f0f4a4426bea0acac244",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "7d9c0cb2a76c9e645056547d829495b64069dd4cdddd1435c75cfcd0dc62571e",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "7e26298c39879f08665d21c40f72701b850035b383ba397e84638542024d17b7",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "7ec9bd7ea309abaa2d096bc261f2ee446d7b26c6833d2cb7b47bbf9569714a06",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "7edce749fb15f24699cfdd1c4d8b9644c236cfb84868f396c5ac8db0b38ef897",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "80e1107614a32a2f2d4503be1b6f1019c9a5ac7a85912e1435810d709664eae7",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "81f4af981cc1b164fcb6b53999d074886a55dc19506361050182a20ea544bf2c",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "81f6c981ecce310cf547f6dde6c326431d4e8d9e3e414eb64bb5e5b615c9a358",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "8343cb090b5b2646d2812fdbb89d15df48a44051a23d2d5c52cde903975b1aab",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "8492090570f60b0b6bf3307656cf31eaf81adeb93df04aa817011dbb00c4b25c",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "85a74e8225a92afdedb61b16d7bb74c1d11745673bb80d7da88183ba511461f3",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "861d255864be33a84afff5546cee7f5caac4a0f435b4c8c588a925dfac55837a",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "86228100062b018ef7ecd594d3fb2e445ffa9c21f5b889c6415c367f5a266a78",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "86ca382740efa051b4d5d98e026a4d8269c6b574bd62e2a8291b597d0a67c06f",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "882ca298e8c0b0b9722007395c72d8e7eb2e1fec092ed86a0d12ef8ec39b42c5",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "882f60c0d0e8a2eccdbc6ef8a3b19de6c5670e79ff09703b859304135941dcd9",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "88c9161f2d10ff34a74eed0978ef961bd42f92119eea2529032dee57bb80cc1f",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "89236bd1ef70e60fa0ce9958f2c5315db38f3ee7c0e90c777134a22652ab04dc",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "8a39f9b77dfebbd97586890c1595b8cdee07be6f852983df2980be5d98f9d455",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "8a631660513f1f61625ea675d2d5b24a3adec3b817a90f667d4b796a4658babb",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "8b0f7d72de6d434b64ed89060b90d4ba10e8c614b21406e3dfc6456bbbaa6f71",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "8b2ff66b1e8dc61c12c01597c286f20d1c7ce5825a38c7f8d06ecb7ffacbc7c5",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "8bd109d9c4b4623dd9e1df344b679d74350c8688b20d7e416699d66ee266bd5b",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "8cc49893cfaf93fd4bc7f0bcff63dec599d153491d0ec190f805f6765c0776dc",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "8d380bccae15e4847d6f29b708217cd9b78f14530cb716392ca905fd432714ad",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "8d6db709d5d4284393c15a876850898afacdb1ca1ebc33be9325b14c5c5b0809",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "8d8f86d4824e2f4394c96c235a09a0f64a389f2486d8c0d54461a66d515699a8",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "8eeb8da664a495b376c85c8ff1a543fe289ca06bc60c716af144016dead1c6e9",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "8efda405e25434040574c5f31f59a1ce8ac57d9d62d04613db0d020990f2f83f",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "8f8dba5cbe80073c4d9958e6a50465be2bf803f80c1fbce40e694e738b84f112",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "9037f2538c7096dbc8382e89c4a4495966354377ce7c04e66230b86d9334a286",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "9040c48697d93ea0b604652f561dbdbc5180a14c471aadac984e87f3e0039fbc",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "905986c475800d571050201b6a84dfbf1d6e5507fe4178825d3b147ed54cffef",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "90ea9fe16bae92d4cda2959d2e0da9ed7a05861ecfa3dbe795f5f45076ac4fe2",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "91abf6f2dced58a33e536d2cdf54c39bd3595571180c491fc27b2b297204a794",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "91e92d1452781dbff98946cd524de2f8380d3475169ee0c25b8902341569eeb9",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "91eafa8ae412c33a4cd36384d33cc07823564c76de52f4da9648c79c1ba88122",
+      "reference_status": "fail",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "92384fdd714ef8d897f139955500a26683944ec56a568e6df950634bdce7dc6b",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "928439972f049769e36d32d5d2cbe09f21c90f00fb6f396ffe721a8c9e2c00f5",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "92a97c6e927c842a4322dcf11137304b854246746247d90aad14312dc1ac3f10",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "92c7449d948b213b65fc9d881eb2d91843ba23aa02a1afd012252932357582e0",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "9374da6435869937a182eb23923fdf7cbb023ff7d2941a25255212c9bcdc6f48",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "93a3fb8193dcdf479a37c33049a41ba6cd6e622b9682c2012f94bef02f7e6fe6",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "95d33f8f23a5b7063e21bed5b8835d9d42e232a7e2227275252024b2416d38e2",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "96296929d6535bad0b3f325d8214320ad6a90e007e2c791e3c659a7f6d0a28b0",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "9634816a9f9e67234609c4fd65dcbaa8a79de82a0776dcb72d0b848fb6b6909c",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "972c1f2676f1603caedcf4323b2ae257d24f565459cf2c0c6fa9ef22f75965ad",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "97c3cddb27a5d0fda77db60da0b35a7ef57a365da38c6fb97bfd9cc24e4b3440",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "97d794cb6f7f04871fd03a0280bae1cad75b8baff353cb0236f89855256c892f",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "980c8ed11bec95c95ae5210ac7eda5692fce61d397ce96b196ba0cd0c0a3aab9",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "9811f1629cf8aa671497532cdf8fd32e1ffa335cb0338413c6edd101b06f3cdc",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "98c25ebac3ebc218abce05cfdb185853d04491db2966e13055faaec27bbb7fb3",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "98e2221497f4c5b7f66964dfe6e782b9f26b82d42275631dc3910fd24d6033e7",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "99a26b4708041d0c188e6292fbdd0a52b75968d8699c5a927235e960c439e4f1",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "9a33a896be397ac2f9872e3ccde1f811b137ff4003ea6623361e745cb49ac99c",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "9a48da72b4a0e346cdf67e3c9ed18a9273eed3600d3ce79786b13d083044911a",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "9a5ec23124f97bb292c98adaefe2741cc9fbd062c850832eeb32a613bf37d2c1",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "9aec7279cdc7c26a309fc31e5525760682a42de6575c1c04dff88af78f5d4e6b",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "9b851b172a229de55457b7ecc7e159a72f8fccdcd72ea7812a02dda4606dfce1",
+      "reference_status": "fail",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "9d3a82777c812e6ebe3b754bef799b9ce3c55cd6b778da2c9c2cb42a52749c2d",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "9f63564c60ab0b66af852b05704d4b2ef81c1f1ee685af895c841748caa0018e",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "a06b95b8ef38b009e3b0853744a6dfc5f9a0ff01ca0f9ce8b118aeaf165f2ee7",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "a0f265cb86051de5a7aefdb38de79cddf1745615d6d4fcc9cdee5518c19e24ec",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "a183c7e95cda12434d2d2227e9e928aa7a87fe02e888b77fd2aa9a5e98f2d5cf",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "a2079a5d0964d29cf1069909bf66dcfff3099d66efb97de174f0ac821c687f59",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "a209a09ec51c29e1ed6e7d78b8dbd1986e726960073b3fedc87a43c4bc7d3c26",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "a36f7db869a9a2097824c33ff19864419c9d527e0b853844caf2dcec4b75feba",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "a408411a15cf1bad49bb89a589e8a62b49b6e8acef85990d00f7813ac1092a98",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "a5506a536e5a8bb243a5f8aec525498a110d11ce351254477dc9821f4badc186",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "a5f946ecaa0bbedfc2214c676309100039eef55dcbd5c13cc391c86a3de0d28b",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "a60361958bcaf1e145c8bb8b227ab29e7fbf88bc626a8d1758db3e594e58993e",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "a6e1c537fd897eaaa2807a6d22063004d0ed803dec4773a9b0c2c374a18ee294",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "a76f7c4de46e65c0da4387646434fb0cd1598688d598650742210441f8700fbd",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "a7725b8d6304b8d6acb9a17c17e7741c585e5fab5808b61b370269056b43b81c",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "a82db60ab43306315fc909c13799c4c25a522c4063463826ae1b0e3010fceaf0",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "a84c2ae4d3d6204497e74365c3f269f8689e8fc62aa73759f144b9167873b9f6",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "a892c1603862c36e941215ca3b7112c2348f5b92ae7bc1db25308f094b8b4f7f",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "a96862953899f58a075397943a78429f86dd4eb9f31892b1c8d14bbac170977c",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "a9b798da7d8ee5b535a8336b99a5f773d2e485bae81d555fa8cbf87b9e13cca0",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "ab980e83d306acada22023b805212f69cd9e9af6becd2db346b21cc02cc45b3b",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "ac450703eb14f17ab13d1008b527094e9f1976b5a6292e4b33af6264802d2cc6",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "ac5848d0e5829b4b64ecf62755fa47b6ea9dec443deec500bde55d0859102144",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "ac5ed238f700cb7f40d7b11feddac8e96064887be3a3300ce5fa91a06bbd1708",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "acc94715637c5ae57c5cf530d7842e651e0e36c99cd75fc9b6972004e9639288",
+      "reference_status": "fail",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "afa134cddcc7c4968df961be40efa83138cc11c274d6e172e7eacc35f9230dd1",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "afa7587a6daa19d6848ae9129d5bacd360e73780e4e65b9ca12fa1bd7bdf20ff",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "b05d51877c3e1437ef99821927c2f48ce2213339617d4adbe3876190f91b104e",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "b1f7c87830e4f32c401a87d699ce61b8decb8f4cacd0608150a6bf4b6aea5dc8",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "b2181ad24c740c1f52bae22d0d6919312d9d56e5e48119af55b6c046ba4d8024",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "b32690fa09e9e6e4b6939a046289fce837cbd3a544d8e9fbf0ac00f7fa8f39bc",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "b33f9282181b6ee92c0b02841bc5759c539e8842ee2959852fa17bf3d0abbe9f",
+      "reference_status": "fail",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "b481783a52682b5a4c56fdd26b6e1b10fbd53746961c6b32c07e904d6a6fab28",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "b53c660658e721ec5fd346fc0b2f40ca318db979b39f6b7fdd87e3517642360a",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "b6ddcd7577d1cdbe6fe4c81755e608c2a02d2017fcc7f8e095ed04ffb23d98db",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "b79879f4a703e616b7f107d35c40895601e95a5d67ae7b8a5774726a042a9ae4",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "ba3bf1a6783a49f06a8d17e74f1480626ef49a0db67da1b8693924d1f0da4e76",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "bc121edc1b00cfef4b100c2baf5099f44b64b1ff48bfeb8c12a5f3ff144b2afc",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "bc163b11c31f4608c2d89b2f52e4ca32752849544aaaec36a9b36bf913e23096",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "be6acd91c02e806e1c109bb1f4d6b5313a07233a649b5f45b21d36e15ff45019",
+      "reference_status": "fail",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "beeccc085835c21787210126438da1f485c1df1f424e1c8105e000b075de2e1e",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "bef45f28ceabfa696c91d5f270cf2ddd142c24dfd1f15e02cd8ce65690ff9d67",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "bf64619f496d1f05cc04d5ee03d1f1765b4507a3d35f49546efb6bb1ee79c4a1",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "c02b1e6d60877ec13339732697b2867e13ba4572d105c84b5ccadd2f22536ccc",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "c03052365775984da6fe8eb8af1906abdd3817e0383932c04b6ecb5d6ec87f39",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "c0d618727e8321b506f483041ae5cdbcfe3816bef196b46b33731e8b1f662f18",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "c0f4ac264af6dc6abc57f5162d452747fc73100f1aeae3d55651a31a61e379c5",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "c39ad756bc96cf0c46b05767bd9ed23d688441589a242539b839edb744fed8e2",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "c40af1888469765dc409cb7b3ad70c910791b6d214980ec85738aee622df926f",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "c579336b2ad6c10a56c724dfab3a53cb1d3085de2d72ed8296a85c88cd575fbc",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "c5cf8d538b244d5369aa036240531af24f3218949edded3fe15911ff5e5d39ce",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "c62970e9909a1cffbf3b20bffac5989073d0fcc4545af6f81a7b2f8f63c02aba",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "c69df5250a0157bcd3f70bdd862f7dd8737bc535617b11f402a39abac8c00f01",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "c7720ab1fc8460a0f877811fc9ed68cb06ad1d0fe82d90aeeefce7fcbc1e2b04",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "c77f5fa2d989f715e39b337a93959453dd2894f1471dbd581011752b9cf86c80",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "c79805a389ced4540d2753615d41276ece0a4bcd0b7cb8f31c4db2f29c56b9a6",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "c8bc2fc9489fb90afe6090fa4c5bee2cd7a6812c27d99eac27a132393b99f98f",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "c92fa6b5fe61d8186130350a2d8d4b9ba08566a16cadbf31f221de8b56dde5ab",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "ca2c5e02f310239a0fc91ac35042d532f0d4ad2755f96b5337a03a28d0e55502",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "ca42dec3806ee24472be686a0082af245652580087c3825a8a1de2afa9aa830c",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "cb0c0ccbe36e56671923632243ff9c6f27ecf2fefc5b0bd4c501eb41cdca977e",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "cba6f4e8c550d6907f5d4494966789cb12fcf3363b52f3904f96307498120b48",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "cd14ecb49fa73fe28252f96134a6a51e6434ed9e4b98c09380fa55082bb5bf20",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "cda8c180010ffaabca47db73f9a00ee4863160a4be26c048c92eb20e812b3590",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "d06a7c05f33a3c38f45a61a299e34b527ca4f10446cab52086cc4b557b5ee330",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "d11f4f8c250063e9e35dae34d674a75167857c7a3f8fa5cc5ba9e4f3dc633559",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "d164d1264cb9f112853119ae1346d03c45b4143b98c7a85a04fafdde61ecb2bc",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "d2471311616c00f14d2f52c4f84bebedbaa6d86cf35ce42cfff0799209e81329",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "d274f55194495dcd6eb195950838c27950df3bd7cea56dc11d22d8146dedbeb7",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "d28eaf072edbf2392b30c04498684b5246ea9dd4f209156486bef6e380c57918",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "d3019a8332e6f700fa5c8f861cc06ba969e1339f0028390478ba08002d685123",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "d30e4ad1e1d2863370a01a2c3eb9efbf44d17197ce42940714bf229225d19ece",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "d35a921333f1ef51f1ba136d2f89e44f51f44c4b2cd4875a405a9bfaef590e3c",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "d3ab3a259e197e4612c56bf7378d7d09896cbda7bb7ba258524cca641f75d7af",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "d4548cfde3a6bad9c3aed4c102d859315ab13aaa874ea4d321f6ee1f953aaef0",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "d5645cd68cb297116aad1eb2138b2471d2f5130fdb6890a811028f76ee73b7d9",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "d5808e1d175da780f1c3645231141b2b20ac347399ec6c052f3b26769ea81eca",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "d5a331c6c16dfec30ac9a74b96ce62043683e316e0e42453c9c526b5b858c7f6",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "d5f33502a3e8a30a15d19e78dac4458a15bf9ccc3f7a43b36c8f813c75132589",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "d62fcfb8279b11d4d882c9b68a8710084cc33dca7b515d938fb89adb5d11bb53",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "d6421896b4bb02e0bdf7bcb40c23ec92b3465ed7e613355745edccd6ec8df07e",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "d86b00b39df1acf37f8f579775046a018243064fdd984bd9a9466c53d3e69f01",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "d9e83c9d0b4442d619802edead45e8beea8a019caecf86206e293775fed2e1e2",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "da045482728a7a36fbc0134d9bb48ac75a75a06fa3b554d452a95c17e5b60224",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "db9842316057f86d604a90a13c69a339ef16c6781f8fa8d6ffefe85599a47fb8",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "dc6416d15b4099e9653c530ea2bf81d236c46de29fc22b25dc777be7ce2a89de",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "dc8eeb9567c75db90a537e1a69ee5314c9a6e9e535f39f8488790bb3e238fc78",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "dcd089b1e772fc975441aff7ce2e497d329bdc28427cbfed32858f3709c4c0cb",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "dd1c0e77d82d651009ca6805380ebcb65be7dfa997dd6893af0abd7dba8bb62d",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "dda756d90b74529a9363f97bc4906339df3df5ebcfe3c6d6ff94f49613bbfd40",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "de39a8df4e4994251ffa591eb596321c8376914c6212468e3d13b018d9f9da48",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "e005f8b5b08ab23e415179b63a24aec9ab61d95b992e40aba8ea6168b37ffab8",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "e0739eb811addb485c64ada2dd72c33041eb64147482d540fbdb546e0639dc23",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "e1b32dd800554c02f6950f93cf551936c75ce413c09da51ef9cf21acdad0d838",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "e1c9c4c91fe6ad18fb7135c35aa40e66a07cdcd52e7ad184df7b6a7657fde50e",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "e2235138af82168657b8cc67b25bb861dee496249cf9a72878dcdc860991c9e1",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "e2e04980a5c72fe33adad2670604150dc1e79fe9fad5122b594e579700048c9f",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "e2e1d4300c6e7e09b74bbea3fba3c639e24e01300a00607f7c6d7b0cd7d8db6b",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "e3376756cd7df92b96b71375cfc3fb1ae20ab49aea5fdd3666381fba1b12f16b",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "e41b70ffeb8efb8785799dbce5edc497ac01942db89d2f767b7bf717669ea7b4",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "e5920c8800c294ff12c39b75e6add76cc958446276cdd9cebb0a4c1650f2858e",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "e5a5ba949ddd83a5d68edb979b6d74832e8d00c166d0fc57d142448d89ec0998",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "e5c9120ae006e37d1482d5d848c45bc9ae10d5028ddf5318cf8ed1f561a2daf5",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "e6453a73643711126caf56a675b9c03b0da8f5bd7421c9ef4afca47b9bbb8287",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "e83c5612b04194c50ed14e9258832d6850e0d34c1edeb742dde722cf1eb3b7a5",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "e8d5f32fa851c249e724e404ea8beb23d0895071e2cbc1a57800d73bb2180f89",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "e92b197c8d3fe7fa371e3b647613b51a8bbfc05ba7d177a13e7210f293f65597",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "e93e29c9d8e583c71d068f400adb90a5acb0f9a8c23670d362eff7627eab66c6",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "e9e4bf168674d33cbbba01e8f281b10099f3a5005996aadebd689f40f5c37c24",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "ea22d51bc409e2621ca1f8edc908da3e12732c9a995abf160153061fde55be8d",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "ea307a4b0179f54208b5d4c53958148a6df987d481c77a7be4139e38b2861ae5",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "edd56a5db01abeb6559b917a7ff33162b4896dace29e16b8ed6d7450bf68b179",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "eeb95064d4fe301911390cacd4dfcd789df185387481d355fe3d3fc6259941ae",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "eeba3a38c48ae5554e43c09c7d629fe64f9066bcfc90ff25e2400c48b42c3eaf",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "f0a0001c001a89c7c4a178353bb27cdd29b21e7f2072807620f1ce637c4a4ff9",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "f336dfa2ef7f328c861110672944bedb7f55992f06508f5040ebcfd5422c0884",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "f3a6bc7ff88791642f537de3ee22e9cec379ea18962e838b5fbd45c5bce9edfb",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "f46dc1ef9d1e26361488fd4741435fbdf3441ba528a0f61011667412858c3127",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "f4e76796340e00b043cc94517994fc3b4316a8aed18f7159f9c9e8c04aa51eb7",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "f524fbdd73b78832ed04702f02d25c115dd3270c357df0cb74b073b790aee639",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "f601477cff04833f5376f41ee8e4aa215e42e35b7100a78f925c4dbe580b20d5",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "f6953d88cf8d4be56ad8fbcee7a4154dca0d74bc0f849d38cea3cb7fe2adb003",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "f6e8aa13397fe2f075754f4ddbe5d0454d36d1b6d9c7334f593a8b8876fe39e6",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "f718e5b1482a2f5e23ca67c9321d711852158a59efbdfbe8e17462bbdda804b1",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "f7276c8229079cc036134a1f075d0286f52d25cd040606df273aba657a853e86",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "f76e4a597a14765537a2fef7a25f2faad36d238b0c142ac6a8e1c1431dfc7b8e",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "f77e330afc4406f5ee8525a44490ba8cb45318bd10721204fa3fa268989557f9",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "f79082659feaef9b6db68e68ac46c62d8b124d6e6a409717712d57c117173810",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "f85cb648a9a7fb0bb7b657948311f42f9a5156df3d895af8fb404889216500fb",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "f8c22f19a2a441da6980dbea87809169480760ffdfe9c900dacf023cd3da979b",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "f8f6996373e564cbf847cff212a4e67c5a950a26e0402ff491fcef267896145c",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "f914e939ec1c14126945884c1bb40ef42a2f6503693d8d9ad15106a06e464176",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "fbad53413afaa51ecee91acb5be762d697e33809853d9e90f216cf480f2dae97",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "train"
+    },
+    {
+      "task_hash": "fcac801a59aa0a01c23f4257fbb11fea59c67f1875c76534e8777307e25cb233",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "fail"
+      ],
+      "learning_exposure": "selection"
+    },
+    {
+      "task_hash": "fe727a51ba049620898247f00471f57c7d1e906354f5d75d5d0a035a246e6200",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "ff0295a1d46446de9c99dc572d8bc20cdf238e2e246638924506c532dd2aa8c3",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "fail",
+        "fail"
+      ],
+      "learning_exposure": "other_development"
+    },
+    {
+      "task_hash": "ff3c9302650e2d3cf637d05f42187d54a74320f8fb8f0bc6080d66b253cdad70",
+      "reference_status": "pass",
+      "no_skill_repeat_statuses": [
+        "pass",
+        "pass"
+      ],
+      "learning_exposure": "other_development"
+    }
+  ],
+  "limitations": [
+    "Reference outcomes diagnose this original environment and canonical implementation only, not a model accuracy or Skill-effect improvement.",
+    "A reference failure does not prove every model failure on that task was environmental; original P/F/U remain unchanged.",
+    "Reference pass does not certify arbitrary alternative implementations, resources or runtime behavior.",
+    "Five explicit missing-NLTK-resource reference failures motivate a new pinned data-only image; no updated-image result is included here.",
+    "Task-required network access and a read-only-filesystem failure are separate sandbox limitations, not permission to enable network or loosen isolation.",
+    "The 65 training tasks and 64 selection tasks are marked development exposure; the other271 tasks are not an independent final holdout for this study.",
+    "No private tests, canonical code, model responses, task text, keys or raw traceback were exported into this summary or sent to an LLM updater/Research module."
+  ],
+  "record_hash": "83dde82b2f072bcf1f5d22b136a628d85fb5b7c9a40d3dde5fe9461276744fd6"
+}

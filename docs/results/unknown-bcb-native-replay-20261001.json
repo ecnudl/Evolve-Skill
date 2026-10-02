@@ -1,0 +1,22 @@
+{
+  "version": "native-unknown-replay-v1",
+  "protocol_hash": "71465ddc89c0fbfa8fb2b96cd6cca8d029b4d0818442ac834a78d1582a317fba",
+  "benchmark": "bigcodebench",
+  "status": "completed",
+  "counts": {
+    "fail": 1
+  },
+  "selected_cases": 1,
+  "selected_positions": 1,
+  "closed_cases": 1,
+  "record_hashes": {
+    "e50105d1ad7385f4f9fb50d68789eb8eea16692e634af15d2efd5d2263a1dcf2": "f269f9a16a9d4ed74ee684fd049499205d17396e183e0a6a8aa4b55b91f3d90f"
+  },
+  "new_model_calls": 0,
+  "container_calls": 1,
+  "native_wall_seconds": 242.974812,
+  "original_scores_unchanged": true,
+  "diagnostic_only": true,
+  "deployment_authorized": false,
+  "record_hash": "cb2d82f9a38bcc44cb7996b816cabf68866c0b465d96e3478e47e5d732995d1c"
+}

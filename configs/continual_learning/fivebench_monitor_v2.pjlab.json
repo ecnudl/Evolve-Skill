@@ -1,0 +1,177 @@
+[
+  {
+    "kind": "learning",
+    "label": "skillopt-s1",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s1-bigcodebench/learning"
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s1-bigcodebench",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s1-bigcodebench/evaluations/bigcodebench",
+    "expected_positions": 800
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s1-spreadsheetbench",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s1-bigcodebench/evaluations/spreadsheetbench",
+    "expected_positions": 160
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s1-searchqa",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s1-bigcodebench/evaluations/searchqa",
+    "expected_positions": 800
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s1-korbench",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s1-bigcodebench/evaluations/korbench",
+    "expected_positions": 1000
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s1-alfworld",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s1-bigcodebench/evaluations/alfworld",
+    "expected_positions": 78
+  },
+  {
+    "kind": "learning",
+    "label": "skillopt-s2",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s2-spreadsheetbench/learning"
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s2-bigcodebench",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s2-spreadsheetbench/evaluations/bigcodebench",
+    "expected_positions": 800
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s2-spreadsheetbench",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s2-spreadsheetbench/evaluations/spreadsheetbench",
+    "expected_positions": 160
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s2-searchqa",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s2-spreadsheetbench/evaluations/searchqa",
+    "expected_positions": 800
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s2-korbench",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s2-spreadsheetbench/evaluations/korbench",
+    "expected_positions": 1000
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s2-alfworld",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s2-spreadsheetbench/evaluations/alfworld",
+    "expected_positions": 78
+  },
+  {
+    "kind": "learning",
+    "label": "skillopt-s3",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s3-searchqa/learning"
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s3-bigcodebench",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s3-searchqa/evaluations/bigcodebench",
+    "expected_positions": 800
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s3-spreadsheetbench",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s3-searchqa/evaluations/spreadsheetbench",
+    "expected_positions": 160
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s3-searchqa",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s3-searchqa/evaluations/searchqa",
+    "expected_positions": 800
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s3-korbench",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s3-searchqa/evaluations/korbench",
+    "expected_positions": 1000
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s3-alfworld",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s3-searchqa/evaluations/alfworld",
+    "expected_positions": 78
+  },
+  {
+    "kind": "learning",
+    "label": "skillopt-s4",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s4-korbench/learning"
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s4-bigcodebench",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s4-korbench/evaluations/bigcodebench",
+    "expected_positions": 800
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s4-spreadsheetbench",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s4-korbench/evaluations/spreadsheetbench",
+    "expected_positions": 160
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s4-searchqa",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s4-korbench/evaluations/searchqa",
+    "expected_positions": 800
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s4-korbench",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s4-korbench/evaluations/korbench",
+    "expected_positions": 1000
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s4-alfworld",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s4-korbench/evaluations/alfworld",
+    "expected_positions": 78
+  },
+  {
+    "kind": "learning",
+    "label": "skillopt-s5",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s5-alfworld/learning"
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s5-bigcodebench",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s5-alfworld/evaluations/bigcodebench",
+    "expected_positions": 800
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s5-spreadsheetbench",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s5-alfworld/evaluations/spreadsheetbench",
+    "expected_positions": 160
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s5-searchqa",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s5-alfworld/evaluations/searchqa",
+    "expected_positions": 800
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s5-korbench",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s5-alfworld/evaluations/korbench",
+    "expected_positions": 1000
+  },
+  {
+    "kind": "eval",
+    "label": "skillopt-s5-alfworld",
+    "root": "/root/continual-skillopt-generalization-20261002-d-study/skillopt/s5-alfworld/evaluations/alfworld",
+    "expected_positions": 78
+  }
+]

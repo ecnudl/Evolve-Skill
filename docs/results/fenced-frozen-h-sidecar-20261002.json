@@ -1,0 +1,27 @@
+{
+  "evidence_kind": "historical_delivery_repair_and_new_frozen_h_scoring_not_skill_evolution",
+  "position_count": 1,
+  "task_id": "56786",
+  "repeat": 1,
+  "original_content_status": "unknown",
+  "prior_fenced_repair_content_status": "unknown",
+  "new_status": "fail",
+  "new_reason": "value@Sheet1!C4: mismatch",
+  "result_hash": "55431361edf801b04dd7a49dec31d9fd32b24dcedfabe41294764086293077b1",
+  "candidate_sha256": "a4cdf31eb2ea2516b6bd16400c4d174c4e019fe015c9fc5e443736d08eac00f4",
+  "original_fenced_case_hash": "ef9159a4e8c184914dcba6a32fa1485bf87c67c1ab0c36a972fbe6a738086866",
+  "execution": {
+    "closed_workbooks": 1,
+    "open_workbook_intents": 0,
+    "containers_attempted": 1,
+    "reported_wall_seconds": 4.0526839550584555,
+    "cleanup_unconfirmed": 0,
+    "model_api_calls": 0
+  },
+  "reference_engine_calls": 0,
+  "truth_basis": "same_frozen_dataset_cache_h_as_original_C_not_absolute_or_fresh_ground_truth",
+  "historical_scores_replaced": false,
+  "merged_into_original_160": false,
+  "method_improvement_claimed": false,
+  "feedback_allowed": false
+}

@@ -1,0 +1,38 @@
+{
+  "version": "single-sheet-length-recovery-v1",
+  "protocol_hash": "6aa1f424bd308eeb6a4e37c182b0183a0b77db03917b21e4dbe7854a631908bf",
+  "selected": 1,
+  "status": "completed",
+  "completed": 1,
+  "counts": {
+    "fail": 1
+  },
+  "cleanup_unconfirmed": false,
+  "new_costs": {
+    "logical_calls": 1,
+    "http_attempts": 1,
+    "reported_tokens": 3238,
+    "usage_complete": true,
+    "unclosed_calls": 0,
+    "retry_inclusive_usage_known": true
+  },
+  "old_selected_costs": {
+    "logical_calls": 1,
+    "http_attempts": 1,
+    "reported_tokens": 65919,
+    "usage_complete": true,
+    "unclosed_calls": 0,
+    "retry_inclusive_usage_known": true
+  },
+  "native_container_calls": 3,
+  "native_wall_seconds": 4.475605895412206,
+  "native_accounting_complete": true,
+  "result_hash": "4a77b878adae6bfaaef24b33de2a519ab0b131314b28776bbe8318d635a7c8e5",
+  "evidence_kind": "selected_closed_delivery_retry_diagnostic",
+  "diagnostic_only": true,
+  "old_scores_replaced": false,
+  "feedback_allowed": false,
+  "whole_benchmark_accuracy_claimed": false,
+  "causal_token_effect_claimed": false,
+  "record_hash": "a282a0aec500ae40b200365607ac951229441783768803dccfdeb7e2dad9e4d7"
+}

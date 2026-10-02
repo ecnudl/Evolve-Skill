@@ -1,0 +1,56 @@
+{
+  "version": "skillopt-coding-development-public-summary-v1",
+  "checked_at": "2026-09-29T16:50:00+08:00",
+  "method": "skillopt_native_bounded_adapter",
+  "benchmark": "bigcodebench",
+  "partition": "development",
+  "status": "pending",
+  "reason": "evaluation_unknown",
+  "start_time": "2026-09-29T13:44:49+08:00",
+  "stop_time": "2026-09-29T14:50:45+08:00",
+  "model": {"provider": "bigmodel", "name": "glm-5.3", "reasoning_effort": "low", "max_tokens_per_call": 4096},
+  "parent_skill": "empty",
+  "train": {"tasks": 65, "families": 64},
+  "selection": {"tasks": 64, "families": 64},
+  "repeats": 1,
+  "budget": {"max_metric_calls": 512, "max_reflection_calls": 32, "max_api_calls": 600, "max_reported_tokens": 2000000, "max_iterations": 2},
+  "initial_selection": {"evaluated": 64, "pass": 39, "fail": 25, "unknown": 0, "score": 0.609375},
+  "parent_train": {"evaluated": 65, "pass": 36, "fail": 29, "unknown": 0, "reused_in_second_iteration": true},
+  "candidates": [
+    {"step": 0, "skill_utf8_bytes": 4584, "selected_edits": 4, "optimizer_calls": 13,
+     "evaluated": 64, "planned": 64, "not_executed": 0, "pass": 28, "fail": 36, "unknown": 0,
+     "score": 0.4375, "paired_to_parent": {"wins": 2, "losses": 13, "ties": 49, "unknown": 0},
+     "gate_action": "reject", "score_difference": -0.171875},
+    {"step": 1, "skill_utf8_bytes": 5086, "selected_edits": 4, "optimizer_calls": 13,
+     "evaluated": 60, "planned": 64, "not_executed": 4, "pass": 26, "fail": 33, "unknown": 1,
+     "score": null, "paired_to_parent": {"wins": 1, "losses": 9, "ties": 49, "unknown": 1},
+     "gate_action": null, "score_difference": null}
+  ],
+  "unique_evaluations": {"total": 253, "pass": 129, "fail": 123, "unknown": 1, "train": 65, "selection": 188, "open_intents": 0},
+  "unknown": {"task_id": "BigCodeBench/930", "step": 1, "role": "selection", "reason": "model_response_truncated", "http_status": 200, "finish_reason": "length", "completion_tokens": 4096, "reasoning_tokens": 4093, "response_characters": 0, "native_failure": false},
+  "costs_by_role": {
+    "solver": {"logical_calls": 253, "http_attempts": 254, "prompt_tokens": 179708, "completion_tokens": 62081, "reported_tokens": 241789},
+    "optimizer": {"logical_calls": 26, "http_attempts": 26, "prompt_tokens": 107809, "completion_tokens": 22650, "reported_tokens": 130459}
+  },
+  "costs": {"logical_calls": 279, "terminal_calls": 279, "unclosed_calls": 0, "http_attempts_known_subtotal": 280, "prompt_tokens": 287517, "completion_tokens": 84731, "reported_tokens_known_subtotal": 372248, "missing_usage_calls": 0, "usage_complete": true, "retry_inclusive_usage_known": false},
+  "gepa": {"status": "not_started", "model_calls": 0, "reason": "finite_queue_stopped_on_skillopt_exit_3"},
+  "verification": {"terminal_artifact_hashes_checked": 1219, "all_matched": true, "new_model_calls_for_report": 0, "rescoring_performed": false},
+  "source": {
+    "run": "/root/continual-learning-bcb-20260928-a/skillopt-run-20260929-a",
+    "manifest_hash": "49a35d470719008f0b086a4a2be4f289b22762fc3f345bb8ef9684396c3ef717",
+    "result_hash": "9288b04deb375503145b4563b9c812de4121a62a6fe7d1020cb6b766ce69aae9",
+    "source_archive_sha256": "3871775eb297454257d2bfa49cd1889e71b4b01ea08e7f815c5dd17ccf802d5f",
+    "adapter_source_sha256": "58110391829e8f3210114c095c3b35e1192099b5ec6f89c4f8feed0eab994575"
+  },
+  "limitations": [
+    "Development selection only; no independent final or five-domain learned checkpoint evaluation.",
+    "Partial candidate selection is not a completed score. Unknown is not a semantic failure; unsubmitted positions are not unknown.",
+    "First candidate was rejected, so both proposal iterations used the same empty parent. Shared cached parent records are not new samples.",
+    "Aggregate evaluation counts mix roles and candidates and cannot be called method accuracy.",
+    "Reported tokens exclude unknown retry billing. No monetary cost is inferred.",
+    "This frozen optimizer supports completed replay, not exact interrupted optimization resume. No failed position was resampled."
+  ],
+  "deployment_authorized": false,
+  "generalization_claim": false,
+  "raw_prompts_skills_or_api_caches_published": false
+}

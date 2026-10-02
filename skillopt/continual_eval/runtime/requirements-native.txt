@@ -1,0 +1,10 @@
+# Solver/runtime profile pins, not a claim that all transitive wheels are locked.
+# Archive `pip freeze`, the base manifest digest and final local image ID.
+# KOR upstream requires sympy>=1.13 and antlr4-python3-runtime==4.11.
+antlr4-python3-runtime==4.11
+sympy==1.13.3
+PyYAML==6.0.2
+tqdm==4.67.1
+openpyxl==3.1.5
+numpy==1.26.4
+pandas==2.2.3

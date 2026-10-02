@@ -1,0 +1,49 @@
+{
+  "version": "full-panel-delivery-recovery-v1",
+  "protocol_hash": "d9b1e1857f212c32483e88546a4ad0f4cad331719a782abde2b1e7cecd772df0",
+  "status": "completed",
+  "blocked_reason": null,
+  "original_positions": 1000,
+  "selected": 1,
+  "completed": 1,
+  "blocked": 0,
+  "counts": {
+    "fail": 1
+  },
+  "new_costs": {
+    "logical_calls": 1,
+    "http_attempts": 1,
+    "reported_tokens": 1403,
+    "usage_complete": true,
+    "unclosed_calls": 0,
+    "retry_inclusive_usage_known": true
+  },
+  "old_selected_costs": {
+    "logical_calls": 1,
+    "http_attempts": 1,
+    "reported_tokens": null,
+    "usage_complete": false,
+    "unclosed_calls": 0,
+    "retry_inclusive_usage_known": false
+  },
+  "known_reported_tokens": 1403,
+  "usage_missing_calls": 0,
+  "native_execution": {
+    "reported_container_calls": 1,
+    "reported_wall_seconds": 2.04958,
+    "cleanup_confirmed_results": 1,
+    "cleanup_unconfirmed_results": 0,
+    "container_results_without_explicit_cleanup_flag": 0,
+    "available_predictions_without_execution_cost_record": 0
+  },
+  "result_hashes": {
+    "dde466a21663747f1919dd5405f5b504d1067a5e5b23157f06bb540cf75eab81": "afa85d010400f096943e7bf4c3691d44d640aab332973d4a9fe089fae1ea594a"
+  },
+  "evidence_kind": "selected_closed_delivery_retry_diagnostic",
+  "diagnostic_only": true,
+  "old_scores_replaced": false,
+  "feedback_allowed": false,
+  "whole_benchmark_accuracy_claimed": false,
+  "causal_token_effect_claimed": false,
+  "record_hash": "43a94581acc20a77538ef6aa649a4b2a7e570bdc40b278c9056f009e04ad80f9"
+}

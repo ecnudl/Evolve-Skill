@@ -1,0 +1,123 @@
+{
+  "version": "skill-content-discordance-posthoc-audit-v1",
+  "date": "2026-10-01",
+  "evidence_kind": "read_only_posthoc_public_contract_and_generated_code_review",
+  "question": "Why did conditional wording not show an observed advantage over generic wording in this one-shot shadow comparison?",
+  "scope": {
+    "selection_tasks": 64,
+    "known_pairs": 63,
+    "hard_discordant_tasks_reviewed": 10,
+    "hard_discordant_lexical_families": 10,
+    "code_artifacts_reviewed": 20,
+    "hidden_tests_read": false,
+    "reference_solutions_read": false,
+    "hidden_error_tracebacks_read": false,
+    "generated_code_executed_by_audit": false,
+    "new_model_calls": 0,
+    "historical_results_relabelled": false
+  },
+  "observed_outcomes": {
+    "generic": {"pass": 34, "fail": 29, "unknown": 1},
+    "conditional": {"pass": 32, "fail": 32, "unknown": 0},
+    "conditional_minus_generic": {"wins": 4, "losses": 6, "ties": 53, "unknown": 1},
+    "generic_original_gate": "pending; diagnostic collection does not reopen it",
+    "comparison_is_not_independent_confirmation": true
+  },
+  "actual_updater_input": {
+    "same_observations_in_both_arms": true,
+    "training_tasks": 65,
+    "training_pass": 36,
+    "training_fail": 29,
+    "observation_fields": ["public.prompt", "public.entry_point", "model_output", "feedback.source", "feedback.status", "feedback.score"],
+    "feedback_source": "host_development_audit",
+    "executable_counterexamples": 0,
+    "detailed_error_explanations": 0,
+    "research_documents": 0,
+    "rubric_evaluations": 0,
+    "old_reflection_responses_used": 0,
+    "new_proposals_per_arm": 1,
+    "proposal_max_tokens": 4096,
+    "selection_solver_max_tokens": 65536,
+    "model": "glm-5.3",
+    "generic_prompt_bytes": 113086,
+    "conditional_prompt_bytes": 113292,
+    "training_evidence_hash": "7f3b9a80501a56a88535f86b7c1b7cc8e119abca4918c654651118406c78f0a4"
+  },
+  "skill_properties": {
+    "generic_bytes": 3326,
+    "conditional_bytes": 5891,
+    "generic_sha256": "d0912dd6208c82fadb7c1b91bbc094188a2ef4111801a89d4a1b6cfdfca7a55d",
+    "conditional_sha256": "0aa338074d2410be8b182a1deaccf147a730e6770191738bb4169c2e950d455e",
+    "actual_length_matched": false,
+    "both_are_monolithic_coding_checklists": true,
+    "skill_retrieval_or_scope_router_used": false,
+    "all_selection_tasks_receive_the_entire_frozen_skill": true,
+    "conditions_are_textual_not_deployment_authorization": true
+  },
+  "delivery_check_on_discordant_artifacts": {
+    "syntax_valid": 20,
+    "solver_stop_glm_5_3": 20,
+    "native_pass": 10,
+    "native_fail": 10,
+    "cleanup_confirmed": 20,
+    "native_reason": "official_bigcodebench_untrusted_check",
+    "native_image": "sha256:b13b0bb97861eb3a2f3f9ead1e8718d1410882613f84e088bb31338c343149fa"
+  },
+  "manual_primary_categories": {
+    "numerical_axis_or_field_mapping": {"tasks": 2, "conditional_wins": 1, "conditional_losses": 1},
+    "representation_or_parsing": {"tasks": 3, "conditional_wins": 1, "conditional_losses": 2},
+    "extra_constraints_or_output_format": {"tasks": 3, "conditional_wins": 1, "conditional_losses": 2},
+    "public_contract_and_host_label_tension": {"tasks": 2, "conditional_wins": 1, "conditional_losses": 1}
+  },
+  "case_findings": [
+    {"case": "D01", "task_hash": "5f58957f14192252647f09b050f984fd3b006006a45bc05ef5f70bab70a92779", "conditional_result": "loss", "category": "numerical_axis_or_field_mapping", "finding": "The conditional artifact changes the aggregation axis and reshapes observations into one sample. This is a concrete dimensionality difference, not a syntax or delivery problem.", "skill_relation": "No instruction requests this axis change; generic instructions to respect data flow did not reliably prevent it.", "exact_host_failure_cause_confirmed": false},
+    {"case": "D02", "task_hash": "7491a40956b126e628cbfd02f68a560292490621ea7cd3e35074c5cb267e075b", "conditional_result": "win", "category": "representation_or_parsing", "finding": "The artifacts serialize different container shapes: a record list versus a dictionary. The generic artifact also introduces conversion and directory-creation behavior.", "skill_relation": "Reducing invented behavior is directionally consistent with the conditional checklist, but the native scalar does not identify which difference mattered.", "exact_host_failure_cause_confirmed": false},
+    {"case": "D03", "task_hash": "8343cb090b5b2646d2812fdbb89d15df48a44051a23d2d5c52cde903975b1aab", "conditional_result": "loss", "category": "representation_or_parsing", "finding": "The conditional parser restricts a textual field to one non-whitespace token; the other parser retains a broader field. Their row-matching and signed-number handling also differ.", "skill_relation": "No reviewed Skill instruction requires this narrowing. A concrete supported-input counterexample would be more informative than another general checklist item.", "exact_host_failure_cause_confirmed": false},
+    {"case": "D04", "task_hash": "88c9161f2d10ff34a74eed0978ef961bd42f92119eea2529032dee57bb80cc1f", "conditional_result": "loss", "category": "representation_or_parsing", "finding": "Frequency outputs differ in support set, key representation, and prefix handling. Several differences coexist, while the public contract does not uniquely specify every representation choice.", "skill_relation": "Exact-output guidance exists in both Skills but supplies no task-specific evidence resolving these choices.", "exact_host_failure_cause_confirmed": false},
+    {"case": "D05", "task_hash": "97c3cddb27a5d0fda77db60da0b35a7ef57a365da38c6fb97bfd9cc24e4b3440", "conditional_result": "win", "category": "extra_constraints_or_output_format", "finding": "The generic artifact silently filters records and values not explicitly excluded by the contract; the conditional artifact retains them. Plot-title choices also differ.", "skill_relation": "This is compatible with the conditional rule against unsupported validation, but filtering versus unspecified presentation cannot be separated from the scalar label.", "exact_host_failure_cause_confirmed": false},
+    {"case": "D06", "task_hash": "980c8ed11bec95c95ae5210ac7eda5692fce61d397ce96b196ba0cd0c0a3aab9", "conditional_result": "loss", "category": "extra_constraints_or_output_format", "finding": "The conditional artifact narrows a parser's accepted labels and changes the output filename, column naming, and timestamp representation. Some output conventions are underdetermined by the public text.", "skill_relation": "The conditional checklist warns against invented requirements, but the output still makes additional assumptions; no particular instruction demonstrably caused them.", "exact_host_failure_cause_confirmed": false},
+    {"case": "D07", "task_hash": "c02b1e6d60877ec13339732697b2867e13ba4572d105c84b5ccadd2f22536ccc", "conditional_result": "win", "category": "public_contract_and_host_label_tension", "audit_status": "candidate_contract_discrepancy_requires_separate_review", "finding": "In the host-passing artifact's explicit per-series selection, every branch beyond the initial palette assigns the same fallback; no cycling or equivalent mapping was observed. This raises a public/H tension requiring review of the intended observable behavior, not a corrected score or proof that the host oracle is wrong.", "skill_relation": "Do not treat this win as evidence that the conditional instruction learned the intended mechanism; retain the old score and separately flag obligation coverage for future audit.", "exact_host_failure_cause_confirmed": false},
+    {"case": "D08", "task_hash": "e6453a73643711126caf56a675b9c03b0da8f5bd7421c9ef4afca47b9bbb8287", "conditional_result": "loss", "category": "extra_constraints_or_output_format", "finding": "Fixed decimal formatting becomes numeric rounding followed by string conversion, which need not retain trailing zeros. An unspecified plotting parameter also changes.", "skill_relation": "Both Skills already request exact output text. Repeating that instruction more emphatically did not guarantee compliance in this sample.", "exact_host_failure_cause_confirmed": false},
+    {"case": "D09", "task_hash": "ea22d51bc409e2621ca1f8edc908da3e12732c9a995abf160153061fde55be8d", "conditional_result": "win", "category": "numerical_axis_or_field_mapping", "finding": "The generic artifact mixes positional identity and score fields in comparisons and output selection. The conditional artifact uses separate semantic fields consistently.", "skill_relation": "Consistent with attention to named data flow, but one independently sampled pair cannot establish which Skill sentence produced the correction.", "exact_host_failure_cause_confirmed": false},
+    {"case": "D10", "task_hash": "fcac801a59aa0a01c23f4257fbb11fea59c67f1875c76534e8777307e25cb233", "conditional_result": "loss", "category": "public_contract_and_host_label_tension", "audit_status": "candidate_contract_discrepancy_requires_separate_review", "finding": "The passing generic artifact adds optional parameters while preserving the required arguments and ordinary call compatibility; this is not established to violate the task interface. The failing conditional artifact uses the literal starter signature. Architecture and training settings also differ, with some choices underspecified publicly; the signature difference does not explain the failure or establish an H error.", "skill_relation": "Literal signature preservation is an instruction shared by the Skills, but its strict wording is not necessarily a task obligation. Scalar outcomes alone cannot justify blaming or reversing that instruction.", "exact_host_failure_cause_confirmed": false}
+  ],
+  "evidence_hashes": {
+    "generic_protocol": "61e7da890dc8363c628e20d6beee07106c2126d6fe817bc91aaf13eaed83f44f",
+    "generic_original_result": "e83ed102ace0f4bc27088893a10d46657930a554e3e556e3868759a7dfca17ee",
+    "generic_diagnostic_collection_result": "d3199880c2f44a9ae7eb7eaa31e1a5388054322ae3d6d1008c661b3dbebbf84b",
+    "conditional_protocol": "2bc22a223cc576c31a2e5e9f50c1c969b6033b1df419e61b102c2cbbcf23a144",
+    "conditional_result": "2bbe57d83dc9a1e369ac2db889078ef7a2c68ea3b6a0fae4036bd6f62164806e",
+    "generic_proposal_request_hash": "6e28036270a035eb873fcb11c3fecf71791904bc83d9fdb2facbc3979bb35413",
+    "conditional_proposal_request_hash": "9d2170720547e78e897ff185a4460619188f74af60176427e51d4f1a48bc5490"
+  },
+  "artifact_evidence_hash_columns": ["evaluation_receipt_hash", "model_call_receipt_hash", "solver_request_hash"],
+  "artifact_evidence_hashes": {
+    "D01": {"generic": ["d3c6bbf79a9e549ab22de5dcccc00a6eca1358aea3fb6fc0aaa6d4933fd8a9dd", "0b0ac505c2cff7f31e040cc78ba447e05c947b50220a583e484d4334e9538fa4", "719318788c68900e763d2254ef3b69fb1a49992d9fbe33e2a2abb7d41581162a"], "conditional": ["5189f6842d13783140ef45cb39f8db766e78d917c5b14e54ae20bb35fffb6c36", "db6ae8c67f6e9ae5c6e383d1bf34d070c7d95cb3a853f9f432a35a543bc1c1e6", "16b5757dcd8ba3aa7bce52e881b3921bca5223a38f4d3cd7f6b5db49b8a3c865"]},
+    "D02": {"generic": ["d03ccabb2ea386b61eac47b68c04031a550ab7ee77f431efbb6a05d793f52c04", "91f8ea151b558de07f66102f4b14127c0a04916a7c954ac11e9ad98b5da50507", "a805d45dbd3486d7e59a07afc1c643c90a6b3ec3a39e412629ed34a391f030d9"], "conditional": ["06999bbd6dd02dce14b66fc08397293250481db5d8142c68882720229740c43a", "58f1cfb37b85316b2ad3dfe2fd04e5874ea8e845bc49a8057b59b98150fb1a77", "ff96a28d7c3bacdefb7bbe834feec81c542ba0395e86f0bd3caac949644ac0ab"]},
+    "D03": {"generic": ["84b6c2e0881cbd32f9a1aeb7b9d837fd9df4bd1b43eefb6c37ee5f34c8f38415", "050f42d245a9d5d6f80691ca7984eabef33c53dd524cce1908335a1cce745561", "e5a4c324df322d96960f84c35adc5d144e8da76c2313abba010b652c1d020e66"], "conditional": ["4bf2e9fde083e19f0425ccee5c186af08998b73197b949e8017dafcbb201aa00", "047c5163306a7045070d5c67a19892775d284c789deef297cf72578830b46da0", "5db457066aef4d6d4c2ec5c2d5a0d8e7ddf2301ee5ea1e089557fccf3ec7e7a5"]},
+    "D04": {"generic": ["439dbd4273e030152ec1294d0c3812dc74dde8af91b5a9a08ea4edd375edd85f", "059a0d7698c056d435bcf0fa99735df767020bbaabf4423c8d2f1f0d328b0e18", "0f61fc1b37d187648b9218071b4373c5fc27af43008e5e968f3661a12a8fe41c"], "conditional": ["c82532312f2b79fc08f55b100d5d856be23908a1ec828229136d9317e064761b", "e190a47b02567d8c8d16b1f491148d6d074b9baa648bf858d894fbef0897c1d4", "29ba59e9c2ba278cd33c8bdcb9c1b5e190f1c75e41d4db5a09f872c6952839aa"]},
+    "D05": {"generic": ["a81e5010100ad805d8af417c4da9cf2de203611d5aa87ff6f6ae197430c3ec49", "f76e89d243f932244abd5489f432c0c14f5147631c555a07906f6566b7ca9b60", "c37683df1e126b9f78db0f5ad4c094588e9363c6d4845e859490bb0c599421de"], "conditional": ["3659f351deccea98545da1694558a539417f90dca40adb7b6fa9c22f390d2a68", "31954f905bcd8827a66914e0b4ec94412cf3a11f73b208a39d649b47288eab5a", "07c41267104834fa9595b2e9446eb49269e635bcf3264e5a51b465d82214f2c3"]},
+    "D06": {"generic": ["7ddc57711b4c39561638900bcd062ae22acc6eee66af8530c4e387481c4487c3", "9b33478f0b4bec43e21f759e1b81a9bf90012e281c260b75ed1ead30051b039e", "1c8b7838d9845c7b71838e63ee30cbec1936b7eab72806c579f9b431e1c451ef"], "conditional": ["df4cffd7814541800de27693c2799494e0917228873a698c0b5104d1115a159b", "26587e5bdbbd201b77826854c45fc01642e3766045bfd788302c42fbaa5fcf6c", "abbd4b2a5c3e623c1a14c9160bc1f2d7dfc7402aef375d8b06edd4dc8cc2b5d2"]},
+    "D07": {"generic": ["fc5876ce634593149a3d0b83a3efd46e8f6cf7fac5c8b28d0d5c3d92ab1d4ee1", "81885e89dfcb9ac36fe01201fb16ef28a263135d87e7eaf4b21e2d0b0836091d", "194f927612c88d8ad5608b6c2827dc1238019a5f1f37825852484ce64de7a5b5"], "conditional": ["e012f1ccbcb7176738a5cc237a5760dedefb712d9f23a76e73cbb1f1bd558f87", "470f43fea14b2ffafb59a0db4ebe4837930e10fdda7516e5f4a6e998db9aad28", "c9196211b133a520e25d423b539d0f95066ad4a764610f444ca5356fc58dbbf5"]},
+    "D08": {"generic": ["e34eb5da78a7b047ac94fd0358f5c12dfd4e3be90819a6c65561d879763eb319", "281e9b6603625441672b9bc8796387bac594d7a3575fa1ea1fc45d91645f2311", "b81a6aaf514fd85adf100f36188be2b42137330d7614b86ec8bb029b2c67318d"], "conditional": ["75bbc47062fd46a6f305c3616752e0e6998ffad2deb5beac408c9f59f0dde77d", "11089e4e47c121de232b1695b65954ad0b142147f99e023ad4049fc1589023bb", "2b66b71543bbb24d8ef9cb01d6dc2bc0eae86368090afdf6ce84d367a01f647e"]},
+    "D09": {"generic": ["bf0fa382fc275e4cbfbdbbf1362e194b4bed2320413a97b48d241102bec9b92b", "7e568f0b4d6cd67057d0662e9b23252d64f103c1ad413adb6c575ce3f143b41a", "01302fe65ce3be80da7ffaa80b86945fbfbc082291baf446ce6a132c581f56c0"], "conditional": ["765f7e6d050d11a317de64a090ae7d5b440e54cf6c786617997133177f9e83c8", "e919da2e7e7380236f7025c332d51437ff4f2b46ee36b855cb88f4e39617da07", "722899a45f81e3e75d48ef81af44e2ffd2cb7f86e860238b0d18fcec24092e8a"]},
+    "D10": {"generic": ["f72bfcf20c98a643409f1fe7b08cc58280e5059bae70afc50992856fce9385b5", "eee41ee232d12959d39af04df9f25b35f562abe11c43add2c488d3e0135b8fcd", "c3e9f76d3cc23ea6416437794f882b6e7e8aaba99d4096ae294a19dbc1ac1174"], "conditional": ["d945054cd6967974cc495d524c6cfef7959d946db89f98688a8b435ae08b218f", "360016ea180bf529bef8b749795e238a24c60da9982b0c968f237c734b762b4a", "ac686c46f300cd6cf63b5c998006b2b4ea0eea12fead55385dfb3412b2a35633"]}
+  },
+  "suggested_single_next_experiment": {
+    "name": "Equal-length single-round Skill update: scalar versus admissible executable development feedback",
+    "hold_fixed": ["same empty or justified parent", "same development contracts and artifacts", "same updater/model and proposal budget", "same Skill length/rule-count cap", "same solver protocol"],
+    "treatment": "Add only public-contract-grounded, independently executed and admissibility-reviewed counterexample evidence; never expose hidden tests or attribute H scalar labels to Research.",
+    "control": "Same scalar observations with equal-budget reflection, without the executable evidence.",
+    "confirmation": "Pre-freeze new task families and repeats, include near-miss obligations, preserve unknowns, and use multiple independent proposal histories. The ten consumed discordant tasks are diagnostic development evidence, not independent confirmation.",
+    "key_measure": "Does a specific evidence-supported rule change improve new-task paired outcomes without adding regressions, at matched Skill length?"
+  },
+  "limitations": [
+    "Manual categories summarize observed code differences, not unique root causes of native failures.",
+    "One candidate per arm and one solve per task; no seed-controlled or repeated-candidate causal attribution.",
+    "Generic suffix was collected later under the same frozen protocol; collection order is not randomized.",
+    "Lexical family identity is not proof of semantic independence.",
+    "No evidence that conditional mechanisms are intrinsically harmful or that Research/Rubric coevolution has failed; neither Research nor executable Rubric feedback was used in this shadow proposal.",
+    "No raw tasks, Skill text, generated code, hidden tests, or reference answers are published in this aggregate audit."
+  ],
+  "record_hash": "9040d4816c2d35c479ab79006f5f68f1870a2a7ba96759666255be613aeee702"
+}

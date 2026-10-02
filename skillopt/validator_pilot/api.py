@@ -7,9 +7,13 @@ experiments; it never changes the identity of an existing PJLAB run.
 
 from __future__ import annotations
 
+import asyncio
+import codecs
+import copy
 import hashlib
 import json
 import os
+import re
 import tempfile
 import threading
 import time
@@ -26,6 +30,11 @@ R = TypeVar("R")
 MODEL = "glm-5.3"
 PROVIDER_HOST = "token.pjlab.org.cn"
 BIGMODEL_HOST = "open.bigmodel.cn"
+PJLAB_HTTP_PROXY_HOST = "httpproxy-headless.kubebrain.svc.pjlab.local"
+PJLAB_MAX_TOKENS = 16_000
+BIGMODEL_GLM53_STANDARD_MAX_TOKENS = 65_536
+BIGMODEL_GLM53_MAX_TOKENS = 131_072
+LONG_STREAM_MAX_BYTES = 32_000_000
 
 
 def digest(value: Any) -> str:
@@ -105,40 +114,41 @@ class _StreamResponseError(ValueError):
         super().__init__(category)
 
 
-def _stream_body(response: httpx.Response) -> dict[str, Any]:
-    """Parse SSE event boundaries independently of HTTP byte chunk boundaries."""
-    if "text/event-stream" not in response.headers.get("content-type", "").casefold():
-        raise _StreamResponseError("unexpected_stream_content_type")
-    started = time.monotonic()
-    parts: list[str] = []
-    event_lines: list[str] = []
-    usage: dict[str, Any] = {}
-    model, finish = None, None
-    done, events, text_chars, stream_chars = False, 0, 0, 0
+class _StreamAccumulator:
+    """Shared SSE validation; reasoning text is never accumulated as an answer."""
 
-    def consume() -> None:
-        nonlocal usage, model, finish, done, events, text_chars
-        if not event_lines:
+    def __init__(self, *, max_stream_chars: int = 8_000_000) -> None:
+        self.parts: list[str] = []
+        self.event_lines: list[str] = []
+        self.usage: dict[str, Any] = {}
+        self.model: str | None = None
+        self.finish: str | None = None
+        self.done = False
+        self.events = self.text_chars = self.stream_chars = 0
+        self.max_stream_chars = max_stream_chars
+
+    def consume(self) -> None:
+        if not self.event_lines:
             return
-        payload = "\n".join(event_lines)
-        event_lines.clear()
+        payload = "\n".join(self.event_lines)
+        self.event_lines.clear()
         if payload.strip() == "[DONE]":
-            done = True
+            self.done = True
             return
         body = json.loads(payload)
         if not isinstance(body, dict):
             raise _StreamResponseError("invalid_stream_event")
         if "error" in body:
             raise _StreamResponseError("upstream_stream_error")
-        events += 1
+        self.events += 1
         if body.get("model") is not None:
-            if not isinstance(body["model"], str) or (model is not None and body["model"] != model):
+            if not isinstance(body["model"], str) or (self.model is not None and body["model"] != self.model):
                 raise _StreamResponseError("inconsistent_stream_model")
-            model = body["model"]
+            self.model = body["model"]
         if body.get("usage") is not None:
             if not isinstance(body["usage"], dict):
                 raise _StreamResponseError("invalid_stream_usage")
-            usage = body["usage"]
+            self.usage = body["usage"]
         choices = body.get("choices", [])
         if not isinstance(choices, list) or len(choices) > 1:
             raise _StreamResponseError("invalid_stream_choices")
@@ -154,36 +164,123 @@ def _stream_body(response: httpx.Response) -> dict[str, Any]:
             if content is not None:
                 if not isinstance(content, str):
                     raise _StreamResponseError("invalid_stream_content")
-                if finish is not None and content:
+                if self.finish is not None and content:
                     raise _StreamResponseError("content_after_stream_finish")
-                parts.append(content)
-                text_chars += len(content)
-                if text_chars > 200_000:
+                self.parts.append(content)
+                self.text_chars += len(content)
+                if self.text_chars > 200_000:
                     raise _StreamResponseError("stream_content_limit")
             incoming_finish = choice.get("finish_reason")
             if incoming_finish is not None:
-                if not isinstance(incoming_finish, str) or (finish is not None and finish != incoming_finish):
+                if (not isinstance(incoming_finish, str)
+                        or (self.finish is not None and self.finish != incoming_finish)):
                     raise _StreamResponseError("inconsistent_stream_finish")
-                finish = incoming_finish
+                self.finish = incoming_finish
+
+    def feed_line(self, line: str) -> None:
+        self.stream_chars += len(line)
+        if self.stream_chars > self.max_stream_chars:
+            raise _StreamResponseError("stream_size_limit")
+        if not line:
+            self.consume()
+        elif line.startswith("data:"):
+            self.event_lines.append(line[5:].removeprefix(" "))
+        # SSE comments, id, retry and event-name fields are not model payload.
+
+    def result(self) -> dict[str, Any]:
+        if not self.done and self.event_lines:
+            self.consume()
+        return {"choices": [{"message": {"content": "".join(self.parts)}, "finish_reason": self.finish}],
+                "usage": self.usage, "model": self.model, "_stream_complete": self.done,
+                "_stream_event_count": self.events, "_stream_chars": self.stream_chars}
+
+
+def _stream_body(response: httpx.Response) -> dict[str, Any]:
+    """Historical stream path: retain its default timing/cache contract."""
+    if "text/event-stream" not in response.headers.get("content-type", "").casefold():
+        raise _StreamResponseError("unexpected_stream_content_type")
+    started = time.monotonic()
+    accumulator = _StreamAccumulator()
 
     for line in response.iter_lines():
-        stream_chars += len(line)
-        if stream_chars > 8_000_000:
-            raise _StreamResponseError("stream_size_limit")
         if time.monotonic() - started > 300:
             raise _StreamResponseError("stream_wall_time_limit")
-        if not line:
-            consume()
-            if done:
+        accumulator.feed_line(line)
+        if accumulator.done:
+            break
+    return accumulator.result()
+
+
+def long_stream_service(service: dict[str, Any], *, read_timeout_seconds: int,
+                        stream_wall_seconds: int) -> dict[str, Any]:
+    """Pure protocol overlay shared by the client and frozen-run preparation.
+
+    This is opt-in. It never changes the historical default service identity.
+    The deadline covers each attempt including connection, headers and body;
+    bounded retries remain separately recorded and may each incur model cost.
+    """
+    if type(read_timeout_seconds) is not int or not 120 <= read_timeout_seconds <= 1200:
+        raise ValueError("read_timeout_seconds must be an integer in [120, 1200]")
+    if type(stream_wall_seconds) is not int or not 300 <= stream_wall_seconds <= 3600:
+        raise ValueError("stream_wall_seconds must be an integer in [300, 3600]")
+    if not isinstance(service, dict) or not isinstance(service.get("timeout_seconds"), dict):
+        raise ValueError("Expected a client service with timeout_seconds")
+    value = copy.deepcopy(service)
+    value["timeout_seconds"]["read"] = read_timeout_seconds
+    value.update(stream=True, stream_options={"include_usage": True},
+                 stream_max_wall_seconds=stream_wall_seconds,
+                 stream_max_characters=LONG_STREAM_MAX_BYTES, stream_max_content_characters=200_000,
+                 stream_max_bytes=LONG_STREAM_MAX_BYTES, stream_completion_rule="[DONE] plus finish_reason=stop",
+                 stream_transport="async-whole-attempt-deadline-v1",
+                 stream_deadline_scope="per_attempt_connect_headers_body")
+    return value
+
+
+async def _long_stream_body(response: httpx.Response) -> dict[str, Any]:
+    """Bound bytes even before an event/line ends; honor split UTF-8 and CRLF."""
+    if "text/event-stream" not in response.headers.get("content-type", "").casefold():
+        raise _StreamResponseError("unexpected_stream_content_type")
+    accumulator = _StreamAccumulator(max_stream_chars=LONG_STREAM_MAX_BYTES)
+    decoder = codecs.getincrementaldecoder("utf-8")()
+    buffer = ""
+    byte_count = 0
+
+    def feed(text: str, *, final: bool = False) -> None:
+        nonlocal buffer
+        buffer += text
+        cursor = 0
+        for match in re.finditer(r"\r\n|\r|\n", buffer):
+            # A terminal CR may be the first half of a split CRLF delimiter.
+            if match.group() == "\r" and match.end() == len(buffer) and not final:
                 break
-        elif line.startswith("data:"):
-            event_lines.append(line[5:].removeprefix(" "))
-        # SSE comments, id, retry and event-name fields are not model payload.
-    if not done and event_lines:
-        consume()
-    return {"choices": [{"message": {"content": "".join(parts)}, "finish_reason": finish}],
-            "usage": usage, "model": model, "_stream_complete": done,
-            "_stream_event_count": events, "_stream_chars": stream_chars}
+            accumulator.feed_line(buffer[cursor:match.start()])
+            cursor = match.end()
+            if accumulator.done:
+                break
+        buffer = buffer[cursor:]
+        if final and buffer and not accumulator.done:
+            accumulator.feed_line(buffer)
+            buffer = ""
+
+    async for chunk in response.aiter_bytes():
+        byte_count += len(chunk)
+        if byte_count > LONG_STREAM_MAX_BYTES:
+            raise _StreamResponseError("stream_size_limit")
+        feed(decoder.decode(chunk))
+        if accumulator.done:
+            break
+    if not accumulator.done:
+        feed(decoder.decode(b"", final=True), final=True)
+    return accumulator.result()
+
+
+def _timeout_subtype(error: httpx.TimeoutException) -> str:
+    # Fixed names, never str(error), which can include credentials or bodies.
+    for kind, label in ((httpx.ConnectTimeout, "connect"), (httpx.ReadTimeout, "read"),
+                        (httpx.WriteTimeout, "write"), (httpx.PoolTimeout, "pool")):
+        if isinstance(error, kind):
+            return label
+    return "unspecified"
 
 
 class CachedAPI:
@@ -197,11 +294,23 @@ class CachedAPI:
 
     def __init__(self, repo: Path, root: Path, model: str = MODEL, workers: int = 8, *, stream: bool = False,
                  reasoning_effort: str | None = None, provider: str = "pjlab", proxy: str | None = None,
-                 initial_health_policy: str = "legacy_success_only"):
+                 initial_health_policy: str = "legacy_success_only", read_timeout_seconds: int = 120,
+                 stream_wall_seconds: int | None = None, delivery_retry_policy: str | None = None):
+        if delivery_retry_policy not in (None, "closed_network_error_v1"):
+            raise ValueError("Unknown delivery retry policy")
+        if delivery_retry_policy is not None and (provider != "bigmodel" or model != MODEL or not stream):
+            raise ValueError("Delivery retries require streaming BigModel glm-5.3")
         if isinstance(workers, bool) or not isinstance(workers, int) or not 1 <= workers <= 12:
             raise ValueError("workers must be an integer in [1, 12]")
         if type(stream) is not bool:
             raise ValueError("stream must be an explicit boolean")
+        if type(read_timeout_seconds) is not int or not 120 <= read_timeout_seconds <= 1200:
+            raise ValueError("read_timeout_seconds must be an integer in [120, 1200]")
+        if stream_wall_seconds is not None:
+            if not stream:
+                raise ValueError("stream_wall_seconds requires stream=True")
+            if type(stream_wall_seconds) is not int or not 300 <= stream_wall_seconds <= 3600:
+                raise ValueError("stream_wall_seconds must be an integer in [300, 3600]")
         if type(initial_health_policy) is not str or initial_health_policy not in {"legacy_success_only", "completed_response_v1"}:
             raise ValueError("Unknown initial API health policy")
         if reasoning_effort is not None and (
@@ -213,7 +322,9 @@ class CachedAPI:
                 try:
                     parsed_proxy = urlsplit(proxy)
                     valid_proxy = (
-                        parsed_proxy.scheme == "http" and parsed_proxy.hostname in {"127.0.0.1", "::1"}
+                        parsed_proxy.scheme == "http"
+                        and (parsed_proxy.hostname in {"127.0.0.1", "::1"}
+                             or (parsed_proxy.hostname == PJLAB_HTTP_PROXY_HOST and parsed_proxy.port == 3128))
                         and parsed_proxy.port is not None and 1 <= parsed_proxy.port <= 65535
                         and parsed_proxy.username is None and parsed_proxy.password is None
                         and not parsed_proxy.query and not parsed_proxy.fragment
@@ -221,11 +332,13 @@ class CachedAPI:
                 except ValueError:
                     pass
             if not valid_proxy:
-                raise ValueError("An explicit proxy requires BigModel and a credential-free loopback HTTP endpoint")
+                raise ValueError("An explicit proxy requires BigModel and a credential-free loopback HTTP endpoint "
+                                 "or the approved PJLAB gateway on port 3128")
         endpoint, api_key = _configuration(Path(repo), model, provider=provider)
         self.root, self.model, self.workers = Path(root), model, workers
         self.provider = provider
         self.stream = stream
+        self.stream_wall_seconds = stream_wall_seconds
         self.reasoning_effort = reasoning_effort
         self.initial_health_policy = initial_health_policy
         host = PROVIDER_HOST if provider == "pjlab" else BIGMODEL_HOST
@@ -235,7 +348,7 @@ class CachedAPI:
             "host": host, "path": path,
             "model": model, "temperature": 0, "trust_env": False,
             "follow_redirects": False, "generation_seed": "not sent",
-            "timeout_seconds": {"connect": 20, "read": 120, "write": 30, "pool": 20},
+            "timeout_seconds": {"connect": 20, "read": read_timeout_seconds, "write": 30, "pool": 20},
             "max_retries": 2, "retry_statuses": [429, 500, 502, 503, 504],
             "retry_backoff_seconds": [2, 4], "max_retry_after_seconds": 10,
             "protocol": ("pjlab-validator-pilot-v1" if provider == "pjlab"
@@ -246,6 +359,9 @@ class CachedAPI:
                                 stream_max_wall_seconds=300, stream_max_characters=8_000_000,
                                 stream_max_content_characters=200_000,
                                 stream_completion_rule="[DONE] plus finish_reason=stop")
+        if stream_wall_seconds is not None:
+            self.service = long_stream_service(self.service, read_timeout_seconds=read_timeout_seconds,
+                                               stream_wall_seconds=stream_wall_seconds)
         if reasoning_effort is not None:
             self.service["reasoning_effort"] = reasoning_effort
         if provider == "bigmodel":
@@ -257,15 +373,20 @@ class CachedAPI:
         # identities. Only an explicitly new protocol opts into this policy.
         if initial_health_policy != "legacy_success_only":
             self.service["initial_health_policy"] = initial_health_policy
+        if delivery_retry_policy is not None:
+            self.service["delivery_retry_policy"] = delivery_retry_policy
         write_immutable_json(self.root / "service.json", self.service)
         self._endpoint = endpoint
-        self._client = httpx.Client(
-            headers={"Authorization": "Bearer " + api_key, "Content-Type": "application/json"},
-            trust_env=False, follow_redirects=False,
-            timeout=httpx.Timeout(120, connect=20, write=30, pool=20),
-            limits=httpx.Limits(max_connections=12, max_keepalive_connections=12),
+        # These private construction options are never serialized. New long
+        # streams use one async client per attempt (independent event loops).
+        self._client_options = {
+            "headers": {"Authorization": "Bearer " + api_key, "Content-Type": "application/json"},
+            "trust_env": False, "follow_redirects": False,
+            "timeout": httpx.Timeout(read_timeout_seconds, connect=20, write=30, pool=20),
+            "limits": httpx.Limits(max_connections=12, max_keepalive_connections=12),
             **({"proxy": proxy} if proxy is not None else {}),
-        )
+        }
+        self._client = httpx.Client(**self._client_options)
         self._health = "unchecked"
         self._health_lock = threading.Lock()
         self._locks_lock = threading.Lock()
@@ -300,9 +421,19 @@ class CachedAPI:
              max_tokens: int = 6000, repeat: int = 0) -> dict[str, Any]:
         if not all(isinstance(item, str) for item in (system, user, kind, key)):
             raise ValueError("system, user, kind and key must be strings")
+        token_limit = (BIGMODEL_GLM53_MAX_TOKENS
+                       if self.provider == "bigmodel" and self.model == MODEL else PJLAB_MAX_TOKENS)
         if (isinstance(max_tokens, bool) or not isinstance(max_tokens, int)
-                or not 1 <= max_tokens <= 16000 or not isinstance(repeat, int) or repeat < 0):
+                or not 1 <= max_tokens <= token_limit or not isinstance(repeat, int) or repeat < 0):
             raise ValueError("Invalid token budget or repeat index")
+        if max_tokens > BIGMODEL_GLM53_STANDARD_MAX_TOKENS and (
+                self.provider != "bigmodel" or self.model != MODEL
+                or not self.stream or self.stream_wall_seconds != 3600):
+            # Explicit one-hour whole-attempt transport is required for the
+            # diagnostic extended budget. Normal evaluation/learning protocols
+            # retain their independent 65536-token ceiling. Existing service
+            # identity and request shapes at <=65536 remain unchanged.
+            raise ValueError("Extended token budgets require BigModel glm-5.3 streaming with stream_wall_seconds=3600")
         request = {"model": self.model, "system": system, "user": user, "kind": kind,
                    "key": key, "max_tokens": max_tokens, "repeat": repeat, "service": self.service}
         identifier = digest(request)
@@ -332,6 +463,24 @@ class CachedAPI:
             write_immutable_json(path, record)
             return record
 
+    async def _long_stream_request(self, payload: dict[str, Any], diagnostic: dict[str, Any]) -> tuple[int, Any, Any]:
+        """Cancel an entire HTTP attempt, including a stalled/no-newline body.
+
+        httpx's read timeout is an idle timeout, not a total deadline. wait_for
+        is supported by Python 3.10 and also covers headers/connect; cancellation
+        unwinds both async context managers before returning a terminal failure.
+        """
+        async def request() -> tuple[int, Any, Any]:
+            async with httpx.AsyncClient(**self._client_options) as client:
+                diagnostic["timeout_phase"] = "connect_or_headers"
+                async with client.stream("POST", self._endpoint, json=payload) as response:
+                    diagnostic["status"] = response.status_code
+                    diagnostic["timeout_phase"] = "body"
+                    body = await _long_stream_body(response) if response.status_code == 200 else None
+                    return response.status_code, response.headers, body
+
+        return await asyncio.wait_for(request(), timeout=self.stream_wall_seconds)
+
     def _perform(self, request: dict[str, Any], identifier: str) -> dict[str, Any]:
         start = time.monotonic()
         payload = {"model": self.model, "messages": [
@@ -353,8 +502,19 @@ class CachedAPI:
                                       "finish_reason": None, "error_type": None, "status": None}
             attempt_start = time.monotonic()
             status, retry_after, retryable, error_type = None, 0.0, False, None
+            diagnostic: dict[str, Any] = {}
             try:
-                if self.stream:
+                if self.stream_wall_seconds is not None:
+                    # CachedAPI remains a synchronous worker API. Reject use in
+                    # a caller's running async loop before creating a coroutine.
+                    try:
+                        asyncio.get_running_loop()
+                    except RuntimeError:
+                        pass
+                    else:
+                        raise _StreamResponseError("sync_client_in_async_loop")
+                    status, headers, body = asyncio.run(self._long_stream_request(payload, diagnostic))
+                elif self.stream:
                     with self._client.stream("POST", self._endpoint, json=payload) as response:
                         status = response.status_code
                         headers = response.headers
@@ -389,6 +549,15 @@ class CachedAPI:
                         error_type = "unexpected_response_model"
                     elif self.stream and not body["_stream_complete"]:
                         error_type = "incomplete_stream"
+                    elif (finish == "network_error"
+                          and self.service.get("delivery_retry_policy") == "closed_network_error_v1"):
+                        # The provider can terminate an otherwise complete HTTP
+                        # 200 stream with a transport error. Retry only this
+                        # named delivery state, never filters or wrong answers.
+                        error_type, retryable = "provider_network_error", True
+                    elif (finish in {"sensitive", "content_filter"}
+                          and self.service.get("delivery_retry_policy") == "closed_network_error_v1"):
+                        error_type = "provider_content_filter"
                     elif finish == "length":
                         error_type = "truncated_content"
                     elif not isinstance(content, str) or not content.strip():
@@ -399,8 +568,14 @@ class CachedAPI:
                         error_type = "missing_stream_finish"
                     else:
                         outcome["ok"] = True
-            except httpx.TimeoutException:
+            except httpx.TimeoutException as error:
                 error_type, retryable = "timeout", True
+                diagnostic["timeout_subtype"] = _timeout_subtype(error)
+                diagnostic.setdefault("timeout_phase", "request")
+            except asyncio.TimeoutError:
+                error_type, retryable = "timeout", True
+                diagnostic["timeout_subtype"] = "wall"
+                diagnostic.setdefault("timeout_phase", "request")
             except httpx.TransportError:
                 error_type, retryable = "transport_error", True
             except _StreamResponseError as error:
@@ -410,9 +585,19 @@ class CachedAPI:
             except Exception:
                 # Never serialize exception text: it can embed request headers or keys.
                 error_type = "unexpected_client_error"
+            status = status if status is not None else diagnostic.get("status")
+            # Store only fixed classifications. Partial answers and reasoning
+            # from failed attempts never become a successful final response.
+            timeout_info = ({name: diagnostic[name] for name in ("timeout_subtype", "timeout_phase")}
+                            if error_type == "timeout" else {})
             attempts.append({"attempt": attempt + 1, "ok": outcome["ok"], "status": status,
-                             "error_type": error_type, "wall_seconds": time.monotonic() - attempt_start})
-            outcome.update(error_type=error_type, status=status)
+                             "error_type": error_type, "wall_seconds": time.monotonic() - attempt_start,
+                             **timeout_info})
+            if self.service.get("delivery_retry_policy") == "closed_network_error_v1":
+                # Preserve reported usage even on a failed provider attempt.
+                # Empty usage remains unknown, not a zero-cost HTTP request.
+                attempts[-1]["usage"] = dict(outcome.get("usage", {}))
+            outcome.update(error_type=error_type, status=status, **timeout_info)
             if outcome["ok"] or not retryable or attempt == self.service["max_retries"]:
                 break
             delay = max(self.service["retry_backoff_seconds"][attempt], retry_after)

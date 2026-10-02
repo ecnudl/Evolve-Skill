@@ -1,0 +1,28 @@
+{
+  "version": "truncation-budget-final-summary-v1",
+  "status": "completed",
+  "evidence_kind": "real_model_selected_truncation_retry_diagnostic",
+  "protocol_hash": "143ad3d567a6ca02977139ad1c304f24b2bea412782d516b1d3b287762346ec9",
+  "started_at": "2026-09-30T15:11:36+08:00",
+  "finished_at": "2026-09-30T17:20:54+08:00",
+  "provider": "BigModel", "model": "glm-5.3", "reasoning_effort": "low",
+  "max_tokens": 32768, "stream": false, "read_timeout_seconds": 600,
+  "positions": 105, "independent_tasks": 68, "independent_families": 15,
+  "counts": {
+    "korbench": {"positions": 104, "pass": 41, "fail": 40, "length": 16, "timeout": 7},
+    "spreadsheetbench": {"positions": 1, "pass": 1, "fail": 0, "length": 0, "timeout": 0}
+  },
+  "totals": {"complete_responses": 82, "pass": 42, "fail": 40, "unknown": 23, "open_calls": 0},
+  "failure_strata": {
+    "length": {"positions": 16, "tasks": 14, "families": 7, "empty_final_answers": 16,
+      "completion_tokens_per_call": 32768, "reasoning_tokens_range": [32651, 32767]},
+    "timeout": {"positions": 7, "tasks": 6, "families": 5, "usage_unknown": true}
+  },
+  "costs": {"logical_calls": 105, "http_attempts": 145,
+    "attempt_count_distribution": {"1": 76, "2": 18, "3": 11},
+    "terminal_reported_tokens_known_subtotal": 1840287,
+    "usage_complete": false, "retry_inclusive_usage_known": false},
+  "claims": {"whole_benchmark_accuracy": false, "pure_token_effect": false,
+    "skill_evolution_gain": false, "optimizer_resumed": false, "old_scores_replaced": false},
+  "launch_snapshot_preserved": "truncation-recovery-32768-20260930.json"
+}

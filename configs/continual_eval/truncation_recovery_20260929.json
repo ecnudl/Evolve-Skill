@@ -1,0 +1,25 @@
+{
+  "version": "truncation-recovery-spec-v1",
+  "runs": [
+    {
+      "kind": "eval",
+      "root": "/root/continual-noskill-next-20260928-a/korbench-run",
+      "source_root": "/root/continual-noskill-next-20260928-a"
+    },
+    {
+      "kind": "eval",
+      "root": "/root/continual-noskill-sheet-20260928-b/run",
+      "source_root": "/root/continual-noskill-sheet-20260928-b"
+    },
+    {
+      "kind": "learning",
+      "root": "/root/continual-learning-bcb-20260928-a/skillopt-run-20260929-a",
+      "source_root": "/root/continual-learning-bcb-20260928-a"
+    },
+    {
+      "kind": "eval",
+      "root": "/root/continual-noskill-alf-20260928-b/run",
+      "source_root": "/root/continual-noskill-alf-20260928-b"
+    }
+  ]
+}

@@ -1,0 +1,192 @@
+{
+  "version": "no-skill-fivebench-long-public-summary-v1",
+  "date": "2026-10-01",
+  "status": "all_five_stage0_runs_completed",
+  "evidence_kind": "real_model_historically_exposed_development_baselines_not_method_effect",
+  "method": "no_skill",
+  "history": "h0",
+  "stage": 0,
+  "model": {
+    "provider": "BigModel",
+    "name": "glm-5.3",
+    "reasoning_effort": "low",
+    "max_tokens_per_call": 65536,
+    "stream": true,
+    "read_timeout_seconds": 300,
+    "stream_wall_seconds": 1800
+  },
+  "tasks_total": 1419,
+  "positions_total": 2838,
+  "missing_predictions_or_scores": 0,
+  "benchmarks": {
+    "bigcodebench": {
+      "source_summary": "noskill-long-final-20261001.json",
+      "source_record_hash": "b63b54f08f8bdd2450f8ff31bb5c64c23e7e14682995b862294d1f51412d1f31",
+      "primary_metric": "official_unit_tests",
+      "tasks": 400,
+      "declared_families": 399,
+      "repeats": 2,
+      "positions": 800,
+      "counts": {
+        "pass": 400,
+        "fail": 399,
+        "unknown": 1
+      },
+      "all_position_identification_bounds": [
+        0.5,
+        0.50125
+      ],
+      "evaluable": {
+        "numerator": 400,
+        "denominator": 799
+      },
+      "coverage": 0.99875,
+      "logical_calls": 800,
+      "http_attempts": 800,
+      "unclosed_calls": 0,
+      "reported_tokens_known_subtotal": 324867,
+      "missing_usage_calls": 0
+    },
+    "searchqa": {
+      "source_summary": "noskill-searchqa-long-final-20261001.json",
+      "source_record_hash": "a69c5c597b101817e9f2b131c4b45f8232125e9413d7fc65648d8e57051c11ac",
+      "primary_metric": "strict_exact_match",
+      "tasks": 400,
+      "declared_families": 400,
+      "repeats": 2,
+      "positions": 800,
+      "counts": {
+        "pass": 560,
+        "fail": 234,
+        "unknown": 6
+      },
+      "all_position_identification_bounds": [
+        0.7,
+        0.7075
+      ],
+      "evaluable": {
+        "numerator": 560,
+        "denominator": 794
+      },
+      "coverage": 0.9925,
+      "logical_calls": 800,
+      "http_attempts": 800,
+      "unclosed_calls": 0,
+      "reported_tokens_known_subtotal": 875617,
+      "missing_usage_calls": 6
+    },
+    "korbench": {
+      "source_summary": "noskill-korbench-long-final-20261001.json",
+      "source_record_hash": "d98fa09c631e70984f847d3e4578b4222468b6b975654f46cc54a4d681f73e6d",
+      "primary_metric": "official_rule_accuracy",
+      "tasks": 500,
+      "declared_families": 50,
+      "repeats": 2,
+      "positions": 1000,
+      "counts": {
+        "pass": 746,
+        "fail": 243,
+        "unknown": 11
+      },
+      "all_position_identification_bounds": [
+        0.746,
+        0.757
+      ],
+      "evaluable": {
+        "numerator": 746,
+        "denominator": 989
+      },
+      "coverage": 0.989,
+      "logical_calls": 1000,
+      "http_attempts": 1000,
+      "unclosed_calls": 0,
+      "reported_tokens_known_subtotal": 4206357,
+      "missing_usage_calls": 1
+    },
+    "alfworld": {
+      "source_summary": "alfworld-long-baseline-final-20261001.json",
+      "source_record_hash": "28f568d1a991b266d029156800c42c44e0315836a384287cd2fd86c9c3029b74",
+      "primary_metric": "native_won",
+      "tasks": 39,
+      "declared_families": 39,
+      "repeats": 2,
+      "positions": 78,
+      "counts": {
+        "pass": 65,
+        "fail": 13,
+        "unknown": 0
+      },
+      "all_position_identification_bounds": [
+        0.8333333333333334,
+        0.8333333333333334
+      ],
+      "evaluable": {
+        "numerator": 65,
+        "denominator": 78
+      },
+      "coverage": 1,
+      "logical_calls": 1355,
+      "http_attempts": 1355,
+      "unclosed_calls": 0,
+      "reported_tokens_known_subtotal": 1054912,
+      "missing_usage_calls": 0
+    },
+    "spreadsheetbench": {
+      "source_summary": "spreadsheet-long-baseline-final-20261001.json",
+      "source_record_hash": "37b0ad8ad5e0302ce0b5660c685b620d45c91ea1f9ffaea3afbbb3bb8d14f3c9",
+      "primary_metric": "qualified_workbook_target_region_checks",
+      "tasks": 80,
+      "declared_families": 80,
+      "repeats": 2,
+      "positions": 160,
+      "counts": {
+        "pass": 63,
+        "fail": 44,
+        "unknown": 53
+      },
+      "all_position_identification_bounds": [
+        0.39375,
+        0.725
+      ],
+      "evaluable": {
+        "numerator": 63,
+        "denominator": 107
+      },
+      "coverage": 0.66875,
+      "logical_calls": 160,
+      "http_attempts": 160,
+      "unclosed_calls": 0,
+      "reported_tokens_known_subtotal": 326508,
+      "missing_usage_calls": 0
+    }
+  },
+  "costs": {
+    "logical_calls": 4115,
+    "http_attempts": 4115,
+    "unclosed_calls": 0,
+    "reported_tokens_known_subtotal": 6788261,
+    "missing_usage_calls": 7,
+    "usage_complete": false,
+    "monetary_cost_estimated": false,
+    "scope": "Only the five fresh stage0 runs; no qualification, recovery, learning, diagnostic or engineering-test costs included."
+  },
+  "interpretation": {
+    "unknown_is_confirmed_semantic_failure": false,
+    "cross_benchmark_mean_computed": false,
+    "identification_bounds_are_confidence_intervals": false,
+    "independent_final": false,
+    "independent_tasks_equal_repeated_positions": false,
+    "official_full_benchmark_reproduction": false,
+    "skill_or_research_effect_claimed": false,
+    "old_recovery_chain_or_recalculation_outputs_merged": false,
+    "notes": [
+      "Native solver/scorer protocols and environments remain benchmark-specific.",
+      "All data are existing development panels with historical exposure; ALF is a 39-game upstream train subset.",
+      "Spreadsheet has 45 delivered-workbook compatibility unknowns and 8 delivery/execution unknowns, and one task repeated twice used legacy object-address formula previews.",
+      "BigCodeBench reference qualification found missing resources and an unresolved process-pool compatibility issue; no scores were retroactively changed.",
+      "KOR deliverable diagnosis is separate; its one diagnostic pass remains unknown in the formal baseline.",
+      "A common nominal model limit does not imply equal actual computation or isolate a causal budget effect."
+    ]
+  },
+  "record_hash": "f56d7dfb92b5ced813e49a37486b9cee69be317260907108ffe94e28be2c9d82"
+}

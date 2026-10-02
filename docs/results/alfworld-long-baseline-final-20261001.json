@@ -1,0 +1,143 @@
+{
+  "version": "alfworld-long-noskill-final-v1",
+  "status": "completed_single_benchmark_stage0",
+  "evidence_kind": "real_model_development_baseline_not_skill_effect",
+  "method": "no_skill",
+  "history": "h0",
+  "stage": 0,
+  "model": {
+    "provider": "BigModel",
+    "name": "glm-5.3",
+    "reasoning_effort": "low",
+    "max_tokens": 65536,
+    "stream": true,
+    "read_timeout_seconds": 300,
+    "stream_wall_seconds": 1800,
+    "workers": 2
+  },
+  "data": {
+    "selection_rule": "entire_original_corrected_goal_B_roster_not_selected_by_old_result",
+    "partition": "development",
+    "native_split": "train",
+    "tasks": 39,
+    "declared_lexical_families": 39,
+    "repeats_per_task": 2,
+    "expected_positions": 78,
+    "terminal_positions": 78,
+    "scored_positions": 78,
+    "missing_positions": 0,
+    "old_answers_imported": false,
+    "old_scores_modified": false
+  },
+  "native_runtime": {
+    "max_steps": 50,
+    "timeout_seconds": 60,
+    "seed": 42,
+    "host_environment": "original_ALFWorld_environment_not_Coding_host",
+    "python_version": "3.11.16",
+    "alfworld_version": "0.4.2",
+    "textworld_version": "1.7.0",
+    "generation_helpers_unchanged_from_corrected_goal_B": true
+  },
+  "results": {
+    "pass": 65,
+    "fail": 13,
+    "unknown": 0,
+    "success_rate": {"numerator": 65, "denominator": 78, "value": 0.8333333333333334},
+    "evaluable_coverage": {"numerator": 78, "denominator": 78, "value": 1.0},
+    "outcome_categories": {
+      "native_won": 65,
+      "native_not_won_at_configured_50_step_cap": 13,
+      "native_ended_without_win_before_step_cap": 0,
+      "action_format_unknown": 0,
+      "native_environment_or_cleanup_unknown": 0,
+      "model_delivery_unknown": 0,
+      "other_unknown": 0
+    },
+    "failure_tasks": 10,
+    "step_cap_is_an_observation_not_a_causal_failure_attribution": true,
+    "per_repeat": {
+      "0": {"tasks": 39, "positions": 39, "pass": 34, "fail": 5, "unknown": 0, "steps": 642,
+            "logical_calls": 642, "prompt_tokens": 484605, "completion_tokens": 25092, "total_tokens": 509697},
+      "1": {"tasks": 39, "positions": 39, "pass": 31, "fail": 8, "unknown": 0, "steps": 713,
+            "logical_calls": 713, "prompt_tokens": 527285, "completion_tokens": 17930, "total_tokens": 545215}
+    },
+    "same_task_repeat_pairs": {
+      "task_denominator": 39,
+      "pass_pass": 29,
+      "pass_fail": 5,
+      "fail_pass": 2,
+      "fail_fail": 3,
+      "unknown_or_missing_pair": 0,
+      "discordant_tasks": 7,
+      "independent_positions_claimed": false
+    },
+    "steps_distribution": {
+      "3": 2, "4": 7, "5": 2, "6": 3, "7": 4, "8": 11, "9": 10,
+      "10": 6, "11": 4, "12": 2, "14": 4, "15": 1, "17": 1, "18": 1,
+      "19": 1, "22": 1, "28": 2, "29": 2, "48": 1, "50": 13
+    }
+  },
+  "delivery_and_prompt_checks": {
+    "closed_model_calls": 1355,
+    "finish_reason_stop": 1355,
+    "finish_reason_length": 0,
+    "incomplete_streams": 0,
+    "first_actual_response_verified": true,
+    "first_actual_call_record_hash": "2d7888c67894882f16fb21296be1ddc0bf41656c11dde6ae5dd14a82e7be90dc",
+    "initial_observation_consistency_checked_positions": 78,
+    "initial_observation_mismatch_positions": 0,
+    "public_view_schema_checked_calls": 1355,
+    "unexpected_public_view_keysets": 0,
+    "public_view_keys": ["initial_observation", "observation", "admissible_commands", "recent_history"]
+  },
+  "costs": {
+    "logical_calls": 1355,
+    "http_attempts": 1355,
+    "prompt_tokens": 1011890,
+    "completion_tokens": 43022,
+    "reported_total_tokens": 1054912,
+    "reasoning_tokens_included_in_completion": 23515,
+    "cached_prompt_tokens_included_in_prompt": 170880,
+    "usage_complete": true,
+    "retry_inclusive_usage_known": true,
+    "unclosed_calls": 0,
+    "model_call_wall_seconds_sum": 2358.094263991341,
+    "started_at": "2026-10-01T07:09:57+08:00",
+    "finished_at": "2026-10-01T07:35:42+08:00",
+    "launch_elapsed_seconds_including_generation_score_report": 1545,
+    "queue_wait_excluded_from_elapsed": true,
+    "pricing_or_money_estimate_not_inferred": true
+  },
+  "handoff": {
+    "launcher_stage_exits": {"generation_exit": 0, "score_exit": 0, "report_exit": 0, "service_exit": 0},
+    "resource_identity_hash": "fab8bcbda235601aa73bb0a1f2761e9d0af96cde3bec4b86027ab22a2ab181f6",
+    "observed_owned_queue_pane_and_process_session_absent": true,
+    "sheet_handoff_polls": 1,
+    "scope": "observed_owned_session_and_group_not_a_global_cleanup_claim"
+  },
+  "evidence": {
+    "preparation_hash": "89b17ea9ea002a7ccf8d4f9de2e65c48d7443225ff20256c7e2a601f54ca6ba3",
+    "plan_hash": "e31ebec5e4c09ff88cd6f6b3230b0a9751c5ce3491a81130b5f2cc421dd4dec8",
+    "panel_hash": "a8fc4c7fafae0cffa2ce943e17045295602a6c7ae3af126b872ac76fe9c03a43",
+    "source_identity_digest": "bbe7e21002d44c8d50628a5e7b1f0d328293f7ebc1de39cdd1ffdd90374d84a8",
+    "model_service_hash": "f620c95268f45c845e44e7d1f0d679510fbd53557aeb6930aca4ce0015cb87dc",
+    "terminal_report_hash": "d381a898ffde9096a83b256b5974169fe71378c10e131219838629b96542e9f2",
+    "launch_report_file_sha256": "949377dcbb04feeba8664d272026b4b8834b78950552fc48b413881af1521588",
+    "terminal_report_recomputed_equal_to_launch_report": true,
+    "position_receipt_inventory": {"count": 78, "sorted_record_hashes_digest": "79146528d04d6b3e8f5a457d3b819b329ec31268ecaf221d282d5f7da1fd4a05"},
+    "score_receipt_inventory": {"count": 78, "sorted_record_hashes_digest": "f7010e95b175c49887f56614dcf9bd84b402ba09e9fce6d9950bd46c3e18edaf"},
+    "call_receipt_inventory": {"count": 1355, "sorted_record_hashes_digest": "bdcfc63f0428337550254c919ed017c9385a00f801a755641688a549ed510234"},
+    "queue_snapshot": "alfworld-spreadsheet-preparation-queues-20261001.json"
+  },
+  "limitations": [
+    "These are 39 historically exposed development/train tasks repeated twice, not 78 independent tasks or a full official held-out ALFWorld benchmark.",
+    "The same task changes pass/fail across repeats in 7 of 39 cases; model randomness remains relevant.",
+    "All 13 failed episodes reached the configured 50-step cap; this alone does not establish why the agent failed.",
+    "This is a completed No-Skill stage-0 baseline only, not Skill learning, safe transfer, or a full continual-learning matrix.",
+    "The overall generic matrix remains pending because future learning checkpoints were not performed; none of the 78 authorized stage-0 positions is missing.",
+    "A higher descriptive rate than an older incomplete run would not isolate a token-budget effect, random variation, or method benefit.",
+    "No scores were retrospectively relabeled, no failures were selectively rerun, and no task text, trajectories, hidden data or API credentials are published here."
+  ],
+  "record_hash": "28f568d1a991b266d029156800c42c44e0315836a384287cd2fd86c9c3029b74"
+}

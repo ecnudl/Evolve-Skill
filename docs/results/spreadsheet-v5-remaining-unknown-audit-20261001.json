@@ -1,0 +1,490 @@
+{
+  "artifact_schema": "spreadsheet-v5-remaining-unknown-audit-v1",
+  "evidence_kind": "read_only_frozen_metadata_and_generated_source_syntax_audit",
+  "audited_at": "2026-09-30T18:40:33.359375+00:00",
+  "binding": {
+    "v5_public_summary_hash": "bf4b15ec344d2c51bb62e2e0e605e1269866be7dc449eb8995e870d4f8489121",
+    "v5_report_hash": "9eec64f85a5f8655f1eab9266ac02103bddddedfe4760812a11521c2040b5f25",
+    "v5_protocol_hash": "bbe247a1b5773529ad56a70270b795377c7225140a334c4b4043a80f049e64c0",
+    "v5_qualification_hash": "a85169c4b707a59a3e939a25b4fcdd6f9f5b2852b52ce69aad598f5b48d3cfd9",
+    "sheet_module_sha256": "ae9bd26cda8e220240538cde96713c6809bab6286301993f88505b6e02cae35b"
+  },
+  "counts": {
+    "panel_positions": 160,
+    "independent_panel_tasks": 80,
+    "unknown_positions": 53,
+    "unknown_independent_tasks": 28,
+    "compatibility_positions": 43,
+    "compatibility_independent_tasks": 23,
+    "undelivered_positions": 10,
+    "undelivered_independent_tasks": 8,
+    "compatibility_and_undelivered_task_overlap": 3
+  },
+  "reason_groups": [
+    {
+      "reason": "original_no_delivered_workbook:model_response_truncated",
+      "positions": 1,
+      "independent_tasks": 1,
+      "position_result_hashes": [
+        "9e411e966f6e66152f98e05ca6f8ab16144485cd2587e37e53528aa7343a939f"
+      ]
+    },
+    {
+      "reason": "original_no_delivered_workbook:native_exception:AttributeError",
+      "positions": 3,
+      "independent_tasks": 2,
+      "position_result_hashes": [
+        "83b69b2444d0f11b925fcd26fc1650f96038844a685fb00d2cb4e20a897c801c",
+        "a013d4edcef917d0d940dc7f58a447fd04bbecb67021219b38f077bf800bed1d",
+        "a6139f410c7c1ab9da082b60df7920778b7ddaa4764076eab04b70602b23fd7b"
+      ]
+    },
+    {
+      "reason": "original_no_delivered_workbook:native_exception:KeyError",
+      "positions": 1,
+      "independent_tasks": 1,
+      "position_result_hashes": [
+        "12c490804ca92801108f20d8bfae37549a83987542d2a5167073a1217d4e94ca"
+      ]
+    },
+    {
+      "reason": "original_no_delivered_workbook:native_exception:SyntaxError",
+      "positions": 1,
+      "independent_tasks": 1,
+      "position_result_hashes": [
+        "fad2fa54639823535ea424a86e0a1006ed7d2f8ff635582be290296060f36ca3"
+      ]
+    },
+    {
+      "reason": "original_no_delivered_workbook:native_exception:TypeError",
+      "positions": 1,
+      "independent_tasks": 1,
+      "position_result_hashes": [
+        "17ab2f99fa42ab06a79ea931aca753751fd4a62bdb13a7770e58b41f9f373d7a"
+      ]
+    },
+    {
+      "reason": "original_no_delivered_workbook:native_exception:ValueError",
+      "positions": 2,
+      "independent_tasks": 2,
+      "position_result_hashes": [
+        "5e2cc6460c58912e2b155f733df3bfca71d0fc47a92184a33d545732e93b2602",
+        "a33bda815e5a17cae5bb7b69e871a8bec5a210beb097bb4d136e650236d8015a"
+      ]
+    },
+    {
+      "reason": "original_no_delivered_workbook:output.xlsx_not_produced",
+      "positions": 1,
+      "independent_tasks": 1,
+      "position_result_hashes": [
+        "f1162c4d127509715d27a2abe62dafcd3394c731d82fdef03bbef66d9ae4e3b0"
+      ]
+    },
+    {
+      "reason": "prediction:recalculation_changed_literal_cell",
+      "positions": 2,
+      "independent_tasks": 1,
+      "position_result_hashes": [
+        "2e27ffec6dfb99092758cb53fa50dd09fad7b5754db5509e58811d25c9092fcb",
+        "443d613dcd3f9b7018d67a759dee58e4453ddc94622c98a5f9ae9c9c6350a57b"
+      ]
+    },
+    {
+      "reason": "reference:numeric_literal_sheet_missing:before_calculate",
+      "positions": 2,
+      "independent_tasks": 1,
+      "position_result_hashes": [
+        "1afe3e17b7fb4f575a397da397266feb2120dfbfc9508fbce74134d2eecfe22e",
+        "e17e29105f7aba12c088fc8a9abf8a3041c08e05f426b75ebe7bcccd6c8d4024"
+      ]
+    },
+    {
+      "reason": "reference:recalculation_changed_literal_cell",
+      "positions": 7,
+      "independent_tasks": 4,
+      "position_result_hashes": [
+        "001c483ea7d8e4ac17c85178e65f44c3352f91990f5ece7b690bd06aa9b7993d",
+        "048f57e400f0c20f5d4c1ec2bc2ab6558b5b3d7fd13dab85be8f9efe6b3bfb8b",
+        "9139185c1decd3c199ce7da4bae23bee449cbe6183831dd841ae5721dcb0a062",
+        "be2e7804359a8e29798f8ea9afe07f289c8bc325ae7a14b852fcc59f0d248358",
+        "d0959b3fd272d891cfdf8ef0bdd2f19d82e96eeb33b4ff768b5f248d87949c8a",
+        "f8d4cf8a41a14664235add40767ef75377b660898e5e7d4ba52d8c7184d04aa5",
+        "ff7482c35df2ecd0def62d23d7c2746f41e527dd19181ac9650dd282e48ad353"
+      ]
+    },
+    {
+      "reason": "reference:unsupported_active_or_external_workbook",
+      "positions": 4,
+      "independent_tasks": 2,
+      "position_result_hashes": [
+        "87309acbd3416f1ae8fe9149b1fb458d18c93766d99dafb4b7dd97b42edc86e9",
+        "b49b9d10efe1be8e125fc7eee719a41ec097b34076c01a63163596e437eeeffd",
+        "dbc6c9d365aa96ae112010520746b09134d59b534b49a35e93b839d59184c056",
+        "ef82263120ec881f367e0ea0f6b648af04fcae3ceff934f6842130e4f01fd683"
+      ]
+    },
+    {
+      "reason": "reference:unsupported_extended_function",
+      "positions": 16,
+      "independent_tasks": 9,
+      "position_result_hashes": [
+        "075ede7a8b78099b5aab0e6888764ee1cae025e91457be6b0297abb66246f2f7",
+        "0fb306c30fc653120b78c61faab771118cefdd126a53663450c47b91561be680",
+        "1ba21a8785e330b00e394fe8d1a03fff652a8daef9407994bdaef2ac37a87494",
+        "2394b3078c89b4892d8e8af345b24618ec5d5a18a4500c930658e18248767361",
+        "46ba8feb49414cf55615bd56d7fd5161e4fd91343151b407e45f15ef2b0212eb",
+        "67f12bf27f91cb3ecf417e760ba2c77f1aa602d40d33668c005ba1e87de552d3",
+        "6dc22a2e42904c56dc9cddb95a11f4562aaac7ab70ac3b517cc9d58046986695",
+        "8ab5f6fb7e32ee7bbc7027a1b70fe55e274a69db3c51215dae0422a612965d5c",
+        "a5fa97fd04a7af41aca212651e222ff745655c844122a6b887768d9865db1dc5",
+        "aaf6ac1bbe70487ac86bf9c870541bf4f0a94291f7c926cd86626c326a7ee79f",
+        "bcb8a78ea13a384c86e2a8a3440152e1c2c2e048c64ebfea8d5cd24d68b4eeaa",
+        "bdb0d881d21e3b75a14b70a17b34cc0b0436364b7d7bdf78ba1586e28919d3a5",
+        "c01dfc46c2658572966721831649869dadc476ece9d4adbcb8bf78f78a63251f",
+        "cf296573955436dbfeb7aede61e242734c76e3a343e4f517db3755d2061ea2f8",
+        "d26774e589d75f911932365f6d9f75c5b950528b1978658e98c927b4892bbc97",
+        "f577909414cf023c08d85bc1b0f49d491d639ee39aab38bcdcada0c66002e6dd"
+      ]
+    },
+    {
+      "reason": "reference:unsupported_external_or_volatile_defined_name",
+      "positions": 2,
+      "independent_tasks": 1,
+      "position_result_hashes": [
+        "71de8172dd9eb54bec04c04843b5502b264f503c041f871e6777c7e30e783ff4",
+        "c39f371d4af00a2e34760285bcc78cd68ed109a0cb83277cf54b5ccb663e0466"
+      ]
+    },
+    {
+      "reason": "reference:unsupported_external_relationship",
+      "positions": 2,
+      "independent_tasks": 1,
+      "position_result_hashes": [
+        "44a7ae216591dac399ef69efeea33f5d0614927af7301354e1ee6f70063bd284",
+        "a599a757285c0014837c9784d913fcce28276bc95d1225f20b15ce976462daab"
+      ]
+    },
+    {
+      "reason": "reference:unsupported_external_structured_or_volatile_formula",
+      "positions": 6,
+      "independent_tasks": 3,
+      "position_result_hashes": [
+        "264c7f6c7b352a3871e81ff5f1d2f6a95d6d5d1db603d8c83ce9fc0041c5f832",
+        "330cc267620ddb6c01641c637990cda0ec3f0640dbbc4d4604281ef668ff75b7",
+        "46b1c8e21bd10da92ac425faf38f426d5afd3b1c4368c61632da3002ac992157",
+        "658db662013842ef3b22e3e4e443c288989f1bef714854a2c4e484fdae562fa0",
+        "9d712544f6471056b31c592a989c67df989cf2c02fb78cbb22cd2aa3b7895eda",
+        "ba64040c06b4f4e36a67ff8f66667da27b5c7cbc87c1b931d7aa567ae3425f18"
+      ]
+    },
+    {
+      "reason": "reference_native_cache_drift_or_unavailable",
+      "positions": 2,
+      "independent_tasks": 1,
+      "position_result_hashes": [
+        "016580e4650486861a177a4027d08772424b368c647ceba56b7ecbac86b8379a",
+        "3b66aa25e8b9bc393de6692dfeac74533f928eb3bc5a1c0869cc2edc72162c68"
+      ]
+    }
+  ],
+  "undelivered_attribution_counts": {
+    "observed_execution_exception_stage_not_recorded": 7,
+    "confirmed_generated_source_compile_failure": 1,
+    "confirmed_required_deliverable_not_produced_after_normal_return": 1,
+    "model_generation_output_budget_truncation": 1
+  },
+  "undelivered_evidence": [
+    {
+      "position_result_hash": "a33bda815e5a17cae5bb7b69e871a8bec5a210beb097bb4d136e650236d8015a",
+      "prediction_hash": "c6d0ccf9cef16a7eae745a7198e19f5d7029f6e00be7bf25944b3beab0d9fd13",
+      "original_status": "unknown",
+      "reason": "original_no_delivered_workbook:native_exception:ValueError",
+      "attribution": "observed_execution_exception_stage_not_recorded",
+      "syntax_parse_only": "valid",
+      "generated_code_sha256": "bab61b7c634a5b9a6f9d0bc88c4aa1da986cd3408216f8c3981e1919f22c7ff3",
+      "model_finish_reasons": [
+        "stop"
+      ],
+      "model_request_hashes": [
+        "0aacfa72b08e94f2cf2c861b746ab52dfac08005ac00e3197cdf8779890474b0"
+      ],
+      "input_files_exist_and_zip": true,
+      "container_cases": [
+        {
+          "status": "unknown",
+          "reason": "native_exception:ValueError",
+          "cleanup_confirmed": true,
+          "runtime_image_bound": true,
+          "container_calls": 1,
+          "wall_seconds": 1.012521
+        }
+      ]
+    },
+    {
+      "position_result_hash": "fad2fa54639823535ea424a86e0a1006ed7d2f8ff635582be290296060f36ca3",
+      "prediction_hash": "e51e6bf7289a499bee00532b2af87a6c551a8e87a308149631756a65b99b79fd",
+      "original_status": "unknown",
+      "reason": "original_no_delivered_workbook:native_exception:SyntaxError",
+      "attribution": "confirmed_generated_source_compile_failure",
+      "syntax_parse_only": "confirmed_syntax_error",
+      "generated_code_sha256": "b120cab7d16f53782245420d4c94e6b1cda4f3d3f25f3f0721bd5b8665d86af3",
+      "model_finish_reasons": [
+        "stop"
+      ],
+      "model_request_hashes": [
+        "8a249842c774b14766a79a93a7c55cb43fd4ec7a6c7eecfd0b12b773b21c6247"
+      ],
+      "input_files_exist_and_zip": true,
+      "container_cases": [
+        {
+          "status": "unknown",
+          "reason": "native_exception:SyntaxError",
+          "cleanup_confirmed": true,
+          "runtime_image_bound": true,
+          "container_calls": 1,
+          "wall_seconds": 1.898354
+        }
+      ]
+    },
+    {
+      "position_result_hash": "f1162c4d127509715d27a2abe62dafcd3394c731d82fdef03bbef66d9ae4e3b0",
+      "prediction_hash": "e134da0b650b674095e79e1c07f69a0160a9f481f9bc466f247b5a39ae6aee44",
+      "original_status": "unknown",
+      "reason": "original_no_delivered_workbook:output.xlsx_not_produced",
+      "attribution": "confirmed_required_deliverable_not_produced_after_normal_return",
+      "syntax_parse_only": "valid",
+      "generated_code_sha256": "1e8efcf4b26c2e5de1411d5139328b4c33e59f43e174b3f667cc347c2369178c",
+      "model_finish_reasons": [
+        "stop"
+      ],
+      "model_request_hashes": [
+        "660517f3f7e84d12a927fb3dab97422f773ba85ab33cb9b872588d6db74ecda6"
+      ],
+      "input_files_exist_and_zip": true,
+      "container_cases": [
+        {
+          "status": "missing_output",
+          "reason": "output.xlsx_not_produced",
+          "cleanup_confirmed": true,
+          "runtime_image_bound": true,
+          "container_calls": 1,
+          "wall_seconds": 1.266887
+        }
+      ]
+    },
+    {
+      "position_result_hash": "5e2cc6460c58912e2b155f733df3bfca71d0fc47a92184a33d545732e93b2602",
+      "prediction_hash": "84904a4e1001dbfc424a8c139038d9bdd65e7870e9932122d641b935660579d3",
+      "original_status": "unknown",
+      "reason": "original_no_delivered_workbook:native_exception:ValueError",
+      "attribution": "observed_execution_exception_stage_not_recorded",
+      "syntax_parse_only": "valid",
+      "generated_code_sha256": "5b9a8f9056666d60c2bf79b0554fd2e7b55c716a944280ee9a3b7e38301f6c75",
+      "model_finish_reasons": [
+        "stop"
+      ],
+      "model_request_hashes": [
+        "857b12729bbe697e644d386df8d8e368a5967e473105ed1f682d72289213985b"
+      ],
+      "input_files_exist_and_zip": true,
+      "container_cases": [
+        {
+          "status": "unknown",
+          "reason": "native_exception:ValueError",
+          "cleanup_confirmed": true,
+          "runtime_image_bound": true,
+          "container_calls": 1,
+          "wall_seconds": 1.15834
+        }
+      ]
+    },
+    {
+      "position_result_hash": "17ab2f99fa42ab06a79ea931aca753751fd4a62bdb13a7770e58b41f9f373d7a",
+      "prediction_hash": "3a7ce6abdc69379870c1fd717718966310c6728f39d850de76063a9cef843733",
+      "original_status": "unknown",
+      "reason": "original_no_delivered_workbook:native_exception:TypeError",
+      "attribution": "observed_execution_exception_stage_not_recorded",
+      "syntax_parse_only": "valid",
+      "generated_code_sha256": "0c605d2624cddd04833f27a438724a879c17981e56afaf6f439ca4328bcafb49",
+      "model_finish_reasons": [
+        "stop"
+      ],
+      "model_request_hashes": [
+        "70064bc60a13588e58d73af03c93fa5c6025e6e929d63db6533537945e1019cf"
+      ],
+      "input_files_exist_and_zip": true,
+      "container_cases": [
+        {
+          "status": "unknown",
+          "reason": "native_exception:TypeError",
+          "cleanup_confirmed": true,
+          "runtime_image_bound": true,
+          "container_calls": 1,
+          "wall_seconds": 1.97033
+        }
+      ]
+    },
+    {
+      "position_result_hash": "a6139f410c7c1ab9da082b60df7920778b7ddaa4764076eab04b70602b23fd7b",
+      "prediction_hash": "97401481962afd9b9cf1d9ea874bad379dec5548cb97fa086d2f3d409e15ce0e",
+      "original_status": "unknown",
+      "reason": "original_no_delivered_workbook:native_exception:AttributeError",
+      "attribution": "observed_execution_exception_stage_not_recorded",
+      "syntax_parse_only": "valid",
+      "generated_code_sha256": "da330938cca8313ed6a3edbec7b324370e3662f26965668bc5e7e19a6bfa7657",
+      "model_finish_reasons": [
+        "stop"
+      ],
+      "model_request_hashes": [
+        "defaa9e742796144f05c296892690290eeb9c84e40e9a3ad7654d44cf81e6f09"
+      ],
+      "input_files_exist_and_zip": true,
+      "container_cases": [
+        {
+          "status": "unknown",
+          "reason": "native_exception:AttributeError",
+          "cleanup_confirmed": true,
+          "runtime_image_bound": true,
+          "container_calls": 1,
+          "wall_seconds": 3.2472
+        }
+      ]
+    },
+    {
+      "position_result_hash": "a013d4edcef917d0d940dc7f58a447fd04bbecb67021219b38f077bf800bed1d",
+      "prediction_hash": "3fdd0b60614314eb7db0c36a5a6a6ceef64f6f01b634cc0ae6de7e50dc87ed26",
+      "original_status": "unknown",
+      "reason": "original_no_delivered_workbook:native_exception:AttributeError",
+      "attribution": "observed_execution_exception_stage_not_recorded",
+      "syntax_parse_only": "valid",
+      "generated_code_sha256": "09df6fb9bf530c727d8275e73a8860c2b3a7a4883ebeaed28556b3a9f72bd22e",
+      "model_finish_reasons": [
+        "stop"
+      ],
+      "model_request_hashes": [
+        "d7780e51df0f465ccaa2491a2eb7c41c6d02ea96de941020fdbbde7f387391cc"
+      ],
+      "input_files_exist_and_zip": true,
+      "container_cases": [
+        {
+          "status": "unknown",
+          "reason": "native_exception:AttributeError",
+          "cleanup_confirmed": true,
+          "runtime_image_bound": true,
+          "container_calls": 1,
+          "wall_seconds": 1.709007
+        }
+      ]
+    },
+    {
+      "position_result_hash": "83b69b2444d0f11b925fcd26fc1650f96038844a685fb00d2cb4e20a897c801c",
+      "prediction_hash": "50b9634dbf0988bb66ca4ce4dfa22c2e2d539a51e0598a92841a6bcef3de3ee0",
+      "original_status": "unknown",
+      "reason": "original_no_delivered_workbook:native_exception:AttributeError",
+      "attribution": "observed_execution_exception_stage_not_recorded",
+      "syntax_parse_only": "valid",
+      "generated_code_sha256": "d4c8f01fe1231f053416c63a51aab6b2f9dcab65d4c5ad6a74b13d3fc7df7bd9",
+      "model_finish_reasons": [
+        "stop"
+      ],
+      "model_request_hashes": [
+        "3c0d4edd937c9ed65309aaa4eb3a5568e0f9ca3e667301529697725cb3118151"
+      ],
+      "input_files_exist_and_zip": true,
+      "container_cases": [
+        {
+          "status": "unknown",
+          "reason": "native_exception:AttributeError",
+          "cleanup_confirmed": true,
+          "runtime_image_bound": true,
+          "container_calls": 1,
+          "wall_seconds": 3.001747
+        }
+      ]
+    },
+    {
+      "position_result_hash": "12c490804ca92801108f20d8bfae37549a83987542d2a5167073a1217d4e94ca",
+      "prediction_hash": "e85ded6a2bea5644acc9e634dfde5de44a1d100085b950e10224ee0ebd538b18",
+      "original_status": "unknown",
+      "reason": "original_no_delivered_workbook:native_exception:KeyError",
+      "attribution": "observed_execution_exception_stage_not_recorded",
+      "syntax_parse_only": "valid",
+      "generated_code_sha256": "a52c5f2ad089cd09d590971bb2274400bfb2e2b9384c12acb4e1af7330963729",
+      "model_finish_reasons": [
+        "stop"
+      ],
+      "model_request_hashes": [
+        "097aa2165d6387e0e9d1a7331bbab7714d645663b949a6b54b4fc61c4d20ab0b"
+      ],
+      "input_files_exist_and_zip": true,
+      "container_cases": [
+        {
+          "status": "unknown",
+          "reason": "native_exception:KeyError",
+          "cleanup_confirmed": true,
+          "runtime_image_bound": true,
+          "container_calls": 1,
+          "wall_seconds": 1.543784
+        }
+      ]
+    },
+    {
+      "position_result_hash": "9e411e966f6e66152f98e05ca6f8ab16144485cd2587e37e53528aa7343a939f",
+      "prediction_hash": "ba64348643f021887a26bd343b9f1c984830682dc5161de5ef1a566738fd2569",
+      "original_status": "unknown",
+      "reason": "original_no_delivered_workbook:model_response_truncated",
+      "attribution": "model_generation_output_budget_truncation",
+      "syntax_parse_only": "not_available",
+      "generated_code_sha256": null,
+      "model_finish_reasons": [
+        "length"
+      ],
+      "model_request_hashes": [
+        "e8d9c6f9eb48013b641c4d0822d8771706324c1ef7e202bc2b05485e15fe1148"
+      ],
+      "input_files_exist_and_zip": true,
+      "container_cases": []
+    }
+  ],
+  "date_format_projection_diagnosis": {
+    "positions": 2,
+    "independent_tasks": 1,
+    "mismatching_cells_per_position": 32,
+    "python_projection": "int_to_datetime",
+    "source_numFmtId": 30,
+    "exported_numFmtId": 166,
+    "exact_original_export_raw_numeric_cell_values_per_position": 32,
+    "same_workbook_epoch": true,
+    "exact_verified_numeric_literals_per_position": 169,
+    "changed_formulas_per_position": 0,
+    "implementation_status": "not_implemented_candidate_guard_only",
+    "scope_limit": "Would only recognize unchanged numeric storage projected through a localized date format; no date restoration, reference answer copying, tolerance widening or automatic acceptance.",
+    "qualification_needed": [
+      "1900_and_1904_epoch_positive_controls",
+      "one_ULP_or_day_change_rejected",
+      "type_change_missing_cell_or_style_rejected",
+      "date_serial_59_60_61_not_collapsed_by_datetime_equality",
+      "format_introspection_remains_unknown",
+      "original_reference_drift_guard_unchanged"
+    ],
+    "sources": [
+      "https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.numberingformat?view=openxml-3.0.1",
+      "https://openpyxl.readthedocs.io/en/stable/_modules/openpyxl/styles/numbers.html"
+    ]
+  },
+  "recommendation": {
+    "priority": "Consistent future opt-in qualified scoring and explicit delivery/semantic/infrastructure outcomes before another narrow compatibility replay.",
+    "historical_relabel_allowed": false,
+    "new_protocol_delivery_policy": "A proven generated-source compile error or normal program return without the mandatory deliverable is a task delivery failure. A complete API call cut at its declared output budget is a budget-limited non-success, not a semantic verdict.",
+    "ambiguous_exception_policy": "The seven other execution exceptions lack phase/trace-origin receipts; exception names alone cannot prove model error or infrastructure failure. Keep attribution unresolved.",
+    "production_scoring": "v5 is currently an opt-in historical replay only; a future adapter must bind qualification/source/image/limits, preserve legacy routes, store reference-derived receipts host-only, and use one scorer profile for all compared methods.",
+    "learning_scope": "Current continual_learning contracts and Adapter are Coding-only. Spreadsheet learning requires an explicit new benchmark-aware learning protocol; adding a scoring adapter alone does not enable it."
+  },
+  "new_model_api_calls": 0,
+  "new_container_executions": 0,
+  "generated_code_executed": false,
+  "historical_scores_changed": false,
+  "new_evaluation_started": false,
+  "is_method_effect": false,
+  "record_hash": "39f5e98f5b5911990a7eff631cce3200b2361025f6875c13341b5f8150ebad82"
+}

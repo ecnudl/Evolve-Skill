@@ -1,0 +1,3 @@
+# Existing immutable BCB runtime; no package upgrades or build-time execution.
+FROM sha256:b13b0bb97861eb3a2f3f9ead1e8718d1410882613f84e088bb31338c343149fa
+COPY nltk_data/ /usr/share/nltk_data/

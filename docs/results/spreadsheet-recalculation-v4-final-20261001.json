@@ -1,0 +1,235 @@
+{
+  "artifact_schema": "spreadsheet-recalculation-v4-public-summary-v1",
+  "evidence_kind": "zero_model_call_historical_artifact_rescore",
+  "report": {
+    "version": "spreadsheet-independent-lo-recalculation-v4",
+    "protocol_hash": "c93d04b940594a628154758d0e9229e2fbb34756411acc27dc741dc4b03f4f09",
+    "status": "complete",
+    "positions": 160,
+    "completed": 160,
+    "old_counts": {
+      "pass": 59,
+      "unknown": 62,
+      "fail": 39
+    },
+    "counts": {
+      "pass": 61,
+      "fail": 42,
+      "unknown": 57
+    },
+    "transitions": {
+      "pass->pass": 43,
+      "unknown->pass": 18,
+      "fail->fail": 25,
+      "unknown->fail": 17,
+      "pass->unknown": 16,
+      "unknown->unknown": 27,
+      "fail->unknown": 14
+    },
+    "unknown_reasons": {
+      "reference:unsupported_extended_function": 16,
+      "original_no_delivered_workbook:native_exception:ValueError": 2,
+      "reference:unsupported_external_or_volatile_defined_name": 2,
+      "prediction:recalculation_changed_literal_cell": 2,
+      "reference:recalculation_changed_literal_cell": 7,
+      "reference:unsupported_workbook_structure": 4,
+      "reference:numeric_literal_sheet_missing:before_calculate": 2,
+      "reference_native_cache_drift_or_unavailable": 2,
+      "original_no_delivered_workbook:native_exception:SyntaxError": 1,
+      "original_no_delivered_workbook:output.xlsx_not_produced": 1,
+      "reference:unsupported_active_or_external_workbook": 4,
+      "reference:unsupported_external_structured_or_volatile_formula": 6,
+      "original_no_delivered_workbook:native_exception:TypeError": 1,
+      "original_no_delivered_workbook:native_exception:AttributeError": 3,
+      "original_no_delivered_workbook:native_exception:KeyError": 1,
+      "original_no_delivered_workbook:model_response_truncated": 1,
+      "reference:unsupported_external_relationship": 2
+    },
+    "original_undelivered_categories": {
+      "generated_code_execution_exception": 8,
+      "missing_deliverable": 1,
+      "generation_truncation": 1
+    },
+    "recalculation_costs": {
+      "unique_workbook_receipts": 185,
+      "containers_attempted": 167,
+      "duration_seconds_sum": 541.0976745900698,
+      "cleanup_unconfirmed": 0,
+      "libreoffice_versions": [
+        "LibreOffice 25.2.3.2 520(Build:2)"
+      ]
+    },
+    "model_api_calls": 0,
+    "historical_scores_replaced": false,
+    "feedback_allowed": false,
+    "excel_equivalence_proven": false,
+    "is_method_effect": false,
+    "record_hash": "e8b03fbaf793b7e1e9e460fb67da30708406837f4517f70d693a66b4b5bd206a"
+  },
+  "panel": {
+    "independent_tasks": 80,
+    "repeats": 2,
+    "positions": 160,
+    "delivered_positions": 150,
+    "original_generation_model": "glm-5.3",
+    "original_generation_max_tokens": 4096
+  },
+  "previous_versions": {
+    "v2": {
+      "counts": {
+        "pass": 54,
+        "fail": 40,
+        "unknown": 66
+      },
+      "protocol_hash": "2adf75919f48318ea77f316d34dc3063aafe72e61033e8d669aaacf987f4d270",
+      "transitions_to_v4": {
+        "pass->pass": 54,
+        "fail->fail": 40,
+        "unknown->unknown": 57,
+        "unknown->pass": 7,
+        "unknown->fail": 2
+      },
+      "changed_positions": 9,
+      "changed_independent_tasks": 5,
+      "prior_changed_reasons": {
+        "reference:recalculation_changed_formula": 2,
+        "prediction:recalculation_changed_formula": 1,
+        "reference:recalculation_changed_literal_cell": 6
+      },
+      "preserved_sheet_module_sha256": "8c38dbdfe5ad9f36316c1223b7ad6b7a42bb14e138bcd15ec89578e41a9a7350"
+    },
+    "v3": {
+      "counts": {
+        "pass": 59,
+        "fail": 41,
+        "unknown": 60
+      },
+      "protocol_hash": "6b669f246f31d25d548c7502979a47070d9d577c68da28328d5059d180eaf4eb",
+      "transitions_to_v4": {
+        "pass->pass": 59,
+        "fail->fail": 41,
+        "unknown->unknown": 57,
+        "unknown->pass": 2,
+        "unknown->fail": 1
+      },
+      "changed_positions": 3,
+      "changed_independent_tasks": 2,
+      "prior_changed_reasons": {
+        "reference:recalculation_changed_formula": 2,
+        "prediction:recalculation_changed_formula": 1
+      },
+      "preserved_sheet_module_sha256": "ed23ac7fc14ebf5f25dc29d5251ae86f8fd714c18ee93e0e084cde3a11c859d0"
+    }
+  },
+  "qualification": {
+    "hash": "bbfa5c9a1e3aaf8ee05ca6cc34a7c7527e46630ba1b5c165a89351669567ec53",
+    "passed": 13,
+    "total": 13,
+    "containers": 13,
+    "container_seconds": 20.94247822277248,
+    "cleanup_unconfirmed": 0,
+    "controls": [
+      {
+        "name": "correct",
+        "qualified": true
+      },
+      {
+        "name": "wrong",
+        "qualified": true
+      },
+      {
+        "name": "empty_string",
+        "qualified": true
+      },
+      {
+        "name": "retained_dependency",
+        "qualified": true
+      },
+      {
+        "name": "unsupported",
+        "qualified": true
+      },
+      {
+        "name": "array_correct",
+        "qualified": true
+      },
+      {
+        "name": "array_wrong",
+        "qualified": true
+      },
+      {
+        "name": "numeric_roundtrip",
+        "qualified": true
+      },
+      {
+        "name": "numeric_wrong",
+        "qualified": true
+      },
+      {
+        "name": "boolean_false",
+        "qualified": true
+      },
+      {
+        "name": "boolean_true",
+        "qualified": true
+      },
+      {
+        "name": "boolean_wrong",
+        "qualified": true
+      },
+      {
+        "name": "boolean_string_wrong",
+        "qualified": true
+      }
+    ]
+  },
+  "audit": {
+    "frozen_evidence_files": 564,
+    "frozen_evidence_changed": 0,
+    "frozen_source_match": true,
+    "raw_and_restored_hash_failures": 0,
+    "restored_numeric_texts": 795,
+    "available_receipts": 166
+  },
+  "execution": {
+    "linux_root": "/root/continual-sheet-recalc-20261001-d",
+    "image_id": "sha256:f7f6f598c4f0b16ea514614c22325e8b3a2d5d0317f423757dcdfa1bb2c4d790",
+    "timeout_seconds": 120,
+    "started_at": "2026-10-01T01:45:36+08:00",
+    "completed_at": "2026-10-01T01:55:34.931094+08:00",
+    "sheet_module_sha256": "862af61eedbbc4e182008a23f0bb9af35bf4ccfc1b3d0d0a8341139a5c5096a1",
+    "worker_sha256": "e357b987205ed597e500c6f0866979dd9e3d58ea681ef851aa66dfa942cba231"
+  },
+  "verification": {
+    "local_targeted_tests_passed": 189,
+    "linux_sheet_tests_passed": 85,
+    "independent_review": "passed",
+    "ruff": "passed"
+  },
+  "new_behavior": {
+    "scope": "Only unqualified uppercase TRUE/FALSE logical operands versus zero-argument TRUE()/FALSE() in expression operand positions. Array formula type and output extent remain unchanged.",
+    "tokenizer": "openpyxl Tokenizer; input render must exactly reproduce original formula; all non-Boolean characters remain exact.",
+    "formula_text_observers": "Any changed Boolean spelling with FORMULATEXT, FORMULA or GET.CELL in formulas or defined names remains unknown.",
+    "reference_sources": [
+      "https://support.microsoft.com/en-gb/excel/functions/false-function",
+      "https://support.microsoft.com/en-us/excel/functions/true-function"
+    ],
+    "not_changed": [
+      "Numeric precision rules",
+      "Formula and output caches",
+      "Date formats",
+      "UTF16 handling",
+      "Extended functions",
+      "External links",
+      "Original model answers"
+    ]
+  },
+  "limitations": [
+    "Engineering environment coverage only, not model learning or Skill-method effect.",
+    "LibreOffice is not proven equivalent to Excel; unresolved compatibility remains unknown.",
+    "Original data, native scores and prior version protocols remain immutable.",
+    "Whole 160-position panel was replayed; recovered cases are not an independent selected accuracy benchmark.",
+    "35 originally unknown positions became scorable, while 30 originally scorable positions became unknown under strict compatibility guards."
+  ],
+  "record_hash": "069329a6945a84c7cf60af14a3c0a991e37bd4642003f1b0a6603f66fb144952"
+}

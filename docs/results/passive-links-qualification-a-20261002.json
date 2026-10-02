@@ -1,0 +1,26 @@
+{
+  "evidence_kind": "engineering_fixture_real_isolated_execution",
+  "status": "rejected",
+  "qualification_hash": "320cac8016ca164b5c10d5ffe93cc6d1db4f6e13c89383dcbb39879c7197a4b7",
+  "protocol_hash": "9acd678d6e5b81dee4856d15f71c7623ad189e0f9eeeef7f234353e9687c35be",
+  "engine_controls": {"passed": 39, "total": 41},
+  "original_score_controls": {"passed": 18, "total": 18},
+  "failed_controls": ["passive_correct", "passive_wrong"],
+  "failure_reason": "passive_hyperlink_execution_unverified",
+  "diagnosis": "Native export retained hyperlink target/ref/display but dropped the tooltip; original complete-preservation check rejected it. This is not an arithmetic error.",
+  "execution": {
+    "closed_workbooks": 50,
+    "open_workbook_intents": 0,
+    "containers_attempted": 38,
+    "reported_wall_seconds": 90.33291111048311,
+    "cleanup_unconfirmed": 0,
+    "model_api_calls": 0
+  },
+  "source_sha256": {
+    "sheet_passive_links.py": "aeb591e0bf13f2f2760d666423611e345333b9ff234909bec6adf3721340ee64",
+    "replay_sheet_passive_links.py": "1636567b9fa2df231ac8d1dead9652786bbe1c53807eb3a4f77118640cd2eeab"
+  },
+  "full_160_replay_authorized": false,
+  "historical_scores_replaced": false,
+  "method_improvement_claimed": false
+}

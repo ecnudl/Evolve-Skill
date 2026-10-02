@@ -1,0 +1,135 @@
+{
+  "version": "skillopt-generalization-launch-safe-summary-v1",
+  "captured_utc": "2026-10-02T13:48:13.551895+00:00",
+  "protocol_hash": "97ca8db2c92820cd5b796939f0afbe06685716f74671caf6ddac076e165a7754",
+  "protocol_version": "fivebench-sequential-attempts-v2",
+  "learning_version": "continual-learning-v4",
+  "status": "running_not_complete",
+  "source": "/root/continual-skillopt-generalization-20261002-d-source",
+  "study": "/root/continual-skillopt-generalization-20261002-d-study",
+  "model": "glm-5.3",
+  "budget": {
+    "max_metric_calls": 512,
+    "max_reflection_calls": 64,
+    "max_api_calls": 12000,
+    "max_reported_tokens": 6000000,
+    "max_iterations": 2,
+    "minibatch_size": 8,
+    "solver_max_tokens": 65536,
+    "reflection_max_tokens": 4096
+  },
+  "evaluation_policy": "unchanged_original_frozen_budget_source_scorer_all_methods",
+  "data_scope": "previously_exposed_development_with_explicit_learning_overlap_not_final",
+  "evaluation_feedback_to_learner": false,
+  "deployment_authorized": false,
+  "method_effect_claimed": false,
+  "qualification": {
+    "status": "qualified",
+    "record_hash": "2ae60c5a85d4e14ad230093bfb101234cd97adcd1d9b54154ed128f98e33288a",
+    "model_api_calls": 0,
+    "controls": 23
+  },
+  "panels": [
+    {
+      "benchmark": "bigcodebench",
+      "train_tasks": 64,
+      "train_families": 64,
+      "selection_tasks": 65,
+      "selection_families": 64,
+      "eval_positions": 800,
+      "no_skill_counts": {
+        "pass": 400,
+        "fail": 399,
+        "unknown": 1
+      },
+      "no_skill_report_hash": "2e7f7440ab7a3ddfc0628cdbce607c1a2ddcb21ecfeec967cbff8d86e8b61211",
+      "learning_excluded_tasks": 271,
+      "learning_excluded_families": 271,
+      "learning_excluded_positions": 542,
+      "learning_excluded_no_skill_counts": {
+        "pass": 274,
+        "fail": 267,
+        "unknown": 1
+      }
+    },
+    {
+      "benchmark": "spreadsheetbench",
+      "train_tasks": 40,
+      "train_families": 40,
+      "selection_tasks": 40,
+      "selection_families": 40,
+      "eval_positions": 160,
+      "no_skill_counts": {
+        "fail": 44,
+        "unknown": 53,
+        "pass": 63
+      },
+      "no_skill_report_hash": "5864962a9e411679e8957cff6e9ec3abfb5812351bf9fa2fa305c16f339763b4",
+      "learning_excluded_tasks": 0,
+      "learning_excluded_families": 0,
+      "learning_excluded_positions": 0,
+      "learning_excluded_no_skill_counts": {}
+    },
+    {
+      "benchmark": "searchqa",
+      "train_tasks": 64,
+      "train_families": 64,
+      "selection_tasks": 64,
+      "selection_families": 64,
+      "eval_positions": 800,
+      "no_skill_counts": {
+        "pass": 560,
+        "fail": 234,
+        "unknown": 6
+      },
+      "no_skill_report_hash": "ec5b26cc1cfa7ac7b26a922c9fe9bcd7afa36eb2aaeb25bd7f812928d40eb99b",
+      "learning_excluded_tasks": 272,
+      "learning_excluded_families": 272,
+      "learning_excluded_positions": 544,
+      "learning_excluded_no_skill_counts": {
+        "pass": 379,
+        "fail": 161,
+        "unknown": 4
+      }
+    },
+    {
+      "benchmark": "korbench",
+      "train_tasks": 100,
+      "train_families": 10,
+      "selection_tasks": 100,
+      "selection_families": 10,
+      "eval_positions": 1000,
+      "no_skill_counts": {
+        "pass": 746,
+        "fail": 243,
+        "unknown": 11
+      },
+      "no_skill_report_hash": "787d14f4fe12e8306bfce8081059f6ef60be842e262be23eab738b61f7aa4752",
+      "learning_excluded_tasks": 300,
+      "learning_excluded_families": 30,
+      "learning_excluded_positions": 600,
+      "learning_excluded_no_skill_counts": {
+        "pass": 488,
+        "fail": 103,
+        "unknown": 9
+      }
+    },
+    {
+      "benchmark": "alfworld",
+      "train_tasks": 19,
+      "train_families": 19,
+      "selection_tasks": 20,
+      "selection_families": 20,
+      "eval_positions": 78,
+      "no_skill_counts": {
+        "fail": 13,
+        "pass": 65
+      },
+      "no_skill_report_hash": "d381a898ffde9096a83b256b5974169fe71378c10e131219838629b96542e9f2",
+      "learning_excluded_tasks": 0,
+      "learning_excluded_families": 0,
+      "learning_excluded_positions": 0,
+      "learning_excluded_no_skill_counts": {}
+    }
+  ]
+}

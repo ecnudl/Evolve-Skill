@@ -1,0 +1,31 @@
+{
+  "version": "continual-learning-v2",
+  "method": "skillopt",
+  "parent_skill": "",
+  "seed": 0,
+  "train_families": ["REPLACE_WITH_DEVELOPMENT_TRAIN_FAMILY"],
+  "selection_families": ["REPLACE_WITH_DISJOINT_DEVELOPMENT_SELECTION_FAMILY"],
+  "model": {
+    "provider": "bigmodel",
+    "name": "glm-5.3",
+    "max_tokens": 8192,
+    "reasoning_effort": "low",
+    "transport": {
+      "stream": true,
+      "read_timeout_seconds": 300,
+      "stream_wall_seconds": 1800,
+      "initial_health_policy": "completed_response_v1"
+    }
+  },
+  "budget": {
+    "max_metric_calls": 512,
+    "max_reflection_calls": 32,
+    "max_api_calls": 600,
+    "max_reported_tokens": 2000000,
+    "max_iterations": 2,
+    "minibatch_size": 8,
+    "solver_max_tokens": 8192,
+    "reflection_max_tokens": 8192
+  },
+  "runtime": {}
+}

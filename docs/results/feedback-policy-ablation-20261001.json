@@ -1,0 +1,348 @@
+{
+  "version": "feedback-policy-ablation-safe-summary-v1",
+  "audited_at_utc": "2026-09-30T19:53:14.352475+00:00",
+  "experiment": "single_round_shadow_content_policy_ablation_not_complete_research_rubric_method",
+  "evidence_kind": "real_model_development_run",
+  "source": {
+    "root": "/root/continual-feedback-ablation-20261001-source",
+    "module_sha256": "d789d0a72108933804e159c2d23ad143efab299db8944602fcac38cedc7e6062",
+    "source_identity_hash": "c682be9329a08a6f2a4b986b4b90250dfc44b1598ce754798890857994d9bbaf"
+  },
+  "study_root": "/root/continual-feedback-ablation-20261001-study",
+  "data_provenance": {
+    "benchmark": "bigcodebench",
+    "dataset_revision": "bigcode/bigcodebench@b74c0d0bf70d2c0bc459be537895cca163007f1a:v0.1.4:instruct",
+    "provenance": "natural",
+    "partition": "development"
+  },
+  "shared_parent": {
+    "root": "/root/continual-baselines-long-20261001-study/learning/skillopt",
+    "result_hash": "430ae45099dadd5283ad8d3fb34896290794512fe3cec321c0190283701f08bb",
+    "manifest_hash": "03c764ab8f84c5a4c55ef976c434febf69e9644f202b88f8f963c50efcc3e6fc",
+    "panel_hash": "d0f8fb0bdbe273429fbf22dcba127c8c1ba22d9ea05d1748528b4678c71974ad",
+    "train_tasks": 65,
+    "train_families": 64,
+    "train_pass": 36,
+    "train_fail": 29,
+    "selection_tasks": 64,
+    "selection_families": 64,
+    "selection_counts": {
+      "fail": 31,
+      "pass": 33
+    },
+    "selection_accuracy": 0.515625,
+    "training_evidence_hash": "7f3b9a80501a56a88535f86b7c1b7cc8e119abca4918c654651118406c78f0a4",
+    "costs_counted_once": {
+      "logical_calls": 138,
+      "terminal_calls": 138,
+      "unclosed_calls": 0,
+      "http_attempts": 138,
+      "http_attempts_known_subtotal": 138,
+      "http_attempts_total": 138,
+      "http_attempts_semantics": "known_subtotal_total_unknown_if_unclosed",
+      "reported_tokens_known_subtotal": 103424,
+      "missing_usage_calls": 0,
+      "usage_complete": true,
+      "retry_inclusive_usage_known": true,
+      "reflection_calls": 9,
+      "solver_calls": 129
+    },
+    "original_reflection_calls_not_used_as_update_evidence": 9
+  },
+  "model_and_runtime": {
+    "provider": "bigmodel",
+    "model": "glm-5.3",
+    "temperature": 0,
+    "reasoning_effort": "low",
+    "thinking": {
+      "type": "enabled"
+    },
+    "stream": true,
+    "read_timeout_seconds": 300,
+    "stream_wall_seconds": 1800,
+    "solver_max_tokens": 65536,
+    "reflection_max_tokens": 4096,
+    "runtime": {
+      "image": "sha256:b13b0bb97861eb3a2f3f9ead1e8718d1410882613f84e088bb31338c343149fa",
+      "timeout_seconds": 300,
+      "memory_mb": 8192,
+      "cpus": 1
+    }
+  },
+  "fairness_audit": {
+    "same_empty_parent": true,
+    "same_65_training_observations": true,
+    "payload_differs_only_by_update_policy": true,
+    "same_proposal_output_cap": true,
+    "same_selection_solver_native_scorer": true,
+    "same_frozen_64_selection_roster": true,
+    "selection_or_hidden_tracebacks_in_updater_payload": false,
+    "host_scalar_feedback_not_research_evidence": true,
+    "actual_token_costs_not_equal_and_reported": true,
+    "same_temperature_not_deterministic": true
+  },
+  "arms": {
+    "generic_summary": {
+      "protocol_hash": "61e7da890dc8363c628e20d6beee07106c2126d6fe817bc91aaf13eaed83f44f",
+      "result_hash": "e83ed102ace0f4bc27088893a10d46657930a554e3e556e3868759a7dfca17ee",
+      "protocol_file_sha256": "739021be236bfb53f57ea395ff66447df6ba15a3fbe45afc2b5a38c409e9046f",
+      "result_file_sha256": "2bdf7126d9d40872a0b5da3b425a36b80f782e34ab94c81781b58fe9ee8b0628",
+      "status": "pending",
+      "reason": "evaluation_unknown",
+      "gate_action": null,
+      "candidate_skill_hash": "0c90ed751ed6c5f0dfef01871e4c55b9533e77998aa276d64dca7cd7d01249da",
+      "candidate_skill_utf8_bytes": 3326,
+      "selected_empty_parent": true,
+      "candidate_full_selection_accuracy": null,
+      "selection": {
+        "planned": 64,
+        "closed": 16,
+        "known": 15,
+        "independent_families_closed": 16,
+        "pass": 7,
+        "fail": 8,
+        "unknown": 1,
+        "unsubmitted": 48,
+        "repeats": 1
+      },
+      "paired_to_frozen_parent": {
+        "wins": 1,
+        "losses": 2,
+        "ties": 12,
+        "unknown_pairs": 1,
+        "missing_pairs": 48
+      },
+      "model_costs_new": {
+        "logical_calls": 17,
+        "terminal_calls": 17,
+        "unclosed_calls": 0,
+        "http_attempts": 17,
+        "http_attempts_known_subtotal": 17,
+        "http_attempts_total": 17,
+        "http_attempts_semantics": "known_subtotal_total_unknown_if_unclosed",
+        "reported_tokens_known_subtotal": 47929,
+        "missing_usage_calls": 0,
+        "usage_complete": true,
+        "retry_inclusive_usage_known": true,
+        "reflection_calls": 1,
+        "solver_calls": 16
+      },
+      "model_costs_by_role": {
+        "reflection": {
+          "logical_calls": 1,
+          "http_attempts": 1,
+          "prompt_tokens": 27958,
+          "completion_tokens": 802
+        },
+        "solver": {
+          "logical_calls": 16,
+          "http_attempts": 16,
+          "prompt_tokens": 15279,
+          "completion_tokens": 3890
+        }
+      },
+      "execution_costs_new": {
+        "container_calls": 16,
+        "cumulative_wall_seconds": 307.165001,
+        "cleanup_confirmed_count": 16
+      },
+      "proposal": {
+        "prompt_hash": "7d4e3a18ca765a494418159067d4c9e7cacab9827f41d82ca4ad4caecbeb69c3",
+        "request_hash": "6e28036270a035eb873fcb11c3fecf71791904bc83d9fdb2facbc3979bb35413",
+        "max_tokens": 4096,
+        "finish_reason": "stop",
+        "http_attempt_count": 1,
+        "usage": {
+          "prompt_tokens": 27958,
+          "completion_tokens": 802,
+          "total_tokens": 28760,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 73
+          }
+        }
+      },
+      "unknown_evidence": [
+        {
+          "task_hash": "418ca04cf8660f2c34b30cd5d87cc313ee9c0477a1e2be2d0cf9c0c0a08c0b55",
+          "evaluation_hash": "fa35c225e9049624ece9be96d779c7bda4ddbc395cce271cd375651123d3c32f",
+          "reason": "native_timeout",
+          "native_result": "timeout",
+          "cleanup_confirmed": true,
+          "timeout_layer": "official_untrusted_check",
+          "execution_costs": {
+            "container_calls": 1,
+            "wall_seconds": 242.946642,
+            "includes_cleanup": true,
+            "image_id": "sha256:b13b0bb97861eb3a2f3f9ead1e8718d1410882613f84e088bb31338c343149fa"
+          },
+          "parent_status": "fail",
+          "parent_native_result": "fail",
+          "parent_execution_wall_seconds": 242.853956,
+          "parent_cleanup_confirmed": true
+        }
+      ],
+      "deployment_authorized": false,
+      "scope_authorized": false,
+      "source_and_terminal_evidence_verified": true
+    },
+    "conditional_mechanism": {
+      "protocol_hash": "2bc22a223cc576c31a2e5e9f50c1c969b6033b1df419e61b102c2cbbcf23a144",
+      "result_hash": "2bbe57d83dc9a1e369ac2db889078ef7a2c68ea3b6a0fae4036bd6f62164806e",
+      "protocol_file_sha256": "508c0c6168c78f329a487e718850eced92c4a64c78ccbf55f56f2e8e13f969d2",
+      "result_file_sha256": "2888d9d32f5104d081b26627c339ffec3b1bbc7f5f1ac044cb62ff78dba19cb9",
+      "status": "completed",
+      "reason": "shadow_full_development_selection",
+      "gate_action": "reject",
+      "candidate_skill_hash": "789179690fefb1f6ecf5d1793b920e0b12095a0d9cd02180872fbbbeaf6614c2",
+      "candidate_skill_utf8_bytes": 5891,
+      "selected_empty_parent": true,
+      "candidate_full_selection_accuracy": 0.5,
+      "selection": {
+        "planned": 64,
+        "closed": 64,
+        "known": 64,
+        "independent_families_closed": 64,
+        "pass": 32,
+        "fail": 32,
+        "unknown": 0,
+        "unsubmitted": 0,
+        "repeats": 1
+      },
+      "paired_to_frozen_parent": {
+        "wins": 5,
+        "losses": 6,
+        "ties": 53,
+        "unknown_pairs": 0,
+        "missing_pairs": 0
+      },
+      "model_costs_new": {
+        "logical_calls": 65,
+        "terminal_calls": 65,
+        "unclosed_calls": 0,
+        "http_attempts": 65,
+        "http_attempts_known_subtotal": 65,
+        "http_attempts_total": 65,
+        "http_attempts_semantics": "known_subtotal_total_unknown_if_unclosed",
+        "reported_tokens_known_subtotal": 136461,
+        "missing_usage_calls": 0,
+        "usage_complete": true,
+        "retry_inclusive_usage_known": true,
+        "reflection_calls": 1,
+        "solver_calls": 64
+      },
+      "model_costs_by_role": {
+        "reflection": {
+          "logical_calls": 1,
+          "http_attempts": 1,
+          "prompt_tokens": 27987,
+          "completion_tokens": 1324
+        },
+        "solver": {
+          "logical_calls": 64,
+          "http_attempts": 64,
+          "prompt_tokens": 92140,
+          "completion_tokens": 15010
+        }
+      },
+      "execution_costs_new": {
+        "container_calls": 64,
+        "cumulative_wall_seconds": 554.314597,
+        "cleanup_confirmed_count": 64
+      },
+      "proposal": {
+        "prompt_hash": "8dc229afb5f3829c21426c53821ca035bb4ae7db911148c43e08227e76cbb08d",
+        "request_hash": "9d2170720547e78e897ff185a4460619188f74af60176427e51d4f1a48bc5490",
+        "max_tokens": 4096,
+        "finish_reason": "stop",
+        "http_attempt_count": 1,
+        "usage": {
+          "prompt_tokens": 27987,
+          "completion_tokens": 1324,
+          "total_tokens": 29311,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 92
+          }
+        }
+      },
+      "unknown_evidence": [],
+      "deployment_authorized": false,
+      "scope_authorized": false,
+      "source_and_terminal_evidence_verified": true
+    }
+  },
+  "paired_conditional_vs_generic": {
+    "wins": 0,
+    "losses": 3,
+    "ties": 12,
+    "unknown_pairs": 1,
+    "missing_pairs": 48
+  },
+  "costs": {
+    "new_both_arms": {
+      "logical_calls": 82,
+      "http_attempts": 82,
+      "reported_tokens_known_subtotal": 184390
+    },
+    "reported_tokens_shared_parent_plus_new_arms": 287814,
+    "logical_calls_shared_parent_plus_new_arms": 220,
+    "shared_parent_not_duplicated": true
+  },
+  "interpretation_limits": [
+    "Both original arm artifacts remain frozen; future continuation diagnostics are separate evidence.",
+    "Unsubmitted and unknown are not semantic failures; partial results do not support full-panel accuracy or a winner.",
+    "All training and selection evidence is development; not an independent final or cross-domain test.",
+    "One proposal per arm plus fresh stochastic Solver executions does not isolate a robust update-policy effect.",
+    "No Research-generated checks, verifier authorization, Skill scope promotion, or deployment authorization.",
+    "Token caps are matched; actual compute differs and shared inherited costs must be counted once."
+  ],
+  "timeout_case_static_audit": {
+    "task_hash": "418ca04cf8660f2c34b30cd5d87cc313ee9c0477a1e2be2d0cf9c0c0a08c0b55",
+    "inspection": "Static AST of public contract and generated code only; no execution and no hidden-test-body inspection.",
+    "public_contract_sha256": "a278d01b5f01e2625647fee50fdd83c87ef60dd1631aec925bf0a77799222b29",
+    "public_contract_keyword_indicators": {
+      "process_pool_or_multiprocessing": true,
+      "shell_or_command": true,
+      "explicit_timeout_word": false
+    },
+    "confirmed_code_facts": {
+      "generic_and_conditional_byte_identical": true,
+      "generic_and_conditional_code_sha256": "677219801ee8190a93395a678b4cffcf7446f5aae9a9179b1b67a128785fc386",
+      "parent_code_sha256": "8437f59f35fb850e67c3c66771fbc388758d15af014b6d152c2ff7d5dcaf5f92",
+      "all_three_code_utf8_bytes": 423,
+      "all_three_explicit_pool_processes_is_len_of_sequence": true,
+      "default_pool_cpu_count_hypothesis_applies": false,
+      "all_three_have_subprocess_popen_and_communicate": true,
+      "all_three_communicate_calls_without_explicit_timeout": true,
+      "all_three_explicit_loop_and_entry_recursion_counts": 0
+    },
+    "host_development_audit_observations": {
+      "parent": {
+        "status": "fail",
+        "native_result": "fail",
+        "execution_wall_seconds": 242.853956,
+        "cleanup_confirmed": true
+      },
+      "generic_summary": {
+        "status": "unknown",
+        "native_result": "timeout",
+        "execution_wall_seconds": 242.946642,
+        "cleanup_confirmed": true
+      },
+      "conditional_mechanism": {
+        "status": "fail",
+        "native_result": "fail",
+        "execution_wall_seconds": 242.804602,
+        "cleanup_confirmed": true
+      }
+    },
+    "interpretation": "Identical generated code received different FAIL/TIMEOUT labels near the native time limit. This is runtime-sensitive evidence, not evidence that conditional guidance repaired this task.",
+    "unresolved": "A particular deadlock, PID-limit problem, subprocess behavior or evaluator race has not been established. No old label is reclassified and no task is rerun."
+  },
+  "record_hash": "f1e9a5cb4b9af050ac1d1b2908dc74fe04438ddbbc0eaf8e8ad7c013b868d322"
+}
