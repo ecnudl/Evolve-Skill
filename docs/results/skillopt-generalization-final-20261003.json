@@ -1,0 +1,310 @@
+{
+  "version": "fivebench-skillopt-generalization-final-summary-v1",
+  "snapshot_date": "2026-10-03",
+  "run": "new D: fivebench-sequential-attempts-v2 / continual-learning-v4, SkillOpt only",
+  "model": "BigModel glm-5.3, low reasoning; learning 65536 solver / 4096 reflection; evaluation unchanged from No-Skill",
+  "data_scope": "previously exposed development panels; learning tasks overlap evaluation; Spreadsheet and ALFWorld have no held-out tasks; not an independent final",
+  "final": {
+    "version": "fivebench-sequential-attempts-v2",
+    "protocol_hash": "97ca8db2c92820cd5b796939f0afbe06685716f74671caf6ddac076e165a7754",
+    "method": "skillopt",
+    "attempted_stages": 5,
+    "completed_learning_stages": 0,
+    "status": "attempts_finished_with_pending",
+    "independent_final": false,
+    "deployment_authorized": false,
+    "record_hash": "16db6c67d11ab06bc35c6bf5dad607a97a29092348db4291267999cb5366fc33",
+    "final_skill_bytes": 0
+  },
+  "stages": [
+    {
+      "stage": 1,
+      "benchmark": "bigcodebench",
+      "action": "pending_carry_parent",
+      "learning_completed": false,
+      "learning_reason": "native_optimizer_incomplete",
+      "parent_skill_bytes": 0,
+      "selected_skill_bytes": 0,
+      "costs": {
+        "logical_calls": 139,
+        "terminal_calls": 139,
+        "unclosed_calls": 0,
+        "http_attempts": 139,
+        "reflection_calls": 10,
+        "solver_calls": 129,
+        "reported_tokens_known_subtotal": 128652,
+        "missing_usage_calls": 1,
+        "missing_attempt_usage": 1,
+        "usage_complete": false
+      },
+      "evaluation_cells": {
+        "bigcodebench": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        },
+        "spreadsheetbench": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        },
+        "searchqa": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        },
+        "korbench": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        },
+        "alfworld": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        }
+      },
+      "stage_record_hash": "0b78c3d7952c06c4d5a179475dc6cfe6e238740b59a49ac96dacc896fdc33254",
+      "learning_result_hash": "c50687dee494573ac0bf1fe436aa1945cb4b608ee529ce0b2e7856ff589776e7",
+      "diagnosis": "Parent selection 40 pass/25 fail/0 unknown of 65; train 24 pass/40 fail of 64. 10 reflection calls: 9 complete, 1 HTTP 200 stream ended before completion (incomplete_stream, no usage, not retryable in v4), so the native optimizer stopped without a candidate."
+    },
+    {
+      "stage": 2,
+      "benchmark": "spreadsheetbench",
+      "action": "pending_carry_parent",
+      "learning_completed": false,
+      "learning_reason": "evaluation_unknown",
+      "parent_skill_bytes": 0,
+      "selected_skill_bytes": 0,
+      "costs": {
+        "logical_calls": 1,
+        "terminal_calls": 1,
+        "unclosed_calls": 0,
+        "http_attempts": 1,
+        "reflection_calls": 0,
+        "solver_calls": 1,
+        "reported_tokens_known_subtotal": 2057,
+        "missing_usage_calls": 0,
+        "missing_attempt_usage": 0,
+        "usage_complete": true
+      },
+      "evaluation_cells": {
+        "bigcodebench": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        },
+        "spreadsheetbench": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        },
+        "searchqa": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        },
+        "korbench": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        },
+        "alfworld": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        }
+      },
+      "stage_record_hash": "2cf14bcf20e5d7b8b6b99ac58a08e439f70f46b5bc5c7f82e0c4d68541e7b280",
+      "learning_result_hash": "5bb522be1fe3803975fae294ee5e6a3902b6934a60fc9c394f502c8ad36b58a2",
+      "diagnosis": "First selection position: the generated program raised SystemExit from its own data guard before saving output.xlsx (one isolated container, cleanup confirmed). No workbook means the qualified v7 scorer returns unknown, and any unknown makes the stage pending. Not a scorer or harness defect."
+    },
+    {
+      "stage": 3,
+      "benchmark": "searchqa",
+      "action": "pending_carry_parent",
+      "learning_completed": false,
+      "learning_reason": "evaluation_unknown",
+      "parent_skill_bytes": 0,
+      "selected_skill_bytes": 0,
+      "costs": {
+        "logical_calls": 115,
+        "terminal_calls": 115,
+        "unclosed_calls": 0,
+        "http_attempts": 115,
+        "reflection_calls": 0,
+        "solver_calls": 115,
+        "reported_tokens_known_subtotal": 126825,
+        "missing_usage_calls": 1,
+        "missing_attempt_usage": 1,
+        "usage_complete": false
+      },
+      "evaluation_cells": {
+        "bigcodebench": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        },
+        "spreadsheetbench": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        },
+        "searchqa": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        },
+        "korbench": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        },
+        "alfworld": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        }
+      },
+      "stage_record_hash": "12e35c829a8ed4aa271e7c62bacbdcdae10d5e2697e7348ec46517604761df15",
+      "learning_result_hash": "b76a3b3c34c179826ecef875ad91b1872f65949ed2f6a709eb0d2163d6b261e5",
+      "diagnosis": "Parent selection 51 pass/13 fail of 64; train 34 pass/16 fail/1 unknown after 51 of 64 positions. The unknown is a provider content-filter refusal (finish_reason sensitive, HTTP 200, no usage); no retry or bypass by design."
+    },
+    {
+      "stage": 4,
+      "benchmark": "korbench",
+      "action": "pending_carry_parent",
+      "learning_completed": false,
+      "learning_reason": "native_candidate_exceeds_skill_budget",
+      "parent_skill_bytes": 0,
+      "selected_skill_bytes": 0,
+      "costs": {
+        "logical_calls": 217,
+        "terminal_calls": 217,
+        "unclosed_calls": 0,
+        "http_attempts": 217,
+        "reflection_calls": 17,
+        "solver_calls": 200,
+        "reported_tokens_known_subtotal": 833513,
+        "missing_usage_calls": 0,
+        "missing_attempt_usage": 0,
+        "usage_complete": true
+      },
+      "evaluation_cells": {
+        "bigcodebench": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        },
+        "spreadsheetbench": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        },
+        "searchqa": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        },
+        "korbench": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        },
+        "alfworld": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        }
+      },
+      "stage_record_hash": "6ab00d0d402acf17e4264f4f4795a5e84a7429e80268fb0f989b3206115179ef",
+      "learning_result_hash": "c61f8cb7091e37447b23ecdbef6641109973301239ff2ddae0387dd9f53ae730",
+      "diagnosis": "Parent selection 66 pass/34 fail of 100; train 59 pass/41 fail of 100; 17 reflection calls all complete (6 failure analyses, 8 success analyses, 3 merges). The final merge produced one append edit of 6,172 bytes, above the frozen 6,000-byte Skill interface; v4 marks this pending instead of evaluating it."
+    },
+    {
+      "stage": 5,
+      "benchmark": "alfworld",
+      "action": "pending_carry_parent",
+      "learning_completed": false,
+      "learning_reason": "evaluation_unknown",
+      "parent_skill_bytes": 0,
+      "selected_skill_bytes": 0,
+      "costs": {
+        "logical_calls": 34,
+        "terminal_calls": 34,
+        "unclosed_calls": 0,
+        "http_attempts": 36,
+        "reflection_calls": 0,
+        "solver_calls": 34,
+        "reported_tokens_known_subtotal": 22716,
+        "missing_usage_calls": 1,
+        "missing_attempt_usage": 2,
+        "usage_complete": false
+      },
+      "evaluation_cells": {
+        "bigcodebench": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        },
+        "spreadsheetbench": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        },
+        "searchqa": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        },
+        "korbench": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        },
+        "alfworld": {
+          "kind": "historical_empty_policy",
+          "reused": true,
+          "new_model_calls": 0,
+          "independent_new_observation": false
+        }
+      },
+      "stage_record_hash": "1545feef4024be3ec4e1960ebc1804ce1720635566285507ec486c2186187ae6",
+      "learning_result_hash": "6c92ffce61573b56a6196b62a077043adcada0855bdcdec1cf585c89fc3c9cdc",
+      "diagnosis": "34 solver calls used 36 HTTP attempts: one call recovered after 2 failed attempts whose usage was unknown. The v4 ledger treats that unknown attempt usage as blocking, so the next model call inside the second selection episode raised LearningPending (recorded as unknown). This is an inconsistency between the v4 network retry and the v4 usage block, not an environment or model failure."
+    }
+  ],
+  "learning_totals": {
+    "logical_calls": 506,
+    "http_attempts": 508,
+    "reported_tokens_known_subtotal": 1113763,
+    "missing_usage_calls": 3
+  },
+  "matrix": "All 25 post-S0 cells reuse the historical No-Skill observation of the empty Skill (0 new evaluation calls); known paired positions tie, while original unknown positions remain paired unknowns.",
+  "interpretation": "No stage completed learning and no non-empty Skill was produced. Pending causes are delivery, accounting and interface rules, not evidence about SkillOpt's effect. Read-only diagnosis performed 2026-10-03 from terminal records; no model calls.",
+  "evidence": "Private study /root/continual-skillopt-generalization-20261002-d-study (not published); redacted counts and hashes only."
+}

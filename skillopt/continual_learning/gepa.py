@@ -14,7 +14,7 @@ from skillopt.continual_eval.runner import _valid_prediction, _valid_score
 from skillopt.validator_pilot.api import CachedAPI, digest
 
 from . import GEPA_COMMIT
-from .contracts import MULTIDOMAIN_VERSIONS, check_skill, validate_manifest
+from .contracts import DELIVERY_VERSIONS, HARDENED_VERSION, MULTIDOMAIN_VERSIONS, check_skill, validate_manifest
 from .feedback import artifacts, benchmark_for, project, verify_task_assets
 from .ledger import BudgetExhausted, LearningPending, Ledger
 from .recovery import client_options, solver_call
@@ -45,6 +45,16 @@ class _QuietLogger:
         pass
 
 
+def _cleanup_unconfirmed(value):
+    """Inspect host execution metadata; a flagged cleanup is not a score."""
+    if isinstance(value, dict):
+        return any((key in {"cleanup_confirmed", "cleaned_up"} and item is False)
+                   or (key in {"reason", "status", "error_type"} and isinstance(item, str)
+                       and "cleanup_unconfirmed" in item)
+                   or _cleanup_unconfirmed(item) for key, item in value.items())
+    return isinstance(value, list) and any(_cleanup_unconfirmed(item) for item in value)
+
+
 class Adapter:
     propose_new_texts = None  # Keep the official reflective proposer, not our own optimizer.
 
@@ -57,6 +67,21 @@ class Adapter:
     def _pending(self, reason, *, budget=False):
         self.pending_reason = reason
         raise (BudgetExhausted if budget else LearningPending)(reason)
+
+    def _guard_cleanup(self, row, key):
+        if self.manifest["version"] != HARDENED_VERSION:
+            return
+        if _cleanup_unconfirmed(row):
+            self._pending("native_cleanup_unconfirmed")
+        # A scorer may fail to project a lower-level receipt into its result.
+        # Check only this position's host-owned artifacts, never another run.
+        for path in sorted((self.root / "host_only/scorer_artifacts" / key).rglob("*.json")):
+            try:
+                evidence = read_json(path)
+            except (OSError, ValueError, TypeError):
+                self._pending("native_cleanup_evidence_unreadable")
+            if _cleanup_unconfirmed(evidence):
+                self._pending("native_cleanup_unconfirmed")
 
     def _score_runtime(self, request, key, prediction):
         runtime = self.manifest["runtime"]
@@ -72,7 +97,7 @@ class Adapter:
                 "prediction_hash": record["record_hash"]}}
         return runtime
 
-    def evaluate_rows(self, batch, candidate):
+    def evaluate_rows(self, batch, candidate, *, rollout=None):
         """Shared execution records, with no GEPA dependency for other learners."""
         if self.pending_reason:
             raise LearningPending(self.pending_reason)
@@ -95,13 +120,20 @@ class Adapter:
                        "task_hash": digest(task), "role": item["role"], "repeat": 0}
             if multidomain:
                 request["benchmark"] = benchmark
+            if rollout is not None:
+                # V5 only: every native update gets a fresh train rollout.
+                require(self.manifest["version"] in DELIVERY_VERSIONS and item["role"] == "train"
+                        and type(rollout) is int and rollout >= 0, "Rollout keys are v5 train-only")
+                request["rollout"] = rollout
             key = digest(request)
             path = self.root / "evaluations" / (key + ".json")
+            ledger_stops = []
             if path.exists():
                 row = read_json(path, sealed=True)
                 require(row["request"] == request, "Evaluation cache identity differs")
                 require(read_json(self.root / "evaluation_intents" / (key + ".json"), sealed=True) == seal(request),
                         "Evaluation cache has no matching intent")
+                self._guard_cleanup(row, key)
                 if (not self.fixture_evaluate and row["prediction"]["status"] == "available"
                         and benchmark == "spreadsheetbench"
                         and self.manifest["runtime"].get("spreadsheet_scorer") in {
@@ -130,21 +162,45 @@ class Adapter:
                         nonlocal turn
                         logical_id = f"{key}:turn:{turn}" if multidomain else key
                         turn += 1
-                        return solver_call(self.ledger, logical_id, system, user)
+                        try:
+                            return solver_call(self.ledger, logical_id, system, user)
+                        except LearningPending as exc:
+                            # The solver adapter records this position as unknown;
+                            # keep the actual ledger/budget stop for the stage reason.
+                            ledger_stops.append(exc)
+                            raise
 
                     runtime = self.manifest["runtime"]
                     if multidomain:
                         runtime = {**runtime, "work_dir": str(self.root / "host_only/workspaces" / key)}
+                    if self.manifest["version"] == HARDENED_VERSION:
+                        runtime = {**runtime, "_stop_on_cleanup_failure": True}
                     prediction = backends.solve(benchmark, task["public"], candidate["skill"], call,
                                                 runtime=runtime)
                     prediction = _valid_prediction(prediction)
-                    score = backends.score(benchmark, task["public"], task["private"], prediction,
-                                           runtime=self._score_runtime(request, key, prediction))
+                    if self.manifest["version"] == HARDENED_VERSION and _cleanup_unconfirmed(prediction):
+                        # Persist the prediction/unknown before stopping, but do
+                        # not launch a scorer after solver cleanup has failed.
+                        score = {"status": "unknown", "score": None, "metrics": {},
+                                 "reason": "native_cleanup_unconfirmed"}
+                    else:
+                        score = backends.score(benchmark, task["public"], task["private"], prediction,
+                                               runtime=self._score_runtime(request, key, prediction))
                 row = seal({"request": request, "prediction": _valid_prediction(prediction),
                             "score": _valid_score(score)})
                 write_json(path, row)
+            self._guard_cleanup(row, key)
             if row["score"]["status"] == "unknown":
-                self._pending("evaluation_unknown")
+                if ledger_stops and self.manifest["version"] in DELIVERY_VERSIONS:
+                    self._pending(str(ledger_stops[0]), budget=isinstance(ledger_stops[0], BudgetExhausted))
+                if self.manifest["version"] not in DELIVERY_VERSIONS:
+                    self._pending("evaluation_unknown")
+                # V5: an unknown score is neither feedback nor zero; the learner
+                # excludes it from reflection and from the paired selection.
+                outputs.append({"output": None, "evidence_hash": row["record_hash"]})
+                trajectories.append(None)
+                scores.append(None)
+                continue
             # Deliberately no private tests, hidden traceback or full metrics in reflection.
             try:
                 trace = project(self.manifest, task["public"], row["prediction"], row["score"])
@@ -269,7 +325,7 @@ def run_stage(manifest, panel, output, *, gepa_source, repo=None, fixture_api=No
                 api.close()
         ledger = Ledger(root, manifest, api)
         costs = ledger.snapshot()
-        if not costs["usage_complete"] and result_payload["status"] == "completed":
+        if ledger.usage_blocks_completion(costs) and result_payload["status"] == "completed":
             result_payload.update(status="pending", candidate_skill=manifest["parent_skill"], reason="incomplete_usage")
         record = seal({"version": manifest["version"], "identity_hash": identity["record_hash"], **result_payload,
                        "evidence_kind": manifest["evidence_kind"], "costs": costs, "artifacts": artifacts(ledger),

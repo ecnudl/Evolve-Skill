@@ -4,7 +4,7 @@
 
 ## 当前会话工作中 / 待更新
 
-**新接手入口：[新 D：SkillOpt 五域补跑与 No-Skill 对比](skillopt-generalization-20261002.md)。** 新正式规模队列已于10/2 21:32启动；22:18核验时前三来源阶段为 Pending，KOR阶段进行中，尚无完整五阶段学习或新方法收益结论。新 D 使用序列 v2、学习 v4，仅运行原生 SkillOpt baseline，不代表 Research/Rubric 双门主线已完成。学习端有限恢复与 v7 工作簿评分另立身份，全域评测仍保持原 No-Skill 协议；实际状态须看最新报告及学习/阶段/全链终态。
+**新接手入口：[新 E：SkillOpt五域补跑](skillopt-generalization-e-20261003.md)。** 18:13归档终态为完整学习4/5、全域矩阵闭合5/5：只有S1更新Skill，S2/S3/S5候选超长而无更新，S4 Pending携父，最终Skill与S1相同。见[绑定结果](results/skillopt-generalization-e-final-20261003.json)。本地新增[learning v6工程修复](learning-v6-engineering-repairs-20261003.md)，只做离线验证，未修改E冻结v5、未启动v6正式实验。后续需新manifest与输出；不可将本地代码同步覆盖E源码。旧D和C的SkillOpt/GEPA均完整学习0/5，见[D终态](results/skillopt-generalization-final-20261003.json)与[C终态](results/fivebench-sequence-c-final-20261003.json)。连通和代理操作遵循AGENTS.md，按当前路由核实，不重启或关闭Clash。
 
 **旧 C 与新 D 分开。** [旧 C baseline 接续报告](baseline-continuation-20261002.md)保留原五域尝试；旧 C 的 SkillOpt 五阶段尝试已全部终止，完整学习 **0/5**，25格都是携空父后引用旧 No-Skill，不能称为学习收益。新 D 使用独立目录，不覆盖原 Pending。此前[阻塞修复报告](skillopt-blocker-repairs-20261002.md)中的Coding/QA/KOR小闭环3/3、24调用、0unknown且均未接受候选，只是工程smoke，不是正式全规模效果。
 

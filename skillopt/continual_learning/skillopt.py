@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import math
 import threading
+import warnings
 from contextlib import contextmanager
 from copy import deepcopy
 from pathlib import Path
@@ -19,8 +20,8 @@ from skillopt.validator_pilot.api import CachedAPI, digest
 from .contracts import check_skill, validate_manifest
 from .feedback import artifacts, benchmark_for, project, task_description, validate_public
 from .ledger import LearningPending, Ledger
-from .recovery import VERSION as RECOVERY_VERSION
-from .recovery import client_options
+from .recovery import DELIVERY_VERSIONS, client_options
+from .recovery import VERSIONS as RECOVERY_VERSIONS
 from .reflection_json import POLICY as PARSER_POLICY
 from .reflection_json import NativeJSONError, prepare_native_json, strict_native_object
 
@@ -43,7 +44,7 @@ class _NativeBridge:
         self.ledger, self.step = ledger, step
         self.calls = 0
         self.failure = None
-        self.strict_parser = ledger.manifest["version"] == RECOVERY_VERSION
+        self.strict_parser = ledger.manifest["version"] in RECOVERY_VERSIONS
         self.audit_root = safe_path(audit_root) if audit_root is not None else None
         if self.strict_parser:
             require(ledger.manifest.get("recovery_policy", {}).get("reflection_parser") == PARSER_POLICY,
@@ -202,7 +203,8 @@ def propose_native(parent_skill, traces, output, ledger, *, step=0, seed=0, mini
                                             else "Native development check failed")
                             if trace["Feedback"]["status"] == "fail" else ""})
     bridge = _NativeBridge(ledger, step, audit_root=root / "parser_audits")
-    with _transport(bridge):
+    with _transport(bridge), warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
         raw = sorted(reflect.run_minibatch_reflect(
             native_rows, parent_skill, str(root / "predictions"), str(root / "patches"),
             workers=1, failure_only=False, minibatch_size=minibatch_size, edit_budget=edit_budget,
@@ -220,17 +222,72 @@ def propose_native(parent_skill, traces, output, ledger, *, step=0, seed=0, mini
         selected = clip.rank_and_select(parent_skill, merged, max_edits=edit_budget, update_mode="patch")
     if bridge.failure is not None:
         raise LearningPending("native_optimizer_incomplete") from bridge.failure
+    provenance = {}
+    if ledger.manifest["version"] in DELIVERY_VERSIONS:
+        # Upstream merge/rank silently fall back on unusable optimizer output.
+        # Record it, so a completed stage cannot pass for a native merge/rank result.
+        fallbacks = sorted({str(w.message) for w in caught if "using fallback" in str(w.message)})
+        if "[fallback truncated" in str(selected.get("reasoning", "")):
+            fallbacks.append("ranking fallback truncation")
+        provenance = {"native_fallbacks": fallbacks}
     candidate, application = apply_patch_with_report(parent_skill, selected)
     try:
         check_skill(candidate)
     except ValueError as exc:
-        raise LearningPending("native_candidate_exceeds_skill_budget") from exc
+        oversized = type(candidate) is str and len(candidate.encode("utf-8")) > 6000
+        if not oversized or ledger.manifest["version"] not in DELIVERY_VERSIONS:
+            raise LearningPending("native_candidate_exceeds_skill_budget") from exc
+        # V5: a complete native proposal outside the frozen Skill interface is
+        # inadmissible. Keep the parent, retain the rejected text for audit, and
+        # never truncate, compress or evaluate it.
+        result = seal({"identity_hash": identity["record_hash"], "candidate_skill": parent_skill,
+                       "status": "rejected_inadmissible_over_budget",
+                       "rejected_candidate_skill": candidate, "rejected_candidate_hash": digest(candidate),
+                       "rejected_candidate_bytes": len(candidate.encode("utf-8")),
+                       "raw": raw, "merged": merged, "selected": selected, "application": application,
+                       "optimizer_calls": bridge.calls, **provenance, "deployment_authorized": False})
+        write_json(root / "result.json", result)
+        return result
     result = seal({"identity_hash": identity["record_hash"], "candidate_skill": candidate,
                    "status": "candidate_ready" if candidate != parent_skill else "no_update",
                    "raw": raw, "merged": merged, "selected": selected, "application": application,
-                   "optimizer_calls": bridge.calls, "deployment_authorized": False})
+                   "optimizer_calls": bridge.calls, **provenance, "deployment_authorized": False})
     write_json(root / "result.json", result)
     return result
+
+
+def _known_mean(rows, policy, reason):
+    """V5: mean over known positions; too few known positions cannot justify a comparison."""
+    known = [r["score"] for r in rows if r["score"] is not None]
+    if not known or len(known) < policy["min_known_fraction"] * len(rows):
+        raise LearningPending(reason)
+    return sum(known) / len(known)
+
+
+def _paired_selection(parent_rows, candidate_rows, policy):
+    """V5 paired comparison on jointly known selection positions; unknown is never zero.
+
+    Net newly unknown positions beyond a frozen tolerance are inadmissible.
+    This historical criterion does not guarantee regression safety: recovering
+    unknowns elsewhere can offset loss of known positions. V6 preserves that
+    selection policy; changing it requires a separate research protocol.
+    """
+    require(len(parent_rows) == len(candidate_rows), "Selection rows differ")
+    pairs = [(p["score"], c["score"]) for p, c in zip(parent_rows, candidate_rows)]
+    joint = [(p, c) for p, c in pairs if p is not None and c is not None]
+    new_unknown = sum(p is not None and c is None for p, c in pairs)
+    resolved = sum(p is None and c is not None for p, c in pairs)
+    tolerance = max(policy["unknown_shift_tolerance_min"],
+                    math.ceil(policy["unknown_shift_tolerance_fraction"] * len(pairs)))
+    record = {"selection_positions": len(pairs), "jointly_known": len(joint),
+              "candidate_new_unknown": new_unknown, "candidate_resolved_unknown": resolved,
+              "unknown_shift_tolerance": tolerance,
+              "paired_admissible": bool(joint) and len(joint) >= policy["min_known_fraction"] * len(pairs)
+              and new_unknown - resolved <= tolerance}
+    if joint:
+        record.update(parent_score=sum(p for p, _ in joint) / len(joint),
+                      candidate_score=sum(c for _, c in joint) / len(joint))
+    return record
 
 
 def _stage_artifacts(root, ledger):
@@ -296,33 +353,77 @@ def run_stage(manifest, panel, output, *, repo=None, fixture_api=None, fixture_e
             for task in panel["tasks"]:
                 role = "train" if task["family_id"] in manifest["train_families"] else "selection"
                 (train if role == "train" else selection).append({"role": role, "task": task})
+            v5 = manifest["version"] in DELIVERY_VERSIONS
+            policy = manifest.get("recovery_policy")
             current = manifest["parent_skill"]
             selected = adapter.evaluate_rows(selection, {"skill": current})
-            current_score = sum(r["score"] for r in selected) / len(selected)
+            if v5:
+                current_score = _known_mean(selected, policy, "insufficient_known_selection")
+            else:
+                current_score = sum(r["score"] for r in selected) / len(selected)
             initial_score = current_score
             for step in range(manifest["budget"]["max_iterations"]):
-                rows = adapter.evaluate_rows(train, {"skill": current})
+                rows = adapter.evaluate_rows(train, {"skill": current}, **({"rollout": step} if v5 else {}))
+                if v5:
+                    _known_mean(rows, policy, "insufficient_known_train")
+                    rows = [r for r in rows if r["score"] is not None]
                 traces = [{**r["trajectory"], "evidence_hash": r["output"]["evidence_hash"]} for r in rows]
                 proposal = propose_native(current, traces, root / "native" / str(step), ledger,
                                           step=step, seed=manifest["seed"] + step,
                                           minibatch_size=manifest["budget"]["minibatch_size"], edit_budget=4)
+                if proposal["status"] == "rejected_inadmissible_over_budget":
+                    step_record = seal({"step": step, "parent_skill_hash": digest(current),
+                                        "proposal_hash": proposal["record_hash"],
+                                        "candidate_skill_hash": proposal["rejected_candidate_hash"],
+                                        "native_fallbacks": proposal["native_fallbacks"],
+                                        "rejected_candidate_bytes": proposal["rejected_candidate_bytes"],
+                                        "parent_score": current_score, "candidate_score": None,
+                                        "gate_action": "reject_inadmissible_over_budget",
+                                        "train_tasks": len(train), "selection_tasks": len(selection),
+                                        "deployment_authorized": False})
+                    write_json(root / "steps" / f"{step}.json", step_record)
+                    steps.append(step_record)
+                    continue
                 candidate = proposal["candidate_skill"]
                 scores = adapter.evaluate_rows(selection, {"skill": candidate})
-                candidate_score = sum(r["score"] for r in scores) / len(scores)
-                gate = evaluate_gate(candidate, candidate_score, current, current_score,
-                                     current, current_score, step, step + 1, metric="hard")
+                parent_score, paired = current_score, {}
+                if v5:
+                    paired = _paired_selection(selected, scores, policy)
+                    if not paired["paired_admissible"]:
+                        step_record = seal({"step": step, "parent_skill_hash": digest(current),
+                                            "proposal_hash": proposal["record_hash"],
+                                            "native_fallbacks": proposal["native_fallbacks"],
+                                            "candidate_skill_hash": digest(candidate),
+                                            "gate_action": "reject_unknown_shift_or_coverage",
+                                            "train_tasks": len(train), "selection_tasks": len(selection),
+                                            "deployment_authorized": False, **paired})
+                        write_json(root / "steps" / f"{step}.json", step_record)
+                        steps.append(step_record)
+                        continue
+                    parent_score, candidate_score = paired.pop("parent_score"), paired.pop("candidate_score")
+                else:
+                    candidate_score = sum(r["score"] for r in scores) / len(scores)
+                gate = evaluate_gate(candidate, candidate_score, current, parent_score,
+                                     current, parent_score, step, step + 1, metric="hard")
                 step_record = seal({"step": step, "parent_skill_hash": digest(current),
                                     "proposal_hash": proposal["record_hash"],
-                                    "candidate_skill_hash": digest(candidate), "parent_score": current_score,
+                                    **({"native_fallbacks": proposal["native_fallbacks"]} if v5 else {}),
+                                    "candidate_skill_hash": digest(candidate), "parent_score": parent_score,
                                     "candidate_score": candidate_score, "gate_action": gate.action,
                                     "train_tasks": len(train), "selection_tasks": len(selection),
-                                    "deployment_authorized": False})
+                                    "deployment_authorized": False, **paired})
                 write_json(root / "steps" / f"{step}.json", step_record)
                 steps.append(step_record)
-                current, current_score = gate.current_skill, gate.current_score
+                if not v5:
+                    current, current_score = gate.current_skill, gate.current_score
+                elif gate.action != "reject":
+                    # The accepted candidate's own known positions are the next parent rows.
+                    current, selected = candidate, scores
+                    current_score = _known_mean(selected, policy, "insufficient_known_selection")
             payload = {"status": "completed", "candidate_skill": check_skill(current),
                        "initial_selection_score": initial_score, "selected_score": current_score,
-                       "reason": "native_skillopt_development_selection"}
+                       "reason": "native_skillopt_development_selection",
+                       **({"unknown_policy": policy["unknown_score"]} if v5 else {})}
         except Exception as exc:
             payload = {"status": "pending", "candidate_skill": manifest["parent_skill"],
                        "reason": str(exc) if isinstance(exc, LearningPending) else type(exc).__name__}
@@ -331,7 +432,7 @@ def run_stage(manifest, panel, output, *, repo=None, fixture_api=None, fixture_e
                 api.close()
         ledger = Ledger(root, manifest, api)
         costs = ledger.snapshot()
-        if not costs["usage_complete"] and payload["status"] == "completed":
+        if ledger.usage_blocks_completion(costs) and payload["status"] == "completed":
             payload.update(status="pending", candidate_skill=manifest["parent_skill"], reason="incomplete_usage")
         record = seal({"version": manifest["version"], "identity_hash": identity["record_hash"], **payload,
                        "steps": steps, "evidence_kind": manifest["evidence_kind"], "costs": costs,

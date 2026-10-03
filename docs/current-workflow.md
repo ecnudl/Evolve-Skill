@@ -1,5 +1,21 @@
 # 当前完整流程：Skill 与验证器如何协同进化
 
+## 10/3工程更新与实际运行边界
+
+**E已按冻结的序列v3／learning v5终止；新实现为显式v6，未部署到E。** [18:13终态](results/skillopt-generalization-e-final-20261003.json)完整学习4/5、五域矩阵闭合5/5：S1产生非空Skill，S2/S3/S5超长候选被拒而无更新，S4 Pending携父。只有一次内容更新，后20格复用同一Skill观测，详见[E报告](skillopt-generalization-e-20261003.md)。不能把四个完成阶段写成四次成功更新。
+
+v6的输入仍是冻结开发面板、父Skill、预算、运行环境和显式`POLICY_V6`，不读取五域最终分数反向修改Skill。执行链为：冻结service→按最多HTTP尝试预留未知成本→调用模型→过滤响应终止该题但不误判连接失败→执行产物→检查清理证据→仅对安全闭合的结果做原反馈／选择。清理未确认即保存回执并Pending，禁止后续题、评分和反思；Spreadsheet同题后续case也标记未执行。输出仍为候选或原父、阶段状态、成本和证据，不新增授权。
+
+实现入口为[recovery.py](../skillopt/continual_learning/recovery.py)、[API](../skillopt/validator_pilot/api.py)、[执行Adapter](../skillopt/continual_learning/gepa.py)、[ledger](../skillopt/continual_learning/ledger.py)。v6终态回放只读已绑定的`model_service.json`，不创建API、不重抽结果。真实入口仍为[单阶段CLI](../scripts/run_continual_learning.py)；新版本需新manifest与输出目录，现有E启动脚本没有自动升级。[修复报告与离线smoke](learning-v6-engineering-repairs-20261003.md)记录已复现缺陷和验证范围。
+
+**范围限制：v6不改变v5的净unknown偏移／共同已知选择策略。** 此规则可能因缺失位置变化掩盖退化，已存在人工反例；不能将工程可靠性修复称为安全泛化算法完成。后续修改选择策略、Skill长度或自动压缩必须另冻研究协议。下述C/D与v5记录保留历史边界。
+
+**10/3终态：新D五阶段全部结束、完整学习0/5、最终Skill为空，25格全部复用旧No-Skill；旧C的SkillOpt与GEPA也各为0/5。** Pending原因逐例核实为：Coding反思HTTP200流未结束且v4不重试；Sheet生成程序自行`SystemExit`未交付工作簿（模型程序行为，不是评分器缺陷）；QA内容过滤；KOR原生合并候选6,172字节超6,000字节接口；ALF的v4网络重试成功后，失败尝试的未知usage被v4账本当作阻断。[D终态](results/skillopt-generalization-final-20261003.json) · [C终态](results/fivebench-sequence-c-final-20261003.json)
+
+**learning v5历史设计（E冻结于此版本，实际进度见[E报告](skillopt-generalization-e-20261003.md)）。** 输入与v4相同。[recovery.py](../skillopt/continual_learning/recovery.py)新增`POLICY_V5`：客户端`closed_delivery_error_v2`在v1基础上把HTTP200未结束流纳入同一有限重试；[ledger.py](../skillopt/continual_learning/ledger.py)对失败尝试的未知usage如实计为`unknown_cost_attempts`，不阻断后续调用，配置停止阈值64（旧实现按调用边界检查，内部重试可越界），已交付回复缺usage或未闭合调用仍阻断；[skillopt.py](../skillopt/continual_learning/skillopt.py)把超出6,000字节的完整原生候选记为`reject_inadmissible_over_budget`，保留父Skill与被拒文本供审计，继续下一轮，不截断、不评测。unknown分数**从不记0**：v5把它从训练反馈和选择比较中成对排除，并预先冻结三道保护——训练集与父选择的已知比例须≥50%，否则阶段Pending；候选在父已知位置新增的unknown扣除其恢复的unknown后超过max(2, ⌈5%·n⌉)，或双方均已知位置不足50%，则该候选判为`reject_unknown_shift_or_coverage`、保留父Skill；门控只比较双方均已知的位置。设计要求内容过滤记unknown且不重试；review复现过滤后断流会误重试，v6另行修复，未回写E。每次更新重新执行训练集（评测键含rollout）。账本/预算拦截仍Pending并保留真实原因（如`max_api_calls`）；上游合并/排序的静默回退记为`native_fallbacks`；v5仅限SkillOpt。评测端仍用原No-Skill服务、源码、评分器与全分母，unknown照常计入分母。v1–v4行为与记录哈希不变，专测见[测试](../tests/test_continual_learning_delivery_v5.py)。序列v3（[配置](../configs/continual_learning/fivebench_sequence_v3.pjlab.json)、[启动脚本](../scripts/run_skillopt_generalization_e_linux.sh)）只运行SkillOpt，seed与D相同，因而训练/选择划分相同。
+
+只读链路审查发现的其余问题已修复：[报告器](../scripts/report_fivebench_generalization.py)保留评测端实际使用的`reported_tokens`（此前首个非空Skill评测的token会被漏报）；v3的`policy_key`额外绑定目标域与冻结报告哈希，复用评测格前核对领域；v1/v2的键与记录不变。成对排除是v5新协议，不回溯改写C/D。
+
 **10/2 22:22状态核验：新D前三来源Pending，KOR在运行。** Coding反思出现HTTP200但流交付不完整，Sheet新v7路径返回`native_exception:SystemExit`，QA触发服务内容过滤；三者携空父继续，完整学习仍0/5，已闭合的15个矩阵格仅引用旧No-Skill。不会将97项工程测试、23项评分资格或空策略相等解释为泛化收益。详见[最新原因与成本](skillopt-generalization-20261002.md)及[完整脱敏快照](results/skillopt-generalization-progress-20261002.json)。下述21:32启动信息保留，实际完成状态以绑定终态为准。
 
 **10/2 21:32：修复后的正式规模 SkillOpt 五域补跑已启动。** 新队列版本 `fivebench-sequential-attempts-v2` 通过 [v2配置](../configs/continual_learning/fivebench_sequence_v2.pjlab.json) 显式创建 `continual-learning-v4`，不覆盖下方旧C尝试。输入为原五域已暴露开发面板、按任务族哈希冻结的 train/selection、空初始Skill及预算；顺序 Coding→Spreadsheet→SearchQA→KOR→ALF。每阶段走原生反思/合并/排序/编辑/来源选择门，输出选中Skill或原父、收费及执行回执，再用**原No-Skill的模型服务、源码、运行环境、评分器和全部2,838个位置**评测五域，之后才进入下一来源。全域成绩不反馈给学习器；同策略同评测身份链接既有观测。
@@ -320,7 +336,7 @@ Research 允许没有新增信息、检索失败或 no_update；不能检索当�
 | [patch_diagnostic](../skillopt/skill_validation/patch_diagnostic.py) | 固定初始源码与保留/替换契约→No-Skill难度诊断 | 24题×2次初稿/最终均48/48；明显天花板，不是学习收益 |
 | [repair_transfer](../skillopt/skill_validation/repair_transfer.py) | F主候选冻结→原24题新基线/候选→初稿和最终分项审计 | 576个raw位置完成，实际注入96轨迹未观测干扰；+2通过来自格式差，非语义正迁移 |
 | [closed_loop](../skillopt/skill_validation/closed_loop.py) | 校准→授权反馈→更新→准入→final | 工程控制路径已通过，未证明自然端到端效果 |
-| [continual_eval](../skillopt/continual_eval/cli.py) | 外部冻结S0–S5→五域评测矩阵与跨方法配对 | 9/28新评测框架；无自动进化/新授权，尚无五域正式基线成绩 |
+| [continual_eval](../skillopt/continual_eval/cli.py) | 外部冻结S0–S5→五域评测矩阵与跨方法配对 | 无新部署授权；No-Skill五域1,419题×2已完成。C/D为空策略复用；10/3 E的S1已有非空Skill五域结果，S2–S4携父复用，不算新增独立观测 |
 
 近期实验由本机 Python 调度、经 SSH 在 Linux Docker 执行代码。Docker 用于执行 Solver 产物、公开检查、参考/控制资格检查及宿主审计；不是调用 LLM 的替代品。镜像/调用/源码/回执有绑定，执行后需确认清理；隔离环境不可用时返回 unsupported/unknown，不裸跑候选代码。
 

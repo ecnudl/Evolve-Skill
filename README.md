@@ -1,12 +1,14 @@
 # Evolve-Skill
 
-无上下文的代码代理请先读 [AGENTS.md](AGENTS.md) 和[接手指南](docs/agent-start-here.md)，再核对两份主文档：[当前流程](docs/current-workflow.md)、[结果账本](docs/results-and-lessons.md)。本轮运行以[新 D：SkillOpt 五域补跑与 No-Skill 对比](docs/skillopt-generalization-20261002.md)及实际回执为准，不把历史快照当当前状态。
+无上下文的代码代理请先读 [AGENTS.md](AGENTS.md) 和[接手指南](docs/agent-start-here.md)，再核对两份主文档：[当前流程](docs/current-workflow.md)、[结果账本](docs/results-and-lessons.md)。本轮运行以[新 E：SkillOpt 五域补跑](docs/skillopt-generalization-e-20261003.md)及实际回执为准，不把历史快照当当前状态。
 
 基于 [Microsoft SkillOpt v0.2.0](https://github.com/microsoft/SkillOpt/releases/tag/v0.2.0) 的研究项目：**通过 Coding Rubric 与有界 DeepResearch 协同改进 Skill 的内容、验证和适用范围，降低跨领域负迁移。**
 
 我们不要求每个 benchmark 都达到 SOTA，而是希望 Skill 学到可迁移的解题机制，在改善目标任务的同时保留其他领域的能力。泛化范围应由行为证据确认，不能由模型在 Skill 文本中自行宣称。
 
-**10/2 22:18 最新核验：新 D 正式规模 SkillOpt 队列已启动，但前三来源阶段为 Pending，KOR 阶段进行中。** 新序列 v2 显式启用学习 v4，每来源尝试后匹配原 No-Skill 全五域评测；尚无完整五阶段学习或新方法收益结论。它是原生 baseline 对比，不是 Research/Rubric 双门主线已经完成。[协议、进度与限制](docs/skillopt-generalization-20261002.md)
+**10/3 18:13 终态：新 E 五阶段尝试结束，完整学习4/5、五域矩阵闭合5/5，只有S1更新了Skill。** 最终相对No-Skill的Coding确认正确400→421/800，但KOR746→721/1000，收益与跨域退化并存；S2/S3/S5候选超长而无更新，S4 Pending携父，后20格复用S1观测。已公开[分母、unknown、成本和复用标记](docs/results/skillopt-generalization-e-final-20261003.json)。这是已曝光开发面板上的受预算SkillOpt适配baseline，不是独立final或Research/Rubric主线效果。
+
+新[v6工程修复](docs/learning-v6-engineering-repairs-20261003.md)显式隔离清理失败、过滤重试、健康检查与未知成本上限；未覆盖E的冻结v5，也未启动v6正式实验。unknown选择策略的统计局限仍保留并如实记录。[旧C/D终态](docs/skillopt-generalization-20261002.md)仍为完整学习0/5，不能与E混写。
 
 **历史快照（截至 2026-09-27）：同课程归纳、修复轨迹学习、候选确认及预算诊断已完成，共同 Solver 可靠性修复已通过 Linux 工程验收。** 修复细节促成两份主候选，后续96个实际注入位置未观察到干扰，但没有证明语义正迁移。普通归纳多20个通过位置，19个来自截断差异；另一逐例候选净增9项也全部涉及交付。预算扩大后原始分差缩小，不能把交付稳定性当作泛化提升。历史目标课程A–D仍Pending；Skill稳定增益、Research独有信息增量与跨域收益均待证明。这不是已完成全部实验的论文复现包。
 

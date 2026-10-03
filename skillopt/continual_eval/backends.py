@@ -78,7 +78,8 @@ def _response(call, system, user):
         return None, {"calls": 1}, "invalid_model_receipt"
     costs = {"calls": 1, "usage": receipt.get("usage", {})}
     response = receipt.get("response")
-    if receipt.get("request", {}).get("service", {}).get("delivery_retry_policy") == "closed_network_error_v1":
+    if receipt.get("request", {}).get("service", {}).get("delivery_retry_policy") in (
+            "closed_network_error_v1", "closed_delivery_error_v2", "closed_delivery_error_v3"):
         if receipt.get("finish_reason") in {"sensitive", "content_filter"}:
             return None, costs, "model_response_filtered"
         if receipt.get("finish_reason") == "network_error":
@@ -386,9 +387,19 @@ def solve(benchmark, public, skill_text, call, *, runtime=None):
             # Historical profiles retain their exact extraction behavior.
             output = response if benchmark in {"searchqa", "korbench"} else _code(response)
         if benchmark == "spreadsheetbench":
-            cases = [_native({"operation": "spreadsheet_generate", "code": output,
-                              "input_base64": base64.b64encode(_xlsx_bytes(path)).decode()}, runtime)
-                     for path in public["input_files"]]
+            cases = []
+            for index, path in enumerate(public["input_files"]):
+                case = _native({"operation": "spreadsheet_generate", "code": output,
+                                "input_base64": base64.b64encode(_xlsx_bytes(path)).decode()}, runtime)
+                cases.append(case)
+                # Private runtime option set only by the explicit v6 learner.
+                # Frozen evaluation and v1-v5 preserve their historical loop.
+                if runtime.get("_stop_on_cleanup_failure") is True and (
+                        case.get("cleanup_confirmed") is False
+                        or "cleanup_unconfirmed" in str(case.get("reason", ""))):
+                    cases.extend(_unknown("not_executed_after_cleanup_failure")
+                                 for _ in public["input_files"][index + 1:])
+                    break
             return {"status": "available", "output": {"code": output, "cases": cases},
                     "costs": costs, "reason": "generated_once_executed_per_public_case", **delivery}
         return {"status": "available", "output": output, "costs": costs, "reason": reason, **delivery}

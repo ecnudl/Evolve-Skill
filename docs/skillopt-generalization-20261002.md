@@ -2,6 +2,22 @@
 
 ## 当前状态
 
+**10/3终态（只读核验）：新D五个来源阶段全部结束，完整学习0/5，最终Skill仍为空；25个评测格全部复用旧No-Skill，0新评测调用。** `final.json`于10/3 01:03写出，状态`attempts_finished_with_pending`。学习端共506逻辑调用/508 HTTP、已知1,113,763 tokens、3条usage缺失、0未闭合。这不是SkillOpt无效的证据：五个Pending都来自交付、记账或接口规则，没有一个候选进入完整选择比较。[脱敏终态JSON](results/skillopt-generalization-final-20261003.json)
+
+| 来源阶段 | 终态原因 | 逐例核查（零新API） |
+|---|---|---|
+| Coding | `native_optimizer_incomplete` | 父选择40/65、训练24/64；10次反思中1次HTTP200但流未结束（`incomplete_stream`、无usage），v4不重试，优化器无候选。 |
+| Spreadsheet | `evaluation_unknown` | 首个选择位置：模型生成程序在自身数据检查处`raise SystemExit`，未保存output.xlsx；无工作簿即unknown，一个unknown使整阶段Pending。不是评分器或执行适配缺陷。 |
+| SearchQA | `evaluation_unknown` | 父选择51/64；训练至第51题时1次服务内容过滤（`sensitive`、无usage）。按设计不重试、不绕过。 |
+| KOR | `native_candidate_exceeds_skill_budget` | 父选择66/100、训练59/100、17次反思全部完成；最终合并为单条6,172字节追加，超过冻结的6,000字节Skill接口，v4记Pending而非评测。 |
+| ALF | `evaluation_unknown` | 34调用/36 HTTP：1次调用经2次失败尝试后恢复，失败尝试usage未知；v4账本把它视为阻断，下一次模型调用在第2个选择回合内抛出`LearningPending`。这是v4网络重试与v4缺usage阻断规则互相矛盾，不是环境或模型失败。 |
+
+后续修复已在本地实现为显式**learning v5**（不改v4、不改D记录）：`incomplete_stream`纳入同一有限重试；失败尝试的未知usage如实报告但不阻断，每阶段最多64次；超出6,000字节的完整原生候选判为不可接受并保留父Skill、继续下一轮，不截断、不评测。unknown分数与内容过滤仍Pending、绝不记0。v5还记录上游合并/排序的静默回退来源，并在账本/预算拦截时保留真实停止原因；仅限SkillOpt。新增15项专测与671项相关回归通过，本地全仓库12,293项通过、22项跳过、0失败（工程验证，不是方法效果）；经用户批准，v5另加入预先冻结的unknown成对排除与每次更新重新执行训练集，接入序列v3；新E于10/3 09:22启动，运行中，见[新E报告](skillopt-generalization-e-20261003.md)。
+
+旧C的SkillOpt与GEPA两条序列也均已终止：两者各完成0/5学习；SkillOpt 420调用/已知710,435 tokens/1缺usage（此前只见于本文，现有终态记录支撑），GEPA 300调用/已知473,290 tokens/2缺usage。[旧C终态JSON](results/fivebench-sequence-c-final-20261003.json)
+
+**以下22:22及更早内容为运行中历史快照，保留原样。**
+
 **22:22发布快照：完整学习0/5，全域评测矩阵闭合3/5，但前15格全部复用旧No-Skill。** 本轮前三来源已因不同问题Pending携空父，KOR继续运行；不是五阶段学习完成，也没有新的非空Skill泛化成绩。[逐阶段对比表](skillopt-generalization-progress-20261002.md) · [脱敏完整快照JSON](results/skillopt-generalization-progress-20261002.json)。以下21:32/21:42记录保留为较早进度，不代表此刻状态。
 
 | 来源阶段 | 新D实际结果 | 解释 |

@@ -37,7 +37,10 @@ def study(tmp_path, monkeypatch, request):
     root = tmp_path / "study"
     counters = {"evaluated_cells": [], "learning_started": [], "api_calls": []}
     control = {"pending": None, "cleanup": False, "open_model": False, "no_update": False}
-    recovery = getattr(request, "param", None) == "distinct-v2"
+    variant = getattr(request, "param", None)
+    recovery = variant in {"distinct-v2", "distinct-v3"}
+    delivery = variant == "distinct-v3"
+    retry_policy = "closed_delivery_error_v2" if delivery else "closed_network_error_v1"
     baseline_service = deepcopy(SERVICE)
     if recovery:
         from skillopt.validator_pilot.api import long_stream_service
@@ -50,7 +53,7 @@ def study(tmp_path, monkeypatch, request):
         monkeypatch.setattr("skillopt.continual_eval.sheet_recalc_adapter.qualified_engine", lambda _: None)
         monkeypatch.setattr("skillopt.continual_eval.sheet_numeric_adapter.qualified_engine", lambda _: None)
     learning_service = ({**baseline_service, "stream_max_wall_seconds": 3600,
-                         "delivery_retry_policy": "closed_network_error_v1"} if recovery else baseline_service)
+                         "delivery_retry_policy": retry_policy} if recovery else baseline_service)
     client_options, qualification_checks = [], []
     original_generate, original_score = runner.generate, runner.score_checkpoint
     original_skillopt, original_gepa = skillopt.run_stage, gepa.run_stage
@@ -60,7 +63,7 @@ def study(tmp_path, monkeypatch, request):
 
         def __init__(self, *args, **kwargs):
             client_options.append(deepcopy(kwargs))
-            is_learning = kwargs.get("delivery_retry_policy") == "closed_network_error_v1"
+            is_learning = kwargs.get("delivery_retry_policy") == retry_policy
             if recovery and is_learning:
                 self.service = learning_service
                 if control.get("learning_service_mismatch"):
@@ -172,11 +175,12 @@ def study(tmp_path, monkeypatch, request):
               "native_lock": str(tmp_path / "native.lock"), "workers": 1,
               "learning_sheet_qualification": None}
     if recovery:
-        from skillopt.continual_learning.recovery import POLICY
+        from skillopt.continual_learning.recovery import POLICY, POLICY_V5
 
         qualification = tmp_path / "fixture-qualification.json"
         write_json(qualification, seal({"evidence_kind": "authored_fixture_no_native_execution"}))
-        config.update(version=sequence.RECOVERY_SEQUENCE, learning_recovery_policy=deepcopy(POLICY),
+        config.update(version=sequence.DELIVERY_SEQUENCE if delivery else sequence.RECOVERY_SEQUENCE,
+                      learning_recovery_policy=deepcopy(POLICY_V5 if delivery else POLICY),
                       learning_sheet_scorer="qualified_lo_recalc_v7_v1",
                       learning_sheet_qualification=str(qualification))
         def readiness(runtime):
@@ -495,3 +499,30 @@ def test_actual_cached_client_matches_v2_service_derivation_without_any_http(tmp
     assert not calls
     assert original_service["stream_max_wall_seconds"] == 1800
     assert "delivery_retry_policy" not in original_service
+
+
+@pytest.mark.parametrize("study", ["distinct-v3"], indirect=True)
+def test_v3_runs_v5_learning_with_original_evaluation_and_domain_bound_reuse(study):
+    from skillopt.continual_learning.recovery import POLICY_V5
+
+    result = study.run()
+    assert result["version"] == sequence.DELIVERY_SEQUENCE and result["completed_learning_stages"] == 5
+    assert len(study.counters["evaluated_cells"]) == 5
+    assert study.protocol["learning_version"] == "continual-learning-v5"
+    assert study.protocol["learning_client_options"] == {"delivery_retry_policy": "closed_delivery_error_v2"}
+    for i, benchmark in enumerate(BENCHMARKS, 1):
+        value = read_json(study.root / f"skillopt/s{i}-{benchmark}/manifest.json", sealed=True)
+        assert value["version"] == "continual-learning-v5" and value["recovery_policy"] == POLICY_V5
+        if i == 1:
+            for target in BENCHMARKS:
+                path = study.root / f"skillopt/s1-{benchmark}/evaluations/{target}/plan.json"
+                assert read_json(path, sealed=True)["config"]["model"]["transport"]["stream_wall_seconds"] == 1800
+    registry = list((study.root / "evaluated_policies").glob("*.json"))
+    assert registry
+    for path in registry:
+        entry = read_json(path, sealed=True)
+        ref = study.protocol["references"][entry["cell"]["result"]["benchmark"]]
+        assert path.stem == sequence.policy_key(ref, entry["skill"], sequence.DELIVERY_SEQUENCE)
+        assert path.stem != sequence.policy_key(ref, entry["skill"])
+    before = deepcopy(study.counters)
+    assert study.run() == result and before == study.counters

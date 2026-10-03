@@ -1,5 +1,29 @@
 # 结果与经验账本
 
+### 10/3：E首次得到非空Skill的五域结果，正向信号与回归并存
+
+BigModel GLM-5.3 low；来源Coding训练64题／64族、选择65题／64族，两轮候选37/65与41/65，父40/65，仅第二轮被接受。18:13已闭合全五阶段尝试，完整学习4/5但只有S1更新；最终Skill与S1相同。单一学习历史，全部为已曝光开发数据；各域2次重复，不能把重复位置当独立任务，也不是独立final。[完整报告](skillopt-generalization-e-20261003.md) · [终态绑定快照](results/skillopt-generalization-e-final-20261003.json)
+
+| 评测域 | No-Skill 正确/分母（unknown） | S1 正确/分母（unknown） | 配对改善/退化/持平/未知 |
+| --- | ---: | ---: | ---: |
+| Coding | 400/800（1） | 421/800（1） | 60/39/700/1 |
+| Spreadsheet | 63/160（53） | 67/160（63） | 14/6/72/68 |
+| SearchQA | 560/800（6） | 571/800（6） | 55/44/695/6 |
+| KOR | 746/1000（11） | 721/1000（12） | 73/97/810/20 |
+| ALFWorld | 65/78（0） | 67/78（0） | 4/2/72/0 |
+
+Coding有正向信号，但KOR确认正确净减25；Sheet虽然正确+4，unknown也+10，不能宣称改善。选择集仅+1且只有一条学习历史，尚不能声称稳定泛化。S1学习349调用/389,370已知tokens；新五域评测4,144逻辑调用/9,733,346已知tokens，QA6条缺usage。后续S2/S3/S5候选超6,000字节均拒绝、S4优化器未完整完成而Pending；后20格引用S1观测，0新增评测调用，不算重复证据。全五阶段学习合计1,928调用/4,897,627已知tokens/2缺usage，包含S5的900调用/1,846,207 tokens。
+
+工程教训：修复必须覆盖组合边界，而不是只测普通返回。离线再次复现过滤后断流误重试、清理失败仍执行后续任务、未知成本63→65；显式v6另版本修复，并补齐终态回放。[工程报告](learning-v6-engineering-repairs-20261003.md)区分fixture与真实E结果，未启动新效果实验。所查E回执未触发这些边界，不回溯作废旧成绩；净unknown选择偏差仍是待解决的协议问题。
+
+### 10/3：新D与旧C全部终止，三条五阶段序列完整学习均为0/5
+
+GLM-5.3 low，已曝光开发面板，学习与评测任务重叠，非独立final。新D（序列v2/学习v4，仅SkillOpt）于10/3 01:03写出终态：5阶段全部Pending携空父，最终Skill为空，25个评测格全部复用旧No-Skill、0新评测调用；学习端506逻辑调用/508 HTTP、已知1,113,763 tokens、3缺usage。旧C的SkillOpt（420调用/710,435 tokens/1缺usage）与此前未记录的GEPA（300调用/473,290 tokens/2缺usage）同样0/5。三条序列共15次阶段尝试，0次完成学习、0个非空Skill。[D终态](results/skillopt-generalization-final-20261003.json) · [C终态](results/fivebench-sequence-c-final-20261003.json)
+
+零新API逐例核查把D的Pending拆成四类，均不是方法效果证据：交付（Coding反思HTTP200流未结束；QA内容过滤）、模型程序未交付（Sheet生成程序自行`SystemExit`、无工作簿即unknown）、接口（KOR单条合并6,172字节超6,000字节上限）、记账矛盾（ALF：v4网络重试成功后，失败尝试的未知usage被v4账本当作阻断，下一调用被拒）。15次尝试中12次原因是unknown，说明“任一unknown即整阶段Pending”在Sheet（No-Skill unknown约1/3）与QA（固定一题触发过滤）上几乎必然阻断；改动它属于协议决策。
+
+教训：工程恢复会彼此作用，单项fixture通过不保证组合语义一致（D的重试与记账）；完整原生候选越过接口上限应判为不可接受而非“比较无法证明”。经用户批准，learning v5（交付/记账/接口修复，加预先冻结的unknown成对排除）接入序列v3，新E于10/3 09:22启动，**运行中、尚无成绩**；成对排除是新协议，E与D的差异不能解释为SkillOpt方法收益。[E报告](skillopt-generalization-e-20261003.md)另：passive-links C（被动超链接冻结H v3）全160零API重评完成，81/55/24，相对79/55/26恢复2个unknown→pass，134旧已知不变，144容器/710秒，评测覆盖改善而非Skill收益。
+
 ### 10/2 21:32：正式规模SkillOpt补跑已启动，尚无新泛化结论
 
 **22:22核验新增限制：** 新D前三阶段均Pending携空父，完整学习0/5、矩阵闭合3/5但15格全部复用No-Skill。Coding反思`incomplete_stream`、Sheet执行`native_exception:SystemExit`、QA服务内容过滤三类问题分开记录；前三阶段255调用/HTTP、已知257,534 tokens/2缺usage，KOR进行中。工程修复与资格通过不保证自然学习链完成；不能靠补抽未知或空父相等宣称收益。[原因与完整分母](skillopt-generalization-20261002.md) · [机器可读快照](results/skillopt-generalization-progress-20261002.json)
@@ -33,7 +57,7 @@
 
 18:31后续快照：Coding第二轮反思解析不齐而Pending（9调用均stop、最大completion1030，不是长度耗尽）；Sheet首位置因字面量重算漂移Pending；QA父选择46/64，但训练51/64时服务sensitive导致Pending。前三尝试332调用、已知391,086 tokens/1缺usage，均携空父；15矩阵格是零新增调用的旧空策略引用，完成学习阶段数仍0。KOR在跑、GEPA排队。[完整运行口径](results/fivebench-sequence-progress-20261002.json)
 
-更新：2026-10-02。本文件只保留会影响研究方向的重要结果，不逐次堆放运行日志。当前实现与输入输出见[完整流程](current-workflow.md)；其他历史实验见[研究索引](research-overview.md)。
+更新：2026-10-03。本文件只保留会影响研究方向的重要结果，不逐次堆放运行日志。当前实现与输入输出见[完整流程](current-workflow.md)；其他历史实验见[研究索引](research-overview.md)。
 
 **目前的结论：Skill 内容学习、结构化执行反馈和错误检查过滤均有局部正向信号；尚未证明 Research 独有信息增量能改善 Skill 准入，也未证明新主线获得了稳定跨域泛化。**
 

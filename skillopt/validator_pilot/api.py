@@ -117,7 +117,8 @@ class _StreamResponseError(ValueError):
 class _StreamAccumulator:
     """Shared SSE validation; reasoning text is never accumulated as an answer."""
 
-    def __init__(self, *, max_stream_chars: int = 8_000_000) -> None:
+    def __init__(self, *, max_stream_chars: int = 8_000_000,
+                 diagnostic: dict[str, Any] | None = None) -> None:
         self.parts: list[str] = []
         self.event_lines: list[str] = []
         self.usage: dict[str, Any] = {}
@@ -126,8 +127,26 @@ class _StreamAccumulator:
         self.done = False
         self.events = self.text_chars = self.stream_chars = 0
         self.max_stream_chars = max_stream_chars
+        # Opt-in metadata survives a read error / deadline cancellation without
+        # retaining partial content, reasoning, or exception strings.
+        self.diagnostic = diagnostic
+        self.observed_filter: str | None = None
 
     def consume(self) -> None:
+        try:
+            self._consume()
+        finally:
+            if self.diagnostic is not None:
+                self.diagnostic["stream_observation"] = {
+                    "returned_model": self.model, "usage": dict(self.usage),
+                    "finish_reason": self.observed_filter or self.finish,
+                    "stream_complete": self.done, "stream_event_count": self.events,
+                    "stream_characters": self.stream_chars,
+                }
+                if self.observed_filter is not None:
+                    self.diagnostic["observed_filter"] = self.observed_filter
+
+    def _consume(self) -> None:
         if not self.event_lines:
             return
         payload = "\n".join(self.event_lines)
@@ -156,6 +175,11 @@ class _StreamAccumulator:
             choice = choices[0]
             if not isinstance(choice, dict) or choice.get("index", 0) != 0:
                 raise _StreamResponseError("invalid_stream_choice")
+            incoming_finish = choice.get("finish_reason")
+            if self.diagnostic is not None and incoming_finish in ("sensitive", "content_filter"):
+                # Once observed, a filter is terminal even if content/another
+                # event is malformed or the connection fails before [DONE].
+                self.observed_filter = incoming_finish
             delta = choice.get("delta", {})
             if not isinstance(delta, dict):
                 raise _StreamResponseError("invalid_stream_delta")
@@ -170,7 +194,6 @@ class _StreamAccumulator:
                 self.text_chars += len(content)
                 if self.text_chars > 200_000:
                     raise _StreamResponseError("stream_content_limit")
-            incoming_finish = choice.get("finish_reason")
             if incoming_finish is not None:
                 if (not isinstance(incoming_finish, str)
                         or (self.finish is not None and self.finish != incoming_finish)):
@@ -195,12 +218,12 @@ class _StreamAccumulator:
                 "_stream_event_count": self.events, "_stream_chars": self.stream_chars}
 
 
-def _stream_body(response: httpx.Response) -> dict[str, Any]:
+def _stream_body(response: httpx.Response, *, diagnostic: dict[str, Any] | None = None) -> dict[str, Any]:
     """Historical stream path: retain its default timing/cache contract."""
     if "text/event-stream" not in response.headers.get("content-type", "").casefold():
         raise _StreamResponseError("unexpected_stream_content_type")
     started = time.monotonic()
-    accumulator = _StreamAccumulator()
+    accumulator = _StreamAccumulator(diagnostic=diagnostic)
 
     for line in response.iter_lines():
         if time.monotonic() - started > 300:
@@ -236,11 +259,12 @@ def long_stream_service(service: dict[str, Any], *, read_timeout_seconds: int,
     return value
 
 
-async def _long_stream_body(response: httpx.Response) -> dict[str, Any]:
+async def _long_stream_body(response: httpx.Response, *,
+                            diagnostic: dict[str, Any] | None = None) -> dict[str, Any]:
     """Bound bytes even before an event/line ends; honor split UTF-8 and CRLF."""
     if "text/event-stream" not in response.headers.get("content-type", "").casefold():
         raise _StreamResponseError("unexpected_stream_content_type")
-    accumulator = _StreamAccumulator(max_stream_chars=LONG_STREAM_MAX_BYTES)
+    accumulator = _StreamAccumulator(max_stream_chars=LONG_STREAM_MAX_BYTES, diagnostic=diagnostic)
     decoder = codecs.getincrementaldecoder("utf-8")()
     buffer = ""
     byte_count = 0
@@ -283,6 +307,12 @@ def _timeout_subtype(error: httpx.TimeoutException) -> str:
     return "unspecified"
 
 
+# Opt-in closed delivery retries. v2 adds incomplete HTTP 200 streams to v1;
+# v3 makes an observed filter terminal, including subsequently broken streams.
+HARDENED_DELIVERY_RETRY_POLICY = "closed_delivery_error_v3"
+DELIVERY_RETRY_POLICIES = ("closed_network_error_v1", "closed_delivery_error_v2", HARDENED_DELIVERY_RETRY_POLICY)
+
+
 class CachedAPI:
     """One-process thread-safe cache, health barrier and explicit bounded retries.
 
@@ -296,7 +326,7 @@ class CachedAPI:
                  reasoning_effort: str | None = None, provider: str = "pjlab", proxy: str | None = None,
                  initial_health_policy: str = "legacy_success_only", read_timeout_seconds: int = 120,
                  stream_wall_seconds: int | None = None, delivery_retry_policy: str | None = None):
-        if delivery_retry_policy not in (None, "closed_network_error_v1"):
+        if delivery_retry_policy not in (None, *DELIVERY_RETRY_POLICIES):
             raise ValueError("Unknown delivery retry policy")
         if delivery_retry_policy is not None and (provider != "bigmodel" or model != MODEL or not stream):
             raise ValueError("Delivery retries require streaming BigModel glm-5.3")
@@ -415,7 +445,10 @@ class CachedAPI:
                 and record.get("returned_model") == self.model
                 and (not self.stream or record.get("stream_complete") is True)
                 and ((record.get("error_type") == "truncated_content" and record.get("finish_reason") == "length")
-                     or (record.get("error_type") == "empty_content" and record.get("finish_reason") == "stop")))
+                     or (record.get("error_type") == "empty_content" and record.get("finish_reason") == "stop")
+                     or (self.service.get("delivery_retry_policy") == HARDENED_DELIVERY_RETRY_POLICY
+                         and record.get("error_type") == "provider_content_filter"
+                         and record.get("finish_reason") in {"sensitive", "content_filter"})))
 
     def call(self, system: str, user: str, kind: str, key: str,
              max_tokens: int = 6000, repeat: int = 0) -> dict[str, Any]:
@@ -476,7 +509,12 @@ class CachedAPI:
                 async with client.stream("POST", self._endpoint, json=payload) as response:
                     diagnostic["status"] = response.status_code
                     diagnostic["timeout_phase"] = "body"
-                    body = await _long_stream_body(response) if response.status_code == 200 else None
+                    if response.status_code == 200:
+                        body = (await _long_stream_body(response, diagnostic=diagnostic)
+                                if self.service.get("delivery_retry_policy") == HARDENED_DELIVERY_RETRY_POLICY
+                                else await _long_stream_body(response))
+                    else:
+                        body = None
                     return response.status_code, response.headers, body
 
         return await asyncio.wait_for(request(), timeout=self.stream_wall_seconds)
@@ -496,6 +534,7 @@ class CachedAPI:
             # equivalent to the frozen PJLAB request contract.
             payload["thinking"] = {"type": "enabled"}
         attempts: list[dict[str, Any]] = []
+        hardened_delivery = self.service.get("delivery_retry_policy") == HARDENED_DELIVERY_RETRY_POLICY
         for attempt in range(self.service["max_retries"] + 1):
             # Never concatenate a previous failed attempt's partial response into a retry.
             outcome: dict[str, Any] = {"ok": False, "response": "", "usage": {},
@@ -518,7 +557,11 @@ class CachedAPI:
                     with self._client.stream("POST", self._endpoint, json=payload) as response:
                         status = response.status_code
                         headers = response.headers
-                        body = _stream_body(response) if status == 200 else None
+                        if status == 200:
+                            body = (_stream_body(response, diagnostic=diagnostic)
+                                    if hardened_delivery else _stream_body(response))
+                        else:
+                            body = None
                 else:
                     response = self._client.post(self._endpoint, json=payload)
                     status = response.status_code
@@ -549,14 +592,19 @@ class CachedAPI:
                         error_type = "unexpected_response_model"
                     elif self.stream and not body["_stream_complete"]:
                         error_type = "incomplete_stream"
+                        # V2/V3: an HTTP 200 stream that ended before its
+                        # completion marker is an undelivered response, never
+                        # an answer. Retry it within the same frozen bound.
+                        retryable = self.service.get("delivery_retry_policy") in {
+                            "closed_delivery_error_v2", HARDENED_DELIVERY_RETRY_POLICY}
                     elif (finish == "network_error"
-                          and self.service.get("delivery_retry_policy") == "closed_network_error_v1"):
+                          and self.service.get("delivery_retry_policy") in DELIVERY_RETRY_POLICIES):
                         # The provider can terminate an otherwise complete HTTP
                         # 200 stream with a transport error. Retry only this
                         # named delivery state, never filters or wrong answers.
                         error_type, retryable = "provider_network_error", True
                     elif (finish in {"sensitive", "content_filter"}
-                          and self.service.get("delivery_retry_policy") == "closed_network_error_v1"):
+                          and self.service.get("delivery_retry_policy") in DELIVERY_RETRY_POLICIES):
                         error_type = "provider_content_filter"
                     elif finish == "length":
                         error_type = "truncated_content"
@@ -585,6 +633,15 @@ class CachedAPI:
             except Exception:
                 # Never serialize exception text: it can embed request headers or keys.
                 error_type = "unexpected_client_error"
+            if hardened_delivery:
+                # These fields are emitted by our parser, not copied from a
+                # provider error payload. In particular no partial answer is
+                # recovered after a failed attempt.
+                observation = diagnostic.get("stream_observation", {})
+                outcome.update(observation)
+                if diagnostic.get("observed_filter") in {"sensitive", "content_filter"}:
+                    error_type, retryable = "provider_content_filter", False
+                    outcome.update(ok=False, response="", finish_reason=diagnostic["observed_filter"])
             status = status if status is not None else diagnostic.get("status")
             # Store only fixed classifications. Partial answers and reasoning
             # from failed attempts never become a successful final response.
@@ -593,7 +650,7 @@ class CachedAPI:
             attempts.append({"attempt": attempt + 1, "ok": outcome["ok"], "status": status,
                              "error_type": error_type, "wall_seconds": time.monotonic() - attempt_start,
                              **timeout_info})
-            if self.service.get("delivery_retry_policy") == "closed_network_error_v1":
+            if self.service.get("delivery_retry_policy") in DELIVERY_RETRY_POLICIES:
                 # Preserve reported usage even on a failed provider attempt.
                 # Empty usage remains unknown, not a zero-cost HTTP request.
                 attempts[-1]["usage"] = dict(outcome.get("usage", {}))

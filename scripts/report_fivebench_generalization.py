@@ -20,10 +20,14 @@ from skillopt.continual_eval.core import BENCHMARKS, read_json, require, safe_pa
 from skillopt.validator_pilot.api import digest
 
 STATUSES = {"pass", "fail", "unknown"}
+# Learning ledgers report reported_tokens_known_subtotal; evaluation runs report
+# reported_tokens. Both are kept, never summed into one another or zero-filled.
 COST_KEYS = {"logical_calls", "terminal_calls", "unclosed_calls", "http_attempts",
              "http_attempts_known_subtotal", "http_attempts_total", "reported_tokens_known_subtotal",
-             "missing_usage_calls", "missing_attempt_usage", "usage_complete", "retry_inclusive_usage_known",
-             "reflection_calls", "solver_calls"}
+             "reported_tokens", "missing_usage_calls", "missing_attempt_usage", "usage_complete",
+             "retry_inclusive_usage_known", "reflection_calls", "solver_calls",
+             "unknown_cost_attempts", "delivered_without_usage", "blocking_usage_gap",
+             "receipt_attempt_limit_exceeded", "unknown_cost_attempt_cap_exceeded"}
 
 
 def costs(value):
@@ -118,7 +122,8 @@ def build_report(study, method="skillopt"):
     root = safe_path(study)
     protocol = read_json(root / "protocol.json", sealed=True)
     require(protocol["order"] == list(BENCHMARKS) and method in protocol["methods"], "Unsupported study/method")
-    require(protocol["version"] in {"fivebench-sequential-attempts-v1", "fivebench-sequential-attempts-v2"},
+    require(protocol["version"] in {"fivebench-sequential-attempts-v1", "fivebench-sequential-attempts-v2",
+                                    "fivebench-sequential-attempts-v3"},
             "Unsupported study version")
     stages, evaluation_costs = [], {}
     for number, benchmark in enumerate(BENCHMARKS, 1):

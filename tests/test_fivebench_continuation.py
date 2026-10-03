@@ -66,6 +66,15 @@ def test_update_and_reuse_bind_both_policy_and_eval_identity():
     assert policy_key({"plan_hash": "old"}, "") != policy_key({"plan_hash": "old"}, " ")
 
 
+def test_v3_policy_key_binds_domain_and_report_but_older_keys_do_not_change():
+    from scripts.continue_fivebench_baselines import DELIVERY_SEQUENCE, RECOVERY_SEQUENCE, policy_key
+
+    a = {"plan_hash": "same", "benchmark": "searchqa", "report_hash": "r1"}
+    b = {"plan_hash": "same", "benchmark": "korbench", "report_hash": "r2"}
+    assert policy_key(a, "") == policy_key(b, "") == policy_key(a, "", RECOVERY_SEQUENCE)
+    assert policy_key(a, "", DELIVERY_SEQUENCE) != policy_key(b, "", DELIVERY_SEQUENCE)
+
+
 def test_unknown_terminal_status_not_completion():
     with pytest.raises(ValueError):
         transition("", {"status": "success", "candidate_skill": ""})

@@ -1,6 +1,6 @@
 # 跨域安全 Skill 进化：研究索引
 
-索引更新：2026-10-02。目标是通过 **Coding Rubric + 有界 Research** 提高 Skill 学习与范围判断的质量，兼顾多领域收益和负迁移，而不是逐域追求最高分。
+索引更新：2026-10-03。目标是通过 **Coding Rubric + 有界 Research** 提高 Skill 学习与范围判断的质量，兼顾多领域收益和负迁移，而不是逐域追求最高分。
 
 从现在起优先维护两份主文档：[当前完整流程](current-workflow.md)记录每环节输入输出、初始化及实现状态；[结果与经验账本](results-and-lessons.md)精选重要实验、完整关键对照及数据来源。本页保留历史导航，以下代码地图和证据表为截至 9/23 的索引，不代替主文档的最新状态。9/24 新增规则学习与课程的真实试跑仍 Pending，尚无新 Skill 确认成绩，见[课程报告](skill-validation-capability-curriculum-20260924.md)。
 
@@ -8,7 +8,9 @@
 
 ## 阅读顺序
 
-首次接手按 [AGENTS.md](../AGENTS.md) → [当前完整流程](current-workflow.md) → [结果与经验账本](results-and-lessons.md) → [新 D：SkillOpt 五域补跑与 No-Skill 对比](skillopt-generalization-20261002.md)阅读；[无上下文代码代理指南](agent-start-here.md)补充目标、代码地图和安全边界。两份主文档维护当前状态，日期报告及实际回执提供具体证据，本索引不另立实验账本。
+首次接手按 [AGENTS.md](../AGENTS.md) → [当前完整流程](current-workflow.md) → [结果与经验账本](results-and-lessons.md) → [新 E：SkillOpt 五域补跑](skillopt-generalization-e-20261003.md)阅读；[无上下文代码代理指南](agent-start-here.md)补充目标、代码地图和安全边界。两份主文档维护当前状态，日期报告及实际回执提供具体证据，本索引不另立实验账本。
+
+**10/3最新归档：** E的五阶段尝试已终止，完整学习4/5、矩阵闭合5/5，但只有S1更新。最终Coding400→421/800、KOR746→721/1000，收益与回归并存；后20格复用S1。[终态JSON](results/skillopt-generalization-e-final-20261003.json)保留成本、unknown与复用。新[v6工程修复](learning-v6-engineering-repairs-20261003.md)只完成离线验收，未覆盖E，也未改变unknown选择协议。以下10/2运行叙述为历史快照，不是当前状态。
 
 **10/2 22:18 核验：新 D 前三来源阶段 Pending，KOR 阶段进行中，尚无完整五阶段学习或方法收益结论。** 新序列 v2 显式启用学习 v4，仅运行原生 SkillOpt；学习端有限恢复与新资格化 v7 工作簿评分另立身份，全域评测仍匹配原 No-Skill 的模型、预算、源码、环境和评分器。它不是 Research/Rubric 双门主线完成，也不是独立 final。
 

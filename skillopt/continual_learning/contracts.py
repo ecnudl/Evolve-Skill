@@ -25,7 +25,11 @@ BUDGET_KEYS = {"max_metric_calls", "max_reflection_calls", "max_api_calls", "max
 LONG_RESPONSE_VERSION = "continual-learning-v2"
 MULTI_BENCHMARK_VERSION = "continual-learning-v3"
 RECOVERY_VERSION = "continual-learning-v4"
-MULTIDOMAIN_VERSIONS = {MULTI_BENCHMARK_VERSION, RECOVERY_VERSION}
+DELIVERY_VERSION = "continual-learning-v5"
+HARDENED_VERSION = "continual-learning-v6"
+DELIVERY_VERSIONS = {DELIVERY_VERSION, HARDENED_VERSION}
+RECOVERY_VERSIONS = {RECOVERY_VERSION, *DELIVERY_VERSIONS}
+MULTIDOMAIN_VERSIONS = {MULTI_BENCHMARK_VERSION, *RECOVERY_VERSIONS}
 
 
 def check_skill(text):
@@ -46,11 +50,13 @@ def manifest(panel, *, train_families, selection_families, model, budget, runtim
             "Unsupported learning protocol version")
     multidomain = version in MULTIDOMAIN_VERSIONS
     long_response = version in {LONG_RESPONSE_VERSION, *MULTIDOMAIN_VERSIONS}
-    recovery = version == RECOVERY_VERSION
+    recovery = version in RECOVERY_VERSIONS
     if recovery:
         from .recovery import validate_policy
 
-        validate_policy(recovery_policy, model)
+        validate_policy(recovery_policy, model, version)
+        require(version not in DELIVERY_VERSIONS or method == "skillopt",
+                "Learning v5/v6 defines SkillOpt-only over-budget handling")
     else:
         require(recovery_policy is None, "Recovery requires an explicit v4 protocol")
     validate_panel(panel)

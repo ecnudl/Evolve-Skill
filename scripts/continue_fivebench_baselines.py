@@ -21,6 +21,11 @@ from skillopt.validator_pilot.api import digest
 
 VERSION = "fivebench-sequential-attempts-v1"
 RECOVERY_SEQUENCE = "fivebench-sequential-attempts-v2"
+# V3 runs the same SkillOpt-only queue with learning v5 closed-delivery fixes.
+DELIVERY_SEQUENCE = "fivebench-sequential-attempts-v3"
+RECOVERY_SEQUENCES = {RECOVERY_SEQUENCE, DELIVERY_SEQUENCE}
+LAUNCHERS = {RECOVERY_SEQUENCE: "run_skillopt_generalization_linux.sh",
+             DELIVERY_SEQUENCE: "run_skillopt_generalization_e_linux.sh"}
 
 
 def sha(path):
@@ -64,9 +69,14 @@ def transition(parent, result):
             "learning_completed": True}
 
 
-def policy_key(baseline, skill):
-    return digest({"baseline_plan": baseline["plan_hash"], "skill": skill,
-                   "reuse": "same_frozen_solver_runtime_budget_panel_existing_samples"})
+def policy_key(baseline, skill, version=None):
+    value = {"baseline_plan": baseline["plan_hash"], "skill": skill,
+             "reuse": "same_frozen_solver_runtime_budget_panel_existing_samples"}
+    if version == DELIVERY_SEQUENCE:
+        # V3 also binds the target domain and frozen report: two domains frozen
+        # from one identical plan can never share a reused evaluation cell.
+        value.update(baseline_benchmark=baseline["benchmark"], baseline_report=baseline["report_hash"])
+    return digest(value)
 
 
 def verify_service(root, expected=None):
@@ -158,12 +168,12 @@ def _source_files():
 
 def prepare(config_path, output):
     config, root = read_json(config_path), safe_path(output)
-    recovery = config.get("version") == RECOVERY_SEQUENCE
+    recovery = config.get("version") in RECOVERY_SEQUENCES
     fields = {"version", "references", "families", "budget", "seed", "native_lock", "workers",
               "learning_sheet_qualification"}
     if recovery:
         fields |= {"learning_recovery_policy", "learning_sheet_scorer"}
-    require(set(config) == fields and config["version"] in {VERSION, RECOVERY_SEQUENCE},
+    require(set(config) == fields and config["version"] in {VERSION, *RECOVERY_SEQUENCES},
             "Invalid sequential configuration")
     if recovery:
         require(config["learning_sheet_scorer"] == "qualified_lo_recalc_v7_v1"
@@ -220,8 +230,15 @@ def prepare(config_path, output):
     require(all(m == models[0] for m in models), "Historical solver models/budgets differ")
     require(all(r["model_service"] == refs[BENCHMARKS[0]]["model_service"] for r in refs.values()),
             "Actual historical services differ")
-    from skillopt.continual_learning.contracts import MULTI_BENCHMARK_VERSION, RECOVERY_VERSION, manifest
-    from skillopt.continual_learning.recovery import validate_policy
+    from skillopt.continual_learning.contracts import (
+        DELIVERY_VERSION,
+        MULTI_BENCHMARK_VERSION,
+        RECOVERY_VERSION,
+        manifest,
+    )
+    from skillopt.continual_learning.recovery import RETRY_POLICIES, validate_policy
+
+    learning_version = DELIVERY_VERSION if config["version"] == DELIVERY_SEQUENCE else RECOVERY_VERSION
 
     learning_model = deepcopy(models[0])
     extra = {}
@@ -230,22 +247,22 @@ def prepare(config_path, output):
         from skillopt.validator_pilot.api import long_stream_service
 
         learning_model["transport"]["stream_wall_seconds"] = 3600
-        validate_policy(config["learning_recovery_policy"], learning_model)
+        validate_policy(config["learning_recovery_policy"], learning_model, learning_version)
         extra = {"recovery_policy": config["learning_recovery_policy"]}
         base_service = {k: v for k, v in refs[BENCHMARKS[0]]["model_service"].items() if k != "record_hash"}
         service = long_stream_service(base_service, read_timeout_seconds=300, stream_wall_seconds=3600)
-        service["delivery_retry_policy"] = "closed_network_error_v1"
-        extension = {"learning_version": RECOVERY_VERSION, "learning_model_service": seal(service),
-                     "learning_client_options": {"delivery_retry_policy": "closed_network_error_v1"},
+        service["delivery_retry_policy"] = RETRY_POLICIES[learning_version]
+        extension = {"learning_version": learning_version, "learning_model_service": seal(service),
+                     "learning_client_options": {"delivery_retry_policy": RETRY_POLICIES[learning_version]},
                      "evaluation_policy": "unchanged_original_frozen_budget_source_scorer_all_methods"}
-        launcher = Path(__file__).with_name("run_skillopt_generalization_linux.sh")
+        launcher = Path(__file__).with_name(LAUNCHERS[config["version"]])
         files[str(launcher.absolute())] = sha(launcher)
     # Validate every domain/role/runtime before any paid work is authorized.
     for stage, benchmark in enumerate(BENCHMARKS, 1):
         role = roles[benchmark]
         manifest(read_json(role["path"]), train_families=role["train"], selection_families=role["selection"],
                  model=learning_model, budget=config["budget"], runtime=role["runtime"], seed=config["seed"] + stage,
-                 version=RECOVERY_VERSION if recovery else MULTI_BENCHMARK_VERSION, method="skillopt", **extra)
+                 version=learning_version if recovery else MULTI_BENCHMARK_VERSION, method="skillopt", **extra)
     protocol = seal({"version": config["version"], "root": str(root), "config": config, "references": refs,
                      **extension, "roles": roles, "model": learning_model, "files": files, "source_files": _source_files(),
                      "learning_host_runtime": runtime_identity(),
@@ -261,7 +278,7 @@ def prepare(config_path, output):
 def check(root):
     root = safe_path(root)
     protocol = read_json(root / "protocol.json", sealed=True)
-    require(protocol["version"] in {VERSION, RECOVERY_SEQUENCE} and protocol["root"] == str(root),
+    require(protocol["version"] in {VERSION, *RECOVERY_SEQUENCES} and protocol["root"] == str(root),
             "Protocol binding mismatch")
     check_frozen_files(protocol)
     for benchmark, reference in protocol["references"].items():
@@ -364,7 +381,7 @@ def run(root, method, *, repo, gepa_source):
                              learning_service, client_options=protocol.get("learning_client_options"))
         previous, chain, results = "", [], []
         parent_stage_hash = None
-        cache = {policy_key(ref, ""): {"result": ref, "kind": "historical_empty_policy", "source_stage": 0}
+        cache = {policy_key(ref, "", protocol["version"]): {"result": ref, "kind": "historical_empty_policy", "source_stage": 0}
                  for ref in protocol["references"].values()}
 
         def verify_cell(cell, expected_skill, expected_target):
@@ -389,7 +406,8 @@ def run(root, method, *, repo, gepa_source):
             entry = read_json(path, sealed=True)
             ref = protocol["references"][entry["cell"]["result"]["benchmark"]]
             require(entry["protocol_hash"] == protocol["record_hash"]
-                    and path.stem == policy_key(ref, entry["skill"]), "Policy registry binding mismatch")
+                    and path.stem == policy_key(ref, entry["skill"], protocol["version"]),
+                    "Policy registry binding mismatch")
             verify_cell(entry["cell"], entry["skill"], ref["benchmark"])
             cache[path.stem] = entry["cell"]
         for stage, benchmark in enumerate(protocol["order"], 1):
@@ -437,7 +455,7 @@ def run(root, method, *, repo, gepa_source):
                     parent_skill=previous, seed=protocol["config"]["seed"] + stage,
                     method=method, version=protocol.get("learning_version", MULTI_BENCHMARK_VERSION),
                     **({"recovery_policy": protocol["config"]["learning_recovery_policy"]}
-                       if protocol["version"] == RECOVERY_SEQUENCE else {}))
+                       if protocol["version"] in RECOVERY_SEQUENCES else {}))
                 write_json(directory / "manifest.json", value)
                 if method == "gepa":
                     from skillopt.continual_learning.gepa import run_stage
@@ -457,8 +475,10 @@ def run(root, method, *, repo, gepa_source):
                 cells = {}
                 for target in protocol["order"]:
                     ref = protocol["references"][target]
-                    key = policy_key(ref, state["skill"])
+                    key = policy_key(ref, state["skill"], protocol["version"])
                     if key in cache:
+                        require(cache[key]["result"]["benchmark"] == target,
+                                "Reused evaluation belongs to another domain")
                         cells[target] = {**cache[key], "reused": True, "new_model_calls": 0,
                                          "independent_new_observation": False}
                     else:
@@ -483,7 +503,7 @@ def run(root, method, *, repo, gepa_source):
                                "deployment_authorized": False})
                 write_json(completed, record)
             for target, cell in record["cells"].items():
-                cache[policy_key(protocol["references"][target], record["skill"])] = cell
+                cache[policy_key(protocol["references"][target], record["skill"], protocol["version"])] = cell
             previous = record["skill"]
             parent_stage_hash = record["record_hash"]
             chain.append(previous)

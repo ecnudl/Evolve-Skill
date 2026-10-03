@@ -1,5 +1,7 @@
 # 10/2 五域 baseline 续接与未知修复
 
+**10/3补记（只读核验终态，下文18:31快照保留原样）：** 旧C两条序列均已终止。SkillOpt于10/2 19:43写出终态，5阶段全部Pending，完整学习0/5，420调用/已知710,435 tokens/1缺usage；GEPA随后实际运行并于20:50终止，同样0/5，300调用/已知473,290 tokens/2缺usage。两者所有S1–S5格均复用空策略No-Skill。Pending原因：Coding反思JSON解析不齐（SkillOpt）或一次网络错误（GEPA）；Sheet的SkillOpt已交付工作簿，但旧评分器重算改变字面量而unknown，GEPA则未交付，二者不能混同；QA一次内容过滤、KOR一次输出截断、ALF环境`ValueError`。v9c被动超链接修复已真实完成：资格通过后全160零API重评为81/55/24，相对79/55/26恢复2个unknown→pass，134旧已知不变，144容器/710秒。[C终态JSON](results/fivebench-sequence-c-final-20261003.json)
+
 状态：截至10/2 18:31（北京时间），SkillOpt前三域尝试均Pending携父，正在KOR第4域，GEPA排其后；未知修复A资格拒绝，B资格通过且全160份重评完成，但没有新增未知恢复。v9c窄修复已验收并排队，真实资格未执行。五阶段学习尚未完成，不能把准备工作或尝试终态当作方法效果。
 
 ## 核验起点

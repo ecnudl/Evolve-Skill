@@ -67,6 +67,7 @@ jobs:
           tests/test_sheet_length_recovery.py
           tests/test_prepare_learned_checkpoint.py tests/test_compare_baseline_checkpoints.py
           tests/test_validator_pilot_api.py
+          tests/test_validator_delivery_v3.py
           tests/test_resume_natural_validation.py tests/test_spreadsheetbench_evaluator.py
           tests/test_research_evidence_demo.py
         env:

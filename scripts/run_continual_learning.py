@@ -19,8 +19,10 @@ class _FixtureAPI:
     model = "fixture"
     service = {"provider": "fixture", "transport": "offline", "model": "fixture"}
 
-    def __init__(self, method):
+    def __init__(self, method, version=None):
         self.method = method
+        if version == "continual-learning-v6":
+            self.service = {**self.service, "delivery_retry_policy": "closed_delivery_error_v3", "max_retries": 2}
 
     def call(self, system, user, kind, key, *, max_tokens, repeat):
         text = "Handle empty inputs."
@@ -29,9 +31,12 @@ class _FixtureAPI:
                 {"op": "append", "content": text}]}})
         request = {"model": self.model, "system": system, "user": user, "kind": kind,
                    "key": key, "max_tokens": max_tokens, "repeat": repeat, "service": self.service}
-        return {"request": request, "request_hash": digest(request), "ok": True, "response": response,
+        result = {"request": request, "request_hash": digest(request), "ok": True, "response": response,
                 "finish_reason": "stop", "status": 200, "http_attempt_count": 1,
                 "usage": {"prompt_tokens": 20, "completion_tokens": 20}}
+        if self.service.get("delivery_retry_policy") == "closed_delivery_error_v3":
+            result["attempts"] = [{"usage": dict(result["usage"])}]
+        return result
 
 
 def _fixture_evaluate(task, skill):
@@ -76,7 +81,7 @@ def main(argv=None):
         parser.error("GEPA execution requires --gepa-source")
     kwargs = {"repo": args.repo}
     if fixture:
-        kwargs.update(fixture_api=_FixtureAPI(method), fixture_evaluate=_fixture_evaluate)
+        kwargs.update(fixture_api=_FixtureAPI(method, value["version"]), fixture_evaluate=_fixture_evaluate)
     if method == "gepa":
         from skillopt.continual_learning.gepa import run_stage
         kwargs["gepa_source"] = args.gepa_source

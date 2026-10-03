@@ -1,0 +1,606 @@
+{
+  "version": "fivebench-sequence-c-final-summary-v1",
+  "snapshot_date": "2026-10-03",
+  "run": "old C: fivebench-sequential-attempts-v1 / continual-learning-v3, SkillOpt then GEPA",
+  "model": "BigModel glm-5.3, low reasoning; matched No-Skill evaluation",
+  "data_scope": "previously exposed development panels; not an independent final",
+  "methods": {
+    "skillopt": {
+      "final": {
+        "version": "fivebench-sequential-attempts-v1",
+        "protocol_hash": "773c2efad28a31b70c3c45d6837e88b155f9790e40a64aff5c6b4624fbcf2d7d",
+        "method": "skillopt",
+        "attempted_stages": 5,
+        "completed_learning_stages": 0,
+        "status": "attempts_finished_with_pending",
+        "independent_final": false,
+        "deployment_authorized": false,
+        "record_hash": "d0c01b00920f271236bad54ee6fcd1e3eb27ae393262acb61cb1121723f8e54e",
+        "final_skill_bytes": 0
+      },
+      "stages": [
+        {
+          "stage": 1,
+          "benchmark": "bigcodebench",
+          "action": "pending_carry_parent",
+          "learning_completed": false,
+          "learning_reason": "native_reflection_parse_incomplete",
+          "parent_skill_bytes": 0,
+          "selected_skill_bytes": 0,
+          "costs": {
+            "logical_calls": 216,
+            "terminal_calls": 216,
+            "unclosed_calls": 0,
+            "http_attempts": 216,
+            "reflection_calls": 22,
+            "solver_calls": 194,
+            "reported_tokens_known_subtotal": 262970,
+            "missing_usage_calls": 0,
+            "usage_complete": true
+          },
+          "evaluation_cells": {
+            "bigcodebench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "spreadsheetbench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "searchqa": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "korbench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "alfworld": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            }
+          },
+          "stage_record_hash": "c120d41ddf1649dbf509967113616ecb375739d37ab7fcb01eeea4e3f0739d98",
+          "learning_result_hash": "107a9b58f78ac65ab894849e59b35f7af9b9a1eed7863f4551fb28892cdbb046",
+          "diagnosis": "First update rejected (candidate 36 vs parent 42 of 65); second update stopped on a reflection reply that failed native JSON parsing."
+        },
+        {
+          "stage": 2,
+          "benchmark": "spreadsheetbench",
+          "action": "pending_carry_parent",
+          "learning_completed": false,
+          "learning_reason": "evaluation_unknown",
+          "parent_skill_bytes": 0,
+          "selected_skill_bytes": 0,
+          "costs": {
+            "logical_calls": 1,
+            "terminal_calls": 1,
+            "unclosed_calls": 0,
+            "http_attempts": 1,
+            "reflection_calls": 0,
+            "solver_calls": 1,
+            "reported_tokens_known_subtotal": 1425,
+            "missing_usage_calls": 0,
+            "usage_complete": true
+          },
+          "evaluation_cells": {
+            "bigcodebench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "spreadsheetbench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "searchqa": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "korbench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "alfworld": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            }
+          },
+          "stage_record_hash": "4fa7a5815f48ff6f8cc24aff521a05bbac736e814a766cb51a237020b93b9473",
+          "learning_result_hash": "6cae636b87079064903518def090bd6a00c805c7b0e78b23d67192c10431da82",
+          "diagnosis": "First selection position delivered a workbook, but the historical scorer returned prediction:recalculation_changed_literal_cell (numeric value 32 with number format 30 was exported as a date). A separate v7 replay classified the same artifact as fail; the original C unknown is preserved. This differs from the GEPA no-workbook case."
+        },
+        {
+          "stage": 3,
+          "benchmark": "searchqa",
+          "action": "pending_carry_parent",
+          "learning_completed": false,
+          "learning_reason": "evaluation_unknown",
+          "parent_skill_bytes": 0,
+          "selected_skill_bytes": 0,
+          "costs": {
+            "logical_calls": 115,
+            "terminal_calls": 115,
+            "unclosed_calls": 0,
+            "http_attempts": 115,
+            "reflection_calls": 0,
+            "solver_calls": 115,
+            "reported_tokens_known_subtotal": 126691,
+            "missing_usage_calls": 1,
+            "usage_complete": false
+          },
+          "evaluation_cells": {
+            "bigcodebench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "spreadsheetbench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "searchqa": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "korbench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "alfworld": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            }
+          },
+          "stage_record_hash": "32fa366b18294f961b2627863f26887951c95e356e962cae7c7f83fd5d6c9194",
+          "learning_result_hash": "0c911553b4d7639fb4c1e86a1b073330d6651043cedfc59f6af7561479821230",
+          "diagnosis": "One train position refused by the provider content filter (sensitive) and recorded as unknown."
+        },
+        {
+          "stage": 4,
+          "benchmark": "korbench",
+          "action": "pending_carry_parent",
+          "learning_completed": false,
+          "learning_reason": "evaluation_unknown",
+          "parent_skill_bytes": 0,
+          "selected_skill_bytes": 0,
+          "costs": {
+            "logical_calls": 88,
+            "terminal_calls": 88,
+            "unclosed_calls": 0,
+            "http_attempts": 88,
+            "reflection_calls": 0,
+            "solver_calls": 88,
+            "reported_tokens_known_subtotal": 319349,
+            "missing_usage_calls": 0,
+            "usage_complete": true
+          },
+          "evaluation_cells": {
+            "bigcodebench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "spreadsheetbench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "searchqa": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "korbench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "alfworld": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            }
+          },
+          "stage_record_hash": "db81236402a4668107f196ac2c6a53c76f3abf60f2fd55eae5b4b1364a2b2d31",
+          "learning_result_hash": "836f76f1f0df77274ca12ea4b4854abe6249020e11d989ab10b912316fa8f3eb",
+          "diagnosis": "One selection position truncated at the output cap (finish_reason length) and recorded as unknown after 88 positions."
+        },
+        {
+          "stage": 5,
+          "benchmark": "alfworld",
+          "action": "pending_carry_parent",
+          "learning_completed": false,
+          "learning_reason": "evaluation_unknown",
+          "parent_skill_bytes": 0,
+          "selected_skill_bytes": 0,
+          "costs": {
+            "logical_calls": 0,
+            "terminal_calls": 0,
+            "unclosed_calls": 0,
+            "http_attempts": 0,
+            "reflection_calls": 0,
+            "solver_calls": 0,
+            "reported_tokens_known_subtotal": 0,
+            "missing_usage_calls": 0,
+            "usage_complete": true
+          },
+          "evaluation_cells": {
+            "bigcodebench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "spreadsheetbench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "searchqa": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "korbench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "alfworld": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            }
+          },
+          "stage_record_hash": "fe5d675e4244f8d50086d3d922413495dff1940f98e578d5f14c7b5726e1d264",
+          "learning_result_hash": "90103168b5d0c1de93ba2d492172b49d83b7118e0ab3c77f9c3ddec5146263e4",
+          "diagnosis": "First selection episode raised an ALFWorld environment ValueError (data-root binding later fixed in D)."
+        }
+      ],
+      "learning_totals": {
+        "logical_calls": 420,
+        "http_attempts": 420,
+        "reported_tokens_known_subtotal": 710435,
+        "missing_usage_calls": 1
+      }
+    },
+    "gepa": {
+      "final": {
+        "version": "fivebench-sequential-attempts-v1",
+        "protocol_hash": "773c2efad28a31b70c3c45d6837e88b155f9790e40a64aff5c6b4624fbcf2d7d",
+        "method": "gepa",
+        "attempted_stages": 5,
+        "completed_learning_stages": 0,
+        "status": "attempts_finished_with_pending",
+        "independent_final": false,
+        "deployment_authorized": false,
+        "record_hash": "aa6050aa5d49cd76c9c4119d08273b24f492574438265e465420df07c441e54f",
+        "final_skill_bytes": 0
+      },
+      "stages": [
+        {
+          "stage": 1,
+          "benchmark": "bigcodebench",
+          "action": "pending_carry_parent",
+          "learning_completed": false,
+          "learning_reason": "evaluation_unknown",
+          "parent_skill_bytes": 0,
+          "selected_skill_bytes": 0,
+          "costs": {
+            "logical_calls": 62,
+            "terminal_calls": 62,
+            "unclosed_calls": 0,
+            "http_attempts": 62,
+            "reflection_calls": 0,
+            "solver_calls": 62,
+            "reported_tokens_known_subtotal": 23049,
+            "missing_usage_calls": 1,
+            "usage_complete": false
+          },
+          "evaluation_cells": {
+            "bigcodebench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "spreadsheetbench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "searchqa": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "korbench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "alfworld": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            }
+          },
+          "stage_record_hash": "b25f65a3f9b60fb4255144f1e02c0e084c63d1753a4b791b76f4e9c0b6fdbcab",
+          "learning_result_hash": "c5ba92d727b484afc1a0f096f4fcb7f2980121d275214458da02814153272eac",
+          "diagnosis": "One selection position lost to a provider network_error (no retry in v3) and recorded as unknown after 62 positions."
+        },
+        {
+          "stage": 2,
+          "benchmark": "spreadsheetbench",
+          "action": "pending_carry_parent",
+          "learning_completed": false,
+          "learning_reason": "evaluation_unknown",
+          "parent_skill_bytes": 0,
+          "selected_skill_bytes": 0,
+          "costs": {
+            "logical_calls": 1,
+            "terminal_calls": 1,
+            "unclosed_calls": 0,
+            "http_attempts": 1,
+            "reflection_calls": 0,
+            "solver_calls": 1,
+            "reported_tokens_known_subtotal": 2017,
+            "missing_usage_calls": 0,
+            "usage_complete": true
+          },
+          "evaluation_cells": {
+            "bigcodebench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "spreadsheetbench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "searchqa": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "korbench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "alfworld": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            }
+          },
+          "stage_record_hash": "3bfc6c63fe667adc4e2670e0e24c5aacb70ae6374523bedf053330e431a95af7",
+          "learning_result_hash": "4c462b32389afdf7dcf22031cbfba22e97aa20eae05f9970f7f7b48c0103c540",
+          "diagnosis": "First selection position unknown (no delivered workbook)."
+        },
+        {
+          "stage": 3,
+          "benchmark": "searchqa",
+          "action": "pending_carry_parent",
+          "learning_completed": false,
+          "learning_reason": "evaluation_unknown",
+          "parent_skill_bytes": 0,
+          "selected_skill_bytes": 0,
+          "costs": {
+            "logical_calls": 150,
+            "terminal_calls": 150,
+            "unclosed_calls": 0,
+            "http_attempts": 150,
+            "reflection_calls": 1,
+            "solver_calls": 149,
+            "reported_tokens_known_subtotal": 222434,
+            "missing_usage_calls": 1,
+            "usage_complete": false
+          },
+          "evaluation_cells": {
+            "bigcodebench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "spreadsheetbench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "searchqa": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "korbench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "alfworld": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            }
+          },
+          "stage_record_hash": "04ca369e90761927c853a0a3df561d436f14b7c71e951c71aa87b4beca13f0db",
+          "learning_result_hash": "35efbffadb15c3526797a825156bd248f7c9a5a6856b9a806a577c72e4432370",
+          "diagnosis": "One train position refused by the provider content filter (sensitive)."
+        },
+        {
+          "stage": 4,
+          "benchmark": "korbench",
+          "action": "pending_carry_parent",
+          "learning_completed": false,
+          "learning_reason": "evaluation_unknown",
+          "parent_skill_bytes": 0,
+          "selected_skill_bytes": 0,
+          "costs": {
+            "logical_calls": 87,
+            "terminal_calls": 87,
+            "unclosed_calls": 0,
+            "http_attempts": 87,
+            "reflection_calls": 0,
+            "solver_calls": 87,
+            "reported_tokens_known_subtotal": 225790,
+            "missing_usage_calls": 0,
+            "usage_complete": true
+          },
+          "evaluation_cells": {
+            "bigcodebench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "spreadsheetbench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "searchqa": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "korbench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "alfworld": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            }
+          },
+          "stage_record_hash": "3f108099bf01f8b31c6e81a066b3b76069b0f3fcc4c36acb7ed8e9720982c006",
+          "learning_result_hash": "765458362067ca19eca740e4ef5ddfab0536bf1559f1d3fb2fd0d43a66e0680f",
+          "diagnosis": "One selection position truncated at the output cap (length)."
+        },
+        {
+          "stage": 5,
+          "benchmark": "alfworld",
+          "action": "pending_carry_parent",
+          "learning_completed": false,
+          "learning_reason": "evaluation_unknown",
+          "parent_skill_bytes": 0,
+          "selected_skill_bytes": 0,
+          "costs": {
+            "logical_calls": 0,
+            "terminal_calls": 0,
+            "unclosed_calls": 0,
+            "http_attempts": 0,
+            "reflection_calls": 0,
+            "solver_calls": 0,
+            "reported_tokens_known_subtotal": 0,
+            "missing_usage_calls": 0,
+            "usage_complete": true
+          },
+          "evaluation_cells": {
+            "bigcodebench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "spreadsheetbench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "searchqa": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "korbench": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            },
+            "alfworld": {
+              "kind": "historical_empty_policy",
+              "reused": true,
+              "new_model_calls": 0,
+              "independent_new_observation": false
+            }
+          },
+          "stage_record_hash": "f6ff90ffd2843e2e32546b8ff5a36607b94fc72666a4c1e40343dd12adcfa884",
+          "learning_result_hash": "ed346eb4a67a606acb0d80ac95009c3fe1d6f0285ca111dbc037826c413cd631",
+          "diagnosis": "First selection episode raised an ALFWorld environment ValueError."
+        }
+      ],
+      "learning_totals": {
+        "logical_calls": 300,
+        "http_attempts": 300,
+        "reported_tokens_known_subtotal": 473290,
+        "missing_usage_calls": 2
+      }
+    }
+  },
+  "matrix": "All post-S0 cells for both methods reuse the historical No-Skill observation of the empty Skill (0 new evaluation calls).",
+  "interpretation": "Both methods attempted all five stages and completed 0 learning stages; 10 of 10 stage attempts are pending. GEPA's C outcome was previously unrecorded in the docs.",
+  "evidence": "Private study /root/continual-sequential-20261002-c-study (not published); redacted counts and hashes only."
+}

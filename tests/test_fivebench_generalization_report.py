@@ -31,7 +31,8 @@ CANDIDATE = rows(["fail", "pass", "pass", "pass", "pass", "fail"])
 def reference(benchmark, value=BASE):
     return seal({"benchmark": benchmark, "positions": len(value), "rows": value,
                  "counts": {s: sum(r["status"] == s for r in value) for s in ("pass", "fail", "unknown")},
-                 "costs": {"logical_calls": 6, "reported_tokens_known_subtotal": 600, "private": SECRET},
+                 "costs": {"logical_calls": 6, "http_attempts": 6, "reported_tokens": 600,
+                           "usage_complete": True, "private": SECRET},
                  "model_service": {"name": "fixture"}})
 
 
@@ -127,7 +128,8 @@ def test_learning_completed_but_evaluations_pending_are_separate(study):
     write_json(directory / "evaluation-bigcodebench.json", reference("bigcodebench", CANDIDATE))
     report = build_report(root)
     assert report["completed_learning_stages"] == 1 and report["closed_all_domain_stages"] == 1
-    assert len(report["evaluation_cost_records_deduplicated"]) == 1
+    assert report["evaluation_cost_records_deduplicated"] == [
+        {"logical_calls": 6, "http_attempts": 6, "reported_tokens": 600, "usage_complete": True}]
     stage = report["stages"][1]
     assert stage["state"] == "evaluation_incomplete" and not stage["empty_skill"]
     assert stage["cells"]["bigcodebench"]["terminal"]
