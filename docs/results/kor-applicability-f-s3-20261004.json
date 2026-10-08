@@ -1,0 +1,1171 @@
+{
+  "version": "kor-applicability-study-v4",
+  "verifier": "kor-applicability-verifier-v4",
+  "protocol_hash": "1a6c3abbc43e6296fd9f0f46f070eb7940c4c85133c8f57bf75d6a7e650b6e91",
+  "method": "skillopt",
+  "registered_rules": 16,
+  "positions": {
+    "total": 1000,
+    "registered": 320,
+    "gold_qualified": 202,
+    "gold_unverified": 90,
+    "gold_inconsistent": 28
+  },
+  "gold_qualification": {
+    "operation:angle": {
+      "pass": 5,
+      "unknown": 5
+    },
+    "operation:circle": {
+      "pass": 4,
+      "unknown": 5,
+      "fail": 1
+    },
+    "operation:complex_pair": {
+      "pass": 6,
+      "unknown": 3,
+      "fail": 1
+    },
+    "operation:complex_square": {
+      "pass": 6,
+      "unknown": 4
+    },
+    "operation:log": {
+      "unknown": 5,
+      "pass": 5
+    },
+    "operation:matrix_affine": {
+      "pass": 10
+    },
+    "operation:matrix_power": {
+      "pass": 10
+    },
+    "operation:multiple": {
+      "pass": 3,
+      "unknown": 5,
+      "fail": 2
+    },
+    "operation:sqrt": {
+      "pass": 2,
+      "unknown": 8
+    },
+    "operation:venus_mars": {
+      "pass": 3,
+      "unknown": 7
+    },
+    "puzzle:dominoes": {
+      "fail": 3,
+      "pass": 7
+    },
+    "puzzle:hidato": {
+      "pass": 5,
+      "unknown": 3,
+      "fail": 2
+    },
+    "puzzle:islands": {
+      "pass": 9,
+      "fail": 1
+    },
+    "puzzle:skyscrapers": {
+      "pass": 6,
+      "fail": 4
+    },
+    "puzzle:sudoku": {
+      "pass": 10
+    },
+    "puzzle:twenty_four": {
+      "pass": 10
+    }
+  },
+  "gold_inconsistent_tasks": {
+    "operation:130": "substitution_violates_equation",
+    "operation:18": "substitution_violates_equation",
+    "operation:4": "value_differs",
+    "operation:8": "substitution_violates_equation",
+    "puzzle:124": "not_each_number_once",
+    "puzzle:127": "given_changed",
+    "puzzle:134": "island_hint_or_size",
+    "puzzle:221": "dominoes_touch",
+    "puzzle:226": "region_coverage",
+    "puzzle:229": "dominoes_touch",
+    "puzzle:244": "visibility_clue",
+    "puzzle:247": "malformed_grid",
+    "puzzle:248": "visibility_clue",
+    "puzzle:250": "latin_square"
+  },
+  "agreement": {
+    "no_skill": {
+      "cipher": {
+        "unregistered": 200
+      },
+      "counterfactual": {
+        "unregistered": 200
+      },
+      "logic": {
+        "unregistered": 200
+      },
+      "operation:angle|gold_qualified": {
+        "official_fail|verifier_fail": 1,
+        "official_pass|verifier_pass": 9
+      },
+      "operation:angle|gold_unverified": {
+        "official_pass|verifier_unknown": 10
+      },
+      "operation:circle|gold_inconsistent": {
+        "official_fail|verifier_fail": 2
+      },
+      "operation:circle|gold_qualified": {
+        "official_pass|verifier_pass": 8
+      },
+      "operation:circle|gold_unverified": {
+        "official_fail|verifier_fail": 1,
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_unknown": 8
+      },
+      "operation:complex_pair|gold_inconsistent": {
+        "official_pass|verifier_fail": 2
+      },
+      "operation:complex_pair|gold_qualified": {
+        "official_fail|verifier_fail": 1,
+        "official_fail|verifier_pass": 1,
+        "official_pass|verifier_pass": 10
+      },
+      "operation:complex_pair|gold_unverified": {
+        "official_pass|verifier_unknown": 6
+      },
+      "operation:complex_square|gold_qualified": {
+        "official_fail|verifier_pass": 4,
+        "official_pass|verifier_pass": 8
+      },
+      "operation:complex_square|gold_unverified": {
+        "official_pass|verifier_unknown": 8
+      },
+      "operation:log|gold_qualified": {
+        "official_pass|verifier_pass": 10
+      },
+      "operation:log|gold_unverified": {
+        "official_fail|verifier_fail": 1,
+        "official_pass|verifier_unknown": 9
+      },
+      "operation:matrix_affine|gold_qualified": {
+        "official_fail|verifier_fail": 1,
+        "official_fail|verifier_unknown": 4,
+        "official_pass|verifier_pass": 15
+      },
+      "operation:matrix_power|gold_qualified": {
+        "official_pass|verifier_pass": 20
+      },
+      "operation:multiple|gold_inconsistent": {
+        "official_fail|verifier_pass": 2,
+        "official_fail|verifier_unknown": 2
+      },
+      "operation:multiple|gold_qualified": {
+        "official_pass|verifier_pass": 6
+      },
+      "operation:multiple|gold_unverified": {
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_unknown": 9
+      },
+      "operation:sqrt|gold_qualified": {
+        "official_pass|verifier_pass": 4
+      },
+      "operation:sqrt|gold_unverified": {
+        "official_fail|verifier_fail": 2,
+        "official_pass|verifier_unknown": 14
+      },
+      "operation:venus_mars|gold_qualified": {
+        "official_pass|verifier_pass": 6
+      },
+      "operation:venus_mars|gold_unverified": {
+        "official_pass|verifier_unknown": 14
+      },
+      "operation|gold_inconsistent": {
+        "official_fail|verifier_fail": 2,
+        "official_fail|verifier_pass": 2,
+        "official_fail|verifier_unknown": 2,
+        "official_pass|verifier_fail": 2
+      },
+      "operation|gold_qualified": {
+        "official_fail|verifier_fail": 3,
+        "official_fail|verifier_pass": 5,
+        "official_fail|verifier_unknown": 4,
+        "official_pass|verifier_pass": 96
+      },
+      "operation|gold_unverified": {
+        "official_fail|verifier_fail": 4,
+        "official_fail|verifier_unknown": 2,
+        "official_pass|verifier_unknown": 78
+      },
+      "puzzle": {
+        "unregistered": 80
+      },
+      "puzzle:dominoes|gold_inconsistent": {
+        "official_fail|verifier_pass": 6
+      },
+      "puzzle:dominoes|gold_qualified": {
+        "official_fail|verifier_fail": 4,
+        "official_fail|verifier_pass": 4,
+        "official_pass|verifier_pass": 6
+      },
+      "puzzle:hidato|gold_inconsistent": {
+        "official_fail|verifier_pass": 2,
+        "official_pass|verifier_fail": 1,
+        "official_unknown|verifier_unknown": 1
+      },
+      "puzzle:hidato|gold_qualified": {
+        "official_pass|verifier_pass": 10
+      },
+      "puzzle:hidato|gold_unverified": {
+        "official_fail|verifier_unknown": 3,
+        "official_pass|verifier_unknown": 2,
+        "official_unknown|verifier_unknown": 1
+      },
+      "puzzle:islands|gold_inconsistent": {
+        "official_fail|verifier_fail": 2
+      },
+      "puzzle:islands|gold_qualified": {
+        "official_fail|verifier_fail": 8,
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_pass": 5,
+        "official_unknown|verifier_unknown": 4
+      },
+      "puzzle:skyscrapers|gold_inconsistent": {
+        "official_fail|verifier_pass": 4,
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_fail": 2,
+        "official_unknown|verifier_unknown": 1
+      },
+      "puzzle:skyscrapers|gold_qualified": {
+        "official_pass|verifier_pass": 12
+      },
+      "puzzle:sudoku|gold_qualified": {
+        "official_pass|verifier_pass": 18,
+        "official_unknown|verifier_unknown": 2
+      },
+      "puzzle:twenty_four|gold_qualified": {
+        "official_fail|verifier_fail": 1,
+        "official_fail|verifier_pass": 4,
+        "official_pass|verifier_pass": 15
+      },
+      "puzzle|gold_inconsistent": {
+        "official_fail|verifier_fail": 2,
+        "official_fail|verifier_pass": 12,
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_fail": 3,
+        "official_unknown|verifier_unknown": 2
+      },
+      "puzzle|gold_qualified": {
+        "official_fail|verifier_fail": 13,
+        "official_fail|verifier_pass": 8,
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_pass": 66,
+        "official_unknown|verifier_unknown": 6
+      },
+      "puzzle|gold_unverified": {
+        "official_fail|verifier_unknown": 3,
+        "official_pass|verifier_unknown": 2,
+        "official_unknown|verifier_unknown": 1
+      }
+    },
+    "s1": {
+      "cipher": {
+        "unregistered": 200
+      },
+      "counterfactual": {
+        "unregistered": 200
+      },
+      "logic": {
+        "unregistered": 200
+      },
+      "operation:angle|gold_qualified": {
+        "official_fail|verifier_fail": 4,
+        "official_pass|verifier_pass": 6
+      },
+      "operation:angle|gold_unverified": {
+        "official_fail|verifier_fail": 2,
+        "official_pass|verifier_unknown": 8
+      },
+      "operation:circle|gold_inconsistent": {
+        "official_fail|verifier_unknown": 2
+      },
+      "operation:circle|gold_qualified": {
+        "official_fail|verifier_fail": 3,
+        "official_pass|verifier_pass": 5
+      },
+      "operation:circle|gold_unverified": {
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_unknown": 9
+      },
+      "operation:complex_pair|gold_inconsistent": {
+        "official_fail|verifier_unknown": 2
+      },
+      "operation:complex_pair|gold_qualified": {
+        "official_fail|verifier_fail": 1,
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_pass": 10
+      },
+      "operation:complex_pair|gold_unverified": {
+        "official_pass|verifier_unknown": 6
+      },
+      "operation:complex_square|gold_qualified": {
+        "official_fail|verifier_pass": 3,
+        "official_pass|verifier_pass": 8,
+        "official_pass|verifier_unknown": 1
+      },
+      "operation:complex_square|gold_unverified": {
+        "official_fail|verifier_fail": 1,
+        "official_pass|verifier_unknown": 7
+      },
+      "operation:log|gold_qualified": {
+        "official_fail|verifier_fail": 6,
+        "official_pass|verifier_pass": 4
+      },
+      "operation:log|gold_unverified": {
+        "official_fail|verifier_fail": 1,
+        "official_pass|verifier_unknown": 9
+      },
+      "operation:matrix_affine|gold_qualified": {
+        "official_fail|verifier_fail": 5,
+        "official_pass|verifier_pass": 15
+      },
+      "operation:matrix_power|gold_qualified": {
+        "official_fail|verifier_fail": 1,
+        "official_pass|verifier_pass": 19
+      },
+      "operation:multiple|gold_inconsistent": {
+        "official_fail|verifier_pass": 2,
+        "official_fail|verifier_unknown": 2
+      },
+      "operation:multiple|gold_qualified": {
+        "official_pass|verifier_pass": 6
+      },
+      "operation:multiple|gold_unverified": {
+        "official_fail|verifier_fail": 1,
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_unknown": 8
+      },
+      "operation:sqrt|gold_qualified": {
+        "official_fail|verifier_fail": 1,
+        "official_pass|verifier_pass": 3
+      },
+      "operation:sqrt|gold_unverified": {
+        "official_fail|verifier_fail": 5,
+        "official_pass|verifier_unknown": 11
+      },
+      "operation:venus_mars|gold_qualified": {
+        "official_pass|verifier_pass": 6
+      },
+      "operation:venus_mars|gold_unverified": {
+        "official_pass|verifier_unknown": 14
+      },
+      "operation|gold_inconsistent": {
+        "official_fail|verifier_pass": 2,
+        "official_fail|verifier_unknown": 6
+      },
+      "operation|gold_qualified": {
+        "official_fail|verifier_fail": 21,
+        "official_fail|verifier_pass": 3,
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_pass": 82,
+        "official_pass|verifier_unknown": 1
+      },
+      "operation|gold_unverified": {
+        "official_fail|verifier_fail": 10,
+        "official_fail|verifier_unknown": 2,
+        "official_pass|verifier_unknown": 72
+      },
+      "puzzle": {
+        "unregistered": 80
+      },
+      "puzzle:dominoes|gold_inconsistent": {
+        "official_fail|verifier_pass": 6
+      },
+      "puzzle:dominoes|gold_qualified": {
+        "official_fail|verifier_fail": 4,
+        "official_fail|verifier_pass": 4,
+        "official_pass|verifier_pass": 6
+      },
+      "puzzle:hidato|gold_inconsistent": {
+        "official_fail|verifier_pass": 2,
+        "official_pass|verifier_fail": 1,
+        "official_unknown|verifier_unknown": 1
+      },
+      "puzzle:hidato|gold_qualified": {
+        "official_fail|verifier_fail": 1,
+        "official_pass|verifier_pass": 7,
+        "official_unknown|verifier_unknown": 2
+      },
+      "puzzle:hidato|gold_unverified": {
+        "official_fail|verifier_unknown": 2,
+        "official_pass|verifier_unknown": 3,
+        "official_unknown|verifier_unknown": 1
+      },
+      "puzzle:islands|gold_inconsistent": {
+        "official_fail|verifier_fail": 2
+      },
+      "puzzle:islands|gold_qualified": {
+        "official_fail|verifier_fail": 11,
+        "official_pass|verifier_pass": 4,
+        "official_unknown|verifier_unknown": 3
+      },
+      "puzzle:skyscrapers|gold_inconsistent": {
+        "official_fail|verifier_pass": 4,
+        "official_pass|verifier_fail": 2,
+        "official_unknown|verifier_unknown": 2
+      },
+      "puzzle:skyscrapers|gold_qualified": {
+        "official_fail|verifier_fail": 2,
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_pass": 9
+      },
+      "puzzle:sudoku|gold_qualified": {
+        "official_pass|verifier_pass": 17,
+        "official_unknown|verifier_unknown": 3
+      },
+      "puzzle:twenty_four|gold_qualified": {
+        "official_fail|verifier_fail": 2,
+        "official_fail|verifier_pass": 4,
+        "official_pass|verifier_pass": 14
+      },
+      "puzzle|gold_inconsistent": {
+        "official_fail|verifier_fail": 2,
+        "official_fail|verifier_pass": 12,
+        "official_pass|verifier_fail": 3,
+        "official_unknown|verifier_unknown": 3
+      },
+      "puzzle|gold_qualified": {
+        "official_fail|verifier_fail": 20,
+        "official_fail|verifier_pass": 8,
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_pass": 57,
+        "official_unknown|verifier_unknown": 8
+      },
+      "puzzle|gold_unverified": {
+        "official_fail|verifier_unknown": 2,
+        "official_pass|verifier_unknown": 3,
+        "official_unknown|verifier_unknown": 1
+      }
+    },
+    "s2": {
+      "cipher": {
+        "unregistered": 200
+      },
+      "counterfactual": {
+        "unregistered": 200
+      },
+      "logic": {
+        "unregistered": 200
+      },
+      "operation:angle|gold_qualified": {
+        "official_fail|verifier_fail": 4,
+        "official_pass|verifier_pass": 6
+      },
+      "operation:angle|gold_unverified": {
+        "official_fail|verifier_fail": 2,
+        "official_pass|verifier_unknown": 8
+      },
+      "operation:circle|gold_inconsistent": {
+        "official_fail|verifier_unknown": 2
+      },
+      "operation:circle|gold_qualified": {
+        "official_fail|verifier_fail": 3,
+        "official_pass|verifier_pass": 5
+      },
+      "operation:circle|gold_unverified": {
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_unknown": 9
+      },
+      "operation:complex_pair|gold_inconsistent": {
+        "official_fail|verifier_unknown": 2
+      },
+      "operation:complex_pair|gold_qualified": {
+        "official_fail|verifier_fail": 1,
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_pass": 10
+      },
+      "operation:complex_pair|gold_unverified": {
+        "official_pass|verifier_unknown": 6
+      },
+      "operation:complex_square|gold_qualified": {
+        "official_fail|verifier_pass": 3,
+        "official_pass|verifier_pass": 8,
+        "official_pass|verifier_unknown": 1
+      },
+      "operation:complex_square|gold_unverified": {
+        "official_fail|verifier_fail": 1,
+        "official_pass|verifier_unknown": 7
+      },
+      "operation:log|gold_qualified": {
+        "official_fail|verifier_fail": 6,
+        "official_pass|verifier_pass": 4
+      },
+      "operation:log|gold_unverified": {
+        "official_fail|verifier_fail": 1,
+        "official_pass|verifier_unknown": 9
+      },
+      "operation:matrix_affine|gold_qualified": {
+        "official_fail|verifier_fail": 5,
+        "official_pass|verifier_pass": 15
+      },
+      "operation:matrix_power|gold_qualified": {
+        "official_fail|verifier_fail": 1,
+        "official_pass|verifier_pass": 19
+      },
+      "operation:multiple|gold_inconsistent": {
+        "official_fail|verifier_pass": 2,
+        "official_fail|verifier_unknown": 2
+      },
+      "operation:multiple|gold_qualified": {
+        "official_pass|verifier_pass": 6
+      },
+      "operation:multiple|gold_unverified": {
+        "official_fail|verifier_fail": 1,
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_unknown": 8
+      },
+      "operation:sqrt|gold_qualified": {
+        "official_fail|verifier_fail": 1,
+        "official_pass|verifier_pass": 3
+      },
+      "operation:sqrt|gold_unverified": {
+        "official_fail|verifier_fail": 5,
+        "official_pass|verifier_unknown": 11
+      },
+      "operation:venus_mars|gold_qualified": {
+        "official_pass|verifier_pass": 6
+      },
+      "operation:venus_mars|gold_unverified": {
+        "official_pass|verifier_unknown": 14
+      },
+      "operation|gold_inconsistent": {
+        "official_fail|verifier_pass": 2,
+        "official_fail|verifier_unknown": 6
+      },
+      "operation|gold_qualified": {
+        "official_fail|verifier_fail": 21,
+        "official_fail|verifier_pass": 3,
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_pass": 82,
+        "official_pass|verifier_unknown": 1
+      },
+      "operation|gold_unverified": {
+        "official_fail|verifier_fail": 10,
+        "official_fail|verifier_unknown": 2,
+        "official_pass|verifier_unknown": 72
+      },
+      "puzzle": {
+        "unregistered": 80
+      },
+      "puzzle:dominoes|gold_inconsistent": {
+        "official_fail|verifier_pass": 6
+      },
+      "puzzle:dominoes|gold_qualified": {
+        "official_fail|verifier_fail": 4,
+        "official_fail|verifier_pass": 4,
+        "official_pass|verifier_pass": 6
+      },
+      "puzzle:hidato|gold_inconsistent": {
+        "official_fail|verifier_pass": 2,
+        "official_pass|verifier_fail": 1,
+        "official_unknown|verifier_unknown": 1
+      },
+      "puzzle:hidato|gold_qualified": {
+        "official_fail|verifier_fail": 1,
+        "official_pass|verifier_pass": 7,
+        "official_unknown|verifier_unknown": 2
+      },
+      "puzzle:hidato|gold_unverified": {
+        "official_fail|verifier_unknown": 2,
+        "official_pass|verifier_unknown": 3,
+        "official_unknown|verifier_unknown": 1
+      },
+      "puzzle:islands|gold_inconsistent": {
+        "official_fail|verifier_fail": 2
+      },
+      "puzzle:islands|gold_qualified": {
+        "official_fail|verifier_fail": 11,
+        "official_pass|verifier_pass": 4,
+        "official_unknown|verifier_unknown": 3
+      },
+      "puzzle:skyscrapers|gold_inconsistent": {
+        "official_fail|verifier_pass": 4,
+        "official_pass|verifier_fail": 2,
+        "official_unknown|verifier_unknown": 2
+      },
+      "puzzle:skyscrapers|gold_qualified": {
+        "official_fail|verifier_fail": 2,
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_pass": 9
+      },
+      "puzzle:sudoku|gold_qualified": {
+        "official_pass|verifier_pass": 17,
+        "official_unknown|verifier_unknown": 3
+      },
+      "puzzle:twenty_four|gold_qualified": {
+        "official_fail|verifier_fail": 2,
+        "official_fail|verifier_pass": 4,
+        "official_pass|verifier_pass": 14
+      },
+      "puzzle|gold_inconsistent": {
+        "official_fail|verifier_fail": 2,
+        "official_fail|verifier_pass": 12,
+        "official_pass|verifier_fail": 3,
+        "official_unknown|verifier_unknown": 3
+      },
+      "puzzle|gold_qualified": {
+        "official_fail|verifier_fail": 20,
+        "official_fail|verifier_pass": 8,
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_pass": 57,
+        "official_unknown|verifier_unknown": 8
+      },
+      "puzzle|gold_unverified": {
+        "official_fail|verifier_unknown": 2,
+        "official_pass|verifier_unknown": 3,
+        "official_unknown|verifier_unknown": 1
+      }
+    },
+    "s3": {
+      "cipher": {
+        "unregistered": 200
+      },
+      "counterfactual": {
+        "unregistered": 200
+      },
+      "logic": {
+        "unregistered": 200
+      },
+      "operation:angle|gold_qualified": {
+        "official_fail|verifier_fail": 2,
+        "official_pass|verifier_pass": 8
+      },
+      "operation:angle|gold_unverified": {
+        "official_fail|verifier_fail": 5,
+        "official_pass|verifier_unknown": 5
+      },
+      "operation:circle|gold_inconsistent": {
+        "official_fail|verifier_fail": 1,
+        "official_fail|verifier_unknown": 1
+      },
+      "operation:circle|gold_qualified": {
+        "official_fail|verifier_fail": 3,
+        "official_pass|verifier_pass": 5
+      },
+      "operation:circle|gold_unverified": {
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_unknown": 9
+      },
+      "operation:complex_pair|gold_inconsistent": {
+        "official_fail|verifier_fail": 1,
+        "official_fail|verifier_unknown": 1
+      },
+      "operation:complex_pair|gold_qualified": {
+        "official_pass|verifier_pass": 12
+      },
+      "operation:complex_pair|gold_unverified": {
+        "official_pass|verifier_unknown": 6
+      },
+      "operation:complex_square|gold_qualified": {
+        "official_pass|verifier_pass": 12
+      },
+      "operation:complex_square|gold_unverified": {
+        "official_pass|verifier_unknown": 8
+      },
+      "operation:log|gold_qualified": {
+        "official_fail|verifier_fail": 2,
+        "official_pass|verifier_pass": 8
+      },
+      "operation:log|gold_unverified": {
+        "official_pass|verifier_unknown": 10
+      },
+      "operation:matrix_affine|gold_qualified": {
+        "official_fail|verifier_fail": 3,
+        "official_pass|verifier_pass": 17
+      },
+      "operation:matrix_power|gold_qualified": {
+        "official_fail|verifier_fail": 1,
+        "official_pass|verifier_pass": 19
+      },
+      "operation:multiple|gold_inconsistent": {
+        "official_fail|verifier_fail": 1,
+        "official_fail|verifier_pass": 2,
+        "official_fail|verifier_unknown": 1
+      },
+      "operation:multiple|gold_qualified": {
+        "official_pass|verifier_pass": 6
+      },
+      "operation:multiple|gold_unverified": {
+        "official_fail|verifier_fail": 1,
+        "official_pass|verifier_unknown": 9
+      },
+      "operation:sqrt|gold_qualified": {
+        "official_fail|verifier_fail": 1,
+        "official_pass|verifier_pass": 3
+      },
+      "operation:sqrt|gold_unverified": {
+        "official_fail|verifier_fail": 3,
+        "official_pass|verifier_unknown": 13
+      },
+      "operation:venus_mars|gold_qualified": {
+        "official_pass|verifier_pass": 6
+      },
+      "operation:venus_mars|gold_unverified": {
+        "official_pass|verifier_unknown": 14
+      },
+      "operation|gold_inconsistent": {
+        "official_fail|verifier_fail": 3,
+        "official_fail|verifier_pass": 2,
+        "official_fail|verifier_unknown": 3
+      },
+      "operation|gold_qualified": {
+        "official_fail|verifier_fail": 12,
+        "official_pass|verifier_pass": 96
+      },
+      "operation|gold_unverified": {
+        "official_fail|verifier_fail": 9,
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_unknown": 74
+      },
+      "puzzle": {
+        "unregistered": 80
+      },
+      "puzzle:dominoes|gold_inconsistent": {
+        "official_fail|verifier_pass": 6
+      },
+      "puzzle:dominoes|gold_qualified": {
+        "official_fail|verifier_fail": 4,
+        "official_fail|verifier_pass": 3,
+        "official_pass|verifier_pass": 6,
+        "official_unknown|verifier_unknown": 1
+      },
+      "puzzle:hidato|gold_inconsistent": {
+        "official_fail|verifier_fail": 1,
+        "official_fail|verifier_pass": 1,
+        "official_pass|verifier_fail": 1,
+        "official_unknown|verifier_unknown": 1
+      },
+      "puzzle:hidato|gold_qualified": {
+        "official_fail|verifier_fail": 1,
+        "official_pass|verifier_pass": 9
+      },
+      "puzzle:hidato|gold_unverified": {
+        "official_fail|verifier_unknown": 3,
+        "official_pass|verifier_unknown": 3
+      },
+      "puzzle:islands|gold_inconsistent": {
+        "official_fail|verifier_fail": 1,
+        "official_fail|verifier_pass": 1
+      },
+      "puzzle:islands|gold_qualified": {
+        "official_fail|verifier_fail": 10,
+        "official_pass|verifier_pass": 3,
+        "official_unknown|verifier_unknown": 5
+      },
+      "puzzle:skyscrapers|gold_inconsistent": {
+        "official_fail|verifier_fail": 2,
+        "official_fail|verifier_pass": 4,
+        "official_pass|verifier_fail": 2
+      },
+      "puzzle:skyscrapers|gold_qualified": {
+        "official_fail|verifier_fail": 3,
+        "official_pass|verifier_pass": 9
+      },
+      "puzzle:sudoku|gold_qualified": {
+        "official_pass|verifier_pass": 17,
+        "official_unknown|verifier_unknown": 3
+      },
+      "puzzle:twenty_four|gold_qualified": {
+        "official_fail|verifier_fail": 2,
+        "official_fail|verifier_pass": 1,
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_pass": 16
+      },
+      "puzzle|gold_inconsistent": {
+        "official_fail|verifier_fail": 4,
+        "official_fail|verifier_pass": 12,
+        "official_pass|verifier_fail": 3,
+        "official_unknown|verifier_unknown": 1
+      },
+      "puzzle|gold_qualified": {
+        "official_fail|verifier_fail": 20,
+        "official_fail|verifier_pass": 4,
+        "official_fail|verifier_unknown": 1,
+        "official_pass|verifier_pass": 60,
+        "official_unknown|verifier_unknown": 9
+      },
+      "puzzle|gold_unverified": {
+        "official_fail|verifier_unknown": 3,
+        "official_pass|verifier_unknown": 3
+      }
+    }
+  },
+  "paired_deltas": {
+    "s1": {
+      "skill_hash": "f4624f33fb5e308447327b7a5960783d90389420de24ad2421820ea9f0a8efb2",
+      "action": "selected_update",
+      "gold_qualified": {
+        "operation": {
+          "official_all": {
+            "tie": 81,
+            "loss": 20,
+            "win": 7
+          },
+          "verifier": {
+            "tie": 82,
+            "loss": 18,
+            "unknown": 6,
+            "win": 2
+          },
+          "official_same_positions": {
+            "tie": 79,
+            "loss": 19,
+            "win": 4
+          }
+        },
+        "puzzle": {
+          "official_all": {
+            "tie": 67,
+            "unknown": 13,
+            "loss": 10,
+            "win": 4
+          },
+          "verifier": {
+            "tie": 69,
+            "unknown": 14,
+            "loss": 8,
+            "win": 3
+          },
+          "official_same_positions": {
+            "tie": 67,
+            "loss": 9,
+            "win": 4
+          }
+        },
+        "registered": {
+          "official_all": {
+            "tie": 148,
+            "unknown": 13,
+            "loss": 30,
+            "win": 11
+          },
+          "verifier": {
+            "tie": 151,
+            "unknown": 20,
+            "loss": 26,
+            "win": 5
+          },
+          "official_same_positions": {
+            "tie": 146,
+            "loss": 28,
+            "win": 8
+          }
+        }
+      },
+      "not_gold_inconsistent": {
+        "operation": {
+          "official_all": {
+            "tie": 153,
+            "loss": 29,
+            "win": 10
+          },
+          "verifier": {
+            "tie": 84,
+            "unknown": 88,
+            "loss": 18,
+            "win": 2
+          },
+          "official_same_positions": {
+            "tie": 81,
+            "loss": 19,
+            "win": 4
+          }
+        },
+        "puzzle": {
+          "official_all": {
+            "tie": 70,
+            "unknown": 15,
+            "loss": 10,
+            "win": 5
+          },
+          "verifier": {
+            "tie": 69,
+            "unknown": 20,
+            "loss": 8,
+            "win": 3
+          },
+          "official_same_positions": {
+            "tie": 67,
+            "loss": 9,
+            "win": 4
+          }
+        },
+        "registered": {
+          "official_all": {
+            "tie": 223,
+            "unknown": 15,
+            "loss": 39,
+            "win": 15
+          },
+          "verifier": {
+            "tie": 153,
+            "unknown": 108,
+            "loss": 26,
+            "win": 5
+          },
+          "official_same_positions": {
+            "tie": 148,
+            "loss": 28,
+            "win": 8
+          }
+        }
+      }
+    },
+    "s2": {
+      "skill_hash": "f4624f33fb5e308447327b7a5960783d90389420de24ad2421820ea9f0a8efb2",
+      "action": "pending_carry_parent",
+      "gold_qualified": {
+        "operation": {
+          "official_all": {
+            "tie": 81,
+            "loss": 20,
+            "win": 7
+          },
+          "verifier": {
+            "tie": 82,
+            "loss": 18,
+            "unknown": 6,
+            "win": 2
+          },
+          "official_same_positions": {
+            "tie": 79,
+            "loss": 19,
+            "win": 4
+          }
+        },
+        "puzzle": {
+          "official_all": {
+            "tie": 67,
+            "unknown": 13,
+            "loss": 10,
+            "win": 4
+          },
+          "verifier": {
+            "tie": 69,
+            "unknown": 14,
+            "loss": 8,
+            "win": 3
+          },
+          "official_same_positions": {
+            "tie": 67,
+            "loss": 9,
+            "win": 4
+          }
+        },
+        "registered": {
+          "official_all": {
+            "tie": 148,
+            "unknown": 13,
+            "loss": 30,
+            "win": 11
+          },
+          "verifier": {
+            "tie": 151,
+            "unknown": 20,
+            "loss": 26,
+            "win": 5
+          },
+          "official_same_positions": {
+            "tie": 146,
+            "loss": 28,
+            "win": 8
+          }
+        }
+      },
+      "not_gold_inconsistent": {
+        "operation": {
+          "official_all": {
+            "tie": 153,
+            "loss": 29,
+            "win": 10
+          },
+          "verifier": {
+            "tie": 84,
+            "unknown": 88,
+            "loss": 18,
+            "win": 2
+          },
+          "official_same_positions": {
+            "tie": 81,
+            "loss": 19,
+            "win": 4
+          }
+        },
+        "puzzle": {
+          "official_all": {
+            "tie": 70,
+            "unknown": 15,
+            "loss": 10,
+            "win": 5
+          },
+          "verifier": {
+            "tie": 69,
+            "unknown": 20,
+            "loss": 8,
+            "win": 3
+          },
+          "official_same_positions": {
+            "tie": 67,
+            "loss": 9,
+            "win": 4
+          }
+        },
+        "registered": {
+          "official_all": {
+            "tie": 223,
+            "unknown": 15,
+            "loss": 39,
+            "win": 15
+          },
+          "verifier": {
+            "tie": 153,
+            "unknown": 108,
+            "loss": 26,
+            "win": 5
+          },
+          "official_same_positions": {
+            "tie": 148,
+            "loss": 28,
+            "win": 8
+          }
+        }
+      }
+    },
+    "s3": {
+      "skill_hash": "54682ac328e313be4d832c0af71b7103ba7fea8312c5815dd2f67e289c2e1142",
+      "action": "selected_update",
+      "gold_qualified": {
+        "operation": {
+          "official_all": {
+            "tie": 88,
+            "win": 10,
+            "loss": 10
+          },
+          "verifier": {
+            "tie": 92,
+            "unknown": 4,
+            "loss": 10,
+            "win": 2
+          },
+          "official_same_positions": {
+            "tie": 87,
+            "win": 7,
+            "loss": 10
+          }
+        },
+        "puzzle": {
+          "official_all": {
+            "tie": 70,
+            "unknown": 11,
+            "loss": 9,
+            "win": 4
+          },
+          "verifier": {
+            "tie": 69,
+            "unknown": 13,
+            "loss": 10,
+            "win": 2
+          },
+          "official_same_positions": {
+            "tie": 69,
+            "loss": 8,
+            "win": 4
+          }
+        },
+        "registered": {
+          "official_all": {
+            "tie": 158,
+            "win": 14,
+            "unknown": 11,
+            "loss": 19
+          },
+          "verifier": {
+            "tie": 161,
+            "unknown": 17,
+            "loss": 20,
+            "win": 4
+          },
+          "official_same_positions": {
+            "tie": 156,
+            "loss": 18,
+            "win": 11
+          }
+        }
+      },
+      "not_gold_inconsistent": {
+        "operation": {
+          "official_all": {
+            "tie": 162,
+            "win": 13,
+            "loss": 17
+          },
+          "verifier": {
+            "unknown": 86,
+            "tie": 94,
+            "loss": 10,
+            "win": 2
+          },
+          "official_same_positions": {
+            "tie": 89,
+            "win": 7,
+            "loss": 10
+          }
+        },
+        "puzzle": {
+          "official_all": {
+            "tie": 73,
+            "unknown": 12,
+            "loss": 10,
+            "win": 5
+          },
+          "verifier": {
+            "tie": 69,
+            "unknown": 19,
+            "loss": 10,
+            "win": 2
+          },
+          "official_same_positions": {
+            "tie": 69,
+            "loss": 8,
+            "win": 4
+          }
+        },
+        "registered": {
+          "official_all": {
+            "tie": 235,
+            "win": 18,
+            "loss": 27,
+            "unknown": 12
+          },
+          "verifier": {
+            "tie": 163,
+            "unknown": 105,
+            "loss": 20,
+            "win": 4
+          },
+          "official_same_positions": {
+            "tie": 158,
+            "loss": 18,
+            "win": 11
+          }
+        }
+      }
+    }
+  },
+  "model_api_calls": 0,
+  "new_observations": 0,
+  "post_hoc_diagnostic": true,
+  "independent_final": false,
+  "deployment_authorized": false,
+  "data_scope": "previously_exposed_development_with_learning_overlap_not_final",
+  "record_hash": "c8b6b95a5826890303c7d605633e87a65714515ef7d84decccba11f99ea64876"
+}

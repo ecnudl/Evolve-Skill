@@ -1,5 +1,13 @@
 # 无上下文代码代理接手指南
 
+**新测量仪器：KOR无标签适用性验证器（10/4，零调用，Codex四轮后ACCEPTABLE）**——见[验证器报告](kor-applicability-verifier-20261004.md)；Linux冻结源码`/root/kor-applicability-20261004-v4-source`，结果`/root/kor-applicability-20261004-v4-{e,f-s1}`（v1–v3目录为审查前版本，勿引用）；**v5加入9条cipher规则（Codex两轮后ACCEPTABLE）**：冻结源码`/root/kor-applicability-20261004-v5-source`，结果`/root/kor-applicability-20261004-v5-{e,f-s3}`（`-v5pre-*`为审查前试跑，勿引用）。cipher探针`/root/kor-probes-20261004-v5`（生成器v5，Codex两轮ACCEPTABLE）与v8备选试点目录`/root/kor-probe-pilot-20261004-h`（冻结源码`/root/kor-probe-pilot-20261004-v8-source`；启动需用户批准标记`user-approved-v8`）。
+
+**10/4夜间值守与待运行队列**：见[值守记录](overnight-status-20261004.md)——F进度与原因分析、两个已审查待付费的试点（BCB反馈内容、KOR探针阶段，均等F完成）、以及提案。
+
+**待运行：BCB反馈内容试点（10/4）**——代码已审查、零API冒烟通过，Linux冻结源码`/root/feedback-pilot-20261004-source`；F的S1阶段记录生成后才`prepare`，F全部结束后才付费`run`，见[试点报告](feedback-ablation-pilot-20261004.md)。
+
+**最新运行：新 F（10/3 18:57启动）**——SkillOpt后GEPA、学习v7、32,000字节接口、派生评测源码；先读[新 F 报告](fivebench-f-skillopt-gepa-20261003.md)再接手，运行中的进度不是结果。
+
 建立：2026-10-02。项目对外名称为 **Evolve-Skill**，代码包仍为 `skillopt`，基于 Microsoft SkillOpt。先读 [AGENTS.md](../AGENTS.md)，再用本页辨明目标、证据和入口；当前流程与结论以[当前完整流程](current-workflow.md)、[结果账本](results-and-lessons.md)为主，不从某个历史 `coevolution_vXX` 目录推断进度。
 
 ## 当前会话工作中 / 待更新

@@ -1,0 +1,175 @@
+{
+ "version": "fivebench-fixed-rubric-study-v1-blinded-audit",
+ "protocol_hash": "043c011f3e59f7d1ec3c777afc1c2fd6c41b0d02861fef277244244eb2dc920f",
+ "result_hash": "200e30ff74ad0a102a96032316433edcc3ef96fa17612bcdaa4b8e41c56dce0b",
+ "packet_hash": "ecbf5168e392c626ae6d2a4d41c40785d52117d0ba841ea2dcb51e7e53ef524f",
+ "key_hash": "b6de70fba0bd7826888eb457628ffd88c78e51a17afac9e527a963319f792c28",
+ "auditor": "independent Codex CLI (gpt-6-astra, ultra), read-only, given only the blinded packet; key fetched after the audit",
+ "instructions": "Blinded public-contract audit (rubric identity and host label hidden). For every item decide whether EACH claimed violation is (a) supported: the quoted obligation is stated by the public task text and the response visibly violates it; (b) unsupported: the obligation is not stated, is misread, or the response satisfies it; (c) undeterminable from the public text and response alone. Do not solve the task or consult any answer key.",
+ "verdict_counts": {
+  "unsupported": 15,
+  "supported": 5
+ },
+ "by_rejecting_rubric": {
+  "h2": {
+   "rejections": 8,
+   "supported": 3,
+   "on_host_fail": 2,
+   "supported_on_host_fail": 2,
+   "on_host_pass": 6,
+   "supported_on_host_pass": 1
+  },
+  "default": {
+   "rejections": 12,
+   "supported": 2,
+   "on_host_fail": 4,
+   "supported_on_host_fail": 1,
+   "on_host_pass": 8,
+   "supported_on_host_pass": 1
+  }
+ },
+ "items": [
+  {
+   "item": "0afad052c5cfcf40",
+   "verdict": "unsupported",
+   "rejecting_rubric": "default",
+   "host_status": "pass",
+   "family": "cipher:rule:6"
+  },
+  {
+   "item": "1ce6e9b50cc43bc1",
+   "verdict": "unsupported",
+   "rejecting_rubric": "h2",
+   "host_status": "pass",
+   "family": "cipher:rule:22"
+  },
+  {
+   "item": "1e5431dc8f5cde5a",
+   "verdict": "unsupported",
+   "rejecting_rubric": "default",
+   "host_status": "pass",
+   "family": "cipher:rule:16"
+  },
+  {
+   "item": "22e662784c67de6c",
+   "verdict": "unsupported",
+   "rejecting_rubric": "default",
+   "host_status": "pass",
+   "family": "operation:rule:7"
+  },
+  {
+   "item": "266c535fe934e8de",
+   "verdict": "supported",
+   "rejecting_rubric": "h2",
+   "host_status": "fail",
+   "family": "cipher:rule:21"
+  },
+  {
+   "item": "38746b1526c52dd4",
+   "verdict": "unsupported",
+   "rejecting_rubric": "default",
+   "host_status": "fail",
+   "family": "puzzle:rule:23"
+  },
+  {
+   "item": "39337037623777c3",
+   "verdict": "unsupported",
+   "rejecting_rubric": "h2",
+   "host_status": "pass",
+   "family": "operation:rule:25"
+  },
+  {
+   "item": "41c7902e59276477",
+   "verdict": "unsupported",
+   "rejecting_rubric": "h2",
+   "host_status": "pass",
+   "family": "operation:rule:10"
+  },
+  {
+   "item": "477bbac32e706f73",
+   "verdict": "unsupported",
+   "rejecting_rubric": "h2",
+   "host_status": "pass",
+   "family": "puzzle:rule:23"
+  },
+  {
+   "item": "51595d529fa03431",
+   "verdict": "unsupported",
+   "rejecting_rubric": "default",
+   "host_status": "fail",
+   "family": "logic:rule:23"
+  },
+  {
+   "item": "63bc1c3178bcdad7",
+   "verdict": "unsupported",
+   "rejecting_rubric": "default",
+   "host_status": "fail",
+   "family": "logic:rule:2"
+  },
+  {
+   "item": "640da4ce85ad3252",
+   "verdict": "supported",
+   "rejecting_rubric": "h2",
+   "host_status": "pass",
+   "family": "puzzle:rule:22"
+  },
+  {
+   "item": "6ff0dcd94c5eb0d9",
+   "verdict": "unsupported",
+   "rejecting_rubric": "default",
+   "host_status": "pass",
+   "family": "counterfactual:rule:14"
+  },
+  {
+   "item": "7a4ffc9351e552ff",
+   "verdict": "unsupported",
+   "rejecting_rubric": "default",
+   "host_status": "pass",
+   "family": "counterfactual:rule:19"
+  },
+  {
+   "item": "9e0240faff2832b0",
+   "verdict": "supported",
+   "rejecting_rubric": "default",
+   "host_status": "fail",
+   "family": "cipher:rule:9"
+  },
+  {
+   "item": "a510118ac0f4506d",
+   "verdict": "supported",
+   "rejecting_rubric": "default",
+   "host_status": "pass",
+   "family": "operation:rule:8"
+  },
+  {
+   "item": "bdf1fb94597e7dd6",
+   "verdict": "unsupported",
+   "rejecting_rubric": "default",
+   "host_status": "pass",
+   "family": "cipher:rule:21"
+  },
+  {
+   "item": "c51904ba79ab8be0",
+   "verdict": "unsupported",
+   "rejecting_rubric": "h2",
+   "host_status": "pass",
+   "family": "operation:rule:1"
+  },
+  {
+   "item": "ccc99e68536bcb8f",
+   "verdict": "supported",
+   "rejecting_rubric": "h2",
+   "host_status": "fail",
+   "family": "puzzle:rule:22"
+  },
+  {
+   "item": "f59078d986641622",
+   "verdict": "unsupported",
+   "rejecting_rubric": "default",
+   "host_status": "pass",
+   "family": "counterfactual:rule:16"
+  }
+ ],
+ "scope": "descriptive secondary analysis of the 20 h2/default disagreement rows; reasons quoting task text kept outside the repository",
+ "record_hash": "546411d471792d3790e24c05d5688f9f78124f55bf3fd4e06c7424489044a05a"
+}

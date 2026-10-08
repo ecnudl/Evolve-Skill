@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import threading
 from copy import deepcopy
 
 from skillopt.coevolution_v5.core import seal
@@ -9,10 +10,22 @@ from skillopt.continual_eval.core import read_json, require, safe_path, write_js
 from skillopt.validator_pilot.api import digest
 
 PER_ATTEMPT_POLICIES = {"closed_network_error_v1", "closed_delivery_error_v2", "closed_delivery_error_v3"}
-RECOVERY_VERSIONS = {"continual-learning-v4", "continual-learning-v5", "continual-learning-v6"}
+RECOVERY_VERSIONS = {"continual-learning-v4", "continual-learning-v5", "continual-learning-v6",
+                     "continual-learning-v7", "continual-learning-v8", "continual-learning-v9",
+                     "continual-learning-v10"}
 DELIVERY_VERSION = "continual-learning-v5"
 HARDENED_VERSION = "continual-learning-v6"
-DELIVERY_VERSIONS = {DELIVERY_VERSION, HARDENED_VERSION}
+# V7, v8, v9 and v10 inherit every v6 accounting and replay guard.
+HARDENED_VERSIONS = {HARDENED_VERSION, "continual-learning-v7", "continual-learning-v8", "continual-learning-v9",
+                     "continual-learning-v10"}
+DELIVERY_VERSIONS = {DELIVERY_VERSION, *HARDENED_VERSIONS}
+# V8 learners submit solver rows from several threads. Receipts are immutable
+# sealed files, so a snapshot may keep the rows it has already validated and
+# read only new ones; the budget check and the intent write happen under one lock.
+CONCURRENT_VERSIONS = {"continual-learning-v8", "continual-learning-v9", "continual-learning-v10"}
+# V10 adds the verifier's own model calls (policy proposal, probe instantiation, admissibility
+# review, judge) as a third role with separate call and output-token budgets.
+VERIFIER_ROLE_VERSIONS = {"continual-learning-v10"}
 
 
 def _known_usage(usage):
@@ -32,7 +45,11 @@ class Ledger:
     def __init__(self, root, manifest, api):
         self.root, self.manifest, self.api = safe_path(root), manifest, api
         self.budget = manifest["budget"]
-        if manifest.get("version") == HARDENED_VERSION:
+        self.lock = threading.RLock()
+        self._validated = {}  # v8 only: call file name -> validated row (immutable sealed receipts)
+        self._inflight = set()  # intents written by this process whose provider call is still running
+        self._submitted = None  # v10: verifier intents submitted so far (reserved under the lock, not receipts)
+        if manifest.get("version") in HARDENED_VERSIONS:
             service_path = self.root / "model_service.json"
             if api is not None:
                 service = deepcopy(api.service)
@@ -60,30 +77,53 @@ class Ledger:
             self._service = service
             self._max_http_attempts = self._service["max_retries"] + 1
 
+    def _validated_row(self, path):
+        """Validate one call receipt against its intent; v8 keeps validated rows in memory."""
+        cache = self.manifest.get("version") in CONCURRENT_VERSIONS
+        if cache and path.name in self._validated:
+            return self._validated[path.name]
+        row = self._validate_call(path)
+        if cache:
+            self._validated[path.name] = row
+        return row
+
     def snapshot(self):
+        with self.lock:
+            return self._snapshot()
+
+    def _snapshot(self, inflight=0):
         records = []
         intents = list((self.root / "call_intents").glob("*.json"))
         for path in sorted((self.root / "calls").glob("*.json")):
-            row = read_json(path, sealed=True)
-            intent = read_json(self.root / "call_intents" / path.name, sealed=True)
-            require(row["intent_hash"] == intent["record_hash"], "Call/intent binding differs")
-            require(intent["manifest_hash"] == self.manifest["record_hash"] and path.stem == intent["record_hash"],
-                    "Call intent belongs to another manifest")
-            require(type(row["receipt"].get("ok")) is bool
-                    and type(row["receipt"].get("usage", {})) is dict
-                    and type(row["receipt"].get("http_attempt_count")) is int
-                    and row["receipt"]["http_attempt_count"] >= 1,
-                    "Receipt lacks typed outcome, usage or HTTP attempt count")
-            inner = row["receipt"].get("request", {})
-            require(row["receipt"].get("request_hash") == digest(inner)
-                    and all(inner.get(k) == intent[k] for k in ("system", "user", "max_tokens"))
-                    and inner.get("key") == path.stem and inner.get("repeat") == 0
-                    and inner.get("kind") == "continual-learning-" + row["role"]
-                    and row["role"] == intent["role"], "Nested call receipt does not bind to intent")
-            if self.manifest.get("version") == HARDENED_VERSION:
-                require(self._service is not None and inner.get("service") == self._service,
-                        "Call receipt service differs from frozen learning service")
-            records.append(row)
+            records.append(self._validated_row(path))
+        return self._costs(records, intents, inflight)
+
+    def _validate_call(self, path):
+        row = read_json(path, sealed=True)
+        intent = read_json(self.root / "call_intents" / path.name, sealed=True)
+        require(row["intent_hash"] == intent["record_hash"], "Call/intent binding differs")
+        require(intent["manifest_hash"] == self.manifest["record_hash"] and path.stem == intent["record_hash"],
+                "Call intent belongs to another manifest")
+        require(type(row["receipt"].get("ok")) is bool
+                and type(row["receipt"].get("usage", {})) is dict
+                and type(row["receipt"].get("http_attempt_count")) is int
+                and row["receipt"]["http_attempt_count"] >= 1,
+                "Receipt lacks typed outcome, usage or HTTP attempt count")
+        inner = row["receipt"].get("request", {})
+        require(row["receipt"].get("request_hash") == digest(inner)
+                and all(inner.get(k) == intent[k] for k in ("system", "user", "max_tokens"))
+                and inner.get("key") == path.stem and inner.get("repeat") == 0
+                and inner.get("kind") == "continual-learning-" + row["role"]
+                and row["role"] == intent["role"], "Nested call receipt does not bind to intent")
+        if self.manifest.get("version") in HARDENED_VERSIONS:
+            require(self._service is not None and inner.get("service") == self._service,
+                    "Call receipt service differs from frozen learning service")
+        return row
+
+    def _costs(self, records, intents, inflight=0):
+        require(type(inflight) is int and 0 <= inflight <= len(intents) - len(records)
+                and (inflight == 0 or self.manifest.get("version") in CONCURRENT_VERSIONS),
+                "In-flight calls are a v8 concurrent learner concept")
         known_tokens = 0
         missing_usage = 0
         missing_attempt_usage = 0
@@ -108,8 +148,9 @@ class Ledger:
                     missing_attempt_usage += 1
             if gap:
                 missing_usage += 1
-        unclosed = len(intents) - len(records)
-        require(unclosed >= 0, "Receipt without intent")
+        require(len(intents) >= len(records), "Receipt without intent")
+        # Open calls of this process (v8 pre-call check only) are not an unknown gap.
+        unclosed = len(intents) - len(records) - inflight
         http_known = sum(r["receipt"].get("http_attempt_count", 0) for r in records)
         result = {"logical_calls": len(intents), "terminal_calls": len(records), "unclosed_calls": unclosed,
                 "http_attempts": http_known, "http_attempts_known_subtotal": http_known,
@@ -123,6 +164,8 @@ class Ledger:
                         in PER_ATTEMPT_POLICIES for r in records),
                 "reflection_calls": sum(r["role"] == "reflection" for r in records),
                 "solver_calls": sum(r["role"] == "solver" for r in records)}
+        if self.manifest.get("version") in VERIFIER_ROLE_VERSIONS:
+            result["verifier_calls"] = sum(r["role"] == "verifier" for r in records)
         if self.manifest.get("version") in RECOVERY_VERSIONS:
             result["missing_attempt_usage"] = missing_attempt_usage
         if self.manifest.get("version") in DELIVERY_VERSIONS:
@@ -132,7 +175,7 @@ class Ledger:
             result.update(unknown_cost_attempts=missing_attempt_usage,
                           delivered_without_usage=delivered_without_usage,
                           blocking_usage_gap=bool(unclosed or delivered_without_usage))
-        if self.manifest.get("version") == HARDENED_VERSION:
+        if self.manifest.get("version") in HARDENED_VERSIONS:
             # Retain even a client protocol violation as a terminal receipt.
             # This must remain readable so the learner can persist Pending,
             # rather than losing the result when it snapshots its final costs.
@@ -146,7 +189,7 @@ class Ledger:
         return result
 
     def usage_blocks_completion(self, costs):
-        if self.manifest.get("version") == HARDENED_VERSION:
+        if self.manifest.get("version") in HARDENED_VERSIONS:
             return bool(costs["blocking_usage_gap"] or costs["receipt_attempt_limit_exceeded"]
                         or costs["unknown_cost_attempts"]
                         > self.manifest["recovery_policy"]["max_unknown_cost_attempts"])
@@ -155,7 +198,7 @@ class Ledger:
         return not costs["usage_complete"]
 
     def _hardened_budget_check(self, costs):
-        if self.manifest.get("version") != HARDENED_VERSION:
+        if self.manifest.get("version") not in HARDENED_VERSIONS:
             return
         if costs["unknown_cost_attempt_cap_exceeded"]:
             raise BudgetExhausted("unknown_cost_attempt_cap")
@@ -163,16 +206,23 @@ class Ledger:
             raise LearningPending("provider_http_attempt_limit_exceeded")
 
     def call(self, role, logical_id, system, user, max_tokens, *, recovery_of=None):
-        require(role in {"solver", "reflection"}, "Unsupported learning call role")
-        if self.manifest.get("version") == HARDENED_VERSION:
+        require(role in {"solver", "reflection"}
+                or (role == "verifier" and self.manifest.get("version") in VERIFIER_ROLE_VERSIONS),
+                "Unsupported learning call role")
+        if self.manifest.get("version") in HARDENED_VERSIONS:
             require(self.api is not None, "Read-only learning ledger cannot submit calls")
             require(self.api.service == self._service, "Learning service changed after ledger initialization")
         cap = self.budget[role + "_max_tokens"]
         if recovery_of is not None:
             from .recovery import VERSIONS, is_closed_length
 
-            require(self.manifest["version"] in VERSIONS and role == "solver",
-                    "Recovery requires v4/v5/v6 solver authorization")
+            # Solver recovery since v4; verifier recovery only where a v10 policy declares the v7 delivery rule
+            # (earlier v10 manifests keep refusing it).
+            verifier_recovery = (role == "verifier" and self.manifest["version"] in VERIFIER_ROLE_VERSIONS
+                                 and self.manifest["recovery_policy"].get("verifier_delivery")
+                                 == "closed_length_recovery_terminal_unit_v1")
+            require(self.manifest["version"] in VERSIONS and (role == "solver" or verifier_recovery),
+                    "Recovery requires v4/v5/v6 solver or v10 verifier (v7 delivery rule) authorization")
             require(type(recovery_of) is str and len(recovery_of) == 64
                     and all(c in "0123456789abcdef" for c in recovery_of), "Invalid recovery parent")
             parent = read_json(self.root / "call_intents" / (recovery_of + ".json"), sealed=True)
@@ -196,46 +246,67 @@ class Ledger:
         key = digest(request)
         target = self.root / "calls" / (key + ".json")
         intent_path = self.root / "call_intents" / (key + ".json")
-        if target.exists():
-            costs = self.snapshot()
+        with self.lock:
+            if target.exists():
+                costs = self._snapshot()
+                self._hardened_budget_check(costs)
+                row = read_json(target, sealed=True)
+                require(read_json(intent_path, sealed=True) == seal(request), "Call cache identity differs")
+                return row["receipt"]
+            if intent_path.exists():
+                raise LearningPending("interrupted_model_call")
+            # Calls this process is still waiting on are open, not unknown: only
+            # they are left out of the gap check; they still count as submitted.
+            costs = self._snapshot(inflight=len(self._inflight))
             self._hardened_budget_check(costs)
-            row = read_json(target, sealed=True)
-            require(read_json(intent_path, sealed=True) == seal(request), "Call cache identity differs")
-            return row["receipt"]
-        if intent_path.exists():
-            raise LearningPending("interrupted_model_call")
-        costs = self.snapshot()
-        self._hardened_budget_check(costs)
-        if self.usage_blocks_completion(costs):
-            raise LearningPending("previous_call_usage_or_receipt_unknown")
-        if (self.manifest.get("version") == DELIVERY_VERSION and costs["unknown_cost_attempts"]
-                >= self.manifest["recovery_policy"]["max_unknown_cost_attempts"]):
-            raise BudgetExhausted("unknown_cost_attempt_cap")
-        if (self.manifest.get("version") == HARDENED_VERSION
-                and costs["unknown_cost_attempts"] + self._max_http_attempts
-                > self.manifest["recovery_policy"]["max_unknown_cost_attempts"]):
-            # A logical call may retry internally, and even its last attempt can
-            # fail without usage. Reserve the frozen worst case before writing
-            # an intent; unknown token usage is never assumed to be zero.
-            raise BudgetExhausted("unknown_cost_attempt_cap")
-        if costs["logical_calls"] >= self.budget["max_api_calls"]:
-            raise BudgetExhausted("max_api_calls")
-        if role == "reflection" and costs["reflection_calls"] >= self.budget["max_reflection_calls"]:
-            raise BudgetExhausted("max_reflection_calls")
-        if costs["reported_tokens_known_subtotal"] >= self.budget["max_reported_tokens"]:
-            raise BudgetExhausted("reported_token_stop_threshold")
-        write_json(intent_path, seal(request))
-        receipt = self.api.call(system, user, "continual-learning-" + role, key, max_tokens=max_tokens, repeat=0)
-        expected = {"model": self.api.model, "system": system, "user": user,
-                    "kind": "continual-learning-" + role, "key": key, "max_tokens": max_tokens,
-                    "repeat": 0, "service": self.api.service}
-        require(type(receipt) is dict and type(receipt.get("ok")) is bool
-                and type(receipt.get("usage", {})) is dict
-                and type(receipt.get("http_attempt_count")) is int and receipt["http_attempt_count"] >= 1
-                and receipt.get("request") == expected
-                and receipt.get("request_hash") == digest(expected), "Provider receipt does not bind to request")
-        write_json(target, seal({"role": role, "intent_hash": seal(request)["record_hash"], "receipt": receipt}))
-        if self.manifest.get("version") == HARDENED_VERSION:
+            if self.usage_blocks_completion(costs):
+                raise LearningPending("previous_call_usage_or_receipt_unknown")
+            if (self.manifest.get("version") == DELIVERY_VERSION and costs["unknown_cost_attempts"]
+                    >= self.manifest["recovery_policy"]["max_unknown_cost_attempts"]):
+                raise BudgetExhausted("unknown_cost_attempt_cap")
+            if (self.manifest.get("version") in HARDENED_VERSIONS
+                    and costs["unknown_cost_attempts"] + self._max_http_attempts * (1 + len(self._inflight))
+                    > self.manifest["recovery_policy"]["max_unknown_cost_attempts"]):
+                # A logical call may retry internally, and even its last attempt can
+                # fail without usage. Reserve the frozen worst case before writing
+                # an intent; unknown token usage is never assumed to be zero.
+                raise BudgetExhausted("unknown_cost_attempt_cap")
+            if costs["logical_calls"] >= self.budget["max_api_calls"]:
+                raise BudgetExhausted("max_api_calls")
+            if role == "reflection" and costs["reflection_calls"] >= self.budget["max_reflection_calls"]:
+                raise BudgetExhausted("max_reflection_calls")
+            if costs["reported_tokens_known_subtotal"] >= self.budget["max_reported_tokens"]:
+                raise BudgetExhausted("reported_token_stop_threshold")
+            if role == "verifier":
+                # Verifier rows run concurrently: admit against SUBMITTED intents (reserved here under
+                # the lock), not against closed receipts, so simultaneous calls cannot overshoot the cap.
+                if self._submitted is None:
+                    self._submitted = sum(read_json(p, sealed=True)["role"] == "verifier"
+                                          for p in (self.root / "call_intents").glob("*.json"))
+                if self._submitted >= self.budget["max_verifier_calls"]:
+                    raise BudgetExhausted("max_verifier_calls")
+                self._submitted += 1
+            write_json(intent_path, seal(request))
+            self._inflight.add(key)
+        try:
+            receipt = self.api.call(system, user, "continual-learning-" + role, key, max_tokens=max_tokens, repeat=0)
+            expected = {"model": self.api.model, "system": system, "user": user,
+                        "kind": "continual-learning-" + role, "key": key, "max_tokens": max_tokens,
+                        "repeat": 0, "service": self.api.service}
+            require(type(receipt) is dict and type(receipt.get("ok")) is bool
+                    and type(receipt.get("usage", {})) is dict
+                    and type(receipt.get("http_attempt_count")) is int and receipt["http_attempt_count"] >= 1
+                    and receipt.get("request") == expected
+                    and receipt.get("request_hash") == digest(expected), "Provider receipt does not bind to request")
+            with self.lock:
+                # Receipt publication and in-flight removal are one atomic step: no other caller may
+                # see this receipt while still subtracting the call as open.
+                write_json(target, seal({"role": role, "intent_hash": seal(request)["record_hash"], "receipt": receipt}))
+                self._inflight.discard(key)
+        finally:
+            with self.lock:
+                self._inflight.discard(key)  # a failed provider call leaves its intent open (unknown cost)
+        if self.manifest.get("version") in HARDENED_VERSIONS:
             self._hardened_budget_check(self.snapshot())
         return receipt
 
@@ -245,6 +316,6 @@ class Ledger:
                   for folder in ("calls", "call_intents", "evaluations", "evaluation_intents")
                   for p in sorted((self.root / folder).glob("*.json"))}
         service_path = self.root / "model_service.json"
-        if self.manifest.get("version") == HARDENED_VERSION and service_path.exists():
+        if self.manifest.get("version") in HARDENED_VERSIONS and service_path.exists():
             result["model_service.json"] = hashlib.sha256(service_path.read_bytes()).hexdigest()
         return result

@@ -1,5 +1,7 @@
 # Evolve-Skill
 
+**10/3 18:57：新 F（序列 v4 / 学习 v7）运行中**：SkillOpt 与官方 GEPA 依次在五域进化，Skill 接口提高到 32,000 字节，用于得到 No-Skill / SkillOpt / GEPA 的完整五域对比；尚无成绩，见[新 F 报告](docs/fivebench-f-skillopt-gepa-20261003.md)。
+
 无上下文的代码代理请先读 [AGENTS.md](AGENTS.md) 和[接手指南](docs/agent-start-here.md)，再核对两份主文档：[当前流程](docs/current-workflow.md)、[结果账本](docs/results-and-lessons.md)。本轮运行以[新 E：SkillOpt 五域补跑](docs/skillopt-generalization-e-20261003.md)及实际回执为准，不把历史快照当当前状态。
 
 基于 [Microsoft SkillOpt v0.2.0](https://github.com/microsoft/SkillOpt/releases/tag/v0.2.0) 的研究项目：**通过 Coding Rubric 与有界 DeepResearch 协同改进 Skill 的内容、验证和适用范围，降低跨领域负迁移。**

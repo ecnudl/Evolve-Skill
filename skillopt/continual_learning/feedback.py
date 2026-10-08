@@ -13,10 +13,30 @@ import json
 from skillopt.continual_eval.core import require
 from skillopt.continual_eval.datasets import _asset_paths, file_hash
 
-from .contracts import MULTIDOMAIN_VERSIONS
+from .contracts import (
+    BUDGET_VERSION,
+    GENERALIZATION_VERSIONS,
+    MULTIDOMAIN_VERSIONS,
+    VERIFIER_METHOD,
+    VERIFIER_VERSION,
+)
+from .execution_evidence import PROFILE as EVIDENCE_PROFILE
+from .execution_evidence import sanitize
 from .ledger import LearningPending
 
 PROFILE = "benchmark-public-feedback-v1"
+# V8: a failed TRAIN execution also shows what the checker expected, so the analyst
+# can name the actual mistake instead of guessing it: KOR-Bench and SearchQA give the
+# expected answer text, BigCodeBench the sanitized structural execution evidence of the
+# v7 ablation (never hidden test text), SpreadsheetBench the expected cell values at the
+# answer positions, ALFWorld nothing beyond its public trajectory. Selection rows and
+# successful rows stay scalar. Both methods receive exactly the same projection.
+LABELED_PROFILE = "benchmark-labeled-failure-feedback-v1"
+# V10 (main method): the projection itself stays scalar and label-free on every row; the stage
+# driver attaches the sealed verifier report (Rubric -> probe -> Research, calibrated against the
+# host audit) to failed train rows after this projection. No benchmark label ever enters it.
+VERIFIER_PROFILE = "rubric-research-verifier-feedback-v1"
+EXPECTED_CHARS = 2000
 ALF_FIRST_STEPS = 2
 ALF_LAST_STEPS = 4
 ALF_OBSERVATION_CHARS = 1500
@@ -74,8 +94,55 @@ def _alf_public(prediction):
                               "omitted_steps": len(trace) - len(rows)}, ensure_ascii=False, sort_keys=True)
 
 
-def project(manifest, public, prediction, score):
-    """Recomputable projection bound to saved execution, never private labels."""
+def evidence_enabled(manifest):
+    """The sanitized-evidence profile is valid only for a v7 BigCodeBench SkillOpt manifest."""
+    if manifest.get("feedback_profile") != EVIDENCE_PROFILE:
+        return False
+    require(manifest.get("version") == BUDGET_VERSION and manifest.get("benchmark") == "bigcodebench"
+            and manifest.get("method") == "skillopt",
+            "Execution-evidence feedback is a v7 BigCodeBench SkillOpt ablation only")
+    return True
+
+
+def labeled_enabled(manifest):
+    """V8 labeled failure feedback; the profile is valid for v8/v9 only (both methods, every domain)."""
+    if manifest.get("feedback_profile") != LABELED_PROFILE:
+        return False
+    require(manifest.get("version") in GENERALIZATION_VERSIONS and manifest.get("version") != VERIFIER_VERSION,
+            "Labeled failure feedback is learning v8/v9 only")
+    return True
+
+
+def verifier_enabled(manifest):
+    """V10 verifier feedback; the profile is valid for the v10 rubric_research manifest only."""
+    if manifest.get("feedback_profile") != VERIFIER_PROFILE:
+        return False
+    require(manifest.get("version") == VERIFIER_VERSION and manifest.get("method") == VERIFIER_METHOD,
+            "Verifier feedback is the learning v10 rubric_research protocol only")
+    return True
+
+
+def expected_text(benchmark, private):
+    """What the checker expected, as bounded text; None where no compact label exists."""
+    if benchmark == "korbench":
+        require(type(private.get("answer")) is str, "KOR-Bench label text required")
+        value = private["answer"]
+    elif benchmark == "searchqa":
+        answers = private.get("answers")
+        require(type(answers) is list and answers and all(type(a) is str for a in answers),
+                "SearchQA label list required")
+        value = " | ".join(answers)
+    else:
+        return None
+    return value if len(value) <= EXPECTED_CHARS else value[:EXPECTED_CHARS] + " …[truncated]"
+
+
+def project(manifest, public, prediction, score, private=None, role="train"):
+    """Recomputable projection bound to saved execution; labels only on v8 failed train rows."""
+    evidence = evidence_enabled(manifest)  # fail fast on an unauthorized profile tuple
+    labeled = labeled_enabled(manifest)
+    verifier_enabled(manifest)  # v10: scalar projection here; verifier reports are attached by the stage
+    require(role in {"train", "selection"}, "Unknown learning role")
     if score["status"] == "unknown":
         raise LearningPending("unknown_is_not_failure_feedback")
     output = prediction["output"]
@@ -84,7 +151,8 @@ def project(manifest, public, prediction, score):
                 and type(score["score"]) in {int, float}
                 and score["score"] == int(score["status"] == "pass"), "Inconsistent native hard feedback")
         benchmark = benchmark_for(manifest)
-        require(manifest["feedback_profile"] == PROFILE, "Unsupported public feedback profile")
+        require(manifest["feedback_profile"] in {PROFILE, EVIDENCE_PROFILE, LABELED_PROFILE, VERIFIER_PROFILE},
+                "Unsupported public feedback profile")
         if benchmark == "spreadsheetbench":
             require(type(output) is dict and type(output.get("code")) is str, "Actual spreadsheet code required")
             public = {key: public[key] for key in ("instruction", "answer_position")}
@@ -93,8 +161,19 @@ def project(manifest, public, prediction, score):
             public, output = _alf_public(prediction)
         validate_public(benchmark, public)
         require(type(output) is str, "Textual public model output required")
-    return {"Inputs": public, "Generated Outputs": output,
-            "Feedback": {"status": score["status"], "score": score["score"]}}
+    feedback = {"status": score["status"], "score": score["score"]}
+    if evidence and score["status"] == "fail":
+        # Host development diagnostic, recomputed from the saved execution only.
+        feedback["execution_evidence"] = sanitize(output, (score.get("metrics") or {}).get("details"))
+    if labeled and score["status"] == "fail" and role == "train":
+        require(type(private) is dict, "Labeled feedback needs the task's private record")
+        if benchmark_for(manifest) == "bigcodebench":
+            feedback["execution_evidence"] = sanitize(output, (score.get("metrics") or {}).get("details"))
+        else:
+            expected = expected_text(benchmark_for(manifest), private)
+            if expected is not None:
+                feedback["expected"] = expected
+    return {"Inputs": public, "Generated Outputs": output, "Feedback": feedback}
 
 
 def task_description(benchmark, public):
@@ -118,4 +197,11 @@ def artifacts(ledger):
         result.update({str(path.relative_to(ledger.root)): hashlib.sha256(path.read_bytes()).hexdigest()
                        for path in sorted((ledger.root / "host_only/scorer_artifacts").rglob("*"))
                        if path.is_file() and path.name != ".writer.lock"})
+    if ledger.manifest["version"] == VERIFIER_VERSION:
+        # V10: the verifier's sealed records (policy, probes, reviews, executions, reports), its retrieved
+        # document bytes and the host-only calibration are governed evidence of the stage, like
+        # receipts and proposals: every file under these two trees.
+        result.update({str(path.relative_to(ledger.root)): hashlib.sha256(path.read_bytes()).hexdigest()
+                       for folder in ("verifier", "host_only/verifier")
+                       for path in sorted((ledger.root / folder).rglob("*")) if path.is_file()})
     return result

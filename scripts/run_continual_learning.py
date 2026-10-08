@@ -21,7 +21,7 @@ class _FixtureAPI:
 
     def __init__(self, method, version=None):
         self.method = method
-        if version == "continual-learning-v6":
+        if version in {"continual-learning-v6", "continual-learning-v7"}:
             self.service = {**self.service, "delivery_retry_policy": "closed_delivery_error_v3", "max_retries": 2}
 
     def call(self, system, user, kind, key, *, max_tokens, repeat):

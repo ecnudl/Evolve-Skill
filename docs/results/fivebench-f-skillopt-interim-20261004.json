@@ -1,0 +1,3549 @@
+{
+  "version": "fivebench-safe-progress-report-v1",
+  "created_utc": "2026-10-04T05:55:33.595329+00:00",
+  "protocol_hash": "1a6c3abbc43e6296fd9f0f46f070eb7940c4c85133c8f57bf75d6a7e650b6e91",
+  "method": "skillopt",
+  "model": {
+    "provider": "bigmodel",
+    "name": "glm-5.3",
+    "max_tokens": 65536,
+    "reasoning_effort": "low"
+  },
+  "evidence_kind": "real_model_development_progress_snapshot",
+  "evaluation_policy": "original_frozen_semantics_budget_derived_source_requalified_scorer",
+  "data_scope": "previously_exposed_development_not_independent_final",
+  "completed_learning_stages": 3,
+  "closed_all_domain_stages": 3,
+  "evaluation_cost_records_deduplicated": [
+    {
+      "logical_calls": 800,
+      "http_attempts": 800,
+      "reported_tokens": 1195768,
+      "usage_complete": true,
+      "unclosed_calls": 0,
+      "retry_inclusive_usage_known": true
+    },
+    {
+      "logical_calls": 160,
+      "http_attempts": 161,
+      "reported_tokens": 667486,
+      "usage_complete": true,
+      "unclosed_calls": 0,
+      "retry_inclusive_usage_known": false
+    },
+    {
+      "logical_calls": 800,
+      "http_attempts": 800,
+      "reported_tokens": null,
+      "usage_complete": false,
+      "unclosed_calls": 0,
+      "retry_inclusive_usage_known": false
+    },
+    {
+      "logical_calls": 1000,
+      "http_attempts": 1000,
+      "reported_tokens": 5310475,
+      "usage_complete": true,
+      "unclosed_calls": 0,
+      "retry_inclusive_usage_known": true
+    },
+    {
+      "logical_calls": 1332,
+      "http_attempts": 1332,
+      "reported_tokens": 2370827,
+      "usage_complete": true,
+      "unclosed_calls": 0,
+      "retry_inclusive_usage_known": true
+    },
+    {
+      "logical_calls": 800,
+      "http_attempts": 800,
+      "reported_tokens": 1592483,
+      "usage_complete": true,
+      "unclosed_calls": 0,
+      "retry_inclusive_usage_known": true
+    },
+    {
+      "logical_calls": 160,
+      "http_attempts": 160,
+      "reported_tokens": 630760,
+      "usage_complete": true,
+      "unclosed_calls": 0,
+      "retry_inclusive_usage_known": true
+    },
+    {
+      "logical_calls": 800,
+      "http_attempts": 800,
+      "reported_tokens": null,
+      "usage_complete": false,
+      "unclosed_calls": 0,
+      "retry_inclusive_usage_known": false
+    },
+    {
+      "logical_calls": 1000,
+      "http_attempts": 1001,
+      "reported_tokens": 5583053,
+      "usage_complete": true,
+      "unclosed_calls": 0,
+      "retry_inclusive_usage_known": false
+    },
+    {
+      "logical_calls": 1364,
+      "http_attempts": 1364,
+      "reported_tokens": 3160771,
+      "usage_complete": true,
+      "unclosed_calls": 0,
+      "retry_inclusive_usage_known": true
+    },
+    {
+      "logical_calls": 800,
+      "http_attempts": 801,
+      "reported_tokens": 2266785,
+      "usage_complete": true,
+      "unclosed_calls": 0,
+      "retry_inclusive_usage_known": false
+    },
+    {
+      "logical_calls": 160,
+      "http_attempts": 160,
+      "reported_tokens": 785442,
+      "usage_complete": true,
+      "unclosed_calls": 0,
+      "retry_inclusive_usage_known": true
+    }
+  ],
+  "stages": [
+    {
+      "stage": 1,
+      "source": "bigcodebench",
+      "state": "stage_closed",
+      "learning_status": "completed",
+      "learning_completed": true,
+      "learning_costs": {
+        "logical_calls": 348,
+        "terminal_calls": 348,
+        "unclosed_calls": 0,
+        "http_attempts": 348,
+        "http_attempts_known_subtotal": 348,
+        "http_attempts_total": 348,
+        "reported_tokens_known_subtotal": 390667,
+        "missing_usage_calls": 0,
+        "usage_complete": true,
+        "retry_inclusive_usage_known": true,
+        "reflection_calls": 25,
+        "solver_calls": 323,
+        "missing_attempt_usage": 0,
+        "unknown_cost_attempts": 0,
+        "delivered_without_usage": 0,
+        "blocking_usage_gap": false,
+        "receipt_attempt_limit_exceeded": 0,
+        "unknown_cost_attempt_cap_exceeded": false
+      },
+      "learning_terminal_calls_observed": 348,
+      "action": "selected_update",
+      "empty_skill": false,
+      "skill_hash": "f4624f33fb5e308447327b7a5960783d90389420de24ad2421820ea9f0a8efb2",
+      "learning_result_hash": "9b1a3cff82d8fe89fa3bdc269276eae5fcd025fe2fdc3631cabd8e985edeb865",
+      "cells": {
+        "bigcodebench": {
+          "no_skill": {
+            "positions": 800,
+            "scored": 800,
+            "unscored": 0,
+            "tasks": 400,
+            "families": 399,
+            "counts": {
+              "pass": 400,
+              "fail": 399,
+              "unknown": 1
+            },
+            "confirmed_pass_rate": 0.5,
+            "known_coverage": 0.99875,
+            "success_bounds": [
+              0.5,
+              0.50125
+            ]
+          },
+          "current": {
+            "positions": 800,
+            "scored": 800,
+            "unscored": 0,
+            "tasks": 400,
+            "families": 399,
+            "counts": {
+              "pass": 407,
+              "fail": 393,
+              "unknown": 0
+            },
+            "confirmed_pass_rate": 0.50875,
+            "known_coverage": 1.0,
+            "success_bounds": [
+              0.50875,
+              0.50875
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 48,
+              "loss": 42,
+              "tie": 709,
+              "unknown": 1,
+              "unscored": 0
+            },
+            "tasks_with_win": 38,
+            "tasks_with_loss": 38,
+            "families_with_win": 38,
+            "families_with_loss": 38,
+            "family_net_direction": {
+              "win": 34,
+              "loss": 34,
+              "tie": 330,
+              "uncertain": 1
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": 0.008750000000000036,
+          "learning_family_excluded": {
+            "available": true,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 542,
+              "scored": 542,
+              "unscored": 0,
+              "tasks": 271,
+              "families": 271,
+              "counts": {
+                "pass": 274,
+                "fail": 267,
+                "unknown": 1
+              },
+              "confirmed_pass_rate": 0.5055350553505535,
+              "known_coverage": 0.9981549815498155,
+              "success_bounds": [
+                0.5055350553505535,
+                0.507380073800738
+              ]
+            },
+            "current": {
+              "positions": 542,
+              "scored": 542,
+              "unscored": 0,
+              "tasks": 271,
+              "families": 271,
+              "counts": {
+                "pass": 268,
+                "fail": 274,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": 0.4944649446494465,
+              "known_coverage": 1.0,
+              "success_bounds": [
+                0.4944649446494465,
+                0.4944649446494465
+              ]
+            },
+            "paired": {
+              "positions": {
+                "win": 25,
+                "loss": 32,
+                "tie": 484,
+                "unknown": 1,
+                "unscored": 0
+              },
+              "tasks_with_win": 20,
+              "tasks_with_loss": 28,
+              "families_with_win": 20,
+              "families_with_loss": 28,
+              "family_net_direction": {
+                "win": 17,
+                "loss": 25,
+                "tie": 228,
+                "uncertain": 1
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": true,
+          "reused": false,
+          "independent_new_observation": true,
+          "evidence_hash": "c81c0544b06be58a675f8910edd01e71a98054e4d0d9ae489d38476ed3802127",
+          "referenced_costs": {
+            "logical_calls": 800,
+            "http_attempts": 800,
+            "reported_tokens": 1195768,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": true
+          },
+          "new_costs": {
+            "logical_calls": 800,
+            "http_attempts": 800,
+            "reported_tokens": 1195768,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": true
+          }
+        },
+        "spreadsheetbench": {
+          "no_skill": {
+            "positions": 160,
+            "scored": 160,
+            "unscored": 0,
+            "tasks": 80,
+            "families": 80,
+            "counts": {
+              "pass": 63,
+              "fail": 44,
+              "unknown": 53
+            },
+            "confirmed_pass_rate": 0.39375,
+            "known_coverage": 0.66875,
+            "success_bounds": [
+              0.39375,
+              0.725
+            ]
+          },
+          "current": {
+            "positions": 160,
+            "scored": 160,
+            "unscored": 0,
+            "tasks": 80,
+            "families": 80,
+            "counts": {
+              "pass": 63,
+              "fail": 28,
+              "unknown": 69
+            },
+            "confirmed_pass_rate": 0.39375,
+            "known_coverage": 0.56875,
+            "success_bounds": [
+              0.39375,
+              0.825
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 18,
+              "loss": 4,
+              "tie": 63,
+              "unknown": 75,
+              "unscored": 0
+            },
+            "tasks_with_win": 15,
+            "tasks_with_loss": 4,
+            "families_with_win": 15,
+            "families_with_loss": 4,
+            "family_net_direction": {
+              "win": 11,
+              "loss": 2,
+              "tie": 18,
+              "uncertain": 49
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": 0.0,
+          "learning_family_excluded": {
+            "available": false,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 0,
+              "scored": 0,
+              "unscored": 0,
+              "tasks": 0,
+              "families": 0,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": null,
+              "known_coverage": null,
+              "success_bounds": null
+            },
+            "current": {
+              "positions": 0,
+              "scored": 0,
+              "unscored": 0,
+              "tasks": 0,
+              "families": 0,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": null,
+              "known_coverage": null,
+              "success_bounds": null
+            },
+            "paired": {
+              "positions": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "unknown": 0,
+                "unscored": 0
+              },
+              "tasks_with_win": 0,
+              "tasks_with_loss": 0,
+              "families_with_win": 0,
+              "families_with_loss": 0,
+              "family_net_direction": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "uncertain": 0
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": true,
+          "reused": false,
+          "independent_new_observation": true,
+          "evidence_hash": "135e6d41c466ff92b43f84932d1aac468930f75a016a6be09d29476bc564c906",
+          "referenced_costs": {
+            "logical_calls": 160,
+            "http_attempts": 161,
+            "reported_tokens": 667486,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": false
+          },
+          "new_costs": {
+            "logical_calls": 160,
+            "http_attempts": 161,
+            "reported_tokens": 667486,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": false
+          }
+        },
+        "searchqa": {
+          "no_skill": {
+            "positions": 800,
+            "scored": 800,
+            "unscored": 0,
+            "tasks": 400,
+            "families": 400,
+            "counts": {
+              "pass": 560,
+              "fail": 234,
+              "unknown": 6
+            },
+            "confirmed_pass_rate": 0.7,
+            "known_coverage": 0.9925,
+            "success_bounds": [
+              0.7,
+              0.7075
+            ]
+          },
+          "current": {
+            "positions": 800,
+            "scored": 800,
+            "unscored": 0,
+            "tasks": 400,
+            "families": 400,
+            "counts": {
+              "pass": 563,
+              "fail": 231,
+              "unknown": 6
+            },
+            "confirmed_pass_rate": 0.70375,
+            "known_coverage": 0.9925,
+            "success_bounds": [
+              0.70375,
+              0.71125
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 52,
+              "loss": 49,
+              "tie": 693,
+              "unknown": 6,
+              "unscored": 0
+            },
+            "tasks_with_win": 43,
+            "tasks_with_loss": 42,
+            "families_with_win": 43,
+            "families_with_loss": 42,
+            "family_net_direction": {
+              "win": 38,
+              "loss": 37,
+              "tie": 322,
+              "uncertain": 3
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": 0.003750000000000031,
+          "learning_family_excluded": {
+            "available": true,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 544,
+              "scored": 544,
+              "unscored": 0,
+              "tasks": 272,
+              "families": 272,
+              "counts": {
+                "pass": 379,
+                "fail": 161,
+                "unknown": 4
+              },
+              "confirmed_pass_rate": 0.6966911764705882,
+              "known_coverage": 0.9926470588235294,
+              "success_bounds": [
+                0.6966911764705882,
+                0.7040441176470589
+              ]
+            },
+            "current": {
+              "positions": 544,
+              "scored": 544,
+              "unscored": 0,
+              "tasks": 272,
+              "families": 272,
+              "counts": {
+                "pass": 387,
+                "fail": 153,
+                "unknown": 4
+              },
+              "confirmed_pass_rate": 0.7113970588235294,
+              "known_coverage": 0.9926470588235294,
+              "success_bounds": [
+                0.7113970588235294,
+                0.71875
+              ]
+            },
+            "paired": {
+              "positions": {
+                "win": 41,
+                "loss": 33,
+                "tie": 466,
+                "unknown": 4,
+                "unscored": 0
+              },
+              "tasks_with_win": 33,
+              "tasks_with_loss": 29,
+              "families_with_win": 33,
+              "families_with_loss": 29,
+              "family_net_direction": {
+                "win": 33,
+                "loss": 29,
+                "tie": 208,
+                "uncertain": 2
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": true,
+          "reused": false,
+          "independent_new_observation": true,
+          "evidence_hash": "3cef05127862e4d79eaad2d6b8de05c8e4ec5e1b1796433c3bd9637b29e5c98d",
+          "referenced_costs": {
+            "logical_calls": 800,
+            "http_attempts": 800,
+            "reported_tokens": null,
+            "usage_complete": false,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": false
+          },
+          "new_costs": {
+            "logical_calls": 800,
+            "http_attempts": 800,
+            "reported_tokens": null,
+            "usage_complete": false,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": false
+          }
+        },
+        "korbench": {
+          "no_skill": {
+            "positions": 1000,
+            "scored": 1000,
+            "unscored": 0,
+            "tasks": 500,
+            "families": 50,
+            "counts": {
+              "pass": 746,
+              "fail": 243,
+              "unknown": 11
+            },
+            "confirmed_pass_rate": 0.746,
+            "known_coverage": 0.989,
+            "success_bounds": [
+              0.746,
+              0.757
+            ]
+          },
+          "current": {
+            "positions": 1000,
+            "scored": 1000,
+            "unscored": 0,
+            "tasks": 500,
+            "families": 50,
+            "counts": {
+              "pass": 691,
+              "fail": 292,
+              "unknown": 17
+            },
+            "confirmed_pass_rate": 0.691,
+            "known_coverage": 0.983,
+            "success_bounds": [
+              0.691,
+              0.708
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 70,
+              "loss": 120,
+              "tie": 785,
+              "unknown": 25,
+              "unscored": 0
+            },
+            "tasks_with_win": 62,
+            "tasks_with_loss": 98,
+            "families_with_win": 29,
+            "families_with_loss": 39,
+            "family_net_direction": {
+              "win": 7,
+              "loss": 22,
+              "tie": 13,
+              "uncertain": 8
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": -0.05500000000000005,
+          "learning_family_excluded": {
+            "available": true,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 600,
+              "scored": 600,
+              "unscored": 0,
+              "tasks": 300,
+              "families": 30,
+              "counts": {
+                "pass": 488,
+                "fail": 103,
+                "unknown": 9
+              },
+              "confirmed_pass_rate": 0.8133333333333334,
+              "known_coverage": 0.985,
+              "success_bounds": [
+                0.8133333333333334,
+                0.8283333333333334
+              ]
+            },
+            "current": {
+              "positions": 600,
+              "scored": 600,
+              "unscored": 0,
+              "tasks": 300,
+              "families": 30,
+              "counts": {
+                "pass": 448,
+                "fail": 140,
+                "unknown": 12
+              },
+              "confirmed_pass_rate": 0.7466666666666667,
+              "known_coverage": 0.98,
+              "success_bounds": [
+                0.7466666666666667,
+                0.7666666666666667
+              ]
+            },
+            "paired": {
+              "positions": {
+                "win": 34,
+                "loss": 70,
+                "tie": 477,
+                "unknown": 19,
+                "unscored": 0
+              },
+              "tasks_with_win": 30,
+              "tasks_with_loss": 56,
+              "families_with_win": 16,
+              "families_with_loss": 25,
+              "family_net_direction": {
+                "win": 2,
+                "loss": 14,
+                "tie": 9,
+                "uncertain": 5
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": true,
+          "reused": false,
+          "independent_new_observation": true,
+          "evidence_hash": "1ad74392403b78177a6db26c3f07a68b6d22eeb52c434e3ea4ffaa791dd8b5a2",
+          "referenced_costs": {
+            "logical_calls": 1000,
+            "http_attempts": 1000,
+            "reported_tokens": 5310475,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": true
+          },
+          "new_costs": {
+            "logical_calls": 1000,
+            "http_attempts": 1000,
+            "reported_tokens": 5310475,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": true
+          }
+        },
+        "alfworld": {
+          "no_skill": {
+            "positions": 78,
+            "scored": 78,
+            "unscored": 0,
+            "tasks": 39,
+            "families": 39,
+            "counts": {
+              "pass": 65,
+              "fail": 13,
+              "unknown": 0
+            },
+            "confirmed_pass_rate": 0.8333333333333334,
+            "known_coverage": 1.0,
+            "success_bounds": [
+              0.8333333333333334,
+              0.8333333333333334
+            ]
+          },
+          "current": {
+            "positions": 78,
+            "scored": 78,
+            "unscored": 0,
+            "tasks": 39,
+            "families": 39,
+            "counts": {
+              "pass": 67,
+              "fail": 11,
+              "unknown": 0
+            },
+            "confirmed_pass_rate": 0.8589743589743589,
+            "known_coverage": 1.0,
+            "success_bounds": [
+              0.8589743589743589,
+              0.8589743589743589
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 5,
+              "loss": 3,
+              "tie": 70,
+              "unknown": 0,
+              "unscored": 0
+            },
+            "tasks_with_win": 5,
+            "tasks_with_loss": 3,
+            "families_with_win": 5,
+            "families_with_loss": 3,
+            "family_net_direction": {
+              "win": 4,
+              "loss": 2,
+              "tie": 33,
+              "uncertain": 0
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": 0.02564102564102555,
+          "learning_family_excluded": {
+            "available": false,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 0,
+              "scored": 0,
+              "unscored": 0,
+              "tasks": 0,
+              "families": 0,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": null,
+              "known_coverage": null,
+              "success_bounds": null
+            },
+            "current": {
+              "positions": 0,
+              "scored": 0,
+              "unscored": 0,
+              "tasks": 0,
+              "families": 0,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": null,
+              "known_coverage": null,
+              "success_bounds": null
+            },
+            "paired": {
+              "positions": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "unknown": 0,
+                "unscored": 0
+              },
+              "tasks_with_win": 0,
+              "tasks_with_loss": 0,
+              "families_with_win": 0,
+              "families_with_loss": 0,
+              "family_net_direction": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "uncertain": 0
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": true,
+          "reused": false,
+          "independent_new_observation": true,
+          "evidence_hash": "c2d41c6710f94171eff32700b48c7cd468ee0fc762b5d5f79e2a5e812d34f705",
+          "referenced_costs": {
+            "logical_calls": 1332,
+            "http_attempts": 1332,
+            "reported_tokens": 2370827,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": true
+          },
+          "new_costs": {
+            "logical_calls": 1332,
+            "http_attempts": 1332,
+            "reported_tokens": 2370827,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": true
+          }
+        }
+      }
+    },
+    {
+      "stage": 2,
+      "source": "spreadsheetbench",
+      "state": "stage_closed",
+      "learning_status": "pending",
+      "learning_completed": false,
+      "learning_costs": {
+        "logical_calls": 169,
+        "terminal_calls": 169,
+        "unclosed_calls": 0,
+        "http_attempts": 169,
+        "http_attempts_known_subtotal": 169,
+        "http_attempts_total": 169,
+        "reported_tokens_known_subtotal": 684001,
+        "missing_usage_calls": 0,
+        "usage_complete": true,
+        "retry_inclusive_usage_known": true,
+        "reflection_calls": 9,
+        "solver_calls": 160,
+        "missing_attempt_usage": 0,
+        "unknown_cost_attempts": 0,
+        "delivered_without_usage": 0,
+        "blocking_usage_gap": false,
+        "receipt_attempt_limit_exceeded": 0,
+        "unknown_cost_attempt_cap_exceeded": false
+      },
+      "learning_terminal_calls_observed": 169,
+      "action": "pending_carry_parent",
+      "empty_skill": false,
+      "skill_hash": "f4624f33fb5e308447327b7a5960783d90389420de24ad2421820ea9f0a8efb2",
+      "learning_result_hash": "cf8f5f336e03a36234a1943cfe2cbc0365c0062eded4a6f4c536fe5e4122c338",
+      "cells": {
+        "bigcodebench": {
+          "no_skill": {
+            "positions": 800,
+            "scored": 800,
+            "unscored": 0,
+            "tasks": 400,
+            "families": 399,
+            "counts": {
+              "pass": 400,
+              "fail": 399,
+              "unknown": 1
+            },
+            "confirmed_pass_rate": 0.5,
+            "known_coverage": 0.99875,
+            "success_bounds": [
+              0.5,
+              0.50125
+            ]
+          },
+          "current": {
+            "positions": 800,
+            "scored": 800,
+            "unscored": 0,
+            "tasks": 400,
+            "families": 399,
+            "counts": {
+              "pass": 407,
+              "fail": 393,
+              "unknown": 0
+            },
+            "confirmed_pass_rate": 0.50875,
+            "known_coverage": 1.0,
+            "success_bounds": [
+              0.50875,
+              0.50875
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 48,
+              "loss": 42,
+              "tie": 709,
+              "unknown": 1,
+              "unscored": 0
+            },
+            "tasks_with_win": 38,
+            "tasks_with_loss": 38,
+            "families_with_win": 38,
+            "families_with_loss": 38,
+            "family_net_direction": {
+              "win": 34,
+              "loss": 34,
+              "tie": 330,
+              "uncertain": 1
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": 0.008750000000000036,
+          "learning_family_excluded": {
+            "available": true,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 542,
+              "scored": 542,
+              "unscored": 0,
+              "tasks": 271,
+              "families": 271,
+              "counts": {
+                "pass": 274,
+                "fail": 267,
+                "unknown": 1
+              },
+              "confirmed_pass_rate": 0.5055350553505535,
+              "known_coverage": 0.9981549815498155,
+              "success_bounds": [
+                0.5055350553505535,
+                0.507380073800738
+              ]
+            },
+            "current": {
+              "positions": 542,
+              "scored": 542,
+              "unscored": 0,
+              "tasks": 271,
+              "families": 271,
+              "counts": {
+                "pass": 268,
+                "fail": 274,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": 0.4944649446494465,
+              "known_coverage": 1.0,
+              "success_bounds": [
+                0.4944649446494465,
+                0.4944649446494465
+              ]
+            },
+            "paired": {
+              "positions": {
+                "win": 25,
+                "loss": 32,
+                "tie": 484,
+                "unknown": 1,
+                "unscored": 0
+              },
+              "tasks_with_win": 20,
+              "tasks_with_loss": 28,
+              "families_with_win": 20,
+              "families_with_loss": 28,
+              "family_net_direction": {
+                "win": 17,
+                "loss": 25,
+                "tie": 228,
+                "uncertain": 1
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": true,
+          "reused": true,
+          "independent_new_observation": false,
+          "evidence_hash": "c81c0544b06be58a675f8910edd01e71a98054e4d0d9ae489d38476ed3802127",
+          "referenced_costs": {
+            "logical_calls": 800,
+            "http_attempts": 800,
+            "reported_tokens": 1195768,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": true
+          },
+          "new_costs": {
+            "logical_calls": 0
+          }
+        },
+        "spreadsheetbench": {
+          "no_skill": {
+            "positions": 160,
+            "scored": 160,
+            "unscored": 0,
+            "tasks": 80,
+            "families": 80,
+            "counts": {
+              "pass": 63,
+              "fail": 44,
+              "unknown": 53
+            },
+            "confirmed_pass_rate": 0.39375,
+            "known_coverage": 0.66875,
+            "success_bounds": [
+              0.39375,
+              0.725
+            ]
+          },
+          "current": {
+            "positions": 160,
+            "scored": 160,
+            "unscored": 0,
+            "tasks": 80,
+            "families": 80,
+            "counts": {
+              "pass": 63,
+              "fail": 28,
+              "unknown": 69
+            },
+            "confirmed_pass_rate": 0.39375,
+            "known_coverage": 0.56875,
+            "success_bounds": [
+              0.39375,
+              0.825
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 18,
+              "loss": 4,
+              "tie": 63,
+              "unknown": 75,
+              "unscored": 0
+            },
+            "tasks_with_win": 15,
+            "tasks_with_loss": 4,
+            "families_with_win": 15,
+            "families_with_loss": 4,
+            "family_net_direction": {
+              "win": 11,
+              "loss": 2,
+              "tie": 18,
+              "uncertain": 49
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": 0.0,
+          "learning_family_excluded": {
+            "available": false,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 0,
+              "scored": 0,
+              "unscored": 0,
+              "tasks": 0,
+              "families": 0,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": null,
+              "known_coverage": null,
+              "success_bounds": null
+            },
+            "current": {
+              "positions": 0,
+              "scored": 0,
+              "unscored": 0,
+              "tasks": 0,
+              "families": 0,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": null,
+              "known_coverage": null,
+              "success_bounds": null
+            },
+            "paired": {
+              "positions": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "unknown": 0,
+                "unscored": 0
+              },
+              "tasks_with_win": 0,
+              "tasks_with_loss": 0,
+              "families_with_win": 0,
+              "families_with_loss": 0,
+              "family_net_direction": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "uncertain": 0
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": true,
+          "reused": true,
+          "independent_new_observation": false,
+          "evidence_hash": "135e6d41c466ff92b43f84932d1aac468930f75a016a6be09d29476bc564c906",
+          "referenced_costs": {
+            "logical_calls": 160,
+            "http_attempts": 161,
+            "reported_tokens": 667486,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": false
+          },
+          "new_costs": {
+            "logical_calls": 0
+          }
+        },
+        "searchqa": {
+          "no_skill": {
+            "positions": 800,
+            "scored": 800,
+            "unscored": 0,
+            "tasks": 400,
+            "families": 400,
+            "counts": {
+              "pass": 560,
+              "fail": 234,
+              "unknown": 6
+            },
+            "confirmed_pass_rate": 0.7,
+            "known_coverage": 0.9925,
+            "success_bounds": [
+              0.7,
+              0.7075
+            ]
+          },
+          "current": {
+            "positions": 800,
+            "scored": 800,
+            "unscored": 0,
+            "tasks": 400,
+            "families": 400,
+            "counts": {
+              "pass": 563,
+              "fail": 231,
+              "unknown": 6
+            },
+            "confirmed_pass_rate": 0.70375,
+            "known_coverage": 0.9925,
+            "success_bounds": [
+              0.70375,
+              0.71125
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 52,
+              "loss": 49,
+              "tie": 693,
+              "unknown": 6,
+              "unscored": 0
+            },
+            "tasks_with_win": 43,
+            "tasks_with_loss": 42,
+            "families_with_win": 43,
+            "families_with_loss": 42,
+            "family_net_direction": {
+              "win": 38,
+              "loss": 37,
+              "tie": 322,
+              "uncertain": 3
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": 0.003750000000000031,
+          "learning_family_excluded": {
+            "available": true,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 544,
+              "scored": 544,
+              "unscored": 0,
+              "tasks": 272,
+              "families": 272,
+              "counts": {
+                "pass": 379,
+                "fail": 161,
+                "unknown": 4
+              },
+              "confirmed_pass_rate": 0.6966911764705882,
+              "known_coverage": 0.9926470588235294,
+              "success_bounds": [
+                0.6966911764705882,
+                0.7040441176470589
+              ]
+            },
+            "current": {
+              "positions": 544,
+              "scored": 544,
+              "unscored": 0,
+              "tasks": 272,
+              "families": 272,
+              "counts": {
+                "pass": 387,
+                "fail": 153,
+                "unknown": 4
+              },
+              "confirmed_pass_rate": 0.7113970588235294,
+              "known_coverage": 0.9926470588235294,
+              "success_bounds": [
+                0.7113970588235294,
+                0.71875
+              ]
+            },
+            "paired": {
+              "positions": {
+                "win": 41,
+                "loss": 33,
+                "tie": 466,
+                "unknown": 4,
+                "unscored": 0
+              },
+              "tasks_with_win": 33,
+              "tasks_with_loss": 29,
+              "families_with_win": 33,
+              "families_with_loss": 29,
+              "family_net_direction": {
+                "win": 33,
+                "loss": 29,
+                "tie": 208,
+                "uncertain": 2
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": true,
+          "reused": true,
+          "independent_new_observation": false,
+          "evidence_hash": "3cef05127862e4d79eaad2d6b8de05c8e4ec5e1b1796433c3bd9637b29e5c98d",
+          "referenced_costs": {
+            "logical_calls": 800,
+            "http_attempts": 800,
+            "reported_tokens": null,
+            "usage_complete": false,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": false
+          },
+          "new_costs": {
+            "logical_calls": 0
+          }
+        },
+        "korbench": {
+          "no_skill": {
+            "positions": 1000,
+            "scored": 1000,
+            "unscored": 0,
+            "tasks": 500,
+            "families": 50,
+            "counts": {
+              "pass": 746,
+              "fail": 243,
+              "unknown": 11
+            },
+            "confirmed_pass_rate": 0.746,
+            "known_coverage": 0.989,
+            "success_bounds": [
+              0.746,
+              0.757
+            ]
+          },
+          "current": {
+            "positions": 1000,
+            "scored": 1000,
+            "unscored": 0,
+            "tasks": 500,
+            "families": 50,
+            "counts": {
+              "pass": 691,
+              "fail": 292,
+              "unknown": 17
+            },
+            "confirmed_pass_rate": 0.691,
+            "known_coverage": 0.983,
+            "success_bounds": [
+              0.691,
+              0.708
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 70,
+              "loss": 120,
+              "tie": 785,
+              "unknown": 25,
+              "unscored": 0
+            },
+            "tasks_with_win": 62,
+            "tasks_with_loss": 98,
+            "families_with_win": 29,
+            "families_with_loss": 39,
+            "family_net_direction": {
+              "win": 7,
+              "loss": 22,
+              "tie": 13,
+              "uncertain": 8
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": -0.05500000000000005,
+          "learning_family_excluded": {
+            "available": true,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 600,
+              "scored": 600,
+              "unscored": 0,
+              "tasks": 300,
+              "families": 30,
+              "counts": {
+                "pass": 488,
+                "fail": 103,
+                "unknown": 9
+              },
+              "confirmed_pass_rate": 0.8133333333333334,
+              "known_coverage": 0.985,
+              "success_bounds": [
+                0.8133333333333334,
+                0.8283333333333334
+              ]
+            },
+            "current": {
+              "positions": 600,
+              "scored": 600,
+              "unscored": 0,
+              "tasks": 300,
+              "families": 30,
+              "counts": {
+                "pass": 448,
+                "fail": 140,
+                "unknown": 12
+              },
+              "confirmed_pass_rate": 0.7466666666666667,
+              "known_coverage": 0.98,
+              "success_bounds": [
+                0.7466666666666667,
+                0.7666666666666667
+              ]
+            },
+            "paired": {
+              "positions": {
+                "win": 34,
+                "loss": 70,
+                "tie": 477,
+                "unknown": 19,
+                "unscored": 0
+              },
+              "tasks_with_win": 30,
+              "tasks_with_loss": 56,
+              "families_with_win": 16,
+              "families_with_loss": 25,
+              "family_net_direction": {
+                "win": 2,
+                "loss": 14,
+                "tie": 9,
+                "uncertain": 5
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": true,
+          "reused": true,
+          "independent_new_observation": false,
+          "evidence_hash": "1ad74392403b78177a6db26c3f07a68b6d22eeb52c434e3ea4ffaa791dd8b5a2",
+          "referenced_costs": {
+            "logical_calls": 1000,
+            "http_attempts": 1000,
+            "reported_tokens": 5310475,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": true
+          },
+          "new_costs": {
+            "logical_calls": 0
+          }
+        },
+        "alfworld": {
+          "no_skill": {
+            "positions": 78,
+            "scored": 78,
+            "unscored": 0,
+            "tasks": 39,
+            "families": 39,
+            "counts": {
+              "pass": 65,
+              "fail": 13,
+              "unknown": 0
+            },
+            "confirmed_pass_rate": 0.8333333333333334,
+            "known_coverage": 1.0,
+            "success_bounds": [
+              0.8333333333333334,
+              0.8333333333333334
+            ]
+          },
+          "current": {
+            "positions": 78,
+            "scored": 78,
+            "unscored": 0,
+            "tasks": 39,
+            "families": 39,
+            "counts": {
+              "pass": 67,
+              "fail": 11,
+              "unknown": 0
+            },
+            "confirmed_pass_rate": 0.8589743589743589,
+            "known_coverage": 1.0,
+            "success_bounds": [
+              0.8589743589743589,
+              0.8589743589743589
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 5,
+              "loss": 3,
+              "tie": 70,
+              "unknown": 0,
+              "unscored": 0
+            },
+            "tasks_with_win": 5,
+            "tasks_with_loss": 3,
+            "families_with_win": 5,
+            "families_with_loss": 3,
+            "family_net_direction": {
+              "win": 4,
+              "loss": 2,
+              "tie": 33,
+              "uncertain": 0
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": 0.02564102564102555,
+          "learning_family_excluded": {
+            "available": false,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 0,
+              "scored": 0,
+              "unscored": 0,
+              "tasks": 0,
+              "families": 0,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": null,
+              "known_coverage": null,
+              "success_bounds": null
+            },
+            "current": {
+              "positions": 0,
+              "scored": 0,
+              "unscored": 0,
+              "tasks": 0,
+              "families": 0,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": null,
+              "known_coverage": null,
+              "success_bounds": null
+            },
+            "paired": {
+              "positions": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "unknown": 0,
+                "unscored": 0
+              },
+              "tasks_with_win": 0,
+              "tasks_with_loss": 0,
+              "families_with_win": 0,
+              "families_with_loss": 0,
+              "family_net_direction": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "uncertain": 0
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": true,
+          "reused": true,
+          "independent_new_observation": false,
+          "evidence_hash": "c2d41c6710f94171eff32700b48c7cd468ee0fc762b5d5f79e2a5e812d34f705",
+          "referenced_costs": {
+            "logical_calls": 1332,
+            "http_attempts": 1332,
+            "reported_tokens": 2370827,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": true
+          },
+          "new_costs": {
+            "logical_calls": 0
+          }
+        }
+      }
+    },
+    {
+      "stage": 3,
+      "source": "searchqa",
+      "state": "stage_closed",
+      "learning_status": "completed",
+      "learning_completed": true,
+      "learning_costs": {
+        "logical_calls": 344,
+        "terminal_calls": 344,
+        "unclosed_calls": 0,
+        "http_attempts": 344,
+        "http_attempts_known_subtotal": 344,
+        "http_attempts_total": 344,
+        "reported_tokens_known_subtotal": 1160970,
+        "missing_usage_calls": 2,
+        "usage_complete": false,
+        "retry_inclusive_usage_known": false,
+        "reflection_calls": 24,
+        "solver_calls": 320,
+        "missing_attempt_usage": 2,
+        "unknown_cost_attempts": 2,
+        "delivered_without_usage": 0,
+        "blocking_usage_gap": false,
+        "receipt_attempt_limit_exceeded": 0,
+        "unknown_cost_attempt_cap_exceeded": false
+      },
+      "learning_terminal_calls_observed": 344,
+      "action": "selected_update",
+      "empty_skill": false,
+      "skill_hash": "54682ac328e313be4d832c0af71b7103ba7fea8312c5815dd2f67e289c2e1142",
+      "learning_result_hash": "f86ac2fc489b9d959ac3cb6a54dbbb1ba6c370909af21dc2d2a8101b2cfd4f34",
+      "cells": {
+        "bigcodebench": {
+          "no_skill": {
+            "positions": 800,
+            "scored": 800,
+            "unscored": 0,
+            "tasks": 400,
+            "families": 399,
+            "counts": {
+              "pass": 400,
+              "fail": 399,
+              "unknown": 1
+            },
+            "confirmed_pass_rate": 0.5,
+            "known_coverage": 0.99875,
+            "success_bounds": [
+              0.5,
+              0.50125
+            ]
+          },
+          "current": {
+            "positions": 800,
+            "scored": 800,
+            "unscored": 0,
+            "tasks": 400,
+            "families": 399,
+            "counts": {
+              "pass": 410,
+              "fail": 389,
+              "unknown": 1
+            },
+            "confirmed_pass_rate": 0.5125,
+            "known_coverage": 0.99875,
+            "success_bounds": [
+              0.5125,
+              0.51375
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 50,
+              "loss": 41,
+              "tie": 707,
+              "unknown": 2,
+              "unscored": 0
+            },
+            "tasks_with_win": 45,
+            "tasks_with_loss": 38,
+            "families_with_win": 45,
+            "families_with_loss": 38,
+            "family_net_direction": {
+              "win": 41,
+              "loss": 34,
+              "tie": 323,
+              "uncertain": 1
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": 0.012499999999999956,
+          "learning_family_excluded": {
+            "available": true,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 542,
+              "scored": 542,
+              "unscored": 0,
+              "tasks": 271,
+              "families": 271,
+              "counts": {
+                "pass": 274,
+                "fail": 267,
+                "unknown": 1
+              },
+              "confirmed_pass_rate": 0.5055350553505535,
+              "known_coverage": 0.9981549815498155,
+              "success_bounds": [
+                0.5055350553505535,
+                0.507380073800738
+              ]
+            },
+            "current": {
+              "positions": 542,
+              "scored": 542,
+              "unscored": 0,
+              "tasks": 271,
+              "families": 271,
+              "counts": {
+                "pass": 275,
+                "fail": 266,
+                "unknown": 1
+              },
+              "confirmed_pass_rate": 0.507380073800738,
+              "known_coverage": 0.9981549815498155,
+              "success_bounds": [
+                0.507380073800738,
+                0.5092250922509225
+              ]
+            },
+            "paired": {
+              "positions": {
+                "win": 30,
+                "loss": 30,
+                "tie": 480,
+                "unknown": 2,
+                "unscored": 0
+              },
+              "tasks_with_win": 26,
+              "tasks_with_loss": 27,
+              "families_with_win": 26,
+              "families_with_loss": 27,
+              "family_net_direction": {
+                "win": 24,
+                "loss": 25,
+                "tie": 221,
+                "uncertain": 1
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": true,
+          "reused": false,
+          "independent_new_observation": true,
+          "evidence_hash": "33cd7acbe4e116a0edefca299a66aaf565b227b03cb6be30b5c1be7f686cf5be",
+          "referenced_costs": {
+            "logical_calls": 800,
+            "http_attempts": 800,
+            "reported_tokens": 1592483,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": true
+          },
+          "new_costs": {
+            "logical_calls": 800,
+            "http_attempts": 800,
+            "reported_tokens": 1592483,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": true
+          }
+        },
+        "spreadsheetbench": {
+          "no_skill": {
+            "positions": 160,
+            "scored": 160,
+            "unscored": 0,
+            "tasks": 80,
+            "families": 80,
+            "counts": {
+              "pass": 63,
+              "fail": 44,
+              "unknown": 53
+            },
+            "confirmed_pass_rate": 0.39375,
+            "known_coverage": 0.66875,
+            "success_bounds": [
+              0.39375,
+              0.725
+            ]
+          },
+          "current": {
+            "positions": 160,
+            "scored": 160,
+            "unscored": 0,
+            "tasks": 80,
+            "families": 80,
+            "counts": {
+              "pass": 67,
+              "fail": 33,
+              "unknown": 60
+            },
+            "confirmed_pass_rate": 0.41875,
+            "known_coverage": 0.625,
+            "success_bounds": [
+              0.41875,
+              0.79375
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 12,
+              "loss": 5,
+              "tie": 78,
+              "unknown": 65,
+              "unscored": 0
+            },
+            "tasks_with_win": 10,
+            "tasks_with_loss": 5,
+            "families_with_win": 10,
+            "families_with_loss": 5,
+            "family_net_direction": {
+              "win": 8,
+              "loss": 3,
+              "tie": 31,
+              "uncertain": 38
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": 0.025000000000000022,
+          "learning_family_excluded": {
+            "available": false,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 0,
+              "scored": 0,
+              "unscored": 0,
+              "tasks": 0,
+              "families": 0,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": null,
+              "known_coverage": null,
+              "success_bounds": null
+            },
+            "current": {
+              "positions": 0,
+              "scored": 0,
+              "unscored": 0,
+              "tasks": 0,
+              "families": 0,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": null,
+              "known_coverage": null,
+              "success_bounds": null
+            },
+            "paired": {
+              "positions": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "unknown": 0,
+                "unscored": 0
+              },
+              "tasks_with_win": 0,
+              "tasks_with_loss": 0,
+              "families_with_win": 0,
+              "families_with_loss": 0,
+              "family_net_direction": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "uncertain": 0
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": true,
+          "reused": false,
+          "independent_new_observation": true,
+          "evidence_hash": "a203343e34a7f9c206c0b79b0e3671b7a1d86c486e6104366ad18f2ef966c043",
+          "referenced_costs": {
+            "logical_calls": 160,
+            "http_attempts": 160,
+            "reported_tokens": 630760,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": true
+          },
+          "new_costs": {
+            "logical_calls": 160,
+            "http_attempts": 160,
+            "reported_tokens": 630760,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": true
+          }
+        },
+        "searchqa": {
+          "no_skill": {
+            "positions": 800,
+            "scored": 800,
+            "unscored": 0,
+            "tasks": 400,
+            "families": 400,
+            "counts": {
+              "pass": 560,
+              "fail": 234,
+              "unknown": 6
+            },
+            "confirmed_pass_rate": 0.7,
+            "known_coverage": 0.9925,
+            "success_bounds": [
+              0.7,
+              0.7075
+            ]
+          },
+          "current": {
+            "positions": 800,
+            "scored": 800,
+            "unscored": 0,
+            "tasks": 400,
+            "families": 400,
+            "counts": {
+              "pass": 661,
+              "fail": 133,
+              "unknown": 6
+            },
+            "confirmed_pass_rate": 0.82625,
+            "known_coverage": 0.9925,
+            "success_bounds": [
+              0.82625,
+              0.83375
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 115,
+              "loss": 14,
+              "tie": 665,
+              "unknown": 6,
+              "unscored": 0
+            },
+            "tasks_with_win": 80,
+            "tasks_with_loss": 10,
+            "families_with_win": 80,
+            "families_with_loss": 10,
+            "family_net_direction": {
+              "win": 78,
+              "loss": 8,
+              "tie": 311,
+              "uncertain": 3
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": 0.12625000000000008,
+          "learning_family_excluded": {
+            "available": true,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 544,
+              "scored": 544,
+              "unscored": 0,
+              "tasks": 272,
+              "families": 272,
+              "counts": {
+                "pass": 379,
+                "fail": 161,
+                "unknown": 4
+              },
+              "confirmed_pass_rate": 0.6966911764705882,
+              "known_coverage": 0.9926470588235294,
+              "success_bounds": [
+                0.6966911764705882,
+                0.7040441176470589
+              ]
+            },
+            "current": {
+              "positions": 544,
+              "scored": 544,
+              "unscored": 0,
+              "tasks": 272,
+              "families": 272,
+              "counts": {
+                "pass": 442,
+                "fail": 98,
+                "unknown": 4
+              },
+              "confirmed_pass_rate": 0.8125,
+              "known_coverage": 0.9926470588235294,
+              "success_bounds": [
+                0.8125,
+                0.8198529411764706
+              ]
+            },
+            "paired": {
+              "positions": {
+                "win": 76,
+                "loss": 13,
+                "tie": 451,
+                "unknown": 4,
+                "unscored": 0
+              },
+              "tasks_with_win": 52,
+              "tasks_with_loss": 9,
+              "families_with_win": 52,
+              "families_with_loss": 9,
+              "family_net_direction": {
+                "win": 50,
+                "loss": 7,
+                "tie": 213,
+                "uncertain": 2
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": true,
+          "reused": false,
+          "independent_new_observation": true,
+          "evidence_hash": "fdaf5cac8f1068ea7b6d75a263d275fe921f80e096d9cf311fcf9004dfdc2f92",
+          "referenced_costs": {
+            "logical_calls": 800,
+            "http_attempts": 800,
+            "reported_tokens": null,
+            "usage_complete": false,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": false
+          },
+          "new_costs": {
+            "logical_calls": 800,
+            "http_attempts": 800,
+            "reported_tokens": null,
+            "usage_complete": false,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": false
+          }
+        },
+        "korbench": {
+          "no_skill": {
+            "positions": 1000,
+            "scored": 1000,
+            "unscored": 0,
+            "tasks": 500,
+            "families": 50,
+            "counts": {
+              "pass": 746,
+              "fail": 243,
+              "unknown": 11
+            },
+            "confirmed_pass_rate": 0.746,
+            "known_coverage": 0.989,
+            "success_bounds": [
+              0.746,
+              0.757
+            ]
+          },
+          "current": {
+            "positions": 1000,
+            "scored": 1000,
+            "unscored": 0,
+            "tasks": 500,
+            "families": 50,
+            "counts": {
+              "pass": 688,
+              "fail": 298,
+              "unknown": 14
+            },
+            "confirmed_pass_rate": 0.688,
+            "known_coverage": 0.986,
+            "success_bounds": [
+              0.688,
+              0.702
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 65,
+              "loss": 122,
+              "tie": 793,
+              "unknown": 20,
+              "unscored": 0
+            },
+            "tasks_with_win": 58,
+            "tasks_with_loss": 104,
+            "families_with_win": 28,
+            "families_with_loss": 36,
+            "family_net_direction": {
+              "win": 11,
+              "loss": 20,
+              "tie": 10,
+              "uncertain": 9
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": -0.05800000000000005,
+          "learning_family_excluded": {
+            "available": true,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 600,
+              "scored": 600,
+              "unscored": 0,
+              "tasks": 300,
+              "families": 30,
+              "counts": {
+                "pass": 488,
+                "fail": 103,
+                "unknown": 9
+              },
+              "confirmed_pass_rate": 0.8133333333333334,
+              "known_coverage": 0.985,
+              "success_bounds": [
+                0.8133333333333334,
+                0.8283333333333334
+              ]
+            },
+            "current": {
+              "positions": 600,
+              "scored": 600,
+              "unscored": 0,
+              "tasks": 300,
+              "families": 30,
+              "counts": {
+                "pass": 446,
+                "fail": 144,
+                "unknown": 10
+              },
+              "confirmed_pass_rate": 0.7433333333333333,
+              "known_coverage": 0.9833333333333333,
+              "success_bounds": [
+                0.7433333333333333,
+                0.76
+              ]
+            },
+            "paired": {
+              "positions": {
+                "win": 31,
+                "loss": 74,
+                "tie": 481,
+                "unknown": 14,
+                "unscored": 0
+              },
+              "tasks_with_win": 27,
+              "tasks_with_loss": 63,
+              "families_with_win": 16,
+              "families_with_loss": 24,
+              "family_net_direction": {
+                "win": 3,
+                "loss": 15,
+                "tie": 7,
+                "uncertain": 5
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": true,
+          "reused": false,
+          "independent_new_observation": true,
+          "evidence_hash": "0f67d9725183d97cf7762e69abd3015ad3d41b5d12ef72e55726c10041775dbd",
+          "referenced_costs": {
+            "logical_calls": 1000,
+            "http_attempts": 1001,
+            "reported_tokens": 5583053,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": false
+          },
+          "new_costs": {
+            "logical_calls": 1000,
+            "http_attempts": 1001,
+            "reported_tokens": 5583053,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": false
+          }
+        },
+        "alfworld": {
+          "no_skill": {
+            "positions": 78,
+            "scored": 78,
+            "unscored": 0,
+            "tasks": 39,
+            "families": 39,
+            "counts": {
+              "pass": 65,
+              "fail": 13,
+              "unknown": 0
+            },
+            "confirmed_pass_rate": 0.8333333333333334,
+            "known_coverage": 1.0,
+            "success_bounds": [
+              0.8333333333333334,
+              0.8333333333333334
+            ]
+          },
+          "current": {
+            "positions": 78,
+            "scored": 78,
+            "unscored": 0,
+            "tasks": 39,
+            "families": 39,
+            "counts": {
+              "pass": 71,
+              "fail": 7,
+              "unknown": 0
+            },
+            "confirmed_pass_rate": 0.9102564102564102,
+            "known_coverage": 1.0,
+            "success_bounds": [
+              0.9102564102564102,
+              0.9102564102564102
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 7,
+              "loss": 1,
+              "tie": 70,
+              "unknown": 0,
+              "unscored": 0
+            },
+            "tasks_with_win": 6,
+            "tasks_with_loss": 1,
+            "families_with_win": 6,
+            "families_with_loss": 1,
+            "family_net_direction": {
+              "win": 6,
+              "loss": 1,
+              "tie": 32,
+              "uncertain": 0
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": 0.07692307692307687,
+          "learning_family_excluded": {
+            "available": false,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 0,
+              "scored": 0,
+              "unscored": 0,
+              "tasks": 0,
+              "families": 0,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": null,
+              "known_coverage": null,
+              "success_bounds": null
+            },
+            "current": {
+              "positions": 0,
+              "scored": 0,
+              "unscored": 0,
+              "tasks": 0,
+              "families": 0,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": null,
+              "known_coverage": null,
+              "success_bounds": null
+            },
+            "paired": {
+              "positions": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "unknown": 0,
+                "unscored": 0
+              },
+              "tasks_with_win": 0,
+              "tasks_with_loss": 0,
+              "families_with_win": 0,
+              "families_with_loss": 0,
+              "family_net_direction": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "uncertain": 0
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": true,
+          "reused": false,
+          "independent_new_observation": true,
+          "evidence_hash": "d621d22c42d70382604786761e7a037744d08497295562641ecfbb4889bfc9b0",
+          "referenced_costs": {
+            "logical_calls": 1364,
+            "http_attempts": 1364,
+            "reported_tokens": 3160771,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": true
+          },
+          "new_costs": {
+            "logical_calls": 1364,
+            "http_attempts": 1364,
+            "reported_tokens": 3160771,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": true
+          }
+        }
+      }
+    },
+    {
+      "stage": 4,
+      "source": "korbench",
+      "state": "evaluation_incomplete",
+      "learning_status": "completed",
+      "learning_completed": true,
+      "learning_costs": {
+        "logical_calls": 536,
+        "terminal_calls": 536,
+        "unclosed_calls": 0,
+        "http_attempts": 536,
+        "http_attempts_known_subtotal": 536,
+        "http_attempts_total": 536,
+        "reported_tokens_known_subtotal": 3387459,
+        "missing_usage_calls": 0,
+        "usage_complete": true,
+        "retry_inclusive_usage_known": true,
+        "reflection_calls": 34,
+        "solver_calls": 502,
+        "missing_attempt_usage": 0,
+        "unknown_cost_attempts": 0,
+        "delivered_without_usage": 0,
+        "blocking_usage_gap": false,
+        "receipt_attempt_limit_exceeded": 0,
+        "unknown_cost_attempt_cap_exceeded": false
+      },
+      "learning_terminal_calls_observed": 536,
+      "action": "selected_update",
+      "empty_skill": false,
+      "skill_hash": "68dc24036cf41fa7ab0723684934fabbe15c9976d2d355506ecccaa481058951",
+      "learning_result_hash": "fde72cb40222800fae60ed63af07093d0dbf4de19c3f1170bc65409d4ff7d1ea",
+      "cells": {
+        "bigcodebench": {
+          "no_skill": {
+            "positions": 800,
+            "scored": 800,
+            "unscored": 0,
+            "tasks": 400,
+            "families": 399,
+            "counts": {
+              "pass": 400,
+              "fail": 399,
+              "unknown": 1
+            },
+            "confirmed_pass_rate": 0.5,
+            "known_coverage": 0.99875,
+            "success_bounds": [
+              0.5,
+              0.50125
+            ]
+          },
+          "current": {
+            "positions": 800,
+            "scored": 800,
+            "unscored": 0,
+            "tasks": 400,
+            "families": 399,
+            "counts": {
+              "pass": 394,
+              "fail": 405,
+              "unknown": 1
+            },
+            "confirmed_pass_rate": 0.4925,
+            "known_coverage": 0.99875,
+            "success_bounds": [
+              0.4925,
+              0.49375
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 44,
+              "loss": 50,
+              "tie": 705,
+              "unknown": 1,
+              "unscored": 0
+            },
+            "tasks_with_win": 41,
+            "tasks_with_loss": 45,
+            "families_with_win": 41,
+            "families_with_loss": 45,
+            "family_net_direction": {
+              "win": 32,
+              "loss": 37,
+              "tie": 329,
+              "uncertain": 1
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": -0.007500000000000007,
+          "learning_family_excluded": {
+            "available": true,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 542,
+              "scored": 542,
+              "unscored": 0,
+              "tasks": 271,
+              "families": 271,
+              "counts": {
+                "pass": 274,
+                "fail": 267,
+                "unknown": 1
+              },
+              "confirmed_pass_rate": 0.5055350553505535,
+              "known_coverage": 0.9981549815498155,
+              "success_bounds": [
+                0.5055350553505535,
+                0.507380073800738
+              ]
+            },
+            "current": {
+              "positions": 542,
+              "scored": 542,
+              "unscored": 0,
+              "tasks": 271,
+              "families": 271,
+              "counts": {
+                "pass": 260,
+                "fail": 281,
+                "unknown": 1
+              },
+              "confirmed_pass_rate": 0.4797047970479705,
+              "known_coverage": 0.9981549815498155,
+              "success_bounds": [
+                0.4797047970479705,
+                0.48154981549815495
+              ]
+            },
+            "paired": {
+              "positions": {
+                "win": 26,
+                "loss": 40,
+                "tie": 475,
+                "unknown": 1,
+                "unscored": 0
+              },
+              "tasks_with_win": 24,
+              "tasks_with_loss": 35,
+              "families_with_win": 24,
+              "families_with_loss": 35,
+              "family_net_direction": {
+                "win": 17,
+                "loss": 29,
+                "tie": 224,
+                "uncertain": 1
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": true,
+          "reused": null,
+          "independent_new_observation": null,
+          "evidence_hash": "b5e1e0f811d89c2c460d1f4e76f775b3a90e80f7f49c7cca55e93a7e2496e62c",
+          "referenced_costs": {
+            "logical_calls": 800,
+            "http_attempts": 801,
+            "reported_tokens": 2266785,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": false
+          },
+          "new_costs": {
+            "logical_calls": 800,
+            "http_attempts": 801,
+            "reported_tokens": 2266785,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": false
+          }
+        },
+        "spreadsheetbench": {
+          "no_skill": {
+            "positions": 160,
+            "scored": 160,
+            "unscored": 0,
+            "tasks": 80,
+            "families": 80,
+            "counts": {
+              "pass": 63,
+              "fail": 44,
+              "unknown": 53
+            },
+            "confirmed_pass_rate": 0.39375,
+            "known_coverage": 0.66875,
+            "success_bounds": [
+              0.39375,
+              0.725
+            ]
+          },
+          "current": {
+            "positions": 160,
+            "scored": 160,
+            "unscored": 0,
+            "tasks": 80,
+            "families": 80,
+            "counts": {
+              "pass": 71,
+              "fail": 35,
+              "unknown": 54
+            },
+            "confirmed_pass_rate": 0.44375,
+            "known_coverage": 0.6625,
+            "success_bounds": [
+              0.44375,
+              0.78125
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 16,
+              "loss": 7,
+              "tie": 78,
+              "unknown": 59,
+              "unscored": 0
+            },
+            "tasks_with_win": 12,
+            "tasks_with_loss": 5,
+            "families_with_win": 12,
+            "families_with_loss": 5,
+            "family_net_direction": {
+              "win": 8,
+              "loss": 2,
+              "tie": 35,
+              "uncertain": 35
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": 0.04999999999999999,
+          "learning_family_excluded": {
+            "available": false,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 0,
+              "scored": 0,
+              "unscored": 0,
+              "tasks": 0,
+              "families": 0,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": null,
+              "known_coverage": null,
+              "success_bounds": null
+            },
+            "current": {
+              "positions": 0,
+              "scored": 0,
+              "unscored": 0,
+              "tasks": 0,
+              "families": 0,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": null,
+              "known_coverage": null,
+              "success_bounds": null
+            },
+            "paired": {
+              "positions": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "unknown": 0,
+                "unscored": 0
+              },
+              "tasks_with_win": 0,
+              "tasks_with_loss": 0,
+              "families_with_win": 0,
+              "families_with_loss": 0,
+              "family_net_direction": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "uncertain": 0
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": true,
+          "reused": null,
+          "independent_new_observation": null,
+          "evidence_hash": "d5ce78c7f82edbdd4e123bb9714332b6b33ab3369c620f1419b4fe96917fbf1f",
+          "referenced_costs": {
+            "logical_calls": 160,
+            "http_attempts": 160,
+            "reported_tokens": 785442,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": true
+          },
+          "new_costs": {
+            "logical_calls": 160,
+            "http_attempts": 160,
+            "reported_tokens": 785442,
+            "usage_complete": true,
+            "unclosed_calls": 0,
+            "retry_inclusive_usage_known": true
+          }
+        },
+        "searchqa": {
+          "no_skill": {
+            "positions": 800,
+            "scored": 800,
+            "unscored": 0,
+            "tasks": 400,
+            "families": 400,
+            "counts": {
+              "pass": 560,
+              "fail": 234,
+              "unknown": 6
+            },
+            "confirmed_pass_rate": 0.7,
+            "known_coverage": 0.9925,
+            "success_bounds": [
+              0.7,
+              0.7075
+            ]
+          },
+          "current": {
+            "positions": 800,
+            "scored": 775,
+            "unscored": 25,
+            "tasks": 400,
+            "families": 400,
+            "counts": {
+              "pass": 637,
+              "fail": 132,
+              "unknown": 6
+            },
+            "confirmed_pass_rate": 0.79625,
+            "known_coverage": 0.96125,
+            "success_bounds": [
+              0.79625,
+              0.835
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 115,
+              "loss": 19,
+              "tie": 635,
+              "unknown": 6,
+              "unscored": 25
+            },
+            "tasks_with_win": 79,
+            "tasks_with_loss": 14,
+            "families_with_win": 79,
+            "families_with_loss": 14,
+            "family_net_direction": {
+              "win": 77,
+              "loss": 12,
+              "tie": 295,
+              "uncertain": 16
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": null,
+          "learning_family_excluded": {
+            "available": true,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 544,
+              "scored": 544,
+              "unscored": 0,
+              "tasks": 272,
+              "families": 272,
+              "counts": {
+                "pass": 379,
+                "fail": 161,
+                "unknown": 4
+              },
+              "confirmed_pass_rate": 0.6966911764705882,
+              "known_coverage": 0.9926470588235294,
+              "success_bounds": [
+                0.6966911764705882,
+                0.7040441176470589
+              ]
+            },
+            "current": {
+              "positions": 544,
+              "scored": 527,
+              "unscored": 17,
+              "tasks": 272,
+              "families": 272,
+              "counts": {
+                "pass": 429,
+                "fail": 94,
+                "unknown": 4
+              },
+              "confirmed_pass_rate": 0.7886029411764706,
+              "known_coverage": 0.9613970588235294,
+              "success_bounds": [
+                0.7886029411764706,
+                0.8272058823529411
+              ]
+            },
+            "paired": {
+              "positions": {
+                "win": 75,
+                "loss": 14,
+                "tie": 434,
+                "unknown": 4,
+                "unscored": 17
+              },
+              "tasks_with_win": 51,
+              "tasks_with_loss": 10,
+              "families_with_win": 51,
+              "families_with_loss": 10,
+              "family_net_direction": {
+                "win": 50,
+                "loss": 9,
+                "tie": 202,
+                "uncertain": 11
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": false,
+          "reused": null,
+          "independent_new_observation": null,
+          "evidence_hash": null,
+          "referenced_costs": null,
+          "new_costs": null
+        },
+        "korbench": {
+          "no_skill": {
+            "positions": 1000,
+            "scored": 1000,
+            "unscored": 0,
+            "tasks": 500,
+            "families": 50,
+            "counts": {
+              "pass": 746,
+              "fail": 243,
+              "unknown": 11
+            },
+            "confirmed_pass_rate": 0.746,
+            "known_coverage": 0.989,
+            "success_bounds": [
+              0.746,
+              0.757
+            ]
+          },
+          "current": {
+            "positions": 1000,
+            "scored": 0,
+            "unscored": 1000,
+            "tasks": 500,
+            "families": 50,
+            "counts": {
+              "pass": 0,
+              "fail": 0,
+              "unknown": 0
+            },
+            "confirmed_pass_rate": 0.0,
+            "known_coverage": 0.0,
+            "success_bounds": [
+              0.0,
+              1.0
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 0,
+              "loss": 0,
+              "tie": 0,
+              "unknown": 0,
+              "unscored": 1000
+            },
+            "tasks_with_win": 0,
+            "tasks_with_loss": 0,
+            "families_with_win": 0,
+            "families_with_loss": 0,
+            "family_net_direction": {
+              "win": 0,
+              "loss": 0,
+              "tie": 0,
+              "uncertain": 50
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": null,
+          "learning_family_excluded": {
+            "available": true,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 600,
+              "scored": 600,
+              "unscored": 0,
+              "tasks": 300,
+              "families": 30,
+              "counts": {
+                "pass": 488,
+                "fail": 103,
+                "unknown": 9
+              },
+              "confirmed_pass_rate": 0.8133333333333334,
+              "known_coverage": 0.985,
+              "success_bounds": [
+                0.8133333333333334,
+                0.8283333333333334
+              ]
+            },
+            "current": {
+              "positions": 600,
+              "scored": 0,
+              "unscored": 600,
+              "tasks": 300,
+              "families": 30,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": 0.0,
+              "known_coverage": 0.0,
+              "success_bounds": [
+                0.0,
+                1.0
+              ]
+            },
+            "paired": {
+              "positions": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "unknown": 0,
+                "unscored": 600
+              },
+              "tasks_with_win": 0,
+              "tasks_with_loss": 0,
+              "families_with_win": 0,
+              "families_with_loss": 0,
+              "family_net_direction": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "uncertain": 30
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": false,
+          "reused": null,
+          "independent_new_observation": null,
+          "evidence_hash": null,
+          "referenced_costs": null,
+          "new_costs": null
+        },
+        "alfworld": {
+          "no_skill": {
+            "positions": 78,
+            "scored": 78,
+            "unscored": 0,
+            "tasks": 39,
+            "families": 39,
+            "counts": {
+              "pass": 65,
+              "fail": 13,
+              "unknown": 0
+            },
+            "confirmed_pass_rate": 0.8333333333333334,
+            "known_coverage": 1.0,
+            "success_bounds": [
+              0.8333333333333334,
+              0.8333333333333334
+            ]
+          },
+          "current": {
+            "positions": 78,
+            "scored": 0,
+            "unscored": 78,
+            "tasks": 39,
+            "families": 39,
+            "counts": {
+              "pass": 0,
+              "fail": 0,
+              "unknown": 0
+            },
+            "confirmed_pass_rate": 0.0,
+            "known_coverage": 0.0,
+            "success_bounds": [
+              0.0,
+              1.0
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 0,
+              "loss": 0,
+              "tie": 0,
+              "unknown": 0,
+              "unscored": 78
+            },
+            "tasks_with_win": 0,
+            "tasks_with_loss": 0,
+            "families_with_win": 0,
+            "families_with_loss": 0,
+            "family_net_direction": {
+              "win": 0,
+              "loss": 0,
+              "tie": 0,
+              "uncertain": 39
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": null,
+          "learning_family_excluded": {
+            "available": false,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 0,
+              "scored": 0,
+              "unscored": 0,
+              "tasks": 0,
+              "families": 0,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": null,
+              "known_coverage": null,
+              "success_bounds": null
+            },
+            "current": {
+              "positions": 0,
+              "scored": 0,
+              "unscored": 0,
+              "tasks": 0,
+              "families": 0,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": null,
+              "known_coverage": null,
+              "success_bounds": null
+            },
+            "paired": {
+              "positions": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "unknown": 0,
+                "unscored": 0
+              },
+              "tasks_with_win": 0,
+              "tasks_with_loss": 0,
+              "families_with_win": 0,
+              "families_with_loss": 0,
+              "family_net_direction": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "uncertain": 0
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": false,
+          "reused": null,
+          "independent_new_observation": null,
+          "evidence_hash": null,
+          "referenced_costs": null,
+          "new_costs": null
+        }
+      }
+    },
+    {
+      "stage": 5,
+      "source": "alfworld",
+      "state": "not_started",
+      "learning_status": "no_terminal_record",
+      "learning_completed": false,
+      "learning_costs": null,
+      "learning_terminal_calls_observed": 0,
+      "action": null,
+      "empty_skill": null,
+      "skill_hash": null,
+      "learning_result_hash": null,
+      "cells": {
+        "bigcodebench": {
+          "no_skill": {
+            "positions": 800,
+            "scored": 800,
+            "unscored": 0,
+            "tasks": 400,
+            "families": 399,
+            "counts": {
+              "pass": 400,
+              "fail": 399,
+              "unknown": 1
+            },
+            "confirmed_pass_rate": 0.5,
+            "known_coverage": 0.99875,
+            "success_bounds": [
+              0.5,
+              0.50125
+            ]
+          },
+          "current": {
+            "positions": 800,
+            "scored": 0,
+            "unscored": 800,
+            "tasks": 400,
+            "families": 399,
+            "counts": {
+              "pass": 0,
+              "fail": 0,
+              "unknown": 0
+            },
+            "confirmed_pass_rate": 0.0,
+            "known_coverage": 0.0,
+            "success_bounds": [
+              0.0,
+              1.0
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 0,
+              "loss": 0,
+              "tie": 0,
+              "unknown": 0,
+              "unscored": 800
+            },
+            "tasks_with_win": 0,
+            "tasks_with_loss": 0,
+            "families_with_win": 0,
+            "families_with_loss": 0,
+            "family_net_direction": {
+              "win": 0,
+              "loss": 0,
+              "tie": 0,
+              "uncertain": 399
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": null,
+          "learning_family_excluded": {
+            "available": true,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 542,
+              "scored": 542,
+              "unscored": 0,
+              "tasks": 271,
+              "families": 271,
+              "counts": {
+                "pass": 274,
+                "fail": 267,
+                "unknown": 1
+              },
+              "confirmed_pass_rate": 0.5055350553505535,
+              "known_coverage": 0.9981549815498155,
+              "success_bounds": [
+                0.5055350553505535,
+                0.507380073800738
+              ]
+            },
+            "current": {
+              "positions": 542,
+              "scored": 0,
+              "unscored": 542,
+              "tasks": 271,
+              "families": 271,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": 0.0,
+              "known_coverage": 0.0,
+              "success_bounds": [
+                0.0,
+                1.0
+              ]
+            },
+            "paired": {
+              "positions": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "unknown": 0,
+                "unscored": 542
+              },
+              "tasks_with_win": 0,
+              "tasks_with_loss": 0,
+              "families_with_win": 0,
+              "families_with_loss": 0,
+              "family_net_direction": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "uncertain": 271
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": false,
+          "reused": null,
+          "independent_new_observation": null,
+          "evidence_hash": null,
+          "referenced_costs": null,
+          "new_costs": null
+        },
+        "spreadsheetbench": {
+          "no_skill": {
+            "positions": 160,
+            "scored": 160,
+            "unscored": 0,
+            "tasks": 80,
+            "families": 80,
+            "counts": {
+              "pass": 63,
+              "fail": 44,
+              "unknown": 53
+            },
+            "confirmed_pass_rate": 0.39375,
+            "known_coverage": 0.66875,
+            "success_bounds": [
+              0.39375,
+              0.725
+            ]
+          },
+          "current": {
+            "positions": 160,
+            "scored": 0,
+            "unscored": 160,
+            "tasks": 80,
+            "families": 80,
+            "counts": {
+              "pass": 0,
+              "fail": 0,
+              "unknown": 0
+            },
+            "confirmed_pass_rate": 0.0,
+            "known_coverage": 0.0,
+            "success_bounds": [
+              0.0,
+              1.0
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 0,
+              "loss": 0,
+              "tie": 0,
+              "unknown": 0,
+              "unscored": 160
+            },
+            "tasks_with_win": 0,
+            "tasks_with_loss": 0,
+            "families_with_win": 0,
+            "families_with_loss": 0,
+            "family_net_direction": {
+              "win": 0,
+              "loss": 0,
+              "tie": 0,
+              "uncertain": 80
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": null,
+          "learning_family_excluded": {
+            "available": false,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 0,
+              "scored": 0,
+              "unscored": 0,
+              "tasks": 0,
+              "families": 0,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": null,
+              "known_coverage": null,
+              "success_bounds": null
+            },
+            "current": {
+              "positions": 0,
+              "scored": 0,
+              "unscored": 0,
+              "tasks": 0,
+              "families": 0,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": null,
+              "known_coverage": null,
+              "success_bounds": null
+            },
+            "paired": {
+              "positions": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "unknown": 0,
+                "unscored": 0
+              },
+              "tasks_with_win": 0,
+              "tasks_with_loss": 0,
+              "families_with_win": 0,
+              "families_with_loss": 0,
+              "family_net_direction": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "uncertain": 0
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": false,
+          "reused": null,
+          "independent_new_observation": null,
+          "evidence_hash": null,
+          "referenced_costs": null,
+          "new_costs": null
+        },
+        "searchqa": {
+          "no_skill": {
+            "positions": 800,
+            "scored": 800,
+            "unscored": 0,
+            "tasks": 400,
+            "families": 400,
+            "counts": {
+              "pass": 560,
+              "fail": 234,
+              "unknown": 6
+            },
+            "confirmed_pass_rate": 0.7,
+            "known_coverage": 0.9925,
+            "success_bounds": [
+              0.7,
+              0.7075
+            ]
+          },
+          "current": {
+            "positions": 800,
+            "scored": 0,
+            "unscored": 800,
+            "tasks": 400,
+            "families": 400,
+            "counts": {
+              "pass": 0,
+              "fail": 0,
+              "unknown": 0
+            },
+            "confirmed_pass_rate": 0.0,
+            "known_coverage": 0.0,
+            "success_bounds": [
+              0.0,
+              1.0
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 0,
+              "loss": 0,
+              "tie": 0,
+              "unknown": 0,
+              "unscored": 800
+            },
+            "tasks_with_win": 0,
+            "tasks_with_loss": 0,
+            "families_with_win": 0,
+            "families_with_loss": 0,
+            "family_net_direction": {
+              "win": 0,
+              "loss": 0,
+              "tie": 0,
+              "uncertain": 400
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": null,
+          "learning_family_excluded": {
+            "available": true,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 544,
+              "scored": 544,
+              "unscored": 0,
+              "tasks": 272,
+              "families": 272,
+              "counts": {
+                "pass": 379,
+                "fail": 161,
+                "unknown": 4
+              },
+              "confirmed_pass_rate": 0.6966911764705882,
+              "known_coverage": 0.9926470588235294,
+              "success_bounds": [
+                0.6966911764705882,
+                0.7040441176470589
+              ]
+            },
+            "current": {
+              "positions": 544,
+              "scored": 0,
+              "unscored": 544,
+              "tasks": 272,
+              "families": 272,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": 0.0,
+              "known_coverage": 0.0,
+              "success_bounds": [
+                0.0,
+                1.0
+              ]
+            },
+            "paired": {
+              "positions": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "unknown": 0,
+                "unscored": 544
+              },
+              "tasks_with_win": 0,
+              "tasks_with_loss": 0,
+              "families_with_win": 0,
+              "families_with_loss": 0,
+              "family_net_direction": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "uncertain": 272
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": false,
+          "reused": null,
+          "independent_new_observation": null,
+          "evidence_hash": null,
+          "referenced_costs": null,
+          "new_costs": null
+        },
+        "korbench": {
+          "no_skill": {
+            "positions": 1000,
+            "scored": 1000,
+            "unscored": 0,
+            "tasks": 500,
+            "families": 50,
+            "counts": {
+              "pass": 746,
+              "fail": 243,
+              "unknown": 11
+            },
+            "confirmed_pass_rate": 0.746,
+            "known_coverage": 0.989,
+            "success_bounds": [
+              0.746,
+              0.757
+            ]
+          },
+          "current": {
+            "positions": 1000,
+            "scored": 0,
+            "unscored": 1000,
+            "tasks": 500,
+            "families": 50,
+            "counts": {
+              "pass": 0,
+              "fail": 0,
+              "unknown": 0
+            },
+            "confirmed_pass_rate": 0.0,
+            "known_coverage": 0.0,
+            "success_bounds": [
+              0.0,
+              1.0
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 0,
+              "loss": 0,
+              "tie": 0,
+              "unknown": 0,
+              "unscored": 1000
+            },
+            "tasks_with_win": 0,
+            "tasks_with_loss": 0,
+            "families_with_win": 0,
+            "families_with_loss": 0,
+            "family_net_direction": {
+              "win": 0,
+              "loss": 0,
+              "tie": 0,
+              "uncertain": 50
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": null,
+          "learning_family_excluded": {
+            "available": true,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 600,
+              "scored": 600,
+              "unscored": 0,
+              "tasks": 300,
+              "families": 30,
+              "counts": {
+                "pass": 488,
+                "fail": 103,
+                "unknown": 9
+              },
+              "confirmed_pass_rate": 0.8133333333333334,
+              "known_coverage": 0.985,
+              "success_bounds": [
+                0.8133333333333334,
+                0.8283333333333334
+              ]
+            },
+            "current": {
+              "positions": 600,
+              "scored": 0,
+              "unscored": 600,
+              "tasks": 300,
+              "families": 30,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": 0.0,
+              "known_coverage": 0.0,
+              "success_bounds": [
+                0.0,
+                1.0
+              ]
+            },
+            "paired": {
+              "positions": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "unknown": 0,
+                "unscored": 600
+              },
+              "tasks_with_win": 0,
+              "tasks_with_loss": 0,
+              "families_with_win": 0,
+              "families_with_loss": 0,
+              "family_net_direction": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "uncertain": 30
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": false,
+          "reused": null,
+          "independent_new_observation": null,
+          "evidence_hash": null,
+          "referenced_costs": null,
+          "new_costs": null
+        },
+        "alfworld": {
+          "no_skill": {
+            "positions": 78,
+            "scored": 78,
+            "unscored": 0,
+            "tasks": 39,
+            "families": 39,
+            "counts": {
+              "pass": 65,
+              "fail": 13,
+              "unknown": 0
+            },
+            "confirmed_pass_rate": 0.8333333333333334,
+            "known_coverage": 1.0,
+            "success_bounds": [
+              0.8333333333333334,
+              0.8333333333333334
+            ]
+          },
+          "current": {
+            "positions": 78,
+            "scored": 0,
+            "unscored": 78,
+            "tasks": 39,
+            "families": 39,
+            "counts": {
+              "pass": 0,
+              "fail": 0,
+              "unknown": 0
+            },
+            "confirmed_pass_rate": 0.0,
+            "known_coverage": 0.0,
+            "success_bounds": [
+              0.0,
+              1.0
+            ]
+          },
+          "paired": {
+            "positions": {
+              "win": 0,
+              "loss": 0,
+              "tie": 0,
+              "unknown": 0,
+              "unscored": 78
+            },
+            "tasks_with_win": 0,
+            "tasks_with_loss": 0,
+            "families_with_win": 0,
+            "families_with_loss": 0,
+            "family_net_direction": {
+              "win": 0,
+              "loss": 0,
+              "tie": 0,
+              "uncertain": 39
+            },
+            "significance_claimed": false
+          },
+          "confirmed_pass_delta": null,
+          "learning_family_excluded": {
+            "available": false,
+            "scope": "exclude_all_planned_train_and_selection_families_not_independent_final",
+            "no_skill": {
+              "positions": 0,
+              "scored": 0,
+              "unscored": 0,
+              "tasks": 0,
+              "families": 0,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": null,
+              "known_coverage": null,
+              "success_bounds": null
+            },
+            "current": {
+              "positions": 0,
+              "scored": 0,
+              "unscored": 0,
+              "tasks": 0,
+              "families": 0,
+              "counts": {
+                "pass": 0,
+                "fail": 0,
+                "unknown": 0
+              },
+              "confirmed_pass_rate": null,
+              "known_coverage": null,
+              "success_bounds": null
+            },
+            "paired": {
+              "positions": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "unknown": 0,
+                "unscored": 0
+              },
+              "tasks_with_win": 0,
+              "tasks_with_loss": 0,
+              "families_with_win": 0,
+              "families_with_loss": 0,
+              "family_net_direction": {
+                "win": 0,
+                "loss": 0,
+                "tie": 0,
+                "uncertain": 0
+              },
+              "significance_claimed": false
+            }
+          },
+          "terminal": false,
+          "reused": null,
+          "independent_new_observation": null,
+          "evidence_hash": null,
+          "referenced_costs": null,
+          "new_costs": null
+        }
+      }
+    }
+  ],
+  "deployment_authorized": false,
+  "causal_generalization_claimed": false,
+  "record_hash": "f968581be7f6a8caae831b4700d1fd817645d465fb214fedb3c827573efa8e18"
+}

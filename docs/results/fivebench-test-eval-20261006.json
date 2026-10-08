@@ -1,0 +1,684 @@
+{
+  "version": "fivebench-test-eval-v8",
+  "protocol_hash": "1a6c3abbc43e6296fd9f0f46f070eb7940c4c85133c8f57bf75d6a7e650b6e91",
+  "split_hash": "c459c242a278d209cb6fec340643b322c62ed08212de08356251c194dc306c72",
+  "stage_rows": {
+    "skillopt-s1": "skillopt-s1",
+    "skillopt-s2": "skillopt-s1",
+    "skillopt-s3": "skillopt-s3",
+    "skillopt-s4": "skillopt-s4",
+    "skillopt-s5": "skillopt-s4",
+    "gepa-s1": "no_skill",
+    "gepa-s2": "no_skill",
+    "gepa-s3": "gepa-s3",
+    "gepa-s4": "gepa-s4",
+    "gepa-s5": "gepa-s4"
+  },
+  "cells": {
+    "bigcodebench": {
+      "no_skill": {
+        "counts": {
+          "pass": 239,
+          "fail": 244,
+          "unknown": 1
+        },
+        "positions": 484,
+        "confirmed_pass_rate": 0.493801652892562,
+        "vs_no_skill": {
+          "tie": 483,
+          "unknown": 1
+        },
+        "costs": {
+          "logical_calls": 484,
+          "http_attempts": 484,
+          "reported_tokens": 178736,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "skillopt-s1": {
+        "counts": {
+          "pass": 247,
+          "fail": 236,
+          "unknown": 1
+        },
+        "positions": 484,
+        "confirmed_pass_rate": 0.5103305785123967,
+        "vs_no_skill": {
+          "tie": 419,
+          "loss": 28,
+          "win": 36,
+          "unknown": 1
+        },
+        "costs": {
+          "logical_calls": 484,
+          "http_attempts": 484,
+          "reported_tokens": 687703,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "skillopt-s3": {
+        "counts": {
+          "pass": 248,
+          "fail": 235,
+          "unknown": 1
+        },
+        "positions": 484,
+        "confirmed_pass_rate": 0.512396694214876,
+        "vs_no_skill": {
+          "tie": 422,
+          "loss": 26,
+          "win": 35,
+          "unknown": 1
+        },
+        "costs": {
+          "logical_calls": 484,
+          "http_attempts": 484,
+          "reported_tokens": 949530,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "skillopt-s4": {
+        "counts": {
+          "pass": 251,
+          "fail": 232,
+          "unknown": 1
+        },
+        "positions": 484,
+        "confirmed_pass_rate": 0.518595041322314,
+        "vs_no_skill": {
+          "tie": 419,
+          "loss": 26,
+          "win": 38,
+          "unknown": 1
+        },
+        "costs": {
+          "logical_calls": 484,
+          "http_attempts": 484,
+          "reported_tokens": 1357006,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "gepa-s3": {
+        "counts": {
+          "pass": 252,
+          "fail": 231,
+          "unknown": 1
+        },
+        "positions": 484,
+        "confirmed_pass_rate": 0.5206611570247934,
+        "vs_no_skill": {
+          "tie": 430,
+          "loss": 20,
+          "win": 33,
+          "unknown": 1
+        },
+        "costs": {
+          "logical_calls": 484,
+          "http_attempts": 484,
+          "reported_tokens": 620846,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "gepa-s4": {
+        "counts": {
+          "pass": 254,
+          "fail": 228,
+          "unknown": 2
+        },
+        "positions": 484,
+        "confirmed_pass_rate": 0.5247933884297521,
+        "vs_no_skill": {
+          "tie": 417,
+          "loss": 25,
+          "win": 40,
+          "unknown": 2
+        },
+        "costs": {
+          "logical_calls": 484,
+          "http_attempts": 484,
+          "reported_tokens": 1166986,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      }
+    },
+    "spreadsheetbench": {
+      "no_skill": {
+        "counts": {
+          "pass": 133,
+          "fail": 53,
+          "unknown": 93
+        },
+        "positions": 279,
+        "confirmed_pass_rate": 0.4767025089605735,
+        "vs_no_skill": {
+          "tie": 186,
+          "unknown": 93
+        },
+        "costs": {
+          "logical_calls": 279,
+          "http_attempts": 279,
+          "reported_tokens": 469333,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "skillopt-s1": {
+        "counts": {
+          "pass": 120,
+          "fail": 52,
+          "unknown": 107
+        },
+        "positions": 279,
+        "confirmed_pass_rate": 0.43010752688172044,
+        "vs_no_skill": {
+          "tie": 123,
+          "unknown": 119,
+          "win": 18,
+          "loss": 19
+        },
+        "costs": {
+          "logical_calls": 279,
+          "http_attempts": 279,
+          "reported_tokens": 850253,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "skillopt-s3": {
+        "counts": {
+          "pass": 112,
+          "fail": 60,
+          "unknown": 107
+        },
+        "positions": 279,
+        "confirmed_pass_rate": 0.4014336917562724,
+        "vs_no_skill": {
+          "tie": 123,
+          "unknown": 116,
+          "win": 14,
+          "loss": 26
+        },
+        "costs": {
+          "logical_calls": 279,
+          "http_attempts": 279,
+          "reported_tokens": 1072929,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "skillopt-s4": {
+        "counts": {
+          "pass": 134,
+          "fail": 51,
+          "unknown": 94
+        },
+        "positions": 279,
+        "confirmed_pass_rate": 0.48028673835125446,
+        "vs_no_skill": {
+          "tie": 133,
+          "unknown": 107,
+          "win": 20,
+          "loss": 19
+        },
+        "costs": {
+          "logical_calls": 279,
+          "http_attempts": 279,
+          "reported_tokens": 1143027,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "gepa-s3": {
+        "counts": {
+          "pass": 113,
+          "fail": 55,
+          "unknown": 111
+        },
+        "positions": 279,
+        "confirmed_pass_rate": 0.4050179211469534,
+        "vs_no_skill": {
+          "win": 17,
+          "unknown": 121,
+          "tie": 120,
+          "loss": 21
+        },
+        "costs": {
+          "logical_calls": 279,
+          "http_attempts": 279,
+          "reported_tokens": 560046,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "gepa-s4": {
+        "counts": {
+          "pass": 115,
+          "fail": 67,
+          "unknown": 97
+        },
+        "positions": 279,
+        "confirmed_pass_rate": 0.4121863799283154,
+        "vs_no_skill": {
+          "tie": 125,
+          "unknown": 110,
+          "win": 15,
+          "loss": 29
+        },
+        "costs": {
+          "logical_calls": 279,
+          "http_attempts": 280,
+          "reported_tokens": 818879,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      }
+    },
+    "searchqa": {
+      "no_skill": {
+        "counts": {
+          "pass": 291,
+          "fail": 109,
+          "unknown": 0
+        },
+        "positions": 400,
+        "confirmed_pass_rate": 0.7275,
+        "vs_no_skill": {
+          "tie": 400
+        },
+        "costs": {
+          "logical_calls": 400,
+          "http_attempts": 401,
+          "reported_tokens": 437879,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "skillopt-s1": {
+        "counts": {
+          "pass": 301,
+          "fail": 99,
+          "unknown": 0
+        },
+        "positions": 400,
+        "confirmed_pass_rate": 0.7525,
+        "vs_no_skill": {
+          "tie": 344,
+          "loss": 23,
+          "win": 33
+        },
+        "costs": {
+          "logical_calls": 400,
+          "http_attempts": 400,
+          "reported_tokens": 840068,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "skillopt-s3": {
+        "counts": {
+          "pass": 339,
+          "fail": 61,
+          "unknown": 0
+        },
+        "positions": 400,
+        "confirmed_pass_rate": 0.8475,
+        "vs_no_skill": {
+          "tie": 346,
+          "win": 51,
+          "loss": 3
+        },
+        "costs": {
+          "logical_calls": 400,
+          "http_attempts": 400,
+          "reported_tokens": 1052548,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "skillopt-s4": {
+        "counts": {
+          "pass": 338,
+          "fail": 62,
+          "unknown": 0
+        },
+        "positions": 400,
+        "confirmed_pass_rate": 0.845,
+        "vs_no_skill": {
+          "tie": 345,
+          "win": 51,
+          "loss": 4
+        },
+        "costs": {
+          "logical_calls": 400,
+          "http_attempts": 400,
+          "reported_tokens": 1388246,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "gepa-s3": {
+        "counts": {
+          "pass": 340,
+          "fail": 60,
+          "unknown": 0
+        },
+        "positions": 400,
+        "confirmed_pass_rate": 0.85,
+        "vs_no_skill": {
+          "tie": 339,
+          "win": 55,
+          "loss": 6
+        },
+        "costs": {
+          "logical_calls": 400,
+          "http_attempts": 400,
+          "reported_tokens": 685472,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "gepa-s4": {
+        "counts": {
+          "pass": 338,
+          "fail": 62,
+          "unknown": 0
+        },
+        "positions": 400,
+        "confirmed_pass_rate": 0.845,
+        "vs_no_skill": {
+          "tie": 337,
+          "win": 55,
+          "loss": 8
+        },
+        "costs": {
+          "logical_calls": 400,
+          "http_attempts": 400,
+          "reported_tokens": 1097159,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      }
+    },
+    "korbench": {
+      "no_skill": {
+        "counts": {
+          "pass": 187,
+          "fail": 62,
+          "unknown": 1
+        },
+        "positions": 250,
+        "confirmed_pass_rate": 0.748,
+        "vs_no_skill": {
+          "tie": 249,
+          "unknown": 1
+        },
+        "costs": {
+          "logical_calls": 250,
+          "http_attempts": 250,
+          "reported_tokens": 721352,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "skillopt-s1": {
+        "counts": {
+          "pass": 183,
+          "fail": 66,
+          "unknown": 1
+        },
+        "positions": 250,
+        "confirmed_pass_rate": 0.732,
+        "vs_no_skill": {
+          "tie": 208,
+          "loss": 22,
+          "win": 18,
+          "unknown": 2
+        },
+        "costs": {
+          "logical_calls": 250,
+          "http_attempts": 250,
+          "reported_tokens": 911659,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "skillopt-s3": {
+        "counts": {
+          "pass": 187,
+          "fail": 62,
+          "unknown": 1
+        },
+        "positions": 250,
+        "confirmed_pass_rate": 0.748,
+        "vs_no_skill": {
+          "tie": 209,
+          "win": 19,
+          "loss": 20,
+          "unknown": 2
+        },
+        "costs": {
+          "logical_calls": 250,
+          "http_attempts": 250,
+          "reported_tokens": 1019257,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "skillopt-s4": {
+        "counts": {
+          "pass": 183,
+          "fail": 65,
+          "unknown": 2
+        },
+        "positions": 250,
+        "confirmed_pass_rate": 0.732,
+        "vs_no_skill": {
+          "tie": 207,
+          "loss": 22,
+          "win": 18,
+          "unknown": 3
+        },
+        "costs": {
+          "logical_calls": 250,
+          "http_attempts": 252,
+          "reported_tokens": 1152589,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "gepa-s3": {
+        "counts": {
+          "pass": 152,
+          "fail": 96,
+          "unknown": 2
+        },
+        "positions": 250,
+        "confirmed_pass_rate": 0.608,
+        "vs_no_skill": {
+          "tie": 190,
+          "unknown": 3,
+          "loss": 46,
+          "win": 11
+        },
+        "costs": {
+          "logical_calls": 250,
+          "http_attempts": 250,
+          "reported_tokens": 776289,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "gepa-s4": {
+        "counts": {
+          "pass": 184,
+          "fail": 66,
+          "unknown": 0
+        },
+        "positions": 250,
+        "confirmed_pass_rate": 0.736,
+        "vs_no_skill": {
+          "tie": 215,
+          "win": 15,
+          "loss": 19,
+          "unknown": 1
+        },
+        "costs": {
+          "logical_calls": 250,
+          "http_attempts": 251,
+          "reported_tokens": 901822,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      }
+    },
+    "alfworld": {
+      "no_skill": {
+        "counts": {
+          "pass": 120,
+          "fail": 13,
+          "unknown": 1
+        },
+        "positions": 134,
+        "confirmed_pass_rate": 0.8955223880597015,
+        "vs_no_skill": {
+          "tie": 133,
+          "unknown": 1
+        },
+        "costs": {
+          "logical_calls": 2025,
+          "http_attempts": 2025,
+          "reported_tokens": 1489401,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "skillopt-s1": {
+        "counts": {
+          "pass": 117,
+          "fail": 17,
+          "unknown": 0
+        },
+        "positions": 134,
+        "confirmed_pass_rate": 0.8731343283582089,
+        "vs_no_skill": {
+          "tie": 120,
+          "win": 5,
+          "loss": 8,
+          "unknown": 1
+        },
+        "costs": {
+          "logical_calls": 2300,
+          "http_attempts": 2300,
+          "reported_tokens": 3890422,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "skillopt-s3": {
+        "counts": {
+          "pass": 116,
+          "fail": 18,
+          "unknown": 0
+        },
+        "positions": 134,
+        "confirmed_pass_rate": 0.8656716417910447,
+        "vs_no_skill": {
+          "tie": 119,
+          "win": 5,
+          "loss": 9,
+          "unknown": 1
+        },
+        "costs": {
+          "logical_calls": 2316,
+          "http_attempts": 2317,
+          "reported_tokens": 5168215,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "skillopt-s4": {
+        "counts": {
+          "pass": 121,
+          "fail": 13,
+          "unknown": 0
+        },
+        "positions": 134,
+        "confirmed_pass_rate": 0.9029850746268657,
+        "vs_no_skill": {
+          "tie": 121,
+          "win": 6,
+          "loss": 6,
+          "unknown": 1
+        },
+        "costs": {
+          "logical_calls": 2165,
+          "http_attempts": 2165,
+          "reported_tokens": 6704554,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "gepa-s3": {
+        "counts": {
+          "pass": 93,
+          "fail": 39,
+          "unknown": 2
+        },
+        "positions": 134,
+        "confirmed_pass_rate": 0.6940298507462687,
+        "vs_no_skill": {
+          "tie": 104,
+          "loss": 26,
+          "unknown": 3,
+          "win": 1
+        },
+        "costs": {
+          "logical_calls": 3671,
+          "http_attempts": 3671,
+          "reported_tokens": 5385021,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      },
+      "gepa-s4": {
+        "counts": {
+          "pass": 122,
+          "fail": 12,
+          "unknown": 0
+        },
+        "positions": 134,
+        "confirmed_pass_rate": 0.9104477611940298,
+        "vs_no_skill": {
+          "tie": 121,
+          "win": 7,
+          "loss": 5,
+          "unknown": 1
+        },
+        "costs": {
+          "logical_calls": 2194,
+          "http_attempts": 2194,
+          "reported_tokens": 5194744,
+          "usage_complete": true,
+          "unclosed_calls": 0
+        }
+      }
+    }
+  },
+  "repeats": 1,
+  "excluded": {
+    "spreadsheetbench": {
+      "42930": "upstream gold workbook is misnamed 1_43930_golden.xlsx, so the release cannot pair it with 1_42930_init.xlsx"
+    }
+  },
+  "schedule": "one cell generating at a time (10 workers); native scoring overlaps the next API-only generation; native generations wait for scoring to be idle",
+  "data_scope": "test_split_held_out_from_the_study_learning_and_selection_not_an_exposure_filtered_independent_final",
+  "single_learning_history": true,
+  "deployment_authorized": false,
+  "record_hash": "ff22348f9a1fc4a5ca57fbd58b979824d8b675d49dfb1d7d6fbe927ea854b641"
+}

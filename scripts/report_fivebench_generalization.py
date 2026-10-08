@@ -123,7 +123,7 @@ def build_report(study, method="skillopt"):
     protocol = read_json(root / "protocol.json", sealed=True)
     require(protocol["order"] == list(BENCHMARKS) and method in protocol["methods"], "Unsupported study/method")
     require(protocol["version"] in {"fivebench-sequential-attempts-v1", "fivebench-sequential-attempts-v2",
-                                    "fivebench-sequential-attempts-v3"},
+                                    "fivebench-sequential-attempts-v3", "fivebench-sequential-attempts-v4"},
             "Unsupported study version")
     stages, evaluation_costs = [], {}
     for number, benchmark in enumerate(BENCHMARKS, 1):

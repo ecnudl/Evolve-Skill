@@ -23,9 +23,16 @@ VERSION = "fivebench-sequential-attempts-v1"
 RECOVERY_SEQUENCE = "fivebench-sequential-attempts-v2"
 # V3 runs the same SkillOpt-only queue with learning v5 closed-delivery fixes.
 DELIVERY_SEQUENCE = "fivebench-sequential-attempts-v3"
-RECOVERY_SEQUENCES = {RECOVERY_SEQUENCE, DELIVERY_SEQUENCE}
+# V4 runs SkillOpt and GEPA with learning v7 (raised Skill interface). New
+# policies are evaluated in a derived source that differs from the frozen
+# No-Skill source only in the checkpoint Skill-budget literal.
+BUDGET_SEQUENCE = "fivebench-sequential-attempts-v4"
+RECOVERY_SEQUENCES = {RECOVERY_SEQUENCE, DELIVERY_SEQUENCE, BUDGET_SEQUENCE}
 LAUNCHERS = {RECOVERY_SEQUENCE: "run_skillopt_generalization_linux.sh",
-             DELIVERY_SEQUENCE: "run_skillopt_generalization_e_linux.sh"}
+             DELIVERY_SEQUENCE: "run_skillopt_generalization_e_linux.sh",
+             BUDGET_SEQUENCE: "run_fivebench_f_linux.sh"}
+BUDGET_SOURCE_EDITS = {"skillopt/continual_eval/core.py": "len(skill_text.encode()) <= 6000",
+                       "skillopt/continual_eval/truncation_recovery.py": "len(skill.encode()) <= 6000"}
 
 
 def sha(path):
@@ -55,13 +62,13 @@ def split_panel(panel, train_count, selection_count, seed):
     return {**deepcopy(panel), "tasks": deepcopy(tasks)}, train, selection
 
 
-def transition(parent, result):
+def transition(parent, result, limit=6000):
     """An unsuccessful attempt may advance the queue, not the completion claim."""
     from skillopt.continual_learning.contracts import check_skill
 
     require(result["status"] in {"completed", "pending"}, "Unknown learning terminal state")
-    check_skill(parent)
-    candidate = check_skill(result["candidate_skill"])
+    check_skill(parent, limit)
+    candidate = check_skill(result["candidate_skill"], limit)
     if result["status"] == "pending":
         require(candidate == parent, "Pending learner must retain its authorized parent")
         return {"skill": parent, "action": "pending_carry_parent", "learning_completed": False}
@@ -72,7 +79,7 @@ def transition(parent, result):
 def policy_key(baseline, skill, version=None):
     value = {"baseline_plan": baseline["plan_hash"], "skill": skill,
              "reuse": "same_frozen_solver_runtime_budget_panel_existing_samples"}
-    if version == DELIVERY_SEQUENCE:
+    if version in {DELIVERY_SEQUENCE, BUDGET_SEQUENCE}:
         # V3 also binds the target domain and frozen report: two domains frozen
         # from one identical plan can never share a reused evaluation cell.
         value.update(baseline_benchmark=baseline["benchmark"], baseline_report=baseline["report_hash"])
@@ -134,6 +141,11 @@ def require_safe_handoff(learning_root, result):
     # Recalculation receipts can fail before the high-level score has evidence.
     for path in (root / "host_only/scorer_artifacts").rglob("*.json"):
         _require_cleanup(read_json(path))
+    # Learning v10: probe executions the verifier began need a receipt with confirmed cleanup too.
+    for intent in (root / "verifier").glob("*/executions/*.intent.json"):
+        receipt = intent.with_name(intent.name[: -len(".intent.json")] + ".json")
+        require(receipt.exists(), "Open probe execution intents require operator review")
+        _require_cleanup(read_json(receipt, sealed=True)["execution"])
 
 
 def require_eval_handoff(root):
@@ -145,14 +157,54 @@ def require_eval_handoff(root):
 
 def _invoke(reference, operation, request, output, *, log):
     # PYTHONPATH and cwd must both point at the old source; do not import current
-    # scorers while claiming to replay historical evaluation semantics.
-    env = dict(os.environ, PYTHONPATH=str(safe_path(reference["source"])))
+    # scorers while claiming to replay historical evaluation semantics. V4 only
+    # evaluates new policies in its verified budget-derived copy of that source.
+    source = reference["source"]
+    if operation in {"evaluate", "verify-evaluation"} and "evaluation_source" in reference:
+        source = reference["evaluation_source"]
+    env = dict(os.environ, PYTHONPATH=str(safe_path(source)))
     command = [reference["python"], str(Path(__file__).absolute()), "worker", "--operation", operation,
                "--request", str(request), "--output", str(output)]
     with safe_path(log).open("ab") as handle:
-        code = subprocess.run(command, cwd=reference["source"], env=env, stdout=handle, stderr=handle).returncode
+        code = subprocess.run(command, cwd=source, env=env, stdout=handle, stderr=handle).returncode
     require(code == 0 and Path(output).is_file(), "Frozen evaluation worker failed; inspect private log, do not retry")
     return read_json(output, sealed=True)
+
+
+def _reference_identity(ref):
+    return {k: ref[k] for k in ("root", "source", "python", "evaluation_source") if k in ref}
+
+
+def _skill_limit(protocol):
+    if protocol["version"] == BUDGET_SEQUENCE:
+        return protocol["config"]["learning_recovery_policy"]["skill_budget_bytes"]
+    return 6000
+
+
+def _check_budget_source(source, derived, budget):
+    """The derived evaluation source equals the frozen one except the Skill-budget literal."""
+    source, derived = safe_path(source), safe_path(derived)
+
+    def tree(root):
+        return {str(p.relative_to(root)) for p in root.rglob("*") if p.is_file()
+                and not {"__pycache__", ".pytest_cache"} & set(p.relative_to(root).parts)}
+
+    require(source != derived and tree(source) == tree(derived), "Derived evaluation source file set differs")
+    changed = {}
+    for name in sorted(tree(source)):
+        original, copy = (source / name).read_bytes(), (derived / name).read_bytes()
+        if name in BUDGET_SOURCE_EDITS:
+            literal = BUDGET_SOURCE_EDITS[name]
+            text = original.decode()
+            require(text.count(literal) == 1, "Frozen Skill-budget literal not found exactly once")
+            require(copy.decode() == text.replace(literal, literal.replace("6000", str(budget))),
+                    "Derived evaluation source changes more than the Skill budget")
+            changed[name] = {"original": hashlib.sha256(original).hexdigest(),
+                             "derived": hashlib.sha256(copy).hexdigest()}
+        else:
+            require(original == copy, "Derived evaluation source differs outside the Skill budget")
+    require(set(changed) == set(BUDGET_SOURCE_EDITS), "Derived evaluation source lacks the budget edit")
+    return changed
 
 
 def _source_files():
@@ -173,6 +225,8 @@ def prepare(config_path, output):
               "learning_sheet_qualification"}
     if recovery:
         fields |= {"learning_recovery_policy", "learning_sheet_scorer"}
+    if config.get("version") == BUDGET_SEQUENCE:
+        fields |= {"evaluation_qualifications"}
     require(set(config) == fields and config["version"] in {VERSION, *RECOVERY_SEQUENCES},
             "Invalid sequential configuration")
     if recovery:
@@ -188,7 +242,8 @@ def prepare(config_path, output):
     refs, roles, files, models = {}, {}, {}, []
     for benchmark in BENCHMARKS:
         reference = config["references"][benchmark]
-        require(set(reference) == {"root", "source", "python"}, "Invalid frozen reference")
+        require(set(reference) == {"root", "source", "python"} | (
+            {"evaluation_source"} if config["version"] == BUDGET_SEQUENCE else set()), "Invalid frozen reference")
         request = root / f"requests/baseline-{benchmark}.json"
         write_json(request, seal({"reference": reference, "benchmark": benchmark}))
         result = _invoke(reference, "inspect", request, root / f"baselines/{benchmark}.json",
@@ -231,6 +286,7 @@ def prepare(config_path, output):
     require(all(r["model_service"] == refs[BENCHMARKS[0]]["model_service"] for r in refs.values()),
             "Actual historical services differ")
     from skillopt.continual_learning.contracts import (
+        BUDGET_VERSION,
         DELIVERY_VERSION,
         MULTI_BENCHMARK_VERSION,
         RECOVERY_VERSION,
@@ -238,7 +294,17 @@ def prepare(config_path, output):
     )
     from skillopt.continual_learning.recovery import RETRY_POLICIES, validate_policy
 
-    learning_version = DELIVERY_VERSION if config["version"] == DELIVERY_SEQUENCE else RECOVERY_VERSION
+    learning_version = {DELIVERY_SEQUENCE: DELIVERY_VERSION,
+                        BUDGET_SEQUENCE: BUDGET_VERSION}.get(config["version"], RECOVERY_VERSION)
+    methods = ["skillopt", "gepa"] if config["version"] in {VERSION, BUDGET_SEQUENCE} else ["skillopt"]
+    if config["version"] == BUDGET_SEQUENCE:
+        budget = config["learning_recovery_policy"]["skill_budget_bytes"]
+        derived = {}
+        for reference in config["references"].values():
+            derived.setdefault((reference["source"], reference["evaluation_source"]), None)
+        for (source, evaluation_source) in sorted(derived):
+            for name, value in _check_budget_source(source, evaluation_source, budget).items():
+                files[str(safe_path(evaluation_source) / name)] = value["derived"]
 
     learning_model = deepcopy(models[0])
     extra = {}
@@ -255,18 +321,40 @@ def prepare(config_path, output):
         extension = {"learning_version": learning_version, "learning_model_service": seal(service),
                      "learning_client_options": {"delivery_retry_policy": RETRY_POLICIES[learning_version]},
                      "evaluation_policy": "unchanged_original_frozen_budget_source_scorer_all_methods"}
+        if config["version"] == BUDGET_SEQUENCE:
+            # A source-path-bound scorer qualification must be redone in the derived
+            # source (same image/controls). Only those three binding fields change.
+            overrides = {}
+            for target, qpath in sorted(config["evaluation_qualifications"].items()):
+                derived_root = str(safe_path(config["references"][target]["evaluation_source"])) + "/"
+                q = read_json(qpath, sealed=True)
+                reference_plan = read_json(safe_path(config["references"][target]["root"]) / "plan.json", sealed=True)
+                original = reference_plan["config"]["runtime"][target]["recalculation"]
+                require(q["status"] == "qualified" and q["model_api_calls"] == 0
+                        and q["engine"]["image_id"] == original["image"]
+                        and q["engine"]["timeout_seconds"] == original["timeout_seconds"]
+                        and q["engine"]["sources"] and all(path.startswith(derived_root) for path in q["engine"]["sources"]),
+                        "Evaluation qualification must bind the derived source with the original engine")
+                overrides[target] = {"recalculation": {"qualification_path": str(safe_path(qpath)),
+                                                       "qualification_sha256": sha(qpath),
+                                                       "qualification_hash": q["record_hash"]}}
+                files[str(safe_path(qpath))] = sha(qpath)
+            extension.update(evaluation_policy="original_frozen_semantics_budget_derived_source_requalified_scorer",
+                             evaluation_runtime_overrides=overrides)
         launcher = Path(__file__).with_name(LAUNCHERS[config["version"]])
         files[str(launcher.absolute())] = sha(launcher)
     # Validate every domain/role/runtime before any paid work is authorized.
     for stage, benchmark in enumerate(BENCHMARKS, 1):
         role = roles[benchmark]
-        manifest(read_json(role["path"]), train_families=role["train"], selection_families=role["selection"],
-                 model=learning_model, budget=config["budget"], runtime=role["runtime"], seed=config["seed"] + stage,
-                 version=learning_version if recovery else MULTI_BENCHMARK_VERSION, method="skillopt", **extra)
+        for method in methods if recovery else ["skillopt"]:
+            manifest(read_json(role["path"]), train_families=role["train"], selection_families=role["selection"],
+                     model=learning_model, budget=config["budget"], runtime=role["runtime"],
+                     seed=config["seed"] + stage, version=learning_version if recovery else MULTI_BENCHMARK_VERSION,
+                     method=method, **extra)
     protocol = seal({"version": config["version"], "root": str(root), "config": config, "references": refs,
                      **extension, "roles": roles, "model": learning_model, "files": files, "source_files": _source_files(),
                      "learning_host_runtime": runtime_identity(),
-                     "order": list(BENCHMARKS), "methods": ["skillopt"] if recovery else ["skillopt", "gepa"],
+                     "order": list(BENCHMARKS), "methods": methods,
                      "pending_policy": "carry_parent_continue_attempts_never_claim_completed_learning",
                      "reuse_policy": "link_identical_policy_existing_samples_no_new_independent_observations",
                      "data_scope": "previously_exposed_development_with_explicit_learning_overlap_not_final",
@@ -303,24 +391,37 @@ def worker(operation, request_path, output):
     request = read_json(request_path, sealed=True)
     reference, benchmark = request["reference"], request["benchmark"]
     root = safe_path(reference["root"])
-    plan = load_plan(root)
+    # A V4 budget-derived source cannot rebuild the frozen No-Skill plan; inspect
+    # already verified that plan and report under the frozen source itself.
+    derived = operation in {"evaluate", "verify-evaluation"} and "evaluation_source" in reference
     require(Path(__import__("skillopt.continual_eval.core", fromlist=["__file__"]).__file__).resolve().parents[2]
-            == safe_path(reference["source"]), "Worker imported the wrong evaluation source")
+            == safe_path(reference["evaluation_source" if derived else "source"]),
+            "Worker imported the wrong evaluation source")
+    plan = read_json(root / "plan.json", sealed=True) if derived else load_plan(root)
     require(plan["config"]["methods"] == ["no_skill"] and plan["config"]["partition"] == "development",
             "Expected frozen development No-Skill reference")
-    baseline = report(root)
     expected = len([t for t in plan["tasks"] if t["benchmark"] == benchmark]) * plan["repeats"]
-    require(expected > 0 and all(baseline["run_accounting"][k] == expected for k in
-            ("reserved_positions", "terminal_predictions", "scored_positions"))
-            and baseline["run_accounting"]["unclosed_calls"] == 0, "Baseline incomplete")
-    require(load_checkpoint(root, "no_skill", "h0", 0, plan)["skill_text"] == "", "Baseline not empty")
+    if not derived:
+        baseline = report(root)
+        require(expected > 0 and all(baseline["run_accounting"][k] == expected for k in
+                ("reserved_positions", "terminal_predictions", "scored_positions"))
+                and baseline["run_accounting"]["unclosed_calls"] == 0, "Baseline incomplete")
+        require(load_checkpoint(root, "no_skill", "h0", 0, plan)["skill_text"] == "", "Baseline not empty")
     service = verify_service(root)
     if operation in {"evaluate", "verify-evaluation"}:
         require(plan["record_hash"] == request["baseline_plan_hash"]
-                and baseline["record_hash"] == request["baseline_report_hash"], "Historical baseline changed")
+                and (derived or baseline["record_hash"] == request["baseline_report_hash"]),
+                "Historical baseline changed")
         new = safe_path(request["run"])
         config = deepcopy(plan["config"])
         config["methods"] = ["no_skill", request["method"]]
+        if "evaluation_runtime" in request:
+            require(derived and set(request["evaluation_runtime"]) == {"recalculation"}
+                    and set(request["evaluation_runtime"]["recalculation"])
+                    == {"qualification_path", "qualification_sha256", "qualification_hash"},
+                    "Only a derived source may rebind its re-qualified scorer")
+            runtime = config["runtime"][benchmark]
+            runtime["recalculation"] = {**runtime["recalculation"], **request["evaluation_runtime"]["recalculation"]}
         chain = request["chain"]
         require(1 <= len(chain) <= 5, "Invalid attempt stage")
         if operation == "evaluate":
@@ -395,7 +496,7 @@ def run(root, method, *, repo, gepa_source):
                 require(req["benchmark"] == expected_target and req["chain"][-1] == expected_skill
                         and req["baseline_plan_hash"] == ref["plan_hash"]
                         and req["baseline_report_hash"] == ref["report_hash"]
-                        and req["reference"] == {k: ref[k] for k in ("root", "source", "python")},
+                        and req["reference"] == _reference_identity(ref),
                         "Reused evaluation does not belong to this policy/domain")
                 verified = _invoke(ref, "verify-evaluation", cell["request_path"], cell["output_path"],
                                    log=run_root / "verify-evaluations.log")
@@ -439,7 +540,8 @@ def run(root, method, *, repo, gepa_source):
                     from skillopt.continual_learning.skillopt import run_stage
                     replay = run_stage(value, panel, directory / "learning", repo=repo)
                 require(replay["record_hash"] == record["learning_result_hash"]
-                        and transition(previous, replay)["skill"] == record["skill"], "Learning result changed")
+                        and transition(previous, replay, _skill_limit(protocol))["skill"] == record["skill"],
+                        "Learning result changed")
                 require_safe_handoff(directory / "learning", replay)
                 verify_service(directory / "learning", learning_service)
                 require(set(record["cells"]) == set(BENCHMARKS), "Incomplete stage evaluation matrix")
@@ -465,7 +567,7 @@ def run(root, method, *, repo, gepa_source):
                     result = run_stage(value, panel, directory / "learning", repo=repo)
                 verify_service(directory / "learning", learning_service)
                 require_safe_handoff(directory / "learning", result)
-                state = transition(previous, result)
+                state = transition(previous, result, _skill_limit(protocol))
                 decision = seal({"protocol_hash": protocol["record_hash"], "method": method, "stage": stage,
                                  "benchmark": benchmark, "parent_skill": previous, "manifest_hash": value["record_hash"],
                                  "parent_stage_hash": parent_stage_hash, "parent_skill_hash": digest(previous),
@@ -483,11 +585,13 @@ def run(root, method, *, repo, gepa_source):
                                          "independent_new_observation": False}
                     else:
                         req_path = directory / f"requests/{target}.json"
-                        write_json(req_path, seal({"reference": {k: ref[k] for k in ("root", "source", "python")},
+                        write_json(req_path, seal({"reference": _reference_identity(ref),
                             "benchmark": target, "baseline_plan_hash": ref["plan_hash"],
                             "baseline_report_hash": ref["report_hash"], "run": str(directory / f"evaluations/{target}"),
                             "method": method, "chain": chain + [state["skill"]], "stage_hash": decision["record_hash"],
-                            "repo": str(safe_path(repo)), "workers": protocol["config"]["workers"]}))
+                            "repo": str(safe_path(repo)), "workers": protocol["config"]["workers"],
+                            **({"evaluation_runtime": protocol["evaluation_runtime_overrides"][target]}
+                               if target in protocol.get("evaluation_runtime_overrides", {}) else {})}))
                         evaluated = _invoke(ref, "evaluate", req_path, directory / f"evaluation-{target}.json",
                                             log=directory / f"evaluation-{target}.log")
                         cells[target] = {"result": evaluated, "kind": "new_frozen_policy_evaluation", "source_stage": stage,

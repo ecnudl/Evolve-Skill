@@ -1,0 +1,94 @@
+{
+  "version": "fivebench-sequential-attempts-v4",
+  "references": {
+    "bigcodebench": {
+      "root": "/root/continual-baselines-long-20261001-study/no_skill",
+      "source": "/root/continual-baselines-long-20261001-source",
+      "python": "/root/continual-learning-env-20260928/bin/python",
+      "evaluation_source": "/root/continual-baselines-long-20261003-f-skill32k-source"
+    },
+    "spreadsheetbench": {
+      "root": "/root/continual-spreadsheet-long-20261001-study/baseline/run",
+      "source": "/root/continual-spreadsheet-long-20261001-source",
+      "python": "/root/continual-learning-env-20260928/bin/python",
+      "evaluation_source": "/root/continual-spreadsheet-long-20261003-f-skill32k-source"
+    },
+    "searchqa": {
+      "root": "/root/continual-searchqa-long-20261001-study/run",
+      "source": "/root/continual-baselines-long-20261001-source",
+      "python": "/root/continual-learning-env-20260928/bin/python",
+      "evaluation_source": "/root/continual-baselines-long-20261003-f-skill32k-source"
+    },
+    "korbench": {
+      "root": "/root/continual-korbench-long-20261001-study/run",
+      "source": "/root/continual-baselines-long-20261001-source",
+      "python": "/root/continual-learning-env-20260928/bin/python",
+      "evaluation_source": "/root/continual-baselines-long-20261003-f-skill32k-source"
+    },
+    "alfworld": {
+      "root": "/root/continual-alfworld-long-20261001-study/run",
+      "source": "/root/continual-baselines-long-20261001-source",
+      "python": "/root/continual-alf-prep-20260928/env/bin/python",
+      "evaluation_source": "/root/continual-baselines-long-20261003-f-skill32k-source"
+    }
+  },
+  "families": {
+    "bigcodebench": {
+      "train": 64,
+      "selection": 64
+    },
+    "spreadsheetbench": {
+      "train": 40,
+      "selection": 40
+    },
+    "searchqa": {
+      "train": 64,
+      "selection": 64
+    },
+    "korbench": {
+      "train": 10,
+      "selection": 10
+    },
+    "alfworld": {
+      "train": 19,
+      "selection": 20
+    }
+  },
+  "budget": {
+    "max_metric_calls": 512,
+    "max_reflection_calls": 64,
+    "max_api_calls": 12000,
+    "max_reported_tokens": 6000000,
+    "max_iterations": 2,
+    "minibatch_size": 8,
+    "solver_max_tokens": 65536,
+    "reflection_max_tokens": 4096
+  },
+  "seed": 20261002,
+  "learning_sheet_qualification": "/root/continual-fivebench-20261003-f-q23/qualification.json",
+  "native_lock": "/root/continual-baselines-long-20261001-study/native.lock",
+  "workers": 10,
+  "learning_recovery_policy": {
+    "version": "closed-delivery-recovery-v4",
+    "reflection_parser": "strict-json-invalid-escape-v1",
+    "network_retry": "closed_delivery_error_v3",
+    "length_retries": 1,
+    "length_max_tokens": 131072,
+    "filtered_response": "unknown_no_retry_complete_filter_health_v1",
+    "unknown_score": "paired_known_exclusion_guarded_v1",
+    "min_known_fraction": 0.5,
+    "unknown_shift_tolerance_min": 2,
+    "unknown_shift_tolerance_fraction": 0.05,
+    "train_rollout": "fresh_per_update_v1",
+    "failed_attempt_usage": "reserved_max_attempts_hard_cap_v1",
+    "max_unknown_cost_attempts": 64,
+    "over_budget_candidate": "reject_inadmissible_continue_v1",
+    "cleanup_policy": "stop_before_next_task_on_unconfirmed_cleanup_v1",
+    "skill_budget_bytes": 32000,
+    "gepa_unknown": "parent_known_mask_neutral_impute_guarded_v1"
+  },
+  "learning_sheet_scorer": "qualified_lo_recalc_v7_v1",
+  "evaluation_qualifications": {
+    "spreadsheetbench": "/root/continual-fivebench-20261003-f-q17/qualification.json"
+  }
+}
