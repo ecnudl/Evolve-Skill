@@ -1,0 +1,935 @@
+{
+ "provenance": {
+  "source_result": "/root/fivebench-g-20261008-l3-matched-feedback-p/study/result.json",
+  "source_record_hash": "b501f0a605e70c39bbdc21ee11d8a948cc73cc5ef0a0df560a5b435602c507aa",
+  "status_check": "scripts/run_fivebench_matched_feedback_study.py status from /root/fivebench-g-20261008-source-p, exit 0 (2026-10-09)",
+  "omitted": {
+   "artifacts_files": 44453,
+   "artifacts_inventory_sha256": "1ee43101f2e2f2f730a7d827b4b8c8a5bf5ef3f8c7b12dc6aafe2ff50c42ab9a"
+  },
+  "added": "block_outcomes: the sealed blocks/<b>/outcome.json records (parent and arm val evaluations)",
+  "model": {
+   "provider": "bigmodel",
+   "name": "glm-5.3",
+   "reasoning_effort": "low"
+  }
+ },
+ "result": {
+  "version": "fivebench-matched-feedback-study-v1",
+  "protocol_hash": "b79a7e2fa169747a8389362eb7eaa0a361b81107468c275c3aaf556abc0acb4b",
+  "study_hash": "ec8b6c66a57fb45c822c637fec51e571925098e9d74bb11c85fd9cf1f6d4cfd5",
+  "started_at": "2026-10-08T02:58:01+00:00",
+  "finished_at": "2026-10-08T22:16:58+00:00",
+  "completed_blocks": 8,
+  "costs": {
+   "logical_calls": 10587,
+   "terminal_calls": 10587,
+   "unclosed_calls": 0,
+   "http_attempts": 10592,
+   "http_attempts_known_subtotal": 10592,
+   "http_attempts_total": 10592,
+   "http_attempts_semantics": "known_subtotal_total_unknown_if_unclosed",
+   "reported_tokens_known_subtotal": 43381492,
+   "missing_usage_calls": 9,
+   "usage_complete": false,
+   "retry_inclusive_usage_known": false,
+   "reflection_calls": 384,
+   "solver_calls": 8740,
+   "verifier_calls": 1463,
+   "missing_attempt_usage": 9,
+   "unknown_cost_attempts": 9,
+   "delivered_without_usage": 0,
+   "blocking_usage_gap": false,
+   "receipt_attempt_limit_exceeded": 0,
+   "unknown_cost_attempt_cap_exceeded": false
+  },
+  "usage_complete": false,
+  "unknown_cost_attempts": 9,
+  "completion_rule": "frozen_v10_ledger_blocking_usage_gap_rule_bounded_unknown_cost_attempts_reported",
+  "deployment_authorized": false,
+  "status": "completed",
+  "primary": {
+   "treatment": "h2",
+   "control": "scalar",
+   "statistic": "per_block_pass_difference",
+   "test": "exact_two_sided_sign_flip_over_blocks",
+   "alpha": 0.05,
+   "directional_claim": "mean_difference_positive_and_p_at_most_alpha",
+   "differences": [
+    6,
+    9,
+    1,
+    12,
+    11,
+    -2,
+    2,
+    1
+   ],
+   "mean_difference": 5.0,
+   "mean_yield_difference": 0.02,
+   "observed_sum": 40,
+   "informative_blocks": 8,
+   "p_value": 0.046875,
+   "method": "exact_block_sign_flip_convolution",
+   "unknown_sensitivity_mean_bounds": [
+    5.0,
+    5.125
+   ],
+   "supported": true
+  },
+  "secondary": [
+   {
+    "treatment": "default",
+    "control": "scalar",
+    "differences": [
+     -3,
+     4,
+     -1,
+     -2,
+     1,
+     12,
+     10,
+     -2
+    ],
+    "mean_difference": 2.375,
+    "mean_yield_difference": 0.0095,
+    "observed_sum": 19,
+    "informative_blocks": 8,
+    "p_value": 0.3671875,
+    "method": "exact_block_sign_flip_convolution",
+    "unknown_sensitivity_mean_bounds": [
+     2.375,
+     2.5
+    ]
+   },
+   {
+    "treatment": "h2",
+    "control": "default",
+    "differences": [
+     9,
+     5,
+     2,
+     14,
+     10,
+     -14,
+     -8,
+     3
+    ],
+    "mean_difference": 2.625,
+    "mean_yield_difference": 0.0105,
+    "observed_sum": 21,
+    "informative_blocks": 8,
+    "p_value": 0.4609375,
+    "method": "exact_block_sign_flip_convolution",
+    "unknown_sensitivity_mean_bounds": [
+     2.5,
+     2.75
+    ]
+   }
+  ],
+  "arms": {
+   "scalar": {
+    "pass": 1506,
+    "fail": 494,
+    "unknown": 0,
+    "positions": 2000,
+    "yield": 0.753,
+    "dispositions": {
+     "candidate_ready": 8
+    },
+    "authorized_blocks": null
+   },
+   "default": {
+    "pass": 1525,
+    "fail": 474,
+    "unknown": 1,
+    "positions": 2000,
+    "yield": 0.7625,
+    "dispositions": {
+     "candidate_ready": 8
+    },
+    "authorized_blocks": 8
+   },
+   "h2": {
+    "pass": 1546,
+    "fail": 453,
+    "unknown": 1,
+    "positions": 2000,
+    "yield": 0.773,
+    "dispositions": {
+     "candidate_ready": 8
+    },
+    "authorized_blocks": 8
+   }
+  },
+  "verifier_component": [
+   {
+    "block": 0,
+    "default": {
+     "rejected_host_fail_rows": 12,
+     "eligible_host_fail_rows": 24,
+     "rejected_host_pass_rows": 8,
+     "eligible_host_pass_rows": 66
+    },
+    "h2": {
+     "rejected_host_fail_rows": 9,
+     "eligible_host_fail_rows": 24,
+     "rejected_host_pass_rows": 3,
+     "eligible_host_pass_rows": 66
+    }
+   },
+   {
+    "block": 1,
+    "default": {
+     "rejected_host_fail_rows": 12,
+     "eligible_host_fail_rows": 31,
+     "rejected_host_pass_rows": 6,
+     "eligible_host_pass_rows": 59
+    },
+    "h2": {
+     "rejected_host_fail_rows": 13,
+     "eligible_host_fail_rows": 31,
+     "rejected_host_pass_rows": 6,
+     "eligible_host_pass_rows": 59
+    }
+   },
+   {
+    "block": 2,
+    "default": {
+     "rejected_host_fail_rows": 7,
+     "eligible_host_fail_rows": 26,
+     "rejected_host_pass_rows": 5,
+     "eligible_host_pass_rows": 64
+    },
+    "h2": {
+     "rejected_host_fail_rows": 8,
+     "eligible_host_fail_rows": 26,
+     "rejected_host_pass_rows": 1,
+     "eligible_host_pass_rows": 64
+    }
+   },
+   {
+    "block": 3,
+    "default": {
+     "rejected_host_fail_rows": 8,
+     "eligible_host_fail_rows": 26,
+     "rejected_host_pass_rows": 9,
+     "eligible_host_pass_rows": 64
+    },
+    "h2": {
+     "rejected_host_fail_rows": 11,
+     "eligible_host_fail_rows": 26,
+     "rejected_host_pass_rows": 1,
+     "eligible_host_pass_rows": 64
+    }
+   },
+   {
+    "block": 4,
+    "default": {
+     "rejected_host_fail_rows": 11,
+     "eligible_host_fail_rows": 20,
+     "rejected_host_pass_rows": 10,
+     "eligible_host_pass_rows": 70
+    },
+    "h2": {
+     "rejected_host_fail_rows": 9,
+     "eligible_host_fail_rows": 20,
+     "rejected_host_pass_rows": 4,
+     "eligible_host_pass_rows": 70
+    }
+   },
+   {
+    "block": 5,
+    "default": {
+     "rejected_host_fail_rows": 9,
+     "eligible_host_fail_rows": 28,
+     "rejected_host_pass_rows": 7,
+     "eligible_host_pass_rows": 61
+    },
+    "h2": {
+     "rejected_host_fail_rows": 12,
+     "eligible_host_fail_rows": 28,
+     "rejected_host_pass_rows": 4,
+     "eligible_host_pass_rows": 61
+    }
+   },
+   {
+    "block": 6,
+    "default": {
+     "rejected_host_fail_rows": 11,
+     "eligible_host_fail_rows": 28,
+     "rejected_host_pass_rows": 4,
+     "eligible_host_pass_rows": 62
+    },
+    "h2": {
+     "rejected_host_fail_rows": 9,
+     "eligible_host_fail_rows": 28,
+     "rejected_host_pass_rows": 4,
+     "eligible_host_pass_rows": 62
+    }
+   },
+   {
+    "block": 7,
+    "default": {
+     "rejected_host_fail_rows": 7,
+     "eligible_host_fail_rows": 21,
+     "rejected_host_pass_rows": 11,
+     "eligible_host_pass_rows": 68
+    },
+    "h2": {
+     "rejected_host_fail_rows": 5,
+     "eligible_host_fail_rows": 21,
+     "rejected_host_pass_rows": 5,
+     "eligible_host_pass_rows": 68
+    }
+   }
+  ],
+  "blocks": 8,
+  "registered_wording": "evolved_verifier_feedback_improved_one_step_proposals_over_scalar",
+  "block_records": [
+   {
+    "candidates_hash": "36a3c6d823879510fdeffaf8a55a6d25c7c0b3a9b0e9b5c61e4a3feddd4a30ee",
+    "outcome_hash": "7a6f14fe2ce4490eb743b01767e9d53414217e9116b662a04c667a0781131dca"
+   },
+   {
+    "candidates_hash": "73a81bf1fa86c9871d05d080e90484df67819c66d83aa153d524e427143490ca",
+    "outcome_hash": "c69145f961a8fb84df79a20254d366e44d1d28283472a67871873cae56fae299"
+   },
+   {
+    "candidates_hash": "2d89c7fb2d4114e8458655a9ed6a22df76059e96884b2725061c2725dda687cc",
+    "outcome_hash": "901cc4ade471cb4bdc70376d5a1f43dbdbd700ea083a5d93e3cdf6638374d20f"
+   },
+   {
+    "candidates_hash": "72342710959b7ec0c2fe40f18c66d1d6f8fa7fcfce99378a5cb44c111acda988",
+    "outcome_hash": "db9d43a4c99b8098c01fb01ac3421b744d899361fee6b5299a9fbf32c37dc202"
+   },
+   {
+    "candidates_hash": "a4009c4e946175e42f8f520b1e519c02dc66a75e506c9a81fcca6af3b0ceace5",
+    "outcome_hash": "94e83cd6a619f698a14bb941aaab45be11cb19587222bc2d7ea98b68f785fe22"
+   },
+   {
+    "candidates_hash": "ca62cc97a4b1c35f3011f70de7ddb921a555adc806819ed11c8fa3c57c264f79",
+    "outcome_hash": "5cbc17b5cc973dc97c4537c912ca122ebeab2dd3cdef363f07d7b3fa2a7e2bea"
+   },
+   {
+    "candidates_hash": "6f68b4579d6ac077b8ccb63b66e5d85c1ed3ef23549bf9c1a269046c155801db",
+    "outcome_hash": "97862d9e4451c484f32b82bb30da0e5f8b3a38e90021bb45d0bad6b1d6376d0c"
+   },
+   {
+    "candidates_hash": "9f8d6e3f444eb66d378f41bbb3f9813f0b1d39b566af1cd41ea378af0f55edef",
+    "outcome_hash": "97277d0ef128ca49d48f91e2f2b97f5865a73bd390a1b58659956744bb5b24d7"
+   }
+  ],
+  "record_hash": "b501f0a605e70c39bbdc21ee11d8a948cc73cc5ef0a0df560a5b435602c507aa"
+ },
+ "block_outcomes": [
+  {
+   "protocol_hash": "b79a7e2fa169747a8389362eb7eaa0a361b81107468c275c3aaf556abc0acb4b",
+   "block": 0,
+   "candidates_hash": "36a3c6d823879510fdeffaf8a55a6d25c7c0b3a9b0e9b5c61e4a3feddd4a30ee",
+   "evaluations": {
+    "parent": {
+     "skill_hash": "cf785bf66213c452c7381ad869ddff4bf16306daf85c4d11fc9a725eaef326ab",
+     "rollout": 1,
+     "positions": 250,
+     "pass": 183,
+     "fail": 67,
+     "unknown": 0,
+     "evidence_digest": "5cbc9d942ef8143256565f35e02df71a473e87e2e51c3990e5509638b7d475a9"
+    },
+    "scalar": {
+     "skill_hash": "60e758e90a8a4d63b4b96a6167f57e6a32a46373805021e3ab1cbd3f4b2a4712",
+     "rollout": 2,
+     "positions": 250,
+     "pass": 191,
+     "fail": 59,
+     "unknown": 0,
+     "evidence_digest": "fad8892bacb105509968311ead949d52a26b245634262dba596e67b19d8ae590"
+    },
+    "h2": {
+     "skill_hash": "28dbf9e0b1a797713a3f4d81b4f3a938e07f6fc1093227d1562151cd7f5a3e70",
+     "rollout": 4,
+     "positions": 250,
+     "pass": 197,
+     "fail": 53,
+     "unknown": 0,
+     "evidence_digest": "f9b6310b93b6759fd5e5694ad5a2faae541e3065cc799bbeaf5f95726e213173"
+    },
+    "default": {
+     "skill_hash": "d5ec9acc9c03003af2e6ecb43403652015d392084330bbf4828b885856cec98d",
+     "rollout": 3,
+     "positions": 250,
+     "pass": 188,
+     "fail": 62,
+     "unknown": 0,
+     "evidence_digest": "8cc3bc933fc7dce8f84d2c9b3caa2fdef0d754d5a86a6ee70a508d475ba71908"
+    }
+   },
+   "arms": {
+    "scalar": {
+     "skill_hash": "60e758e90a8a4d63b4b96a6167f57e6a32a46373805021e3ab1cbd3f4b2a4712",
+     "rollout": 2,
+     "positions": 250,
+     "pass": 191,
+     "fail": 59,
+     "unknown": 0,
+     "evidence_digest": "fad8892bacb105509968311ead949d52a26b245634262dba596e67b19d8ae590",
+     "evaluated": "candidate"
+    },
+    "default": {
+     "skill_hash": "d5ec9acc9c03003af2e6ecb43403652015d392084330bbf4828b885856cec98d",
+     "rollout": 3,
+     "positions": 250,
+     "pass": 188,
+     "fail": 62,
+     "unknown": 0,
+     "evidence_digest": "8cc3bc933fc7dce8f84d2c9b3caa2fdef0d754d5a86a6ee70a508d475ba71908",
+     "evaluated": "candidate"
+    },
+    "h2": {
+     "skill_hash": "28dbf9e0b1a797713a3f4d81b4f3a938e07f6fc1093227d1562151cd7f5a3e70",
+     "rollout": 4,
+     "positions": 250,
+     "pass": 197,
+     "fail": 53,
+     "unknown": 0,
+     "evidence_digest": "f9b6310b93b6759fd5e5694ad5a2faae541e3065cc799bbeaf5f95726e213173",
+     "evaluated": "candidate"
+    }
+   },
+   "record_hash": "7a6f14fe2ce4490eb743b01767e9d53414217e9116b662a04c667a0781131dca"
+  },
+  {
+   "protocol_hash": "b79a7e2fa169747a8389362eb7eaa0a361b81107468c275c3aaf556abc0acb4b",
+   "block": 1,
+   "candidates_hash": "73a81bf1fa86c9871d05d080e90484df67819c66d83aa153d524e427143490ca",
+   "evaluations": {
+    "default": {
+     "skill_hash": "277c546d8bbcca2918ee316accbffadbcfebae57ad91212ac213b721bb3ce1a7",
+     "rollout": 7,
+     "positions": 250,
+     "pass": 191,
+     "fail": 59,
+     "unknown": 0,
+     "evidence_digest": "9922db1b1e4ed3b1ab7f24c2f9f0d41169fbe173d0d25f94c937571c8b4ccc4e"
+    },
+    "parent": {
+     "skill_hash": "cf785bf66213c452c7381ad869ddff4bf16306daf85c4d11fc9a725eaef326ab",
+     "rollout": 5,
+     "positions": 250,
+     "pass": 181,
+     "fail": 69,
+     "unknown": 0,
+     "evidence_digest": "e33da84a44e6e85ac9853c437a7c6db35f593f9d268c890fc1af95b2d0631287"
+    },
+    "scalar": {
+     "skill_hash": "46a0050f7ca7e31f46c6c918524a03c5e4c74d7d5ca01d0103d6001aba2b871a",
+     "rollout": 6,
+     "positions": 250,
+     "pass": 187,
+     "fail": 63,
+     "unknown": 0,
+     "evidence_digest": "e330662769f369b2e817cda4c0d759f087a66b5f528581bdf0924e9872b148f1"
+    },
+    "h2": {
+     "skill_hash": "8a792a2aa3d040900e2cdc0894d02622ef4cd7d8298d8058da17dc71e6e939e3",
+     "rollout": 8,
+     "positions": 250,
+     "pass": 196,
+     "fail": 54,
+     "unknown": 0,
+     "evidence_digest": "1fb1e4b9b5b1704bb2ab9b04dba59147a0d9df4467915a70317a5ca9d06c8886"
+    }
+   },
+   "arms": {
+    "scalar": {
+     "skill_hash": "46a0050f7ca7e31f46c6c918524a03c5e4c74d7d5ca01d0103d6001aba2b871a",
+     "rollout": 6,
+     "positions": 250,
+     "pass": 187,
+     "fail": 63,
+     "unknown": 0,
+     "evidence_digest": "e330662769f369b2e817cda4c0d759f087a66b5f528581bdf0924e9872b148f1",
+     "evaluated": "candidate"
+    },
+    "default": {
+     "skill_hash": "277c546d8bbcca2918ee316accbffadbcfebae57ad91212ac213b721bb3ce1a7",
+     "rollout": 7,
+     "positions": 250,
+     "pass": 191,
+     "fail": 59,
+     "unknown": 0,
+     "evidence_digest": "9922db1b1e4ed3b1ab7f24c2f9f0d41169fbe173d0d25f94c937571c8b4ccc4e",
+     "evaluated": "candidate"
+    },
+    "h2": {
+     "skill_hash": "8a792a2aa3d040900e2cdc0894d02622ef4cd7d8298d8058da17dc71e6e939e3",
+     "rollout": 8,
+     "positions": 250,
+     "pass": 196,
+     "fail": 54,
+     "unknown": 0,
+     "evidence_digest": "1fb1e4b9b5b1704bb2ab9b04dba59147a0d9df4467915a70317a5ca9d06c8886",
+     "evaluated": "candidate"
+    }
+   },
+   "record_hash": "c69145f961a8fb84df79a20254d366e44d1d28283472a67871873cae56fae299"
+  },
+  {
+   "protocol_hash": "b79a7e2fa169747a8389362eb7eaa0a361b81107468c275c3aaf556abc0acb4b",
+   "block": 2,
+   "candidates_hash": "2d89c7fb2d4114e8458655a9ed6a22df76059e96884b2725061c2725dda687cc",
+   "evaluations": {
+    "scalar": {
+     "skill_hash": "2f8d6f4c9d6d5001eb37c0117e7634340a49a898bcad8a032414ce20214ef1fb",
+     "rollout": 10,
+     "positions": 250,
+     "pass": 185,
+     "fail": 65,
+     "unknown": 0,
+     "evidence_digest": "2bf1c2ed9ef6f46dd6fb2aafef80369ce32774ba522f744c059a1c56b3e716bf"
+    },
+    "parent": {
+     "skill_hash": "cf785bf66213c452c7381ad869ddff4bf16306daf85c4d11fc9a725eaef326ab",
+     "rollout": 9,
+     "positions": 250,
+     "pass": 185,
+     "fail": 65,
+     "unknown": 0,
+     "evidence_digest": "5a23206c813b3a8760ad6c55e2907a9d634f55d0539ef8661332b3e6951a2444"
+    },
+    "h2": {
+     "skill_hash": "1590a3a873d889ae8d620b1ae38f8fd7f20ea29014a923c1dd6dc15f0745eb78",
+     "rollout": 12,
+     "positions": 250,
+     "pass": 186,
+     "fail": 64,
+     "unknown": 0,
+     "evidence_digest": "b2d1273a89597636ca6952557ba668e35527b701f1a0824edec57d7d98dc4d46"
+    },
+    "default": {
+     "skill_hash": "a3d693cf3be8d02c4e6f18e9214337fba06c3da78b808daf3695537cea82f7b0",
+     "rollout": 11,
+     "positions": 250,
+     "pass": 184,
+     "fail": 66,
+     "unknown": 0,
+     "evidence_digest": "08f534852ef482499828b051a25ee57f65f411f930374ae5fe05cd36f5f2bf3d"
+    }
+   },
+   "arms": {
+    "scalar": {
+     "skill_hash": "2f8d6f4c9d6d5001eb37c0117e7634340a49a898bcad8a032414ce20214ef1fb",
+     "rollout": 10,
+     "positions": 250,
+     "pass": 185,
+     "fail": 65,
+     "unknown": 0,
+     "evidence_digest": "2bf1c2ed9ef6f46dd6fb2aafef80369ce32774ba522f744c059a1c56b3e716bf",
+     "evaluated": "candidate"
+    },
+    "default": {
+     "skill_hash": "a3d693cf3be8d02c4e6f18e9214337fba06c3da78b808daf3695537cea82f7b0",
+     "rollout": 11,
+     "positions": 250,
+     "pass": 184,
+     "fail": 66,
+     "unknown": 0,
+     "evidence_digest": "08f534852ef482499828b051a25ee57f65f411f930374ae5fe05cd36f5f2bf3d",
+     "evaluated": "candidate"
+    },
+    "h2": {
+     "skill_hash": "1590a3a873d889ae8d620b1ae38f8fd7f20ea29014a923c1dd6dc15f0745eb78",
+     "rollout": 12,
+     "positions": 250,
+     "pass": 186,
+     "fail": 64,
+     "unknown": 0,
+     "evidence_digest": "b2d1273a89597636ca6952557ba668e35527b701f1a0824edec57d7d98dc4d46",
+     "evaluated": "candidate"
+    }
+   },
+   "record_hash": "901cc4ade471cb4bdc70376d5a1f43dbdbd700ea083a5d93e3cdf6638374d20f"
+  },
+  {
+   "protocol_hash": "b79a7e2fa169747a8389362eb7eaa0a361b81107468c275c3aaf556abc0acb4b",
+   "block": 3,
+   "candidates_hash": "72342710959b7ec0c2fe40f18c66d1d6f8fa7fcfce99378a5cb44c111acda988",
+   "evaluations": {
+    "scalar": {
+     "skill_hash": "bddea5b35be4b6de00a750d3852796c36ca0574418a7abf73c9a409bb9605cc8",
+     "rollout": 14,
+     "positions": 250,
+     "pass": 185,
+     "fail": 65,
+     "unknown": 0,
+     "evidence_digest": "bc5b4a862a9580c91bae646a193a46a987bf2965615cfde87ceb6889a6eed547"
+    },
+    "h2": {
+     "skill_hash": "cca22e31bf9e8f3b137ecb5a04dd6fcf307e89f2064c6382edf66d05708e4721",
+     "rollout": 16,
+     "positions": 250,
+     "pass": 197,
+     "fail": 53,
+     "unknown": 0,
+     "evidence_digest": "7604f7d0a818bbf5526003b979d775b1157ee3c6aea862204fbff72913e4e852"
+    },
+    "parent": {
+     "skill_hash": "cf785bf66213c452c7381ad869ddff4bf16306daf85c4d11fc9a725eaef326ab",
+     "rollout": 13,
+     "positions": 250,
+     "pass": 186,
+     "fail": 64,
+     "unknown": 0,
+     "evidence_digest": "661107c28edf22eda0048fc1c4cd693c9fb1ef4ce07c4e0a307fc21d6e045332"
+    },
+    "default": {
+     "skill_hash": "12019351a47733eb10a59142cb9ba47068521991a1bab84c57d3731c0f2e9851",
+     "rollout": 15,
+     "positions": 250,
+     "pass": 183,
+     "fail": 67,
+     "unknown": 0,
+     "evidence_digest": "dc6380ebfdf897a49135b72780a61582951adee8bfe597eb43b89ae05ed11910"
+    }
+   },
+   "arms": {
+    "scalar": {
+     "skill_hash": "bddea5b35be4b6de00a750d3852796c36ca0574418a7abf73c9a409bb9605cc8",
+     "rollout": 14,
+     "positions": 250,
+     "pass": 185,
+     "fail": 65,
+     "unknown": 0,
+     "evidence_digest": "bc5b4a862a9580c91bae646a193a46a987bf2965615cfde87ceb6889a6eed547",
+     "evaluated": "candidate"
+    },
+    "default": {
+     "skill_hash": "12019351a47733eb10a59142cb9ba47068521991a1bab84c57d3731c0f2e9851",
+     "rollout": 15,
+     "positions": 250,
+     "pass": 183,
+     "fail": 67,
+     "unknown": 0,
+     "evidence_digest": "dc6380ebfdf897a49135b72780a61582951adee8bfe597eb43b89ae05ed11910",
+     "evaluated": "candidate"
+    },
+    "h2": {
+     "skill_hash": "cca22e31bf9e8f3b137ecb5a04dd6fcf307e89f2064c6382edf66d05708e4721",
+     "rollout": 16,
+     "positions": 250,
+     "pass": 197,
+     "fail": 53,
+     "unknown": 0,
+     "evidence_digest": "7604f7d0a818bbf5526003b979d775b1157ee3c6aea862204fbff72913e4e852",
+     "evaluated": "candidate"
+    }
+   },
+   "record_hash": "db9d43a4c99b8098c01fb01ac3421b744d899361fee6b5299a9fbf32c37dc202"
+  },
+  {
+   "protocol_hash": "b79a7e2fa169747a8389362eb7eaa0a361b81107468c275c3aaf556abc0acb4b",
+   "block": 4,
+   "candidates_hash": "a4009c4e946175e42f8f520b1e519c02dc66a75e506c9a81fcca6af3b0ceace5",
+   "evaluations": {
+    "default": {
+     "skill_hash": "426ff3582dca00832d69122755d9f43723563b6823172b6698aedf43e0ac6377",
+     "rollout": 19,
+     "positions": 250,
+     "pass": 186,
+     "fail": 64,
+     "unknown": 0,
+     "evidence_digest": "87fe93ce8bdd6867e6a0537753e019fa1640c9d908a63a049739f561af3139ab"
+    },
+    "scalar": {
+     "skill_hash": "903ca6369978002639daff5441219adce617542a10c091232a1768de99af3007",
+     "rollout": 18,
+     "positions": 250,
+     "pass": 185,
+     "fail": 65,
+     "unknown": 0,
+     "evidence_digest": "6e05dd9af32f74a3a19ae915f7b64b8a8777be57e14305a1e495915d749459e2"
+    },
+    "h2": {
+     "skill_hash": "00c401481d3cb83549630a1c48ae642f71639a1de109779df5938d61204b1481",
+     "rollout": 20,
+     "positions": 250,
+     "pass": 196,
+     "fail": 53,
+     "unknown": 1,
+     "evidence_digest": "12117db49dc28087d27027d6c1861264477d57967be8a73b9e35018102e54d63"
+    },
+    "parent": {
+     "skill_hash": "cf785bf66213c452c7381ad869ddff4bf16306daf85c4d11fc9a725eaef326ab",
+     "rollout": 17,
+     "positions": 250,
+     "pass": 187,
+     "fail": 63,
+     "unknown": 0,
+     "evidence_digest": "eae607eb965b0776f75e4ff71af466745ceac3366cdb8aa969169d47d5c0efd1"
+    }
+   },
+   "arms": {
+    "scalar": {
+     "skill_hash": "903ca6369978002639daff5441219adce617542a10c091232a1768de99af3007",
+     "rollout": 18,
+     "positions": 250,
+     "pass": 185,
+     "fail": 65,
+     "unknown": 0,
+     "evidence_digest": "6e05dd9af32f74a3a19ae915f7b64b8a8777be57e14305a1e495915d749459e2",
+     "evaluated": "candidate"
+    },
+    "default": {
+     "skill_hash": "426ff3582dca00832d69122755d9f43723563b6823172b6698aedf43e0ac6377",
+     "rollout": 19,
+     "positions": 250,
+     "pass": 186,
+     "fail": 64,
+     "unknown": 0,
+     "evidence_digest": "87fe93ce8bdd6867e6a0537753e019fa1640c9d908a63a049739f561af3139ab",
+     "evaluated": "candidate"
+    },
+    "h2": {
+     "skill_hash": "00c401481d3cb83549630a1c48ae642f71639a1de109779df5938d61204b1481",
+     "rollout": 20,
+     "positions": 250,
+     "pass": 196,
+     "fail": 53,
+     "unknown": 1,
+     "evidence_digest": "12117db49dc28087d27027d6c1861264477d57967be8a73b9e35018102e54d63",
+     "evaluated": "candidate"
+    }
+   },
+   "record_hash": "94e83cd6a619f698a14bb941aaab45be11cb19587222bc2d7ea98b68f785fe22"
+  },
+  {
+   "protocol_hash": "b79a7e2fa169747a8389362eb7eaa0a361b81107468c275c3aaf556abc0acb4b",
+   "block": 5,
+   "candidates_hash": "ca62cc97a4b1c35f3011f70de7ddb921a555adc806819ed11c8fa3c57c264f79",
+   "evaluations": {
+    "scalar": {
+     "skill_hash": "76654cfe33445cfe696514031caf9acc3bf8389b66d925a973cf8edc7e512448",
+     "rollout": 22,
+     "positions": 250,
+     "pass": 192,
+     "fail": 58,
+     "unknown": 0,
+     "evidence_digest": "22bbab55382c77a60e3c1e07f368d33fd66a16a5502027e5844eed20cb1e2a6c"
+    },
+    "parent": {
+     "skill_hash": "cf785bf66213c452c7381ad869ddff4bf16306daf85c4d11fc9a725eaef326ab",
+     "rollout": 21,
+     "positions": 250,
+     "pass": 185,
+     "fail": 65,
+     "unknown": 0,
+     "evidence_digest": "51d3b551ded3171bd05f3feba31f87e940cba290aed591d43015d5a146de2668"
+    },
+    "default": {
+     "skill_hash": "3ca3e794d86462ac770ebc5782532c0b592415402749d3d0c61ac7f26c537604",
+     "rollout": 23,
+     "positions": 250,
+     "pass": 204,
+     "fail": 46,
+     "unknown": 0,
+     "evidence_digest": "fbb8ccd9be20ef258bba7d148907190a3c07751c5d2213efe519367fc55cb1ad"
+    },
+    "h2": {
+     "skill_hash": "5c54d1c907ce8dfd6fa0dee8eff1708f3aff82b73a24bd4466e96de16143bd37",
+     "rollout": 24,
+     "positions": 250,
+     "pass": 190,
+     "fail": 60,
+     "unknown": 0,
+     "evidence_digest": "eae36f5aa6c03ed6e6d56378d0402db01e072cdd0c14ed7b4d2be07aacef2d9d"
+    }
+   },
+   "arms": {
+    "scalar": {
+     "skill_hash": "76654cfe33445cfe696514031caf9acc3bf8389b66d925a973cf8edc7e512448",
+     "rollout": 22,
+     "positions": 250,
+     "pass": 192,
+     "fail": 58,
+     "unknown": 0,
+     "evidence_digest": "22bbab55382c77a60e3c1e07f368d33fd66a16a5502027e5844eed20cb1e2a6c",
+     "evaluated": "candidate"
+    },
+    "default": {
+     "skill_hash": "3ca3e794d86462ac770ebc5782532c0b592415402749d3d0c61ac7f26c537604",
+     "rollout": 23,
+     "positions": 250,
+     "pass": 204,
+     "fail": 46,
+     "unknown": 0,
+     "evidence_digest": "fbb8ccd9be20ef258bba7d148907190a3c07751c5d2213efe519367fc55cb1ad",
+     "evaluated": "candidate"
+    },
+    "h2": {
+     "skill_hash": "5c54d1c907ce8dfd6fa0dee8eff1708f3aff82b73a24bd4466e96de16143bd37",
+     "rollout": 24,
+     "positions": 250,
+     "pass": 190,
+     "fail": 60,
+     "unknown": 0,
+     "evidence_digest": "eae36f5aa6c03ed6e6d56378d0402db01e072cdd0c14ed7b4d2be07aacef2d9d",
+     "evaluated": "candidate"
+    }
+   },
+   "record_hash": "5cbc17b5cc973dc97c4537c912ca122ebeab2dd3cdef363f07d7b3fa2a7e2bea"
+  },
+  {
+   "protocol_hash": "b79a7e2fa169747a8389362eb7eaa0a361b81107468c275c3aaf556abc0acb4b",
+   "block": 6,
+   "candidates_hash": "6f68b4579d6ac077b8ccb63b66e5d85c1ed3ef23549bf9c1a269046c155801db",
+   "evaluations": {
+    "h2": {
+     "skill_hash": "c7ec76a5d19b9ac59dfb41dcab072e63bb04bc28de43f26cba3775c0d5bdd09a",
+     "rollout": 28,
+     "positions": 250,
+     "pass": 193,
+     "fail": 57,
+     "unknown": 0,
+     "evidence_digest": "14c08ae64ac6fbe19265399ef553cd2d84fa91e09fc456c98f82accccb88a026"
+    },
+    "parent": {
+     "skill_hash": "cf785bf66213c452c7381ad869ddff4bf16306daf85c4d11fc9a725eaef326ab",
+     "rollout": 25,
+     "positions": 250,
+     "pass": 187,
+     "fail": 63,
+     "unknown": 0,
+     "evidence_digest": "0b0150128942fc960bc5be4a2cb33f2ecab2898a99b40774bcc09a09d7e9ceab"
+    },
+    "scalar": {
+     "skill_hash": "bbc0a86ece4427957d97a6917d0f33514cf2d01b48346665d7d5af180271d114",
+     "rollout": 26,
+     "positions": 250,
+     "pass": 191,
+     "fail": 59,
+     "unknown": 0,
+     "evidence_digest": "4b1aaa2eb11788ec2cba54ecb2840904ae895ed2a48c008edc93701e9993db16"
+    },
+    "default": {
+     "skill_hash": "54e4744b04f42ace32cf8cea678df9dd8340e7c08d2c6dd2be58e73c583b1a75",
+     "rollout": 27,
+     "positions": 250,
+     "pass": 201,
+     "fail": 49,
+     "unknown": 0,
+     "evidence_digest": "783e10a10e782f37cd8c0bbc04ba2fb5a53f2edbd90400c7a10efc93832a1822"
+    }
+   },
+   "arms": {
+    "scalar": {
+     "skill_hash": "bbc0a86ece4427957d97a6917d0f33514cf2d01b48346665d7d5af180271d114",
+     "rollout": 26,
+     "positions": 250,
+     "pass": 191,
+     "fail": 59,
+     "unknown": 0,
+     "evidence_digest": "4b1aaa2eb11788ec2cba54ecb2840904ae895ed2a48c008edc93701e9993db16",
+     "evaluated": "candidate"
+    },
+    "default": {
+     "skill_hash": "54e4744b04f42ace32cf8cea678df9dd8340e7c08d2c6dd2be58e73c583b1a75",
+     "rollout": 27,
+     "positions": 250,
+     "pass": 201,
+     "fail": 49,
+     "unknown": 0,
+     "evidence_digest": "783e10a10e782f37cd8c0bbc04ba2fb5a53f2edbd90400c7a10efc93832a1822",
+     "evaluated": "candidate"
+    },
+    "h2": {
+     "skill_hash": "c7ec76a5d19b9ac59dfb41dcab072e63bb04bc28de43f26cba3775c0d5bdd09a",
+     "rollout": 28,
+     "positions": 250,
+     "pass": 193,
+     "fail": 57,
+     "unknown": 0,
+     "evidence_digest": "14c08ae64ac6fbe19265399ef553cd2d84fa91e09fc456c98f82accccb88a026",
+     "evaluated": "candidate"
+    }
+   },
+   "record_hash": "97862d9e4451c484f32b82bb30da0e5f8b3a38e90021bb45d0bad6b1d6376d0c"
+  },
+  {
+   "protocol_hash": "b79a7e2fa169747a8389362eb7eaa0a361b81107468c275c3aaf556abc0acb4b",
+   "block": 7,
+   "candidates_hash": "9f8d6e3f444eb66d378f41bbb3f9813f0b1d39b566af1cd41ea378af0f55edef",
+   "evaluations": {
+    "scalar": {
+     "skill_hash": "9e145668082229e3b26eaeee1b64ee4d0eb6bee62583b829cccd8bce49aec2cf",
+     "rollout": 30,
+     "positions": 250,
+     "pass": 190,
+     "fail": 60,
+     "unknown": 0,
+     "evidence_digest": "3e3ef883b9324f25cbc25f7897fc35ca7232913a6f4754a2585f2cc7490604c3"
+    },
+    "h2": {
+     "skill_hash": "a3b2f2707644371811b99e123470f48b373c363ff1a786afed29c1237e386736",
+     "rollout": 32,
+     "positions": 250,
+     "pass": 191,
+     "fail": 59,
+     "unknown": 0,
+     "evidence_digest": "321b0f3cc3eecf374fb07052cdb89b00934a8ad248e04c955b3f0543226ad050"
+    },
+    "parent": {
+     "skill_hash": "cf785bf66213c452c7381ad869ddff4bf16306daf85c4d11fc9a725eaef326ab",
+     "rollout": 29,
+     "positions": 250,
+     "pass": 188,
+     "fail": 61,
+     "unknown": 1,
+     "evidence_digest": "a5d1574709df9c8643c80ee556d9aa7654cda8ec025caebc10db0c0baddc7bd1"
+    },
+    "default": {
+     "skill_hash": "81697840ce4d33a12709964ae9ba13dabdacbf53b49f741f7a299e02ef493b55",
+     "rollout": 31,
+     "positions": 250,
+     "pass": 188,
+     "fail": 61,
+     "unknown": 1,
+     "evidence_digest": "57e32fbfc6151ec5199c53f0b0e5d6b5b2b8fd6b68ec81f02a56444cb8c42aa3"
+    }
+   },
+   "arms": {
+    "scalar": {
+     "skill_hash": "9e145668082229e3b26eaeee1b64ee4d0eb6bee62583b829cccd8bce49aec2cf",
+     "rollout": 30,
+     "positions": 250,
+     "pass": 190,
+     "fail": 60,
+     "unknown": 0,
+     "evidence_digest": "3e3ef883b9324f25cbc25f7897fc35ca7232913a6f4754a2585f2cc7490604c3",
+     "evaluated": "candidate"
+    },
+    "default": {
+     "skill_hash": "81697840ce4d33a12709964ae9ba13dabdacbf53b49f741f7a299e02ef493b55",
+     "rollout": 31,
+     "positions": 250,
+     "pass": 188,
+     "fail": 61,
+     "unknown": 1,
+     "evidence_digest": "57e32fbfc6151ec5199c53f0b0e5d6b5b2b8fd6b68ec81f02a56444cb8c42aa3",
+     "evaluated": "candidate"
+    },
+    "h2": {
+     "skill_hash": "a3b2f2707644371811b99e123470f48b373c363ff1a786afed29c1237e386736",
+     "rollout": 32,
+     "positions": 250,
+     "pass": 191,
+     "fail": 59,
+     "unknown": 0,
+     "evidence_digest": "321b0f3cc3eecf374fb07052cdb89b00934a8ad248e04c955b3f0543226ad050",
+     "evaluated": "candidate"
+    }
+   },
+   "record_hash": "97277d0ef128ca49d48f91e2f2b97f5865a73bd390a1b58659956744bb5b24d7"
+  }
+ ]
+}
