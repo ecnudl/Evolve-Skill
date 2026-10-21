@@ -1,0 +1,127 @@
+--- a/scripts/run_fivebench_g_stage.py	2026-10-11 19:06:47
++++ b/scripts/run_fivebench_g_stage.py	2026-10-11 19:04:26
+@@ -224,12 +224,30 @@
+     * ``name=m:<study stage dir>:comparator|treatment`` -- one UNSELECTED branch candidate of a completed v11 matched
+       study (a study deploys nothing and selects nothing; its holdout outcomes were never used to choose the text).
+ 
+-    Either way the stage must not have trained on any family of this stage's challenge pool. Sealed stage / learned /
+-    chain / proposal records are read and cross-checked; the learning evidence is NOT re-verified here (the Skill is
+-    only solved on the drawn holdout, never used as a parent)."""
++    * ``name=f:<text file>`` -- a FIXED text the operator supplies (e.g. a hand-written, dataset-agnostic instruction
++      used as a control): not learned from and not selected on any task, so there is nothing to cross-check except
++      that it is a valid Skill text; the record seals its hash. Who wrote it and what its author had seen is the
++      operator's disclosure (design memo), not something this record can show.
++
++    For the two learned kinds the stage must not have trained on any family of this stage's challenge pool. Sealed
++    stage / learned / chain / proposal records are read and cross-checked; the learning evidence is NOT re-verified
++    here (the Skill is only solved on the drawn holdout, never used as a parent)."""
+     name, separator, where = spec.partition("=")
+-    require(separator == "=" and where[:2] in {"g:", "m:"},
+-            "A reference is given as name=g:<finished G stage directory> or name=m:<study stage directory>:<branch>")
++    require(separator == "=" and where[:2] in {"g:", "m:", "f:"},
++            "A reference is given as name=g:<finished G stage directory>, name=m:<study stage directory>:<branch> or "
++            "name=f:<fixed Skill text file>")
++    if where.startswith("f:"):
++        path = safe_path(where[2:])
++        require(path.is_file(), "A fixed reference text is an existing file")
++        skill = path.read_text(encoding="utf-8")
++        require(skill.strip() != "", "A fixed reference text is not empty (the empty Skill is the parent reference)")
++        return {"name": name, "skill": skill,
++                "source": {"file": str(path), "skill_sha256": hashlib.sha256(skill.encode()).hexdigest(),
++                           "skill_bytes": len(skill.encode()), "action": "fixed_text",
++                           "selection_exposure": "none (a fixed operator-supplied text: not learned from and not "
++                                                 "selected on any task of this study)",
++                           "provenance": "operator-supplied file sealed by its hash; authorship and what the author "
++                                         "had seen are disclosed in the design memo, not verifiable here"}}
+     if where.startswith("m:"):
+         skill, source = _study_branch(protocol, where, split_hash)
+         require(not set(source.pop("train_families")) & set(challenge_families),
+@@ -957,7 +975,8 @@
+                                                       "matched_selection_branch"),
+                         help="active_evidence only: the post-update arm (default challenge_replay)")
+     parser.add_argument("--reference", action="append", default=[],
+-                        help="matched-branch study only, repeatable: name=g:<finished G stage dir> -- an evaluation-only "
++                        help="matched-branch study only, repeatable: name=g:<finished G stage dir>, "
++                             "name=m:<study stage dir>:<branch> or name=f:<fixed text file> -- an evaluation-only "
+                              "reference Skill solved on the drawn holdout")
+     parser.add_argument("--replicate", type=int, help="k >= 1: an additional independent test cell of the deployed Skill")
+     parser.add_argument("--gepa-source")
+--- a/scripts/report_active_evidence_stage.py	2026-10-11 19:06:47
++++ b/scripts/report_active_evidence_stage.py	2026-10-11 19:04:26
+@@ -125,9 +125,16 @@
+         return {}
+     record = read_json(path, sealed=True)
+     inputs = record.get("inputs", {})
+-    return {"rule_version": record.get("rule_version"), "limits": record.get("limits"),
+-            "flags": inputs.get("flags"), "fresh": inputs.get("fresh"), "replay": inputs.get("replay"),
+-            "fresh_adverse": inputs.get("fresh_adverse")}
++    details = {"rule_version": record.get("rule_version"), "limits": record.get("limits"),
++               "flags": inputs.get("flags"), "fresh": inputs.get("fresh"), "replay": inputs.get("replay"),
++               "fresh_adverse": inputs.get("fresh_adverse")}
++    shadow = record.get("in_sample_shadow")
++    if shadow is not None:
++        # the optional in-sample reading (never a decision input): actions, flags and counts only
++        details["in_sample_shadow"] = {k: shadow.get(k) for k in (
++            "version", "action", "reason", "flags", "evidence", "min_paired_known", "by_step_status",
++            "reused_positions", "size_matched_fresh", "decision_input")}
++    return details
+ 
+ 
+ def report(stage):
+@@ -187,7 +194,8 @@
+                                          "families_regressing", "skill_sha256", "record_hash")}
+         test["costs"] = {k: (cell.get("test_costs") or {}).get(k) for k in ("logical_calls", "reported_tokens", "usage_complete")}
+     references = [{k: r.get(k) for k in ("name", "benchmark", "method", "learning_version", "action", "selection_tasks",
+-                                         "skill_sha256", "stage_hash")} for r in record.get("reference_skills", [])]
++                                         "skill_sha256", "stage_hash", "skill_bytes")}
++                  for r in record.get("reference_skills", [])]
+     return {"stage": str(out), "method": record["method"], "arms": record.get("arms"), "benchmark": record["benchmark"],
+             "reference_skills": references,  # evaluation-only holdout references of the matched study (provenance)
+             "update_mode": record.get("update_mode"),
+@@ -212,6 +220,12 @@
+     text, Skill text or task text (those stay on the Linux host with the sealed records)."""
+     out = {k: v for k, v in value.items() if k != "stage"}
+     out["stage_basename"] = Path(value["stage"]).name
++    parent = out.get("parent")
++    if type(parent) is str and parent[:2] in ("g:", "m:"):
++        # a parent taken from another stage: publish the stage's basename, not the host directory
++        kind, _, rest = parent.partition(":")
++        path, colon, branch = rest.rpartition(":") if kind == "m" else (rest, "", "")
++        out["parent"] = kind + ":" + Path(path).name + colon + branch
+     for step in out["steps"]:
+         diagnosis = step.get("diagnosis")
+         if diagnosis:
+--- a/tests/test_continual_learning_active_evidence_tool.py	2026-10-11 19:06:49
++++ b/tests/test_continual_learning_active_evidence_tool.py	2026-10-11 19:04:26
+@@ -154,6 +154,31 @@
+     refused(finished("pending", families=step_families, status="pending"), "completed, consistently recorded", "r2")
+     refused(finished("otherstudy", families=step_families, protocol_hash="q" * 64), "completed, consistently recorded", "r3")
+     refused("gated=" + str(tmp_path / "gated"), "name=g:", "r4")
++    # a fixed operator-supplied text (a hand-written control): sealed by hash, no stage records to cross-check
++    fixed = tmp_path / "generic.md"
++    fixed.write_text("- Think step by step.\n- Answer in the form the task asks for.\n", encoding="utf-8")
++    record = tool.prepare(str(tmp_path / "study"), str(split_path), str(tmp_path / "fixed"), str(tmp_path),
++                          benchmark="bigcodebench", parent="none", val_source=None, seed=3, method=tool.ACTIVE_EVIDENCE,
++                          learning_version="v11", references=(good, f"generic=f:{fixed}"), **study)
++    value = read_json(tmp_path / "fixed/manifest.json", sealed=True)
++    by = {r["name"]: r for r in value["active_evidence"]["reference_skills"]}
++    assert by["generic"]["skill"] == fixed.read_text(encoding="utf-8") and by["gated"]["skill"] == "Baseline guidance."
++    assert by["generic"]["source"]["action"] == "fixed_text"
++    assert by["generic"]["source"]["skill_sha256"] == hashlib.sha256(fixed.read_bytes()).hexdigest()
++    assert by["generic"]["source"]["skill_bytes"] == len(fixed.read_bytes())
++    assert [r["name"] for r in record["reference_skills"]] == ["gated", "generic"]
++    assert all("skill" not in r for r in record["reference_skills"])
++    assert ae.validate_manifest(value, read_json(tmp_path / "fixed/panel.json")) == value
++    empty = tmp_path / "empty.md"
++    empty.write_text(" \n", encoding="utf-8")
++    refused(f"generic=f:{empty}", "not empty", "r6")
++    refused(f"generic=f:{tmp_path / 'missing.md'}", "existing file", "r7")
++    oversize = tmp_path / "big.md"
++    oversize.write_text("x" * 40000, encoding="utf-8")
++    with pytest.raises(ValueError):
++        tool.prepare(str(tmp_path / "study"), str(split_path), str(tmp_path / "r8"), str(tmp_path), benchmark="bigcodebench",
++                     parent="none", val_source=None, seed=3, method=tool.ACTIVE_EVIDENCE, learning_version="v11",
++                     references=(f"generic=f:{oversize}",), **study)
+     # references are refused outside the matched-branch study
+     with pytest.raises(ValueError, match="belong to the matched-branch study"):
+         tool.prepare(str(tmp_path / "study"), str(split_path), str(tmp_path / "r5"), str(tmp_path), benchmark="bigcodebench",

@@ -1,0 +1,77 @@
+--- /private/tmp/claude-501/-Users-dulin-Documents-Paper-SkillOpt/b1b908ec-783b-4277-a499-895c3552ac78/scratchpad/checks_g.py	2026-10-11 04:39:56
++++ skillopt/active_evidence/checks.py	2026-10-11 04:42:48
+@@ -118,6 +118,10 @@
+ 
+ 
+ # ----------------------------------------------------------------------------- parsing
++ONLY_OBLIGATION = "requested_behavior"  # the single obligation a probe may check (frozen parser rule)
++OVER_LIMIT = "over_limit"
++
++
+ def _parse_state_probe(row, task_text):
+     require(type(row) is dict and set(row) == vf.PROBE_FIELDS, "Exact probe fields required")
+     require(row["kind"] == STATE_KIND, "Not a state probe")
+@@ -161,10 +165,15 @@
+     a hypothesis id in another case, an envelope-only key such as ``index``; the probe's substance is untouched.
+     10/11: with exactly ONE focus hypothesis a MISSING id is bound to it (a probe that names another hypothesis stays
+     rejected: it serves a mechanism this case is not about), and a quote that differs from a unique task line only in
+-    case / quote characters / edge punctuation is replaced by that line verbatim."""
++    case / quote characters / edge punctuation is replaced by that line verbatim. 10/11 (bsel1): a MISSING
++    ``obligation_id`` is filled with the only admissible value (the field then carries no information; a probe that
++    names another obligation stays rejected) -- one case lost both probes to this omission in the reply and again in
++    its repair."""
+     if type(row) is not dict:
+         return row
+     row = dict(row)
++    if row.get("obligation_id") is None:
++        row["obligation_id"] = ONLY_OBLIGATION
+     ids = {h.lower(): h for h in hypothesis_ids}
+     if type(row.get("hypothesis_id")) is str and row["hypothesis_id"].strip().lower() in ids:
+         row["hypothesis_id"] = ids[row["hypothesis_id"].strip().lower()]
+@@ -180,13 +189,22 @@
+     return row
+ 
+ 
++normalize_probe = _normalize_probe  # the record builder reads a rejected probe the way the parser did
++
++
+ def parse_check_probes(value, task_text, hypothesis_ids, max_checks):
+     """The probe envelope with hypothesis binding; one malformed probe drops that probe only. Returns (probes,
+-    rejected reasons by index)."""
+-    require(type(value) is dict and set(value) == {"probes"} and type(value["probes"]) is list
+-            and len(value["probes"]) <= max_checks, f"Exact probes field with at most {max_checks} probes required")
++    rejected reasons by index, plus ``over_limit`` when the reply held more probes than allowed)."""
++    require(type(value) is dict and set(value) == {"probes"} and type(value["probes"]) is list,
++            "Exact probes field required")
+     probes, rejected = [], {}
+-    for index, raw in enumerate(value["probes"]):
++    rows = value["probes"]
++    if len(rows) > max_checks:
++        # 10/11 (bsel1): a reply with three probes was rejected whole and its repair came back with one; the first
++        # ``max_checks`` are considered in the order given (deterministic) and the surplus is on record
++        rejected[OVER_LIMIT] = f"{len(rows)} probes returned; only the first {max_checks} are considered"
++        rows = rows[:max_checks]
++    for index, raw in enumerate(rows):
+         row = _normalize_probe(raw, hypothesis_ids, task_text)
+         try:
+             require(type(row) is dict and row.get("hypothesis_id") in hypothesis_ids,
+--- /private/tmp/claude-501/-Users-dulin-Documents-Paper-SkillOpt/b1b908ec-783b-4277-a499-895c3552ac78/scratchpad/diagnosis_g.py	2026-10-11 04:43:49
++++ skillopt/active_evidence/diagnosis.py	2026-10-11 04:42:48
+@@ -24,6 +24,7 @@
+     deterministic_admissibility,
+     grade,
+     judge_focus_messages,
++    normalize_probe,
+     parse_check_probes,
+     parse_judged_checks,
+     repair_messages,
+@@ -367,6 +368,9 @@
+         for position, reason in sorted(effective.items()):
+             if reason.startswith(NOT_APPLICABLE) and reply is not None:
+                 raw = reply["probes"][int(position)] if type(reply.get("probes")) is list and int(position) < len(reply["probes"]) else {}
++                # the probe as the parser read it: the same surface repairs (bound hypothesis id, a quote relocated to
++                # its verbatim task line), else such a record lost its hypothesis or vanished (review of 10/11)
++                raw = normalize_probe(raw, ids, text)
+                 quote = raw.get("contract_quote") if type(raw) is dict and type(raw.get("contract_quote")) is str else ""
+                 if vf.quote_in(quote or "", text):
+                     records.append({"check_id": f"{token[:12]}/r{position}", "hypothesis_id": raw.get("hypothesis_id") if raw.get("hypothesis_id") in ids else None,

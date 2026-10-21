@@ -53,11 +53,13 @@ def validate_public(benchmark, public):
         "korbench": {"rule", "question"},
         "spreadsheetbench": {"instruction", "answer_position"},
         "alfworld": {"initial_observation", "initial_observation_truncated"},
+        "livemath": {"question", "choices"},
+        "officeqa": {"question", "context"},
     }
     require(benchmark in fields and type(public) is dict and set(public) == fields[benchmark],
             "Unexpected benchmark public feedback fields")
     for key, value in public.items():
-        if key == "context" and type(value) is list:
+        if key == "context" and type(value) is list and benchmark != "officeqa":  # an OfficeQA context is one text
             require(all(type(item) is str for item in value), "Invalid public context")
         elif key == "initial_observation_truncated":
             require(type(value) is bool, "Invalid observation truncation marker")
@@ -132,6 +134,10 @@ def expected_text(benchmark, private):
         require(type(answers) is list and answers and all(type(a) is str for a in answers),
                 "SearchQA label list required")
         value = " | ".join(answers)
+    elif benchmark in {"livemath", "officeqa"}:
+        # livemath: the correct option's letter (the options themselves are in the public task text)
+        require(type(private.get("answer")) is str and private["answer"], "Extension label text required")
+        value = private["answer"]
     else:
         return None
     return value if len(value) <= EXPECTED_CHARS else value[:EXPECTED_CHARS] + " …[truncated]"

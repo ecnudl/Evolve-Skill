@@ -1,0 +1,615 @@
+--- a/skillopt/active_evidence/challenge.py	2026-10-10 16:35:32
++++ b/skillopt/active_evidence/challenge.py	2026-10-11 14:33:36
+@@ -10,7 +10,17 @@
+ Both Skills are re-run on every position: a historical pass decides membership only, never serves as the
+ comparison baseline (an identical Skill run twice flips 6-10% of positions). The draw is validated against the
+ sealed manifest and this step's own evaluations before anything runs. Learning-process data, never a final
+-evaluation."""
++evaluation.
++
++Optional fourth set (the optional limit ``train_panel_rows``; a measurement, never a decision input):
++  train_panel -- an OUTCOME-BLIND seeded sample of the step's whole task roster (rows whose step evaluation was
++               unknown included), balanced over the step families and drawn independently of replay and local_fix,
++               whose membership it never changes. A panel position that is also a replay or local-fix position
++               reuses that position's evaluations (every task is solved once per Skill); the others are solved in
++               their own balanced order. The analysts saw the known rows: the paired result is an in-sample reading,
++               recorded next to the fresh one to measure how far a decision made on training rows alone would agree
++               with the reserved-pool decision. ``fresh_size_matched`` is the same summary on the first n positions
++               of the sealed fresh draw order (n = panel positions): a sensitivity reading at equal panel size."""
+ from __future__ import annotations
+ 
+ import random
+@@ -22,8 +32,12 @@
+ from skillopt.validator_pilot.api import digest
+ 
+ from . import PROTOCOL
++from .protocol import sampling_identity
+ 
+ SETS = ("fresh", "replay", "local_fix")
++TRAIN_PANEL = "train_panel"  # the optional in-sample measurement set; never among the decision's sets
++TRAIN_PANEL_RULE = "outcome_blind_stratified_round_robin_over_step_families_of_the_whole_step_roster_v1"
++SIZE_MATCHED = "fresh_size_matched"
+ ROLLOUT_BASE = 1000  # challenge rollout keys never collide with step rollouts (0..99, protocol cap)
+ DRAW_RULE = "stratified_round_robin_over_challenge_families_seeded_by_manifest_and_step_excluding_earlier_draws_v1"
+ EXECUTION_ORDER = "balanced_abba_v1"  # per set: seeded halves; half A parent then candidate, half B the reverse
+@@ -41,7 +55,8 @@
+ 
+ 
+ def _seed(value, step, name):
+-    return int(digest({"manifest_hash": value["record_hash"], "step": step, "draw": name})[:16], 16)
++    # the sampling identity is the manifest hash itself unless the manifest carries optional limits (protocol.py)
++    return int(digest({"manifest_hash": sampling_identity(value), "step": step, "draw": name})[:16], 16)
+ 
+ 
+ def _entry(task, seen):
+@@ -49,6 +64,34 @@
+             "family_seen_in_step": task["family_id"] in seen}
+ 
+ 
++def train_panel_entries(value, panel, step, status_of):
++    """The deterministic train panel of one step: stratified round-robin over the step families of the WHOLE step
++    roster (outcome-blind: whatever each row's step evaluation was, unknown rows included), seeded by the sampling
++    identity and the step. ``status_of(task) -> (status, evidence hash or None)`` only annotates the chosen entries;
++    it never influences which tasks are chosen."""
++    extension = value["active_evidence"]
++    wanted, seen = extension["limits"]["train_panel_rows"], set(extension["step_families"])
++    roster = {}
++    for task in sorted(panel["tasks"], key=lambda t: t["task_id"]):
++        if task["family_id"] in seen:
++            roster.setdefault(task["family_id"], []).append(task)
++    rng = random.Random(_seed(value, step, TRAIN_PANEL))
++    order = sorted(roster)
++    rng.shuffle(order)
++    for family in order:
++        rng.shuffle(roster[family])
++    chosen = []
++    while len(chosen) < wanted and any(roster.values()):
++        for family in order:
++            if roster[family] and len(chosen) < wanted:
++                chosen.append(roster[family].pop())
++    entries = []
++    for task in chosen:
++        status, evidence = status_of(task)
++        entries.append({**_entry(task, seen), "step_evidence_hash": evidence, "step_status": status})
++    return entries
++
++
+ def draw(value, panel, step, *, step_rows, candidate_hash, root, exclude=()):
+     """The sealed draw of one step: written only once a candidate exists, before any candidate evaluation."""
+     path = root / "challenge" / str(step) / "draw.json"
+@@ -78,11 +121,24 @@
+     failed = sorted((r for r in step_rows if r["row"]["score"] == 0), key=lambda r: r["token"])
+     replay = random.Random(_seed(value, step, "replay")).sample(passed, min(limits["replay_rows"], len(passed)))
+     local = random.Random(_seed(value, step, "local_fix")).sample(failed, min(limits["local_fix_rows"], len(failed)))
++    panel_record = {}
++    if limits.get("train_panel_rows"):
++        known = {digest(r["item"]["task"]): r for r in step_rows}
++
++        def status_of(task):
++            row = known.get(digest(task))
++            if row is None:
++                return "unknown", None
++            return ("pass" if row["row"]["score"] == 1 else "fail"), row["token"]
++
++        panel_record = {TRAIN_PANEL: train_panel_entries(value, panel, step, status_of),
++                        "train_panel_rule": TRAIN_PANEL_RULE}
+     record = seal({"protocol": PROTOCOL, "manifest_hash": value["record_hash"], "step": step,
+                    "candidate_hash": candidate_hash, "frozen_before_candidate_evaluation": True, "rule": DRAW_RULE,
+                    "rollouts": rollouts(step), "fresh": fresh,
+                    "replay": [{**_entry(r["item"]["task"], seen), "step_evidence_hash": r["token"]} for r in replay],
+                    "local_fix": [{**_entry(r["item"]["task"], seen), "step_evidence_hash": r["token"]} for r in local],
++                   **panel_record,
+                    "excluded_earlier_draws": len(excluded),
+                    "pool": {"families": len(pool), "tasks": sum(1 for t in panel["tasks"] if t["family_id"] in pool)},
+                    "membership_rule": "replay = step rows the Current passed; local_fix = step rows it failed; both "
+@@ -92,8 +148,15 @@
+     return record
+ 
+ 
++def panel_extra(record):
++    """Indices of the train-panel entries that are not also a replay or local-fix position (those reuse that
++    position's evaluations)."""
++    shared = {e["task_hash"] for name in ("replay", "local_fix") for e in record[name]}
++    return [i for i, e in enumerate(record.get(TRAIN_PANEL, [])) if e["task_hash"] not in shared]
++
++
+ def required_metric_calls(record):
+-    return 2 * sum(len(record[name]) for name in SETS)
++    return 2 * (sum(len(record[name]) for name in SETS) + len(panel_extra(record)))
+ 
+ 
+ def reference_rollout(step, index):
+@@ -129,8 +192,27 @@
+             saved = read_json(ledger.root / "evaluations" / (digest(request) + ".json"), sealed=True)
+             require(saved["record_hash"] == entry["step_evidence_hash"] and saved["score"]["status"] == status,
+                     f"A {name} position is not this step's {status}ed evaluation under the Current")
++    if not extension["limits"].get("train_panel_rows"):
++        require(TRAIN_PANEL not in record and "train_panel_rule" not in record,
++                "A train panel was drawn although the sealed limits do not ask for one")
++        return
+ 
++    def status_of(task):
++        request = {"manifest_hash": value["record_hash"], "candidate_hash": digest({"skill": current}),
++                   "task_hash": digest(task), "role": "train", "repeat": 0, "benchmark": value["benchmark"],
++                   "rollout": step}
++        saved = read_json(ledger.root / "evaluations" / (digest(request) + ".json"), sealed=True)
++        status = saved["score"]["status"]
++        require(status in ("pass", "fail", "unknown"), "A step evaluation carries no usable status")
++        return status, (saved["record_hash"] if status != "unknown" else None)
+ 
++    # the panel is rebuilt from the sealed manifest, the panel file and this step's own sealed evaluations and must
++    # be exactly the recorded one: entries, order, count and annotations (no truncated or hand-picked panel)
++    require(record.get("train_panel_rule") == TRAIN_PANEL_RULE
++            and record.get(TRAIN_PANEL) == train_panel_entries(value, panel, step, status_of),
++            "The train panel is not this step's deterministic outcome-blind draw")
++
++
+ def _status(row):
+     return "unknown" if row["score"] is None else ("pass" if row["score"] == 1 else "fail")
+ 
+@@ -259,6 +341,54 @@
+                               "candidate": {"evidence_hash": cand["output"]["evidence_hash"], "status": _status(cand)},
+                               "pair": _pair(cur["score"], cand["score"])})
+     summary = {name: _summary([p for p in positions if p["set"] == name]) for name in SETS}
++    if TRAIN_PANEL in record:
++        entries = record[TRAIN_PANEL]
++        shared = {p["task_hash"]: p for p in positions if p["set"] in ("replay", "local_fix")}
++        extra = panel_extra(record)
++        rows = {key: {} for key in skills}
++        first, second = balanced_halves(value, step, TRAIN_PANEL, len(extra))
++        halves[TRAIN_PANEL] = {"parent_first": [extra[i] for i in first], "candidate_first": [extra[i] for i in second],
++                               "reused_positions": len(entries) - len(extra)}
++        for members, sequence in ((first, ("current", "candidate")), (second, ("candidate", "current"))):
++            if not members:
++                continue
++            batch = [{"role": "train", "task": tasks[entries[extra[i]]["task_hash"]]} for i in members]
++            for key in sequence:
++                result = adapter.evaluate_rows(batch, {"skill": skills[key]}, rollout=record["rollouts"][key])
++                for i, row in zip(members, result):
++                    rows[key][extra[i]] = row
++        panel_positions = []
++        for index, entry in enumerate(entries):
++            if index in rows["current"]:
++                cur, cand = rows["current"][index], rows["candidate"][index]
++                sides = {"current": {"evidence_hash": cur["output"]["evidence_hash"], "status": _status(cur)},
++                         "candidate": {"evidence_hash": cand["output"]["evidence_hash"], "status": _status(cand)},
++                         "pair": _pair(cur["score"], cand["score"]), "shared_with": None}
++            else:  # the same task under the same rollout keys: that position's evaluations, never a second solve
++                source = shared[entry["task_hash"]]
++                sides = {"current": source["current"], "candidate": source["candidate"], "pair": source["pair"],
++                         "shared_with": source["set"]}
++            panel_positions.append({"set": TRAIN_PANEL, **entry, **sides})
++        positions.extend(panel_positions)
++        by_status = {}
++        for status in ("pass", "fail", "unknown"):
++            subset = _counts([p for p in panel_positions if p["step_status"] == status])
++            by_status["step_" + status] = {"positions": sum(subset.values()), "wins": subset["win"],
++                                           "losses": subset["loss"], "ties": subset["tie"]}
++        # in-sample: the analysts saw the known rows; a measurement next to the fresh panel, never a decision input
++        summary[TRAIN_PANEL] = {**_summary(panel_positions), "by_step_status": by_status,
++                                "reused_positions": len(entries) - len(extra), "in_sample": True,
++                                "decision_input": False}
++        fresh_positions = [p for p in positions if p["set"] == "fresh"]
++        matched_rule = "the first n positions of the sealed fresh draw order, n = train-panel positions"
++        if len(fresh_positions) < len(entries):
++            # fewer fresh positions than panel positions: no equal-size reading exists (never a smaller one in disguise)
++            summary[SIZE_MATCHED] = {"positions": len(fresh_positions), "wanted_positions": len(entries),
++                                     "unavailable": "fewer_fresh_positions_than_train_panel_positions",
++                                     "sensitivity_only": True, "rule": matched_rule, "decision_input": False}
++        else:
++            summary[SIZE_MATCHED] = {**_summary(fresh_positions[:len(entries)]), "sensitivity_only": True,
++                                     "rule": matched_rule, "decision_input": False}
+     outcome = seal({**binding, "status": "completed", "positions": positions, "summary": summary,
+                     "execution_order": {"version": EXECUTION_ORDER, "halves": halves}})
+     write_json(path, outcome)
+--- a/skillopt/active_evidence/decision.py	2026-10-10 16:35:32
++++ b/skillopt/active_evidence/decision.py	2026-10-11 14:33:36
+@@ -23,7 +23,15 @@
+ is an observed-panel requirement, not a significance statement. Replay rows were seen by the analysts: replay is a
+ harm-only test about those rows. A candidate's unknown position is reported as unknown, never charged as a loss in
+ the recorded outcome; a missing observation is never a pass. Infrastructure failures -- including a missing budget
+-reserve for the challenge -- are not decisions: the stage records them as pending, outside this table. Design memo: docs/handoff/active-evidence-decision-v2-design-20261010.md."""
++reserve for the challenge -- are not decisions: the stage records them as pending, outside this table. Design memo: docs/handoff/active-evidence-decision-v2-design-20261010.md.
++
++In-sample shadow (only when the challenge carries a ``train_panel`` set; never an input of the action above): the
++action this table would return with the train panel in place of the fresh panel -- the same replay precedence
++(step 4), coverage ceil(90%) of the panel's positions, family tests, guard and adverse completion. The analysts saw
++those rows: its p-values are operational heuristics without the fresh panel's error statement, and the agreement of
++the shadow with the reserved-pool action is the thing being measured. ``size_matched_fresh`` is the same table on
++the first n positions of the sealed fresh draw order (n = panel positions), a sensitivity reading at equal panel
++size. Design memo: docs/handoff/active-evidence-in-sample-shadow-design-20261011.md."""
+ from __future__ import annotations
+ 
+ import difflib
+@@ -33,6 +41,7 @@
+ from skillopt.validator_pilot.api import digest
+ 
+ RULE_VERSION = "active-evidence-decision-v2"
++SHADOW_VERSION = "in-sample-shadow-v1"
+ ACTIONS = ("no_update", "accepted_without_challenge", "keep", "revert", "park")
+ ADVANCING = {"accepted_without_challenge", "keep"}
+ FAMILY_KEYS = ("families", "families_improving", "families_regressing", "families_tied", "families_non_tied",
+@@ -58,12 +67,39 @@
+             **{k: summary[k] for k in FAMILY_KEYS}}
+ 
+ 
++def panel_action(panel, replay_harm, alpha):
++    """Steps 4-8 of the table with ``panel`` in place of the fresh panel (shadow readings only)."""
++    adverse = panel["adverse"]
++    needed = -(-9 * panel["positions"] // 10)
++    flags = {"replay_harm": replay_harm,
++             "admissible": panel["positions"] > 0 and panel["jointly_known"] >= needed,
++             "harm": panel["positions"] > 0 and panel["family_harm_p_value"] <= alpha,
++             "gain": panel["positions"] > 0 and panel["family_p_value"] <= alpha,
++             "aggregate_guard": panel["net_wins"] > 0,
++             "adverse_completion": adverse["family_p_value"] <= alpha and adverse["net_wins"] > 0}
++    if flags["replay_harm"]:
++        action, reason = "revert", "replay_harm_significant"
++    elif not flags["admissible"]:
++        action, reason = "park", "panel_decision_inadmissible"
++    elif flags["harm"]:
++        action, reason = "revert", "panel_harm_significant"
++    elif flags["gain"] and flags["aggregate_guard"] and flags["adverse_completion"]:
++        action, reason = "keep", "panel_gain_significant_with_aggregate_guard_and_adverse_completion"
++    else:
++        action = "park"
++        reason = ("panel_gain_not_significant" if not flags["gain"] else
++                  "aggregate_guard_not_met" if not flags["aggregate_guard"] else
++                  "gain_not_robust_to_unknown_positions")
++    return {"action": action, "reason": reason, "flags": flags, "evidence": _evidence(panel),
++            "min_paired_known": needed}
++
++
+ def decide(outcome, limits, *, parent, candidate, step):
+     """Return the sealed decision record for one step."""
+     changed = candidate is not None and candidate != parent
+     alpha = limits["decision_alpha_permille"] / 1000
+     inputs = {"candidate_changed": changed, "challenge_status": None if outcome is None else outcome["status"]}
+-    suggestion = None
++    suggestion = shadow = None
+     if not changed:
+         action, reason = "no_update", "no_candidate_or_identical_to_parent"
+     elif outcome is None:
+@@ -87,6 +123,18 @@
+                       replay_regressions=replay["regressions"],
+                       local_fix={"positions": local["positions"], "fixed": local["fixed"],
+                                  "jointly_known": local["jointly_known"], "decision_input": False})
++        if "train_panel" in outcome["summary"]:
++            panel, matched = outcome["summary"]["train_panel"], outcome["summary"]["fresh_size_matched"]
++            shadow = {"version": SHADOW_VERSION, **panel_action(panel, flags["replay_harm"], alpha), "alpha": alpha,
++                      "by_step_status": panel["by_step_status"], "reused_positions": panel["reused_positions"],
++                      "size_matched_fresh": ({"action": None, "reason": matched["unavailable"],
++                                              "positions": matched["positions"],
++                                              "wanted_positions": matched["wanted_positions"]}
++                                             if "unavailable" in matched else
++                                             panel_action(matched, flags["replay_harm"], alpha)),
++                      "note": "in-sample: the analysts saw the known rows; p-values here are operational heuristics; "
++                              "recorded to measure agreement with the reserved-pool action, never used by it",
++                      "decision_input": False}
+         if flags["replay_harm"]:
+             action, reason = "revert", "replay_harm_significant"
+         elif not flags["fresh_admissible"]:
+@@ -114,6 +162,7 @@
+                  "outcome_hash": None if outcome is None else outcome["record_hash"],
+                  "next_skill": "candidate" if action in ADVANCING else "parent",
+                  "restriction_suggested": suggestion,
++                 **({} if shadow is None else {"in_sample_shadow": shadow}),
+                  "unknown_semantics": "candidate unknown reported, never a loss in the recorded outcome; keep must "
+                                       "survive the adverse completion; missing evidence never a pass",
+                  "deployment_authorized": False})
+--- a/skillopt/active_evidence/protocol.py	2026-10-11 01:24:20
++++ b/skillopt/active_evidence/protocol.py	2026-10-11 14:33:36
+@@ -81,6 +81,10 @@
+     "edit_budget": (1, 16), "report_chars": (200, 1800), "summary_chars": (200, 4000),
+     "restriction_attempts": (0, 0),  # the scoped-revision path is deferred (docs/learning-v11-active-evidence)
+ }
++# Optional limits: absent unless a stage asks for them (a default stage's limits are exactly DEFAULT_LIMITS).
++# ``train_panel_rows`` sizes the in-sample shadow measurement of the post-update challenge (challenge.py): an
++# outcome-blind sample of the step roster re-solved by both Skills; the acting decision never reads it.
++OPTIONAL_LIMIT_RANGES = {"train_panel_rows": (1, 500)}
+ # Entry modules of the executed code closure (the stage orchestration and the native updater's own modules).
+ CODE_ENTRIES = ("skillopt/active_evidence/stage.py",)
+ ROLLOUT_SOURCE_KEYS = {"learning_dir", "manifest_hash", "result_hash", "step"}
+@@ -123,6 +127,20 @@
+ }
+ 
+ 
++def sampling_identity(value):
++    """The identity that seeds a stage's challenge draws and execution orders: the sealed manifest hash -- for a
++    manifest that carries optional limits, the hash the SAME manifest has without them. An optional measurement
++    therefore never changes which fresh tasks are drawn, their order, or the balanced halves of the acting sets."""
++    limits = value["active_evidence"]["limits"]
++    optional = set(limits) & set(OPTIONAL_LIMIT_RANGES)
++    if not optional:
++        return value["record_hash"]
++    base = {k: v for k, v in value.items() if k != "record_hash"}
++    base["active_evidence"] = {**value["active_evidence"],
++                               "limits": {k: v for k, v in limits.items() if k not in optional}}
++    return seal(base)["record_hash"]
++
++
+ def min_known(fresh):
+     """The coverage a fresh panel needs for an admissible decision: ceil(90% of its positions)."""
+     return -(-9 * fresh // 10)
+@@ -235,10 +253,13 @@
+ 
+ 
+ def validate_limits(limits, arms):
+-    require(type(limits) is dict and set(limits) == set(DEFAULT_LIMITS), "Explicit complete limits required")
+-    for key, value in limits.items():
+-        low, high = LIMIT_RANGES[key]
++    require(type(limits) is dict and set(limits) - set(OPTIONAL_LIMIT_RANGES) == set(DEFAULT_LIMITS),
++            "Explicit complete limits required")
++    for key, value in limits.items():
++        low, high = (LIMIT_RANGES if key in LIMIT_RANGES else OPTIONAL_LIMIT_RANGES)[key]
+         require(type(value) is int and low <= value <= high, f"Limit {key} out of range [{low}, {high}]")
++    require("train_panel_rows" not in limits or arms["post_update"] == "challenge_replay",
++            "The in-sample train panel belongs to the method's post-update challenge only")
+     if arms["post_update"] in CHALLENGE_ARMS:
+         require(limits["fresh_tasks"] >= limits["min_paired_known"] >= min_known(limits["fresh_tasks"]),
+                 "A challenge needs min_paired_known between 90% of the fresh panel and its size")
+--- a/skillopt/active_evidence/stage.py	2026-10-11 01:38:18
++++ b/skillopt/active_evidence/stage.py	2026-10-11 14:20:38
+@@ -107,7 +107,10 @@
+     # without an eligible fresh task the challenge does not run at all (no replay or local-fix comparison either)
+     positions = 0 if fresh == 0 else (
+         fresh + min(limits["replay_rows"], sum(p["host_status"] == "pass" for p in pairs))
+-        + min(limits["local_fix_rows"], sum(p["host_status"] == "fail" for p in pairs)))
++        + min(limits["local_fix_rows"], sum(p["host_status"] == "fail" for p in pairs))
++        # the optional in-sample panel: an upper bound (positions shared with replay / local-fix are solved once)
++        + min(limits.get("train_panel_rows", 0),
++              sum(t["family_id"] in set(value["active_evidence"]["step_families"]) for t in panel["tasks"])))
+     post_update = value["active_evidence"]["arms"]["post_update"]
+     matched = post_update == "matched_scalar_branch"
+     # a matched study also solves the fresh holdout once per reference Skill (the parent plus the sealed ones)
+--- a/scripts/run_fivebench_g_stage.py	2026-10-11 02:47:59
++++ b/scripts/run_fivebench_g_stage.py	2026-10-11 14:20:19
+@@ -345,9 +345,11 @@
+ 
+ # Limits a stage may override at preparation (the shape of diagnosis and of the update); the operating point of the
+ # post-update decision and of the screen (panel sizes, coverage, alphas) is frozen and never overridable here.
++# ``train_panel_rows`` (optional, absent by default) sizes the in-sample shadow measurement, which the acting
++# decision never reads.
+ OVERRIDABLE_LIMITS = frozenset({"view_rows", "view_output_chars", "max_hypotheses", "max_checks_per_case",
+                                 "max_diagnoser_calls_per_step", "max_research_pages", "edit_budget", "report_chars",
+-                                "summary_chars"})
++                                "summary_chars", "train_panel_rows"})
+ 
+ 
+ def limit_overrides(specs):
+--- a/tests/test_continual_learning_active_evidence.py	2026-10-11 04:42:36
++++ b/tests/test_continual_learning_active_evidence.py	2026-10-11 14:35:09
+@@ -1490,8 +1490,215 @@
+         assert (first, second) == challenge.balanced_halves(value, 0, "fresh", count)
+     assert challenge.balanced_halves(value, 0, "fresh", 96) != challenge.balanced_halves(value, 0, "replay", 96)
+     assert challenge.balanced_halves(value, 0, "fresh", 96) != challenge.balanced_halves(value, 1, "fresh", 96)
++
++
++def test_in_sample_train_panel_is_blind_solved_once_and_never_a_decision_input(tmp_path):
++    """The optional train panel: an outcome-blind sample of the whole step roster next to the UNCHANGED replay and
++    local-fix sets; a panel position that is also a replay / local-fix position reuses its evaluations; the shadow
++    record never reaches the acting decision (design memo of 2026-10-11, in-sample shadow)."""
++    from types import SimpleNamespace
+ 
++    from skillopt.active_evidence import challenge
+ 
++    # without the optional limit nothing changes: no key in the limits, the draw, the outcome or the decision
++    plain_value, _, _, _ = _run(tmp_path / "plain")
++    assert "train_panel_rows" not in plain_value["active_evidence"]["limits"]
++    plain_draw = read_json(tmp_path / "plain/learning/challenge/0/draw.json", sealed=True)
++    assert "train_panel" not in plain_draw and "train_panel_rule" not in plain_draw
++    assert set(read_json(tmp_path / "plain/learning/challenge/0/outcome.json", sealed=True)["summary"]) == {
++        "fresh", "replay", "local_fix"}
++    assert "in_sample_shadow" not in read_json(tmp_path / "plain/learning/challenge/0/decision.json", sealed=True)
++
++    limits = {"train_panel_rows": 8, "replay_rows": 2, "local_fix_rows": 1}
++    value, panel, api, result = _run(tmp_path / "a", limits=limits)
++    root = tmp_path / "a/learning"
++    assert result["status"] == "completed" and result["decisions"] == ["keep"]
++    draw = read_json(root / "challenge/0/draw.json", sealed=True)
++    assert draw["train_panel_rule"] == challenge.TRAIN_PANEL_RULE
++    # the whole roster of 8 step rows, each with the status of its own step evaluation; replay / local-fix as asked
++    assert sorted(e["task_id"] for e in draw["train_panel"]) == STEP
++    assert all(e["step_status"] == ("pass" if e["task_id"] in TRAIN_PASS else "fail") for e in draw["train_panel"])
++    assert len(draw["replay"]) == 2 and len(draw["local_fix"]) == 1 and len(draw["fresh"]) == 8
++    assert challenge.required_metric_calls(draw) == 2 * (8 + 2 + 1 + 5) and len(challenge.panel_extra(draw)) == 5
++    outcome = read_json(root / "challenge/0/outcome.json", sealed=True)
++    by_set = {}
++    for position in outcome["positions"]:
++        by_set.setdefault(position["set"], []).append(position)
++    assert {k: len(v) for k, v in by_set.items()} == {"fresh": 8, "replay": 2, "local_fix": 1, "train_panel": 8}
++    acting = {p["task_hash"]: p for p in by_set["replay"] + by_set["local_fix"]}
++    shared = [p for p in by_set["train_panel"] if p["shared_with"] is not None]
++    assert len(shared) == 3 and all(
++        p["shared_with"] == acting[p["task_hash"]]["set"] and p["current"] == acting[p["task_hash"]]["current"]
++        and p["candidate"] == acting[p["task_hash"]]["candidate"] for p in shared)
++    # every task is solved exactly once per Skill: 8 fresh + 8 step tasks under each challenge rollout key
++    rows = [read_json(f, sealed=True) for f in (root / "evaluations").glob("*.json")]
++    for rollout in (1000, 1001):
++        solved = [r["request"]["task_hash"] for r in rows if r["request"]["rollout"] == rollout]
++        assert len(solved) == 16 and len(set(solved)) == 16
++    order = outcome["execution_order"]["halves"]["train_panel"]
++    extra = challenge.panel_extra(draw)
++    assert sorted(order["parent_first"] + order["candidate_first"]) == extra and order["reused_positions"] == 3
++    assert len(order["parent_first"]) == 3 and len(order["candidate_first"]) == 2
++    panel_summary = outcome["summary"]["train_panel"]
++    # the fixture's step rows do not depend on the Skill: the in-sample panel ties everywhere
++    assert (panel_summary["positions"], panel_summary["ties"], panel_summary["net_wins"]) == (8, 8, 0)
++    assert panel_summary["in_sample"] is True and panel_summary["decision_input"] is False
++    assert panel_summary["by_step_status"] == {
++        "step_pass": {"positions": 5, "wins": 0, "losses": 0, "ties": 5},
++        "step_fail": {"positions": 3, "wins": 0, "losses": 0, "ties": 3},
++        "step_unknown": {"positions": 0, "wins": 0, "losses": 0, "ties": 0}}
++    assert outcome["summary"]["fresh_size_matched"]["positions"] == 8 and outcome["summary"]["fresh_size_matched"]["sensitivity_only"]
++    decision = read_json(root / "challenge/0/decision.json", sealed=True)
++    # the acting decision is rule v2 on the fresh panel, with exactly its usual inputs
++    assert decision["action"] == "keep" and decision["rule_version"] == "active-evidence-decision-v2"
++    assert set(decision["inputs"]) == {"candidate_changed", "challenge_status", "fresh", "replay", "flags", "fresh_adverse",
++                                       "fresh_candidate_unknown", "replay_regressions", "local_fix"}
++    shadow = decision["in_sample_shadow"]
++    assert (shadow["version"], shadow["action"], shadow["reason"]) == ("in-sample-shadow-v1", "park", "panel_gain_not_significant")
++    assert shadow["decision_input"] is False and shadow["min_paired_known"] == 8 and shadow["reused_positions"] == 3
++    assert shadow["size_matched_fresh"]["action"] == "keep" and shadow["evidence"]["net_wins"] == 0
++    chain = read_json(root / "chain/0.json", sealed=True)
++    assert chain["reserve"]["positions"] == 8 + 2 + 1 + 8  # an upper bound: shared positions are solved once
++    calls = len(api.prompts["reflection"])
++    again = run_stage(value, panel, root, fixture_api=api, fixture_evaluate=evaluate("candidate_wins"))
++    assert again == result and len(api.prompts["reflection"]) == calls
++    # a forged draw is refused: a panel entry that is not a step task, a wrong step status, a duplicate
++    ledger = SimpleNamespace(root=root)
++
++    def refused(change, match):
++        forged = {k: deepcopy(v) for k, v in draw.items() if k != "record_hash"}
++        change(forged)
++        with pytest.raises(ValueError, match=match):
++            challenge._validate_draw(value, panel, 0, seal(forged), "", result["candidate_skill"], ledger)
++
++    challenge._validate_draw(value, panel, 0, draw, "", result["candidate_skill"], ledger)
++    blind = "deterministic outcome-blind draw"
++    refused(lambda d: d["train_panel"].__setitem__(0, {**d["fresh"][0], "step_evidence_hash": None, "step_status": "unknown"}), blind)
++    refused(lambda d: d["train_panel"][0].__setitem__("step_status", "fail" if d["train_panel"][0]["step_status"] == "pass" else "pass"), blind)
++    refused(lambda d: d["train_panel"].append(d["train_panel"][0]), blind)
++    refused(lambda d: d["train_panel"].__setitem__(1, d["train_panel"][0]), blind)
++    refused(lambda d: d["train_panel"].pop(), blind)  # a truncated panel
++    refused(lambda d: d["train_panel"].clear(), blind)  # an emptied panel
++    refused(lambda d: d["train_panel"].reverse(), blind)  # the draw order is part of the record
++    refused(lambda d: d.__setitem__("train_panel_rule", "hand_picked"), blind)
++    refused(lambda d: d.pop("train_panel"), blind)
++    # a hand-picked panel of valid step tasks with their true statuses is still not the seeded draw
++    small_value, small_panel, _, small = _run(tmp_path / "small", limits={"train_panel_rows": 4})
++    small_root = tmp_path / "small/learning"
++    small_draw = read_json(small_root / "challenge/0/draw.json", sealed=True)
++    assert len(small_draw["train_panel"]) == 4 and len({e["family_id"] for e in small_draw["train_panel"]}) == 4
++    chosen = {e["task_id"] for e in small_draw["train_panel"]}
++    swap = next(e for e in draw["train_panel"] if e["task_id"] not in chosen)  # a real step task outside the draw
++    forged = {k: deepcopy(v) for k, v in small_draw.items() if k != "record_hash"}
++    forged["train_panel"][0] = {**swap, "step_evidence_hash": None, "step_status": "unknown"}
++    with pytest.raises(ValueError, match=blind):
++        challenge._validate_draw(small_value, small_panel, 0, seal(forged), "", small["candidate_skill"],
++                                 SimpleNamespace(root=small_root))
++    # and a default stage refuses a draw that carries a panel
++    plain_ledger = SimpleNamespace(root=tmp_path / "plain/learning")
++    with_panel = {**{k: deepcopy(v) for k, v in plain_draw.items() if k != "record_hash"}, "train_panel": [],
++                  "train_panel_rule": challenge.TRAIN_PANEL_RULE}
++    with pytest.raises(ValueError, match="do not ask for one"):
++        challenge._validate_draw(plain_value, panel, 0, seal(with_panel), "", result["candidate_skill"], plain_ledger)
++    # the optional limit never changes the acting draw: the same fresh tasks in the same order, the same balanced
++    # halves, the same sampling identity as the manifest without it (replay / local-fix are seeded samples over
++    # rows ordered by their evaluation-record hash, which belongs to each stage's own manifest)
++    assert ae.sampling_identity(plain_value) == plain_value["record_hash"] != value["record_hash"]
++    assert ae.sampling_identity(small_value) == plain_value["record_hash"] != small_value["record_hash"]
++    assert ae.sampling_identity(value) == ae.manifest(panel, **_args(
++        arms=CHALLENGE, limits={"replay_rows": 2, "local_fix_rows": 1}))["record_hash"]
++    assert [e["task_id"] for e in small_draw["fresh"]] == [e["task_id"] for e in plain_draw["fresh"]]
++    plain_outcome = read_json(tmp_path / "plain/learning/challenge/0/outcome.json", sealed=True)
++    small_outcome = read_json(small_root / "challenge/0/outcome.json", sealed=True)
++    assert {k: small_outcome["execution_order"]["halves"][k] for k in ("fresh", "replay", "local_fix")} == \
++        plain_outcome["execution_order"]["halves"]
++    assert small_outcome["summary"]["fresh_size_matched"]["positions"] == 4
++
++    # the acting decision never reads the panel: the candidate breaks the step rows the parent passed, the fresh
++    # panel still gains -> keep; the shadow reports the in-sample harm (5 regressing families: p = 1/32)
++    _, _, _, kept = _run(tmp_path / "b", mode="regress", limits={"train_panel_rows": 8, "replay_rows": 0, "local_fix_rows": 0})
++    decision = read_json(tmp_path / "b/learning/challenge/0/decision.json", sealed=True)
++    assert kept["decisions"] == ["keep"] and decision["inputs"]["flags"]["replay_harm"] is False
++    shadow = decision["in_sample_shadow"]
++    assert (shadow["action"], shadow["reason"]) == ("revert", "panel_harm_significant")
++    assert shadow["evidence"]["families_regressing"] == 5 and shadow["evidence"]["family_harm_p_value"] == 1 / 32
++    assert shadow["by_step_status"]["step_pass"] == {"positions": 5, "wins": 0, "losses": 5, "ties": 0}
++    assert shadow["reused_positions"] == 0 and shadow["size_matched_fresh"]["action"] == "keep"
++    # the same replay precedence as the acting table: significant replay harm reverts both readings
++    _, _, _, reverted = _run(tmp_path / "c", mode="regress", limits={"train_panel_rows": 4})
++    decision = read_json(tmp_path / "c/learning/challenge/0/decision.json", sealed=True)
++    assert reverted["decisions"] == ["revert"] and decision["reason"] == "replay_harm_significant"
++    assert decision["in_sample_shadow"]["reason"] == "replay_harm_significant"
++    assert decision["in_sample_shadow"]["size_matched_fresh"]["reason"] == "replay_harm_significant"
++    assert len(read_json(tmp_path / "c/learning/challenge/0/draw.json", sealed=True)["replay"]) == 5
++
++    # no equal-size fresh reading when the fresh panel is smaller than the train panel: unavailable, never a smaller one
++    _, _, _, thin = _run(tmp_path / "thin", limits={"train_panel_rows": 8, "fresh_tasks": 6, "min_paired_known": 6})
++    assert thin["status"] == "completed", thin["reason"]
++    matched = read_json(tmp_path / "thin/learning/challenge/0/outcome.json", sealed=True)["summary"]["fresh_size_matched"]
++    assert matched == {"positions": 6, "wanted_positions": 8, "sensitivity_only": True, "decision_input": False,
++                       "unavailable": "fewer_fresh_positions_than_train_panel_positions", "rule": matched["rule"]}
++    shadow = read_json(tmp_path / "thin/learning/challenge/0/decision.json", sealed=True)["in_sample_shadow"]
++    assert shadow["size_matched_fresh"] == {"action": None, "positions": 6, "wanted_positions": 8,
++                                            "reason": "fewer_fresh_positions_than_train_panel_positions"}
++
++    # a step row whose step evaluation was unknown stays in the roster (outcome-blind) and is solved again
++    def with_unknown(task, skill):
++        prediction, score = evaluate("candidate_wins")(task, skill)
++        if task["task_id"] == "7":
++            return prediction, {**score, "status": "unknown", "score": None}
++        return prediction, score
++
++    _, _, _, result = _run(tmp_path / "d", limits={"train_panel_rows": 8}, evaluator=with_unknown)
++    assert result["status"] == "completed", result["reason"]
++    draw = read_json(tmp_path / "d/learning/challenge/0/draw.json", sealed=True)
++    entry = next(e for e in draw["train_panel"] if e["task_id"] == "7")
++    assert entry["step_status"] == "unknown" and entry["step_evidence_hash"] is None
++    outcome = read_json(tmp_path / "d/learning/challenge/0/outcome.json", sealed=True)
++    position = next(p for p in outcome["positions"] if p["set"] == "train_panel" and p["task_id"] == "7")
++    assert position["pair"] == "both_unknown" and position["shared_with"] is None
++    summary = outcome["summary"]["train_panel"]
++    assert summary["by_step_status"]["step_unknown"]["positions"] == 1 and summary["both_unknown"] == 1
++    shadow = read_json(tmp_path / "d/learning/challenge/0/decision.json", sealed=True)["in_sample_shadow"]
++    # 7 of 8 jointly known, 8 needed (ceil 90%): the in-sample reading is inadmissible, never a pass
++    assert (shadow["action"], shadow["reason"], shadow["min_paired_known"]) == ("park", "panel_decision_inadmissible", 8)
++
++    # the panel belongs to the method's challenge only, and its size is at least one
++    for arms in (PLAIN, HIDDEN, DIAGNOSIS):
++        with pytest.raises(ValueError):
++            ae.manifest(panel, **_args(arms=arms, limits={"train_panel_rows": 4} if arms is not HIDDEN else
++                                       {**STUDY_LIMITS, "train_panel_rows": 4}))
++    for bad in (0, 501, "4"):
++        with pytest.raises(ValueError):
++            ae.manifest(panel, **_args(arms=CHALLENGE, limits={"train_panel_rows": bad}))
++
++
++def test_in_sample_shadow_table_on_synthetic_panels():
++    from skillopt.active_evidence import challenge
++    from skillopt.active_evidence.decision import panel_action
++
++    def act(spec, replay_harm=False):
++        record = panel_action(challenge._summary(_positions(spec)), replay_harm, 0.05)
++        return record["action"], record["reason"]
++
++    wins = [(f"w{i}", "win") for i in range(6)]
++    ties = [(f"t{i}", "tie") for i in range(58)]
++    assert act(wins + ties) == ("keep", "panel_gain_significant_with_aggregate_guard_and_adverse_completion")
++    assert act(wins + ties, replay_harm=True) == ("revert", "replay_harm_significant")
++    assert act(wins[:4] + ties) == ("park", "panel_gain_not_significant")  # 4 of 4: p = 1/16
++    assert act([(f"l{i}", "loss") for i in range(5)] + ties) == ("revert", "panel_harm_significant")
++    # coverage: ceil(90%) of the positions jointly known, else inadmissible whatever the known rows say
++    unknown = [(f"u{i}", "candidate_unknown") for i in range(7)]
++    assert act(wins + ties[:51] + unknown) == ("park", "panel_decision_inadmissible")  # 57 of 64, 58 needed
++    # the adverse completion: every unknown side charged as a loss must leave the gain standing
++    assert act(wins + ties[:52] + unknown[:6]) == ("park", "gain_not_robust_to_unknown_positions")
++    # multi-task families: five improving families, yet the task-level net is not positive
++    spec = [(f"f{i}", "win") for i in range(5)] + [("g", "loss")] * 5
++    assert act(spec + ties) == ("park", "panel_gain_not_significant")
++    assert act([(f"f{i}", "win") for i in range(6)] + [("g", "loss")] * 6 + ties)[1] == "panel_gain_not_significant"
++    assert act([]) == ("park", "panel_decision_inadmissible")
++
++
+ def test_exhausted_fresh_pool_parks_without_running_replay(tmp_path):
+     """Codex code review: when an earlier step drew the whole pool, the next step has no eligible fresh task -- the
+     challenge is not run at all (replay rows alone never decide, even when they would show significant harm), the
+--- a/tests/test_continual_learning_active_evidence_tool.py	2026-10-11 02:47:59
++++ b/tests/test_continual_learning_active_evidence_tool.py	2026-10-11 14:22:47
+@@ -332,4 +332,14 @@
+     with pytest.raises(ValueError, match="limit override"):
+         tool.prepare(str(tmp_path / "study"), str(split_path), str(tmp_path / "twice"), str(tmp_path),
+                      limits=("view_rows=32", "view_rows=64"), **common)
+-    assert tool.prepare(str(tmp_path / "study"), str(split_path), str(tmp_path / "plain"), str(tmp_path), **common)["limit_overrides"] == {}
++    plain = tool.prepare(str(tmp_path / "study"), str(split_path), str(tmp_path / "plain"), str(tmp_path), **common)
++    assert plain["limit_overrides"] == {} and "train_panel_rows" not in plain["limits"]
++    # the optional in-sample panel: sized at preparation, absent by default, refused outside the method's challenge
++    shadow = tool.prepare(str(tmp_path / "study"), str(split_path), str(tmp_path / "shadow"), str(tmp_path),
++                          limits=("train_panel_rows=64",), **common)
++    assert shadow["limits"]["train_panel_rows"] == 64 and shadow["limit_overrides"] == {"train_panel_rows": 64}
++    assert {k: v for k, v in shadow["limits"].items() if k != "train_panel_rows"} == plain["limits"]
++    with pytest.raises(ValueError, match="post-update challenge only"):
++        tool.prepare(str(tmp_path / "study"), str(split_path), str(tmp_path / "study-panel"), str(tmp_path),
++                     limits=("train_panel_rows=64",),
++                     **{**common, "arms": {"feedback": "diagnosis_research", "post_update": "matched_scalar_branch"}})

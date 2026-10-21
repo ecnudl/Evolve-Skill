@@ -1,0 +1,225 @@
+--- a/scripts/run_fivebench_g_stage.py
++++ b/scripts/run_fivebench_g_stage.py
+@@ -104,6 +104,19 @@
+     advances a chain) -- of the same study and split, prepared by this tool or a reviewed
+     compatible predecessor, with its manifest/panel/result bindings re-verified.
+     """
++    if type(name) is str and name.startswith("f:"):
++        # ``f:<text file>``: a FIXED operator-supplied text as the parent (learning v11 only), e.g. the hand-written
++        # generic instruction of active-evidence-generic-control-design-20261011.md, so that a step measures what
++        # learning adds ON TOP of it. Bound by its hash: the file must stay unchanged for the life of the stage.
++        # Authorship and what the author had seen are disclosed in the design memo, not verifiable here.
++        require(Path(name[2:]).is_absolute(), "A fixed parent text is given by an absolute path (every later "
++                                              "command re-reads it, from whatever working directory)")
++        path = safe_path(name[2:])
++        require(path.is_file(), "A fixed parent text is an existing file")
++        skill = path.read_text(encoding="utf-8")
++        require(skill.strip() != "", "A fixed parent text is not empty (the empty parent is 'none')")
++        return skill, {"parent": name, "parent_stage_hash": None, "parent_action": "fixed_text",
++                       "parent_skill_sha256": hashlib.sha256(skill.encode()).hexdigest()}
+     if type(name) is str and name.startswith("m:"):
+         # ``m:<study stage dir>:comparator|treatment``: one UNSELECTED branch candidate of a completed v11 matched
+         # study (a frozen base for a refinement stage); bound to that stage's sealed records like a study reference
+@@ -224,6 +237,9 @@
+     * ``name=m:<study stage dir>:comparator|treatment`` -- one UNSELECTED branch candidate of a completed v11 matched
+       study (a study deploys nothing and selects nothing; its holdout outcomes were never used to choose the text).
+ 
++    * ``name=none`` -- the EMPTY Skill, for a stage whose parent is a non-empty text (with an empty parent the parent
++      reference already is the empty Skill).
++
+     * ``name=f:<text file>`` -- a FIXED text the operator supplies (e.g. a hand-written, dataset-agnostic instruction
+       used as a control): not learned from and not selected on any task, so there is nothing to cross-check except
+       that it is a valid Skill text; the record seals its hash. Who wrote it and what its author had seen is the
+@@ -233,9 +249,15 @@
+     stage / learned / chain / proposal records are read and cross-checked; the learning evidence is NOT re-verified
+     here (the Skill is only solved on the drawn holdout, never used as a parent)."""
+     name, separator, where = spec.partition("=")
+-    require(separator == "=" and where[:2] in {"g:", "m:", "f:"},
+-            "A reference is given as name=g:<finished G stage directory>, name=m:<study stage directory>:<branch> or "
+-            "name=f:<fixed Skill text file>")
++    require(separator == "=" and (where == "none" or where[:2] in {"g:", "m:", "f:"}),
++            "A reference is given as name=g:<finished G stage directory>, name=m:<study stage directory>:<branch>, "
++            "name=f:<fixed Skill text file> or name=none (the empty Skill)")
++    if where == "none":
++        # the EMPTY Skill as a named reference: only for a stage whose parent is not empty (prepare checks it), so
++        # that "no Skill" is measured on the same holdout as the parent text and the branches learned from it
++        return {"name": name, "skill": "",
++                "source": {"skill_sha256": hashlib.sha256(b"").hexdigest(), "skill_bytes": 0, "action": "empty_skill",
++                           "selection_exposure": "none (the empty Skill: no text)"}}
+     if where.startswith("f:"):
+         path = safe_path(where[2:])
+         require(path.is_file(), "A fixed reference text is an existing file")
+@@ -435,6 +457,8 @@
+                 "The parent Skill was learned from families of this stage's holdout pool")
+     reference_skills = [reference_skill(protocol, spec, split["record_hash"], challenge_families, pool_hashes)
+                         for spec in references]
++    require(skill != "" or all(r["skill"] != "" for r in reference_skills),
++            "The empty Skill is already this stage's parent reference")
+     value = ae.manifest(panel, step_families=step_families, challenge_families=challenge_families,
+                         model=deepcopy(protocol["model"]), budget=budget, runtime=protocol["roles"][benchmark]["runtime"],
+                         parent_skill=skill, seed=seed, arms=arms,
+@@ -489,6 +513,7 @@
+                                        limits=limits)
+     require(arms is None and not references and update_mode == "native" and train_families is None and not limits,
+             "Arms and reference Skills belong to the active-evidence method")
++    require(not (type(parent) is str and parent.startswith("f:")), "A fixed-text parent is a learning v11 option")
+     version, policy, budget = _protocol(learning_version)
+ 
+     require(benchmark in API_ONLY, "This tool runs API-only domains; Sheet/ALF need the native learning environment")
+@@ -950,8 +975,9 @@
+     parser.add_argument("--split")
+     parser.add_argument("--repo")
+     parser.add_argument("--benchmark", choices=API_ONLY)
+-    parser.add_argument("--parent", help="none, f-s1/f-s3/f-s4 (study F stage Skills), g:<finished G stage dir> or "
+-                                         "m:<v11 study stage dir>:comparator|treatment (an unselected study branch)")
++    parser.add_argument("--parent", help="none, f-s1/f-s3/f-s4 (study F stage Skills), g:<finished G stage dir>, "
++                                         "m:<v11 study stage dir>:comparator|treatment (an unselected study branch) "
++                                         "or, learning v11 only, f:<fixed text file> (an operator-supplied text)")
+     parser.add_argument("--test-benchmark", choices=API_ONLY + ("spreadsheetbench", "alfworld"),
+                         help="test cell domain (default: the stage's own domain)")
+     parser.add_argument("--val-source")
+@@ -976,7 +1002,8 @@
+                         help="active_evidence only: the post-update arm (default challenge_replay)")
+     parser.add_argument("--reference", action="append", default=[],
+                         help="matched-branch study only, repeatable: name=g:<finished G stage dir>, "
+-                             "name=m:<study stage dir>:<branch> or name=f:<fixed text file> -- an evaluation-only "
++                             "name=m:<study stage dir>:<branch>, name=f:<fixed text file> or name=none (the empty "
++                             "Skill, under a non-empty parent) -- an evaluation-only "
+                              "reference Skill solved on the drawn holdout")
+     parser.add_argument("--replicate", type=int, help="k >= 1: an additional independent test cell of the deployed Skill")
+     parser.add_argument("--gepa-source")
+--- a/scripts/report_active_evidence_stage.py
++++ b/scripts/report_active_evidence_stage.py
+@@ -201,7 +201,8 @@
+             "update_mode": record.get("update_mode"),
+             "limits": record.get("limits"), "limits_requested": record.get("limits_requested"),
+             "eligible_fresh_tasks": record.get("eligible_fresh_tasks"),
+-            "parent": record.get("parent"), "train_tasks": record.get("train_tasks"), "challenge_tasks": record.get("challenge_tasks"),
++            "parent": record.get("parent"), "parent_skill_sha256": record.get("parent_skill_sha256"),
++            "train_tasks": record.get("train_tasks"), "challenge_tasks": record.get("challenge_tasks"),
+             "status": None if result is None else result["status"], "reason": None if result is None else result["reason"],
+             "action": None if learned is None else learned["action"],
+             "decisions": None if result is None else result.get("decisions"),
+@@ -221,8 +222,8 @@
+     out = {k: v for k, v in value.items() if k != "stage"}
+     out["stage_basename"] = Path(value["stage"]).name
+     parent = out.get("parent")
+-    if type(parent) is str and parent[:2] in ("g:", "m:"):
+-        # a parent taken from another stage: publish the stage's basename, not the host directory
++    if type(parent) is str and parent[:2] in ("g:", "m:", "f:"):
++        # a parent taken from another stage or from a fixed text file: publish the basename, not the host directory
+         kind, _, rest = parent.partition(":")
+         path, colon, branch = rest.rpartition(":") if kind == "m" else (rest, "", "")
+         out["parent"] = kind + ":" + Path(path).name + colon + branch
+--- a/tests/test_continual_learning_active_evidence_tool.py
++++ b/tests/test_continual_learning_active_evidence_tool.py
+@@ -332,8 +332,57 @@
+     (study_stage / "learning/native/0/result.json").write_text((tmp_path / "tampered.json").read_text())
+     with pytest.raises(ValueError, match="recorded unselected branch candidate"):
+         prepare("r6", f"x=m:{study_stage}:treatment")
++
++
++def test_a_fixed_text_can_be_the_parent_and_the_empty_skill_a_named_reference(tmp_path, monkeypatch):
++    """``--parent f:<file>`` (learning v11 only): a fixed operator-supplied text is the starting Skill of the step,
++    bound by its hash and re-verified whenever the stage is loaded; under such a parent the EMPTY Skill may be a named
++    evaluation-only reference (``name=none``), which an empty parent already is."""
++    split_path, _ = _fixture_study(tmp_path, monkeypatch)
++    monkeypatch.setattr(tool, "parent_skill", REAL_PARENT_SKILL)
++    study = dict(benchmark="bigcodebench", val_source=None, seed=3, method=tool.ACTIVE_EVIDENCE, learning_version="v11",
++                 arms={"feedback": "diagnosis_research", "post_update": "matched_scalar_branch"})
++    fixed = tmp_path / "generic.md"
++    fixed.write_text("- Think step by step.\n- Answer in the form the task asks for.\n", encoding="utf-8")
+ 
++    def prepare(output, parent, *references, **extra):
++        return tool.prepare(str(tmp_path / "study"), str(split_path), str(tmp_path / output), str(tmp_path),
++                            parent=parent, references=references, **{**study, **extra})
+ 
++    record = prepare("fromgeneric", f"f:{fixed}", "empty=none")
++    value = read_json(tmp_path / "fromgeneric/manifest.json", sealed=True)
++    assert value["parent_skill"] == fixed.read_text(encoding="utf-8")
++    assert record["parent"] == f"f:{fixed}" and record["parent_action"] == "fixed_text" and record["parent_stage_hash"] is None
++    assert record["parent_skill_sha256"] == hashlib.sha256(fixed.read_bytes()).hexdigest()
++    reference = value["active_evidence"]["reference_skills"]
++    assert [(r["name"], r["skill"], r["source"]["action"]) for r in reference] == [("empty", "", "empty_skill")]
++    assert record["reference_skills"] == [{"name": "empty", **reference[0]["source"]}]
++    assert ae.validate_manifest(value, read_json(tmp_path / "fromgeneric/panel.json")) == value
++    assert tool._load(str(tmp_path / "fromgeneric"))[1] == record
++    # a method-mode stage can start from the fixed text too (no references there)
++    method = prepare("method", f"f:{fixed}", arms={"feedback": "scalar", "post_update": "challenge_replay"})
++    assert method["parent_action"] == "fixed_text" and method["reference_skills"] == []
++    # the empty Skill is not a named reference under an empty parent; an empty or missing parent file is refused
++    with pytest.raises(ValueError, match="already this stage's parent reference"):
++        prepare("r1", "none", "empty=none")
++    blank = tmp_path / "blank.md"
++    blank.write_text(" \n", encoding="utf-8")
++    with pytest.raises(ValueError, match="not empty"):
++        prepare("r2", f"f:{blank}")
++    with pytest.raises(ValueError, match="existing file"):
++        prepare("r3", f"f:{tmp_path / 'missing.md'}")
++    with pytest.raises(ValueError, match="absolute path"):
++        prepare("r5", "f:generic.md")
++    # the older methods do not take a fixed-text parent
++    with pytest.raises(ValueError, match="learning v11 option"):
++        tool.prepare(str(tmp_path / "study"), str(split_path), str(tmp_path / "r4"), str(tmp_path), benchmark="bigcodebench",
++                     parent=f"f:{fixed}", val_source=None, seed=3, method="skillopt", learning_version="v8")
++    # the text is bound for the life of the stage: an edited file no longer loads
++    fixed.write_text("- Think step by step.\n", encoding="utf-8")
++    with pytest.raises(ValueError, match="Parent changed"):
++        tool._load(str(tmp_path / "fromgeneric"))
++
++
+ def test_prepare_limit_overrides_cover_diagnosis_shape_only(tmp_path, monkeypatch):
+     """``--limit key=integer``: the shape of diagnosis / update may be overridden (validated by the protocol's ranges
+     and recorded); the decision's and the screen's operating points may not."""
+--- a/tests/test_continual_learning_active_evidence.py
++++ b/tests/test_continual_learning_active_evidence.py
+@@ -1269,6 +1269,49 @@
+     assert "q3_interpretable" not in by["parent"]
+ 
+ 
++def test_matched_scalar_study_from_a_non_empty_parent_with_the_empty_skill_as_reference(tmp_path):
++    """The study of active-evidence-from-generic-design-20261011.md: both updater branches start from a non-empty
++    (fixed) parent text, the parent reference solves the holdout with that text, the EMPTY Skill is a named
++    evaluation-only reference, and the study deploys nothing (the stage's Skill stays the parent)."""
++    panel = _panel("searchqa")
++    parent = "- Think the task through step by step.\n- Give the answer in the form the task asks for.\n"
++    empty = {"name": "empty", "skill": "", "source": {"action": "empty_skill", "skill_bytes": 0}}
++    value = ae.manifest(panel, **{**_args(arms=DIAG_STUDY, limits=STUDY_LIMITS), "parent_skill": parent},
++                        reference_skills=[empty])
++    assert ae.validate_manifest(value, panel) == value
++    api = DiagnosisAPI()
++    root = tmp_path / "learning"
++    result = run_stage(value, panel, root, fixture_api=api, fixture_evaluate=evaluate("candidate_wins"),
++                       fixture_probe_executor=executor())
++    assert result["status"] == "completed", result["reason"]
++    assert result["candidate_skill"] == parent and result["accepted_steps"] == 0  # a study deploys nothing
++    chain = read_json(root / "chain/0.json", sealed=True)
++    study = chain["matched"]
++    # both branches are updates OF THE PARENT TEXT (the fixture analyst appends to the Skill it was given)
++    for folder in ("native_matched", "native"):
++        proposal = read_json(root / folder / "0/result.json", sealed=True)
++        assert proposal["status"] == "candidate_ready" and proposal["candidate_skill"] != parent
++        assert proposal["candidate_skill"].startswith(parent.rstrip("\n"))
++    assert all(study["references"]["branches"][b]["updated"] is True for b in ("comparator", "treatment"))
++    # the step rollout and the parent reference solve with the parent text, the named reference with no text
++    record = read_json(root / "challenge/0/references.json", sealed=True)
++    assert [(r["name"], r["rollout"]) for r in record["references"]] == [("parent", 1003), ("empty", 1004)]
++    rows = [read_json(p, sealed=True) for p in (root / "evaluations").glob("*.json")]
++    by_rollout = {k: {r["request"]["candidate_hash"] for r in rows if r["request"]["rollout"] == k} for k in (0, 1003, 1004)}
++    assert by_rollout == {0: {digest({"skill": parent})}, 1003: {digest({"skill": parent})}, 1004: {digest({"skill": ""})}}
++    by = study["references"]["by_reference"]
++    assert by["parent"]["is_parent"] is True and by["empty"]["is_parent"] is False
++    # fixture: only a Skill containing "requested constant" passes a holdout task -> both branches beat the parent
++    # text and the empty Skill, and the empty Skill ties the parent text as a MEASURED contrast (different texts)
++    assert (by["parent"]["pass"], by["empty"]["pass"]) == (0, 0)
++    assert by["parent"]["comparator_minus_reference"]["outcome"] == "useful_gain"
++    assert by["empty"]["comparator_minus_reference"]["outcome"] == "useful_gain"
++    assert by["empty"]["reference_minus_parent"]["ties"] == 8
++    assert by["empty"]["reference_minus_parent"].get("reason") != "reference_identical_to_parent"
++    # no learning prompt saw a pool task
++    assert all(CHALLENGE_CANARY not in p for role in ("verifier", "reflection") for p in api.prompts[role])
++
++
+ def test_matched_study_stops_pending_before_any_update_when_the_treatment_package_is_not_delivered(tmp_path):
+     """A diagnosis whose check replies fail validation (or that yields no hypotheses) is a delivery failure of the
+     treatment, never a delivered package: the study stops pending before any updater call or holdout evaluation.

@@ -1,0 +1,169 @@
+--- a/skillopt/active_evidence/updater.py
++++ b/skillopt/active_evidence/updater.py
+@@ -70,10 +70,38 @@
+ )
+ 
+ 
+-def analyst_systems(summary=None, *, label=False, screened=False):
++# Analyst prompt profiles (prompt-chain experiment of 2026-10-13, docs/handoff/prompt-chain-design-20261013.md).
++# "native" is the unchanged package. A profile only APPENDS its addendum to the analysts' system prompt; nothing
++# else in the chain changes. Benchmark-agnostic text; it names no dataset, answer or rule.
++ANALYST_PROFILES = {
++    "native": "",
++    "generalize_v1": """
++
++## Generalization requirement (read after the transfer requirement)
++The skill is judged on NEW tasks, and a long skill full of narrow rules hurts as often as it helps. Before
++proposing edits:
++1. Sort the batch into (a) answer-contract problems -- the response does not have the exact form, length, unit or
++   wrapper the task asks for, or puts anything around the final answer; (b) procedure problems -- a step of reading,
++   reasoning or checking was skipped or done wrongly; (c) one-off problems that share nothing with the others.
++   Propose edits only for (a) and (b), never for (c).
++2. Write each edit as ONE conditional rule of at most two sentences: "When <a property of the task that can be
++   checked from the task text alone>, <what to do>, because <what goes wrong otherwise>". Only rules about the form
++   of the final answer may be unconditional.
++3. An edit needs the support of at least two trajectories of this batch, or of one trajectory plus a rule already
++   in the skill that it sharpens. Say which in "reasoning".
++4. Prefer "replace" (sharpen or merge an existing rule) over "append": if the skill already has a rule for the
++   pattern, edit that rule instead of adding a second one.
++5. Keep the skill short: do not restate the task's own instructions, do not add headings or examples, and do not
++   add a rule that only says to be careful or to double-check in general.
++""",
++}
++
++
++def analyst_systems(summary=None, *, label=False, screened=False, profile="native"):
+     from skillopt.gradient.reflect import load_prompt
+ 
+-    suffix = TRANSFER_PREAMBLE + (LABEL_PREAMBLE if label else EVIDENCE_PREAMBLE)
++    require(profile in ANALYST_PROFILES, "Unknown analyst prompt profile")
++    suffix = TRANSFER_PREAMBLE + (LABEL_PREAMBLE if label else EVIDENCE_PREAMBLE) + ANALYST_PROFILES[profile]
+     if screened:
+         suffix += SCREENED_PREAMBLE
+     if summary:
+@@ -213,7 +241,8 @@
+     require(type(minibatch_size) is int and 1 <= minibatch_size <= 64, "Invalid native minibatch size")
+     require(type(edit_budget) is int and 1 <= edit_budget <= 16, "Invalid native edit budget")
+     screened = value["active_evidence"].get("update_mode", "native") == "screened"
+-    systems = analyst_systems(summary, label=label, screened=screened)
++    profile = value["active_evidence"].get("analyst_profile", "native")
++    systems = analyst_systems(summary, label=label, screened=screened, profile=profile)
+     root = safe_path(output)
+     identity = seal({"protocol": PROTOCOL, "parent_skill": parent_skill, "traces_hash": digest(traces),
+                      "manifest_hash": value["record_hash"], "native_sources": native_sources(),
+@@ -223,6 +252,7 @@
+                      "analyst_preamble": TRANSFER_PREAMBLE_VERSION,
+                      "evidence_preamble": LABEL_PREAMBLE_VERSION if label else EVIDENCE_PREAMBLE_VERSION,
+                      "label_feedback": label, "analyst_systems": digest(systems),
++                     **({} if profile == "native" else {"analyst_profile": profile}),
+                      "summary_format": SUMMARY_FORMAT_VERSION,
+                      "screened_preamble": SCREENED_PREAMBLE_VERSION if screened else None,
+                      "reports_hash": digest({k: v["record_hash"] for k, v in sorted((reports or {}).items())}),
+--- a/skillopt/active_evidence/protocol.py
++++ b/skillopt/active_evidence/protocol.py
+@@ -319,10 +319,16 @@
+ 
+ 
+ def manifest(panel, *, step_families, challenge_families, model, budget, runtime=None, parent_skill="", seed=0,
+-             arms, limits=None, rollout_source=None, reference_skills=None, update_mode="native"):
++             arms, limits=None, rollout_source=None, reference_skills=None, update_mode="native",
++             analyst_profile="native"):
+     """Authorize one v11 stage: a v10-shaped record for the frozen ledger/adapter plus the mode's extension."""
+     arms = validate_arms(arms)
+     update_mode = validate_update_mode(update_mode, arms)
++    from .updater import ANALYST_PROFILES
++
++    require(analyst_profile in ANALYST_PROFILES, "Unknown analyst prompt profile")
++    require(analyst_profile == "native" or (arms["feedback"] == "scalar" and update_mode == "native"),
++            "An analyst prompt profile is exercised with pass/fail feedback and the native update only")
+     limits = validate_limits(dict(DEFAULT_LIMITS) if limits is None else limits, arms)
+     reference_skills = validate_references(reference_skills, arms)
+     validate_policy(POLICY_V10, model, VERIFIER_VERSION)
+@@ -358,6 +364,8 @@
+                  "step_families": sorted(groups[0]), "challenge_families": sorted(groups[1]),
+                  "arms": arms, "limits": limits, "rollout_source": _validate_rollout_source(rollout_source),
+                  "reference_skills": reference_skills, "update_mode": update_mode,
++                 # absent for the unchanged package, so that default manifests keep their shape
++                 **({} if analyst_profile == "native" else {"analyst_profile": analyst_profile}),
+                  "policy_lifecycle": "frozen", "information_boundaries": information_boundaries(arms),
+                  "package_sources": package_sources(), "native_sources": native_sources(),
+                  "code_closure": code_closure()}
+@@ -392,7 +400,8 @@
+                        parent_skill=value["parent_skill"], seed=value["seed"], arms=extension["arms"],
+                        limits=extension["limits"], rollout_source=extension["rollout_source"],
+                        reference_skills=extension.get("reference_skills"),
+-                       update_mode=extension.get("update_mode", "native"))
++                       update_mode=extension.get("update_mode", "native"),
++                       analyst_profile=extension.get("analyst_profile", "native"))
+     require(value == rebuilt, "Active-evidence manifest, sources, data, authorization or code changed")
+     return value
+ 
+--- a/scripts/run_fivebench_g_stage.py
++++ b/scripts/run_fivebench_g_stage.py
+@@ -440,7 +440,8 @@
+ 
+ 
+ def prepare_active_evidence(study, split_path, output, repo, *, benchmark, parent, seed, learning_version, arms,
+-                            references=(), update_mode="native", train_families=None, limits=()):
++                            references=(), update_mode="native", train_families=None, limits=(),
++                            analyst_profile="native"):
+     """A learning v11 stage: the step subset (F's outcome-blind train draw) plus the challenge pool (every other
+     development task of F's panel, all inside canonical train). No canonical validation split is read or authorized;
+     the challenge pool is a fixed reserved development pool that serves the post-update selection (decision rule v2)
+@@ -499,7 +500,7 @@
+                         model=deepcopy(protocol["model"]), budget=budget, runtime=protocol["roles"][benchmark]["runtime"],
+                         parent_skill=skill, seed=seed, arms=arms,
+                         limits={**ae.effective_limits(arms, len(pool)), **limit_overrides(limits)},
+-                        reference_skills=reference_skills, update_mode=update_mode)
++                        reference_skills=reference_skills, update_mode=update_mode, analyst_profile=analyst_profile)
+     out.mkdir(parents=True, mode=0o700)
+     write_json(out / "panel.json", panel)
+     write_json(out / "manifest.json", value)
+@@ -509,6 +510,7 @@
+                    "learning_version": PROTOCOL, "base_learning_version": version, "recovery_policy": policy,
+                    "arms": value["active_evidence"]["arms"], "limits": value["active_evidence"]["limits"],
+                    "update_mode": value["active_evidence"]["update_mode"],
++                   **({} if analyst_profile == "native" else {"analyst_profile": analyst_profile}),
+                    # requested defaults; the effective fresh panel is capped by the eligible challenge-pool tasks
+                    "limits_requested": ae.default_limits(arms), "eligible_fresh_tasks": len(pool),
+                    "limit_overrides": limit_overrides(limits),
+@@ -534,7 +536,7 @@
+ 
+ def prepare(study, split_path, output, repo, *, benchmark, parent, val_source, seed, method="skillopt",
+             gepa_source=None, learning_version="v8", arms=None, references=(), update_mode="native",
+-            train_families=None, limits=(), generated_val=None):
++            train_families=None, limits=(), generated_val=None, analyst_profile="native"):
+     from skillopt.continual_learning.contracts import VERIFIER_METHOD, manifest
+     from skillopt.continual_learning.feedback import LABELED_PROFILE, VERIFIER_PROFILE
+     from skillopt.continual_learning.recovery import RETRY_POLICIES
+@@ -547,8 +549,9 @@
+                                        learning_version=learning_version,
+                                        arms=arms or {"feedback": "diagnosis_research", "post_update": "challenge_replay"},
+                                        references=references, update_mode=update_mode, train_families=train_families,
+-                                       limits=limits)
+-    require(arms is None and not references and update_mode == "native" and train_families is None and not limits,
++                                       limits=limits, analyst_profile=analyst_profile)
++    require(arms is None and not references and update_mode == "native" and train_families is None and not limits
++            and analyst_profile == "native",
+             "Arms and reference Skills belong to the active-evidence method")
+     require(not (type(parent) is str and parent.startswith("f:")), "A fixed-text parent is a learning v11 option")
+     version, policy, budget = _protocol(learning_version)
+@@ -1033,6 +1036,9 @@
+     parser.add_argument("--test-benchmark", choices=API_ONLY + ("spreadsheetbench", "alfworld"),
+                         help="test cell domain (default: the stage's own domain)")
+     parser.add_argument("--val-source")
++    parser.add_argument("--analyst-profile", default="native",
++                        help="active-evidence only, pass/fail feedback with the native update: an analyst prompt "
++                             "profile of skillopt/active_evidence/updater.py (default native = unchanged)")
+     parser.add_argument("--generated-val",
+                         help="SkillOpt / Rubric+Research stages only, instead of --val-source: the directory of a "
+                              "completed scripts/generate_searchqa_tasks.py generation made from this stage's training "
+@@ -1076,7 +1082,7 @@
+                          gepa_source=args.gepa_source, learning_version=args.learning_version, arms=arms,
+                          references=tuple(args.reference), update_mode=args.arm_update,
+                          train_families=args.train_families, limits=tuple(args.limit),
+-                         generated_val=args.generated_val)
++                         generated_val=args.generated_val, analyst_profile=args.analyst_profile)
+     elif args.command == "learn":
+         result = learn(args.output)
+     elif args.command == "test":

@@ -1,0 +1,727 @@
+{
+  "version": "active-evidence-stage-export-v1",
+  "stages": [
+    {
+      "method": "active_evidence",
+      "arms": {
+        "feedback": "diagnosis_research",
+        "post_update": "matched_scalar_branch"
+      },
+      "benchmark": "searchqa",
+      "reference_skills": [
+        {
+          "name": "skillopt_v9",
+          "benchmark": "searchqa",
+          "method": "skillopt",
+          "learning_version": "continual-learning-v9",
+          "action": "selected_update",
+          "selection_tasks": 200,
+          "skill_sha256": "df368e1f95827e3a3e3c009dc09d8d8b588661bcac526f3596f74f4bc8f1a805",
+          "stage_hash": "153ea4ffd3e2fd4af17b2f0cde8adf3dce89f0834c8154ad4bf2e7f92cb57103"
+        },
+        {
+          "name": "main_v10",
+          "benchmark": "searchqa",
+          "method": "rubric_research",
+          "learning_version": "continual-learning-v10",
+          "action": "selected_update",
+          "selection_tasks": 200,
+          "skill_sha256": "21a89d936e6544a8e90006e3689e13f2b05eb32f0c9f0670412a1d3f173cb1f0",
+          "stage_hash": "76471cbb818c689c6c04d7579b41cbb33800ae66034286efdf1fb9ee27187647"
+        }
+      ],
+      "parent": "none",
+      "train_tasks": 128,
+      "challenge_tasks": 272,
+      "status": "completed",
+      "reason": "active_evidence_diagnosis_research_matched_scalar_branch_frozen_decision",
+      "action": "completed_no_update",
+      "decisions": [
+        "keep"
+      ],
+      "skill_bytes": 0,
+      "costs": {
+        "logical_calls": 1399,
+        "solver_calls": 1338,
+        "verifier_calls": 17,
+        "reflection_calls": 44,
+        "reported_tokens_known_subtotal": 3131245,
+        "missing_usage_calls": 11,
+        "unclosed_calls": 0
+      },
+      "tests": [],
+      "test": null,
+      "steps": [
+        {
+          "matched": {
+            "study": "matched-scalar-branch-study-v2",
+            "comparator": {
+              "proposal_hash": "0c5397ecd11167f57180e06a81aaece3f0b1a239b88eaddc4f8b7597dbfc066b",
+              "status": "candidate_ready",
+              "skill_hash": "189ddc2ffefebecab00c399a3777455ee5b0a93ca90d0b13008965c124b5db90",
+              "request_candidate_hash": "93f876b30a151d23e263f9718cf9530d91b60f727e0d99e827d5bff5e62a4c2e",
+              "skill_bytes": 4658,
+              "edit_count": 4,
+              "native_fallbacks": [],
+              "is_parent": false
+            },
+            "treatment": {
+              "proposal_hash": "0032bee239814f3d10ed9a260895a9c9be91f71e1e46cb5ef36ed42fa59f32fe",
+              "status": "candidate_ready",
+              "skill_hash": "f651eee6b6d3e7996c68a720985f0e8ed64806b2bae72e94323c7a7584e43596",
+              "request_candidate_hash": "b14e24df0c9aa200238dd5b50d7645b0db2fb5bbc475f0245ae1bf54b2a14675",
+              "skill_bytes": 3786,
+              "edit_count": 1,
+              "native_fallbacks": []
+            },
+            "candidates_identical": false,
+            "diff_lines": 51,
+            "delivery": {
+              "status": "completed",
+              "release_profile": null,
+              "denominators": null,
+              "message_classes": null,
+              "diagnosis": {
+                "cases": 16,
+                "cases_attempted": 16,
+                "cases_with_checks": 16,
+                "cases_format_failed": 0,
+                "cases_without_checks": 0,
+                "cases_skipped_for_reserve": 0,
+                "rows_with_reports": 16,
+                "summary_present": true
+              },
+              "problem": null
+            },
+            "holdout": {
+              "positions": 242,
+              "jointly_known": 240,
+              "wins": 6,
+              "losses": 4,
+              "ties": 230,
+              "candidate_unknown": 0,
+              "current_unknown": 0,
+              "both_unknown": 2,
+              "family_p_value": 0.376953125
+            },
+            "holdout_note": "challenge 'fresh' set drawn from the REUSED development pool (earlier stages' fresh draws overlap it; the zero-call report records the overlap per prior stage) after both candidates were frozen; one task per family by construction -- family independence is an assumption of the sign test and the interval, semantic independence is not audited; family_p_value is the frozen one-sided sign test, not used for the outcome class",
+            "outcome": {
+              "outcome": "inconclusive",
+              "reason": "worthwhile_gain_excluded",
+              "estimand": "paired pass difference (treatment minus comparator) on jointly known holdout positions",
+              "independence_assumption": "one task per family by construction; family independence is assumed by the sign test and the interval; semantic independence is not audited",
+              "positions": 242,
+              "jointly_known": 240,
+              "unknown_positions": 2,
+              "wins": 6,
+              "losses": 4,
+              "ties": 230,
+              "net_wins": 2,
+              "discordant": 10,
+              "sign_test_two_sided_p": 0.753906,
+              "difference": {
+                "estimate": 0.008333,
+                "ci95": [
+                  -0.020526,
+                  0.039126
+                ],
+                "interval": "tango-1998-score-interval-paired-difference"
+              },
+              "useful_gain": 0.05,
+              "worst_case_unknowns_as_treatment_losses": {
+                "estimate": 0.0,
+                "ci95": [
+                  -0.031731,
+                  0.031731
+                ],
+                "interval": "tango-1998-score-interval-paired-difference"
+              },
+              "non_inferiority": {
+                "margin": 0.05,
+                "holds": true,
+                "holds_with_unknowns_as_losses": true,
+                "scope": "jointly known positions of this contrast"
+              }
+            },
+            "references": {
+              "references_hash": "ae091515e0c357553fdedbc50637c2d47480cf35b511acde1e3c5f75c68fca89",
+              "parent_bound": true,
+              "branch_pass": {
+                "comparator": 194,
+                "treatment": 196
+              },
+              "branches": {
+                "comparator": {
+                  "skill_hash": "189ddc2ffefebecab00c399a3777455ee5b0a93ca90d0b13008965c124b5db90",
+                  "updated": true
+                },
+                "treatment": {
+                  "skill_hash": "f651eee6b6d3e7996c68a720985f0e8ed64806b2bae72e94323c7a7584e43596",
+                  "updated": true
+                }
+              },
+              "by_reference": {
+                "parent": {
+                  "skill_hash": "12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126",
+                  "is_parent": true,
+                  "rollout": 1003,
+                  "pass": 169,
+                  "fail": 71,
+                  "unknown": 2,
+                  "comparator_minus_reference": {
+                    "outcome": "useful_gain",
+                    "reason": "difference_at_or_above_useful_gain_with_interval_above_zero",
+                    "robust_to_unknowns": true,
+                    "estimand": "paired pass difference (comparator branch minus reference 'parent') on jointly known holdout positions",
+                    "independence_assumption": "one task per family by construction; family independence is assumed by the sign test and the interval; semantic independence is not audited",
+                    "positions": 242,
+                    "jointly_known": 240,
+                    "unknown_positions": 2,
+                    "wins": 28,
+                    "losses": 3,
+                    "ties": 209,
+                    "net_wins": 25,
+                    "discordant": 31,
+                    "sign_test_two_sided_p": 5e-06,
+                    "difference": {
+                      "estimate": 0.104167,
+                      "ci95": [
+                        0.063627,
+                        0.152763
+                      ],
+                      "interval": "tango-1998-score-interval-paired-difference"
+                    },
+                    "useful_gain": 0.05,
+                    "worst_case_unknowns_as_treatment_losses": {
+                      "estimate": 0.095041,
+                      "ci95": [
+                        0.051985,
+                        0.144452
+                      ],
+                      "interval": "tango-1998-score-interval-paired-difference"
+                    },
+                    "non_inferiority": {
+                      "margin": 0.05,
+                      "holds": true,
+                      "holds_with_unknowns_as_losses": true,
+                      "scope": "jointly known positions of this contrast"
+                    }
+                  },
+                  "treatment_minus_reference": {
+                    "outcome": "useful_gain",
+                    "reason": "difference_at_or_above_useful_gain_with_interval_above_zero",
+                    "robust_to_unknowns": true,
+                    "estimand": "paired pass difference (treatment branch minus reference 'parent') on jointly known holdout positions",
+                    "independence_assumption": "one task per family by construction; family independence is assumed by the sign test and the interval; semantic independence is not audited",
+                    "positions": 242,
+                    "jointly_known": 240,
+                    "unknown_positions": 2,
+                    "wins": 29,
+                    "losses": 2,
+                    "ties": 209,
+                    "net_wins": 27,
+                    "discordant": 31,
+                    "sign_test_two_sided_p": 0.0,
+                    "difference": {
+                      "estimate": 0.1125,
+                      "ci95": [
+                        0.07305,
+                        0.161032
+                      ],
+                      "interval": "tango-1998-score-interval-paired-difference"
+                    },
+                    "useful_gain": 0.05,
+                    "worst_case_unknowns_as_treatment_losses": {
+                      "estimate": 0.103306,
+                      "ci95": [
+                        0.061077,
+                        0.152664
+                      ],
+                      "interval": "tango-1998-score-interval-paired-difference"
+                    },
+                    "non_inferiority": {
+                      "margin": 0.05,
+                      "holds": true,
+                      "holds_with_unknowns_as_losses": true,
+                      "scope": "jointly known positions of this contrast"
+                    }
+                  }
+                },
+                "skillopt_v9": {
+                  "skill_hash": "eaba382bb1e4a9e9af4f3f2c08b43b900f9a66b716e1b2e333dd4fcd4942c08a",
+                  "is_parent": false,
+                  "rollout": 1004,
+                  "pass": 204,
+                  "fail": 36,
+                  "unknown": 2,
+                  "comparator_minus_reference": {
+                    "outcome": "inconclusive",
+                    "reason": "worthwhile_gain_excluded",
+                    "estimand": "paired pass difference (comparator branch minus reference 'skillopt_v9') on jointly known holdout positions",
+                    "independence_assumption": "one task per family by construction; family independence is assumed by the sign test and the interval; semantic independence is not audited",
+                    "positions": 242,
+                    "jointly_known": 240,
+                    "unknown_positions": 2,
+                    "wins": 3,
+                    "losses": 13,
+                    "ties": 224,
+                    "net_wins": -10,
+                    "discordant": 16,
+                    "sign_test_two_sided_p": 0.021271,
+                    "difference": {
+                      "estimate": -0.041667,
+                      "ci95": [
+                        -0.079743,
+                        -0.010251
+                      ],
+                      "interval": "tango-1998-score-interval-paired-difference"
+                    },
+                    "useful_gain": 0.05,
+                    "worst_case_unknowns_as_treatment_losses": {
+                      "estimate": -0.049587,
+                      "ci95": [
+                        -0.089113,
+                        -0.017159
+                      ],
+                      "interval": "tango-1998-score-interval-paired-difference"
+                    },
+                    "non_inferiority": {
+                      "margin": 0.05,
+                      "holds": false,
+                      "holds_with_unknowns_as_losses": false,
+                      "scope": "jointly known positions of this contrast"
+                    }
+                  },
+                  "treatment_minus_reference": {
+                    "outcome": "inconclusive",
+                    "reason": "worthwhile_gain_excluded",
+                    "estimand": "paired pass difference (treatment branch minus reference 'skillopt_v9') on jointly known holdout positions",
+                    "independence_assumption": "one task per family by construction; family independence is assumed by the sign test and the interval; semantic independence is not audited",
+                    "positions": 242,
+                    "jointly_known": 240,
+                    "unknown_positions": 2,
+                    "wins": 2,
+                    "losses": 10,
+                    "ties": 228,
+                    "net_wins": -8,
+                    "discordant": 12,
+                    "sign_test_two_sided_p": 0.038574,
+                    "difference": {
+                      "estimate": -0.033333,
+                      "ci95": [
+                        -0.067838,
+                        -0.006023
+                      ],
+                      "interval": "tango-1998-score-interval-paired-difference"
+                    },
+                    "useful_gain": 0.05,
+                    "worst_case_unknowns_as_treatment_losses": {
+                      "estimate": -0.041322,
+                      "ci95": [
+                        -0.077573,
+                        -0.012915
+                      ],
+                      "interval": "tango-1998-score-interval-paired-difference"
+                    },
+                    "non_inferiority": {
+                      "margin": 0.05,
+                      "holds": false,
+                      "holds_with_unknowns_as_losses": false,
+                      "scope": "jointly known positions of this contrast"
+                    }
+                  },
+                  "reference_minus_parent": {
+                    "outcome": "useful_gain",
+                    "reason": "difference_at_or_above_useful_gain_with_interval_above_zero",
+                    "robust_to_unknowns": true,
+                    "estimand": "paired pass difference (reference 'skillopt_v9' minus the parent) on jointly known holdout positions (instrument check: a known effect of the reference should be visible here)",
+                    "independence_assumption": "one task per family by construction; family independence is assumed by the sign test and the interval; semantic independence is not audited",
+                    "positions": 242,
+                    "jointly_known": 240,
+                    "unknown_positions": 2,
+                    "wins": 37,
+                    "losses": 2,
+                    "ties": 201,
+                    "net_wins": 35,
+                    "discordant": 39,
+                    "sign_test_two_sided_p": 0.0,
+                    "difference": {
+                      "estimate": 0.145833,
+                      "ci95": [
+                        0.102082,
+                        0.198164
+                      ],
+                      "interval": "tango-1998-score-interval-paired-difference"
+                    },
+                    "useful_gain": 0.05,
+                    "worst_case_unknowns_as_treatment_losses": {
+                      "estimate": 0.136364,
+                      "ci95": [
+                        0.090106,
+                        0.189519
+                      ],
+                      "interval": "tango-1998-score-interval-paired-difference"
+                    },
+                    "non_inferiority": {
+                      "margin": 0.05,
+                      "holds": true,
+                      "holds_with_unknowns_as_losses": true,
+                      "scope": "jointly known positions of this contrast"
+                    }
+                  },
+                  "q3_interpretable": {
+                    "holds": true,
+                    "reason": "instrument_check_useful_gain"
+                  }
+                },
+                "main_v10": {
+                  "skill_hash": "cf785bf66213c452c7381ad869ddff4bf16306daf85c4d11fc9a725eaef326ab",
+                  "is_parent": false,
+                  "rollout": 1005,
+                  "pass": 197,
+                  "fail": 43,
+                  "unknown": 2,
+                  "comparator_minus_reference": {
+                    "outcome": "inconclusive",
+                    "reason": "worthwhile_gain_excluded",
+                    "estimand": "paired pass difference (comparator branch minus reference 'main_v10') on jointly known holdout positions",
+                    "independence_assumption": "one task per family by construction; family independence is assumed by the sign test and the interval; semantic independence is not audited",
+                    "positions": 242,
+                    "jointly_known": 240,
+                    "unknown_positions": 2,
+                    "wins": 4,
+                    "losses": 7,
+                    "ties": 229,
+                    "net_wins": -3,
+                    "discordant": 11,
+                    "sign_test_two_sided_p": 0.548828,
+                    "difference": {
+                      "estimate": -0.0125,
+                      "ci95": [
+                        -0.044653,
+                        0.01697
+                      ],
+                      "interval": "tango-1998-score-interval-paired-difference"
+                    },
+                    "useful_gain": 0.05,
+                    "worst_case_unknowns_as_treatment_losses": {
+                      "estimate": -0.020661,
+                      "ci95": [
+                        -0.054973,
+                        0.009794
+                      ],
+                      "interval": "tango-1998-score-interval-paired-difference"
+                    },
+                    "non_inferiority": {
+                      "margin": 0.05,
+                      "holds": true,
+                      "holds_with_unknowns_as_losses": false,
+                      "scope": "jointly known positions of this contrast"
+                    }
+                  },
+                  "treatment_minus_reference": {
+                    "outcome": "inconclusive",
+                    "reason": "worthwhile_gain_excluded",
+                    "estimand": "paired pass difference (treatment branch minus reference 'main_v10') on jointly known holdout positions",
+                    "independence_assumption": "one task per family by construction; family independence is assumed by the sign test and the interval; semantic independence is not audited",
+                    "positions": 242,
+                    "jointly_known": 240,
+                    "unknown_positions": 2,
+                    "wins": 2,
+                    "losses": 3,
+                    "ties": 235,
+                    "net_wins": -1,
+                    "discordant": 5,
+                    "sign_test_two_sided_p": 1.0,
+                    "difference": {
+                      "estimate": -0.004167,
+                      "ci95": [
+                        -0.028825,
+                        0.018868
+                      ],
+                      "interval": "tango-1998-score-interval-paired-difference"
+                    },
+                    "useful_gain": 0.05,
+                    "worst_case_unknowns_as_treatment_losses": {
+                      "estimate": -0.012397,
+                      "ci95": [
+                        -0.040304,
+                        0.011567
+                      ],
+                      "interval": "tango-1998-score-interval-paired-difference"
+                    },
+                    "non_inferiority": {
+                      "margin": 0.05,
+                      "holds": true,
+                      "holds_with_unknowns_as_losses": true,
+                      "scope": "jointly known positions of this contrast"
+                    }
+                  },
+                  "reference_minus_parent": {
+                    "outcome": "useful_gain",
+                    "reason": "difference_at_or_above_useful_gain_with_interval_above_zero",
+                    "robust_to_unknowns": true,
+                    "estimand": "paired pass difference (reference 'main_v10' minus the parent) on jointly known holdout positions (instrument check: a known effect of the reference should be visible here)",
+                    "independence_assumption": "one task per family by construction; family independence is assumed by the sign test and the interval; semantic independence is not audited",
+                    "positions": 242,
+                    "jointly_known": 240,
+                    "unknown_positions": 2,
+                    "wins": 29,
+                    "losses": 1,
+                    "ties": 210,
+                    "net_wins": 28,
+                    "discordant": 30,
+                    "sign_test_two_sided_p": 0.0,
+                    "difference": {
+                      "estimate": 0.116667,
+                      "ci95": [
+                        0.079083,
+                        0.164593
+                      ],
+                      "interval": "tango-1998-score-interval-paired-difference"
+                    },
+                    "useful_gain": 0.05,
+                    "worst_case_unknowns_as_treatment_losses": {
+                      "estimate": 0.107438,
+                      "ci95": [
+                        0.066681,
+                        0.156205
+                      ],
+                      "interval": "tango-1998-score-interval-paired-difference"
+                    },
+                    "non_inferiority": {
+                      "margin": 0.05,
+                      "holds": true,
+                      "holds_with_unknowns_as_losses": true,
+                      "scope": "jointly known positions of this contrast"
+                    }
+                  },
+                  "q3_interpretable": {
+                    "holds": true,
+                    "reason": "instrument_check_useful_gain"
+                  }
+                }
+              },
+              "note": "evaluation-only references on the same drawn holdout; exploratory contrasts without multiplicity adjustment; reference batches ran after the two branches (not interleaved); a contrast of an unchanged or identical Skill is a noise replicate, never a measured effect"
+            }
+          },
+          "information_release": null,
+          "release": null,
+          "study_audits": null,
+          "step": 0,
+          "rollout": {
+            "kind": "fresh",
+            "rollout": 0,
+            "rows": 128,
+            "known": 127,
+            "unknown": 1,
+            "outputs_new": true,
+            "tasks_reused_across_steps": false
+          },
+          "problem": {
+            "host_fail": 38,
+            "host_pass": 89
+          },
+          "diagnosis": {
+            "status": "completed",
+            "cases": 16,
+            "hypotheses": [
+              {
+                "id": "h1",
+                "kind": "task_error_candidate",
+                "needs_fact": true
+              },
+              {
+                "id": "h2",
+                "kind": "task_error_candidate",
+                "needs_fact": false
+              },
+              {
+                "id": "h3",
+                "kind": "task_error_candidate",
+                "needs_fact": false
+              },
+              {
+                "id": "h4",
+                "kind": "coverage_gap",
+                "needs_fact": false
+              }
+            ],
+            "grades": {
+              "pending_explanation": 31
+            },
+            "executed_checks": 0,
+            "observations": [
+              {
+                "hypothesis_id": "h1",
+                "verdict": "undecided",
+                "checks": 7
+              },
+              {
+                "hypothesis_id": "h2",
+                "verdict": "undecided",
+                "checks": 5
+              },
+              {
+                "hypothesis_id": "h3",
+                "verdict": "undecided",
+                "checks": 16
+              },
+              {
+                "hypothesis_id": "h4",
+                "verdict": "undecided",
+                "checks": 3
+              }
+            ],
+            "research": [],
+            "fact_needs": [
+              {
+                "hypothesis_id": "h1",
+                "status": "not_consulted:no_check_reached_review",
+                "checks": 7,
+                "reviewed_checks": 0,
+                "consulted_checks": [],
+                "research_statuses": [],
+                "resolved": false,
+                "research_hashes": [],
+                "binding": "structural (this hypothesis's own checks); the declared question is not matched semantically"
+              }
+            ],
+            "rows_with_evidence": 16,
+            "cases_skipped_for_reserve": [],
+            "delivery": {
+              "cases": 16,
+              "cases_attempted": 16,
+              "cases_with_checks": 16,
+              "cases_format_failed": 0,
+              "cases_without_checks": 0,
+              "cases_skipped_for_reserve": 0,
+              "rows_with_reports": 16,
+              "summary_present": true
+            }
+          },
+          "edits": {
+            "proposal_hash": "0032bee239814f3d10ed9a260895a9c9be91f71e1e46cb5ef36ed42fa59f32fe",
+            "status": "candidate_ready",
+            "candidate_hash": "f651eee6b6d3e7996c68a720985f0e8ed64806b2bae72e94323c7a7584e43596",
+            "edit_count": 1,
+            "native_fallbacks": []
+          },
+          "challenge": {
+            "draw_hash": "e8b0733e5260e15ddf58eab7a1a1280f3ab03b955432d698a12226e55cc28d87",
+            "outcome_hash": "da91c9e6d3c3bc12c922c85d7a1d31e971bc8e6f9f3f756a1e4671192494b332",
+            "status": "completed",
+            "summary": {
+              "fresh": {
+                "positions": 242,
+                "wins": 6,
+                "losses": 4,
+                "ties": 230,
+                "candidate_unknown": 0,
+                "current_unknown": 0,
+                "both_unknown": 2,
+                "jointly_known": 240,
+                "net_wins": 2,
+                "families": 240,
+                "families_improving": 6,
+                "families_regressing": 4,
+                "family_p_value": 0.376953125,
+                "strata": {
+                  "seen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  },
+                  "unseen_family": {
+                    "positions": 242,
+                    "wins": 6,
+                    "losses": 4
+                  }
+                },
+                "regressions": 4,
+                "fixed": 6
+              },
+              "replay": {
+                "positions": 0,
+                "wins": 0,
+                "losses": 0,
+                "ties": 0,
+                "candidate_unknown": 0,
+                "current_unknown": 0,
+                "both_unknown": 0,
+                "jointly_known": 0,
+                "net_wins": 0,
+                "families": 0,
+                "families_improving": 0,
+                "families_regressing": 0,
+                "family_p_value": 1.0,
+                "strata": {
+                  "seen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  },
+                  "unseen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  }
+                },
+                "regressions": 0,
+                "fixed": 0
+              },
+              "local_fix": {
+                "positions": 0,
+                "wins": 0,
+                "losses": 0,
+                "ties": 0,
+                "candidate_unknown": 0,
+                "current_unknown": 0,
+                "both_unknown": 0,
+                "jointly_known": 0,
+                "net_wins": 0,
+                "families": 0,
+                "families_improving": 0,
+                "families_regressing": 0,
+                "family_p_value": 1.0,
+                "strata": {
+                  "seen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  },
+                  "unseen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  }
+                },
+                "regressions": 0,
+                "fixed": 0
+              }
+            },
+            "reason": null
+          },
+          "decision": {
+            "record_hash": "e7cf6e3dd4912606bf53b95dace3f0d68f489f934fdebf96a71c4ec1e3a3e99c",
+            "action": "keep",
+            "reason": "net_wins_at_or_above_minimum_without_excess_regressions"
+          },
+          "intervened": {
+            "research_consulted": false,
+            "label_feedback": false,
+            "research_new_information": false,
+            "feedback_differs_from_scalar": true,
+            "skill_changed": true,
+            "challenge_delta": true,
+            "decision": "keep"
+          }
+        }
+      ],
+      "note": "learning-process data (dynamic tasks and replay); never a final evaluation",
+      "stage_basename": "fivebench-g-20261010-searchqa-active-a"
+    }
+  ],
+  "note": "learning-process data; counts and hashes only; never a final evaluation",
+  "record_hash": "de1f0eef34abe0d2fc06466c91d712866abc1aca60a5298f7dfd39471d199610"
+}

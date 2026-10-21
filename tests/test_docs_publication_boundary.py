@@ -20,6 +20,8 @@ def config():
         "results-and-lessons.md",
         "future-research-report.md",
         "results/example.json",
+        "handoff/example.md",
+        "handoff/feasibility/result.json",
         "superpowers/specs/design.md",
         "network.local.md",
         "guide/network.local.md",

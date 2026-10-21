@@ -17,6 +17,10 @@ from pathlib import Path
 
 VERSION = "continual-panel-v1"
 BENCHMARKS = ("bigcodebench", "spreadsheetbench", "searchqa", "korbench", "alfworld")
+# Benchmarks of the learning toolchain's extension study (2026-10-13): single-call text tasks that are NOT part of
+# the five-benchmark evaluation plans (``core.BENCHMARKS`` and its plans stay as they are).
+EXTENSION_BENCHMARKS = ("livemath", "officeqa")
+LIVEMATH_LABELS = "ABCDE"
 PARTITIONS = ("development", "verifier_calibration", "skill_confirmation", "final")
 _ROOT = {"version", "benchmark", "dataset_revision", "provenance", "tasks"}
 _TASK = {"task_id", "family_id", "project_id", "partition", "public", "private"}
@@ -26,6 +30,8 @@ _PUBLIC = {
     "bigcodebench": {"prompt", "entry_point"},
     "spreadsheetbench": {"instruction", "input_files", "answer_position"},
     "alfworld": {"game_file"},
+    "livemath": {"question", "choices"},  # five options rendered "A. ...", separated by blank lines
+    "officeqa": {"question", "context"},  # one-call form: the parsed page(s) the question refers to
 }
 _PRIVATE = {
     "searchqa": {"answers"},
@@ -33,6 +39,8 @@ _PRIVATE = {
     "bigcodebench": {"test"},
     "spreadsheetbench": {"test_files", "answer_position"},
     "alfworld": {"game_metadata"},
+    "livemath": {"answer"},  # the letter of the correct option
+    "officeqa": {"answer"},
 }
 _OPTIONAL = {"source_sha256", "source_url", "asset_sha256"}
 _HEX = re.compile(r"[0-9a-f]{64}\Z")
@@ -94,7 +102,7 @@ def validate_panel(panel):
     _require(type(panel) is dict and set(panel) == _ROOT, "Invalid panel fields")
     _require(panel["version"] == VERSION, "Unsupported panel version")
     benchmark = panel["benchmark"]
-    _require(type(benchmark) is str and benchmark in BENCHMARKS, "Unknown benchmark")
+    _require(type(benchmark) is str and benchmark in BENCHMARKS + EXTENSION_BENCHMARKS, "Unknown benchmark")
     _text(panel["dataset_revision"], "dataset_revision")
     _require(panel["dataset_revision"].lower() not in {"main", "master", "head", "latest", "default"},
              "dataset_revision must identify a frozen source, not a mutable branch")
@@ -160,11 +168,36 @@ def validate_panel(panel):
         if benchmark == "korbench":
             _require(private["category"] in ("cipher", "logic", "operation", "puzzle", "counterfactual"),
                      "Invalid KOR category")
+        if benchmark in EXTENSION_BENCHMARKS:
+            _text(private["answer"], "answer")
+            _require(benchmark != "livemath" or private["answer"] in tuple(LIVEMATH_LABELS),
+                     "A LiveMath answer is the letter of one of the five options")
+            _require(benchmark != "livemath" or livemath_options(public["choices"]) is not None,
+                     "LiveMath choices are five options labelled A to E, each with text")
+            _require(benchmark != "officeqa" or type(public["context"]) is str,
+                     "An OfficeQA context is one text (the rendered pages)")
     if benchmark == "spreadsheetbench":
         inputs = {name for task in panel["tasks"] for name in task["public"]["input_files"]}
         tests = {name for task in panel["tasks"] for name in task["private"]["test_files"]}
         _require(not inputs & tests, "Private workbook exposed across tasks")
     return panel
+
+
+def livemath_options(choices):
+    """The five option texts of a rendered ``choices`` string ("A. ..." to "E. ...", separated by blank lines; a
+    text may span lines), or None unless the labels A to E appear exactly in this order, each with text."""
+    if type(choices) is not str or not choices.startswith("A. "):
+        return None
+    marks, position = [0], 0
+    for label in LIVEMATH_LABELS[1:]:
+        position = choices.find("\n\n%s. " % label, position)
+        if position < 0:
+            return None
+        marks.append(position)
+        position += 1
+    marks.append(len(choices))
+    texts = [choices[marks[k]:marks[k + 1]].strip()[3:].strip() for k in range(len(LIVEMATH_LABELS))]
+    return texts if all(texts) else None
 
 
 def _asset_paths(benchmark, task):
@@ -282,6 +315,31 @@ def _family(task_id, public, family_map):
 def _panel(benchmark, revision, tasks):
     return validate_panel({"version": VERSION, "benchmark": benchmark, "dataset_revision": revision,
                            "provenance": "natural", "tasks": tasks})
+
+
+def _import_extension(benchmark, source, partition, revision, family_map):
+    """Materialized rows {"id", <public fields>, "answer"} of an extension benchmark (not ID manifests)."""
+    rows, digest = _rows(source)
+    fields = sorted(_PUBLIC[benchmark])
+    tasks = []
+    for row in rows:
+        _require({"id", "answer", *fields} <= set(row), "Extension rows need id, the public fields and answer")
+        _require(type(row["id"]) is str and bool(row["id"]), "Extension record lacks a text id")
+        public = {key: row[key] for key in fields}
+        tasks.append({"task_id": row["id"], "family_id": _family(row["id"], public, family_map), "project_id": "",
+                      "partition": partition, "public": public,
+                      "private": {"answer": row["answer"], "source_sha256": digest}})
+    return _panel(benchmark, revision, tasks)
+
+
+def import_livemath(source, *, partition="development", revision, family_map=None):
+    """LiveMathematicianBench items materialized with a frozen option order (question, choices, answer letter)."""
+    return _import_extension("livemath", source, partition, revision, family_map)
+
+
+def import_officeqa(source, *, partition="development", revision, family_map=None):
+    """OfficeQA items in the one-call form (question, parsed-page context, answer)."""
+    return _import_extension("officeqa", source, partition, revision, family_map)
 
 
 def import_searchqa(source, *, partition="development", revision, family_map=None):

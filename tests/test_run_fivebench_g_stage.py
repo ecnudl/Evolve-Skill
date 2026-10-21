@@ -111,7 +111,7 @@ def test_compare_pairs_positions_with_the_recorded_no_skill_cell(tmp_path):
 
 
 def test_parent_names_and_api_only_scope():
-    assert set(tool.PARENTS) == {"none", "f-s1", "f-s3", "f-s4"} and tool.API_ONLY == ("bigcodebench", "searchqa", "korbench")
+    assert set(tool.PARENTS) == {"none", "f-s1", "f-s3", "f-s4"} and tool.API_ONLY == ("bigcodebench", "searchqa", "korbench", "livemath", "officeqa")
     assert tool.BUDGET["max_iterations"] == 3 and tool.BUDGET["solver_max_tokens"] == 65536
     assert Path(tool.__file__).name == "run_fivebench_g_stage.py"
 
@@ -200,7 +200,7 @@ def test_g_parent_chains_a_completed_stage_and_rejects_tampering(tmp_path, monke
 
 def test_compatible_predecessor_hashes_are_full_digests_and_suffix_marks_other_domains():
     assert all(len(h) == 64 and set(h) <= set("0123456789abcdef") for h in tool.COMPATIBLE_TOOL_HASHES)
-    assert len(tool.COMPATIBLE_TOOL_HASHES) == 3
+    assert len(tool.COMPATIBLE_TOOL_HASHES) == 4  # 10/9: the committed v10 main-method tool (7420960) joins the set
     record = {"benchmark": "korbench"}
     assert tool._suffix(record, "korbench") == "" and tool._suffix(record, "searchqa") == "-searchqa"
     # replicate cells never collide with the primary cell or with other domains

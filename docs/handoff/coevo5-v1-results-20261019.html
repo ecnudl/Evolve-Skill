@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>五 bench 协同进化第 1 版</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&display=swap">
+<style>
+/* Layout: one reading column (about 68 characters) for the prose; data tables and the chart may run wider, each in its own scroll box */
+:root {
+  --bg: #f3f6f7;
+  --surface: #ffffff;
+  --ink: #172227;
+  --muted: #56656d;
+  --rule: #d3dce0;
+  --accent: #0d6470;
+  --c-ins: #2b58a0;
+  --c-so: #a5670f;
+  --c-e: #0d6470;
+  --c-gepa: #7a479e;
+  --c-blank: #7b878d;
+  --up: #1b7448;
+  --up-bg: #e1f1e8;
+  --down: #ac3434;
+  --down-bg: #f7e3e3;
+  --best-bg: #e3ecf8;
+  --font-display: "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
+  --font-body: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10171a; --surface: #162025; --ink: #e1e8eb; --muted: #9aa9b0; --rule: #29383f;
+    --accent: #52b1bc; --c-ins: #88aae6; --c-so: #e0a550; --c-e: #52b1bc; --c-gepa: #ba90dc; --c-blank: #919ca2;
+    --up: #62c493; --up-bg: #15322a; --down: #e88383; --down-bg: #3b1e1f; --best-bg: #1b2b3f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10171a; --surface: #162025; --ink: #e1e8eb; --muted: #9aa9b0; --rule: #29383f;
+  --accent: #52b1bc; --c-ins: #88aae6; --c-so: #e0a550; --c-e: #52b1bc; --c-gepa: #ba90dc; --c-blank: #919ca2;
+  --up: #62c493; --up-bg: #15322a; --down: #e88383; --down-bg: #3b1e1f; --best-bg: #1b2b3f;
+  color-scheme: dark;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.75;
+}
+.page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 44px;
+}
+.prose { max-width: 68ch; }
+header { display: flex; flex-direction: column; gap: 10px; }
+.eyebrow { margin: 0; font-size: 12.5px; letter-spacing: 0.06em; color: var(--accent); font-weight: 500; }
+h1, h2, h3, h4 { font-family: var(--font-display); text-wrap: balance; color: var(--ink); margin: 0; }
+h1 { font-size: 30px; line-height: 1.35; }
+h2 { font-size: 21px; line-height: 1.4; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
+h3 { font-size: 17px; line-height: 1.45; }
+h4 { font-size: 15px; font-family: var(--font-body); font-weight: 700; }
+p, ul, ol { margin: 0; }
+ul, ol { padding-left: 1.4em; display: flex; flex-direction: column; gap: 6px; }
+.meta { margin: 0; color: var(--muted); font-size: 13px; }
+nav { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13.5px; padding-top: 6px; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+section { display: flex; flex-direction: column; gap: 16px; }
+.sub-block { display: flex; flex-direction: column; gap: 12px; }
+.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 20px 22px; }
+.panel h2 { border-bottom: none; padding-bottom: 0; }
+.panel ul { gap: 10px; }
+b, strong { font-weight: 700; }
+.note, .legend, .lede { color: var(--muted); font-size: 13.5px; max-width: 68ch; }
+code { font-family: var(--font-mono); font-size: 12.5px; }
+.scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 8px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+tbody tr:last-child th, tbody tr:last-child td { border-bottom: none; }
+thead th { font-size: 12.5px; font-weight: 500; color: var(--muted); text-align: right; white-space: nowrap; background: var(--surface); }
+thead th:first-child { text-align: left; }
+table.plain td, table.plain th { text-align: left; }
+table.plain thead th { text-align: left; }
+.data { font-size: 13.5px; min-width: 760px; }
+.data tbody th { text-align: left; font-weight: 500; white-space: nowrap; }
+.data td { text-align: right; white-space: nowrap; }
+.data td .v { display: block; font-family: var(--font-mono); font-size: 14px; color: var(--ink); }
+.data td .n { display: block; font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); }
+.data td.note { text-align: left; white-space: normal; min-width: 150px; color: var(--muted); font-size: 12.5px; }
+.data tr.reused td .v, .data tr.reused th { color: var(--muted); }
+.data tr.reused td .v { font-weight: 400; }
+.data .sb { color: var(--muted); font-size: 12px; margin-left: 4px; }
+.data .role { display: block; font-size: 11.5px; color: var(--muted); font-weight: 400; }
+.data td.mac { border-left: 1px solid var(--rule); }
+.data td.mac .v { font-weight: 500; }
+.data td.best { background: var(--best-bg); }
+.data td.best .v { font-weight: 700; }
+.data td.up { background: var(--up-bg); }
+.data td.up .v { color: var(--up); font-weight: 500; }
+.data td.down { background: var(--down-bg); }
+.data td.down .v { color: var(--down); font-weight: 500; }
+.cmp { min-width: 680px; }
+.cmp tbody th { white-space: normal; font-weight: 400; }
+.cmp td { text-align: right; }
+.cmp td:last-child { text-align: left; white-space: normal; }
+.cmp td.num { font-family: var(--font-mono); }
+.cmp tr.group th { font-size: 12.5px; font-weight: 700; color: var(--accent); padding-top: 12px; background: var(--surface); }
+.funnel { min-width: 720px; }
+.funnel td.num { font-family: var(--font-mono); }
+.funnel td.strong { font-weight: 700; color: var(--accent); }
+.funnel tr.total th, .funnel tr.total td { border-top: 2px solid var(--rule); font-weight: 700; }
+.plain { font-size: 13.5px; min-width: 560px; }
+.plain td.num { font-family: var(--font-mono); text-align: right; white-space: nowrap; }
+.chart-box { padding: 12px 8px 4px; }
+.chart { display: block; width: 100%; min-width: 620px; height: auto; font-family: var(--font-body); }
+.chart .grid { stroke: var(--rule); stroke-width: 1; }
+.chart .grid.faint { stroke-dasharray: 2 4; }
+.chart .ref { stroke: var(--c-blank); stroke-width: 1.5; stroke-dasharray: 6 5; }
+.chart .tick { fill: var(--muted); font-size: 13px; font-family: var(--font-mono); }
+.chart .tick.sub { font-family: var(--font-body); font-size: 12px; }
+.chart .axis { fill: var(--muted); font-size: 12.5px; }
+.chart .line { fill: none; stroke-width: 2.5; stroke-linejoin: round; }
+.chart .line.ins { stroke: var(--c-ins); }
+.chart .line.so { stroke: var(--c-so); }
+.chart .line.e { stroke: var(--c-e); }
+.chart .line.gepa { stroke: var(--c-gepa); stroke-dasharray: 1 0; }
+.chart .pt { stroke-width: 2; }
+.chart .pt.ins { fill: var(--c-ins); stroke: var(--c-ins); }
+.chart .pt.so { fill: var(--c-so); stroke: var(--c-so); }
+.chart .pt.e { fill: var(--c-e); stroke: var(--c-e); }
+.chart .pt.gepa { fill: var(--c-gepa); stroke: var(--c-gepa); }
+.chart .pt.blank { fill: var(--c-blank); stroke: var(--c-blank); }
+.chart .pt.hollow { fill: var(--surface); }
+.chart .endlab { font-size: 13px; font-weight: 700; }
+.chart .endlab.ins { fill: var(--c-ins); }
+.chart .endlab.so { fill: var(--c-so); }
+.chart .endlab.e { fill: var(--c-e); }
+.chart .endlab.gepa { fill: var(--c-gepa); }
+.chart .endlab.blank { fill: var(--c-blank); }
+details { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; }
+summary { cursor: pointer; padding: 10px 14px; font-weight: 500; }
+summary .size { color: var(--muted); font-weight: 400; font-size: 12.5px; margin-left: 8px; font-family: var(--font-mono); }
+pre { margin: 0; padding: 12px 14px; border-top: 1px solid var(--rule); max-height: 460px; overflow: auto; white-space: pre-wrap; word-break: break-word; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6; color: var(--ink); }
+.rules { gap: 10px; }
+.rules li { max-width: 80ch; }
+.rules code { color: var(--muted); margin-right: 6px; }
+.path { font-family: var(--font-mono); font-size: 12.5px; word-break: break-all; }
+@media (max-width: 560px) {
+  body { font-size: 14.5px; }
+  h1 { font-size: 24px; }
+  h2 { font-size: 19px; }
+  .panel { padding: 16px; }
+  .page { gap: 36px; padding-block: 28px 56px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+
+</head>
+<body>
+<main class="page">
+  <header>
+    <p class="eyebrow">Evolve-Skill · 五 bench 协同进化 · 协议 fivebench-coevolution-v1</p>
+    <h1>第 1 版结果：五个测试集上的逐步分数</h1>
+    <p class="meta">做题模型 GLM-5.3 · 运行 2026-10-18 12:38 至 10-19 07:16 · 测试分数 10-19 10:52 经负责人同意打开 · 本页整理于 10-19 11:15</p>
+    <p class="meta">本地文件版。同样内容的 Markdown：<a href="coevo5-v1-results-20261019.md">coevo5-v1-results-20261019.md</a></p>
+    <nav aria-label="目录">
+      <a href="#conclusion">结论</a>
+      <a href="#setup">1 设置</a>
+      <a href="#method">2 方法</a>
+      <a href="#results">3 测试集结果</a>
+      <a href="#training">4 训练过程</a>
+      <a href="#timeline">5 时间线与花费</a>
+      <a href="#v2">6 第 2 版与现在</a>
+      <a href="#appendix">附录</a>
+    </nav>
+  </header>
+
+  <section id="conclusion" class="panel">
+    <h2>结论</h2>
+    <ul class="prose">
+      <li>学完五个 bench 后，五个测试集的平均分：<b>指令（I-glm）66.7</b>，SkillOpt-glm 66.0，E-glm 63.7，GEPA-glm 63.5；不用 Skill（空白）是 58.6。</li>
+      <li><b>平均分最高的是没有学进任何东西的指令。</b>I-glm 五步一条规则都没收下，它的分数就是起点指令的分数。它和 SkillOpt-glm 只差 0.6 点（指令减 SkillOpt 的 95% 区间 [−2.3, +3.4]），分不出高低。</li>
+      <li>真正在“进化”中提高最多的是基线 SkillOpt-glm：比空白高 7.4 点（[+4.5, +10.3]）。</li>
+      <li>我们的方法 E-glm 比空白高 4.9 点（[+2.0, +7.8]），但比指令低 2.8 点（[−5.5, −0.1]），比 SkillOpt-glm 低 2.4 点（[−5.4, +0.5]）；后一项按事先登记的“不差于”检验算“不确定”。</li>
+      <li>提高几乎都在 SearchQA 和 OfficeQA：每一份 Skill（包括指令）都让这两个 bench 提高 13–21 点。E-glm 只学了两条“答案写短”的 SearchQA 规则，OfficeQA 也提高了约 20 点，和其他 Skill 差不多，说明这部分提高主要来自作答写法，而不是针对 OfficeQA 学到的东西。LiveMath、ALFWorld 看不出变化。学来的 Skill 让 SpreadsheetBench 下降 2–8 点（只有 GEPA-glm 的区间整个在 0 以下），指令则提高约 9 点。</li>
+    </ul>
+  </section>
+
+  <section id="setup">
+    <h2>1 实验设置</h2>
+    <p class="prose">目标：让做题模型的 Skill 从做题经验里自己长出来。Skill 是放进做题模型系统提示里的一段文字说明书。理想的样子是：学完一个数据集，相似的数据集也变好，不相似的不变差。</p>
+    <div class="sub-block">
+      <h3>五个数据集（按学习顺序，一个叫一个 bench）</h3>
+      <div class="scroll">
+        <table class="plain">
+          <thead><tr><th scope="col">步</th><th scope="col">bench</th><th scope="col">内容</th><th scope="col">测试题数（分母）</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><th scope="row">SearchQA</th><td>带检索结果的知识问答（类似《危险边缘》节目的线索题）</td><td class="num">400</td></tr>
+            <tr><td>2</td><th scope="row">OfficeQA</th><td>读美国财政部公报里的表格回答问题</td><td class="num">172</td></tr>
+            <tr><td>3</td><th scope="row">LiveMath</th><td>数学选择题</td><td class="num">125</td></tr>
+            <tr><td>4</td><th scope="row">SpreadsheetBench</th><td>按要求修改 Excel 表格。登记 279 道，其中 75 道的参考答案无法在判分引擎里核实，开跑前按规则排除</td><td class="num">204</td></tr>
+            <tr><td>5</td><th scope="row">ALFWorld</th><td>文字版家务游戏，要一步步操作完成任务</td><td class="num">134</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="sub-block">
+      <h3>参加比较的五份 Skill</h3>
+      <div class="scroll">
+        <table class="plain">
+          <thead><tr><th scope="col">名称</th><th scope="col">是什么</th><th scope="col">起点</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">空白 Skill</th><td>参照，等于不用 Skill</td><td>—</td></tr>
+            <tr><th scope="row">E-glm</th><td>我们的方法（主结果）</td><td>空白 Skill</td></tr>
+            <tr><th scope="row">I-glm</th><td>我们的方法</td><td>五份任务说明指令：只看任务说明写出的做题要求，约 12 KB</td></tr>
+            <tr><th scope="row">SkillOpt-glm</th><td>基线：别人的方法，代码冻结不改</td><td>空白 Skill</td></tr>
+            <tr><th scope="row">GEPA-glm</th><td>基线：别人的方法，代码冻结不改</td><td>空白 Skill</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">名字后面的“-glm”表示做题模型是 GLM-5.3（智谱）。原计划再用 deepseek-v4-flash 做一遍（E-ds、I-ds），因为账号额度用完没有开。</p>
+    </div>
+  </section>
+
+  <section id="method">
+    <h2>2 方法：每一步怎么学、怎么评</h2>
+    <ol class="prose">
+      <li>用当前 Skill 把这个 bench 的训练题做一遍。</li>
+      <li>看做错的题，提出 5 条候选规则（叫“提案”）。</li>
+      <li>每条规则要过一道“门”才收下：
+        <ul>
+          <li><b>进门</b>：规则针对的那类错题（叫“触发题”）至少要有 4 道，还要过泄漏检查（规则里不能写进具体答案）。</li>
+          <li><b>初筛</b>：在触发题上要比原 Skill 做对得多，也要比“随便加一段无关文字”好；同时在以前学过的 bench 上各抽 60 道“回归题”，不能变差太多。</li>
+          <li><b>复核</b>：再做一遍，确认不是运气。</li>
+        </ul>
+      </li>
+      <li>收下的规则加进 Skill。</li>
+    </ol>
+    <p class="prose">两条基线按它们自己的规则学：每一步由它们自己的挑选决定改不改 Skill。</p>
+    <p class="prose"><b>评测：</b>每一步学完，用当前 Skill 把五个测试集全部做一遍，每道题做 1 次。如果这一步 Skill 没变，就直接沿用上一步的分数、不重测（表里用浅色标出）。</p>
+  </section>
+
+  <section id="results">
+    <h2>3 结果：五个测试集上的分数</h2>
+    <div class="sub-block">
+      <h3>3.1 平均分随步数的变化</h3>
+      <p class="lede">平均分是五个测试集各自正确率的简单平均，每个测试集权重相同。</p>
+      <div class="scroll chart-box">
+<svg class="chart" viewBox="0 0 760 380" role="img" aria-labelledby="chart-title chart-desc">
+<title id="chart-title">五个测试集平均分随学习步数的变化</title>
+<desc id="chart-desc">横轴是第 0 到第 5 步，纵轴是五个测试集正确率的平均（%）。指令一直是 66.7；SkillOpt-glm 从 58.6 升到 64.3、第 3 步升到 66.0；E-glm 从 58.6 升到 63.7；GEPA-glm 从 58.6 升到 63.5。</desc>
+<line class="grid" x1="52" x2="610" y1="316.0" y2="316.0"/>
+<text class="tick" x="44" y="316.0" text-anchor="end" dominant-baseline="middle">56</text>
+<line class="grid" x1="52" x2="610" y1="274.3" y2="274.3"/>
+<text class="tick" x="44" y="274.3" text-anchor="end" dominant-baseline="middle">58</text>
+<line class="grid" x1="52" x2="610" y1="232.6" y2="232.6"/>
+<text class="tick" x="44" y="232.6" text-anchor="end" dominant-baseline="middle">60</text>
+<line class="grid" x1="52" x2="610" y1="190.9" y2="190.9"/>
+<text class="tick" x="44" y="190.9" text-anchor="end" dominant-baseline="middle">62</text>
+<line class="grid" x1="52" x2="610" y1="149.1" y2="149.1"/>
+<text class="tick" x="44" y="149.1" text-anchor="end" dominant-baseline="middle">64</text>
+<line class="grid" x1="52" x2="610" y1="107.4" y2="107.4"/>
+<text class="tick" x="44" y="107.4" text-anchor="end" dominant-baseline="middle">66</text>
+<line class="grid" x1="52" x2="610" y1="65.7" y2="65.7"/>
+<text class="tick" x="44" y="65.7" text-anchor="end" dominant-baseline="middle">68</text>
+<line class="grid" x1="52" x2="610" y1="24.0" y2="24.0"/>
+<text class="tick" x="44" y="24.0" text-anchor="end" dominant-baseline="middle">70</text>
+<line class="grid faint" x1="52.0" x2="52.0" y1="24" y2="316"/>
+<text class="tick" x="52.0" y="336" text-anchor="middle">第 0 步</text>
+<text class="tick sub" x="52.0" y="354" text-anchor="middle">起点</text>
+<line class="grid faint" x1="163.6" x2="163.6" y1="24" y2="316"/>
+<text class="tick" x="163.6" y="336" text-anchor="middle">第 1 步</text>
+<text class="tick sub" x="163.6" y="354" text-anchor="middle">SearchQA</text>
+<line class="grid faint" x1="275.2" x2="275.2" y1="24" y2="316"/>
+<text class="tick" x="275.2" y="336" text-anchor="middle">第 2 步</text>
+<text class="tick sub" x="275.2" y="354" text-anchor="middle">OfficeQA</text>
+<line class="grid faint" x1="386.8" x2="386.8" y1="24" y2="316"/>
+<text class="tick" x="386.8" y="336" text-anchor="middle">第 3 步</text>
+<text class="tick sub" x="386.8" y="354" text-anchor="middle">LiveMath</text>
+<line class="grid faint" x1="498.4" x2="498.4" y1="24" y2="316"/>
+<text class="tick" x="498.4" y="336" text-anchor="middle">第 4 步</text>
+<text class="tick sub" x="498.4" y="354" text-anchor="middle">SpreadsheetBench</text>
+<line class="grid faint" x1="610.0" x2="610.0" y1="24" y2="316"/>
+<text class="tick" x="610.0" y="336" text-anchor="middle">第 5 步</text>
+<text class="tick sub" x="610.0" y="354" text-anchor="middle">ALFWorld</text>
+<line class="ref" x1="52" x2="610" y1="261.0" y2="261.0"/>
+<polyline class="line ins" points="52.0,92.6 163.6,92.6 275.2,92.6 386.8,92.6 498.4,92.6 610.0,92.6"/>
+<circle class="pt ins" cx="52.0" cy="92.6" r="4"/>
+<circle class="pt ins hollow" cx="163.6" cy="92.6" r="4"/>
+<circle class="pt ins hollow" cx="275.2" cy="92.6" r="4"/>
+<circle class="pt ins hollow" cx="386.8" cy="92.6" r="4"/>
+<circle class="pt ins hollow" cx="498.4" cy="92.6" r="4"/>
+<circle class="pt ins hollow" cx="610.0" cy="92.6" r="4"/>
+<polyline class="line so" points="52.0,261.0 163.6,143.2 275.2,143.2 386.8,107.6 498.4,107.6 610.0,107.6"/>
+<circle class="pt so" cx="163.6" cy="143.2" r="4"/>
+<circle class="pt so hollow" cx="275.2" cy="143.2" r="4"/>
+<circle class="pt so" cx="386.8" cy="107.6" r="4"/>
+<circle class="pt so hollow" cx="498.4" cy="107.6" r="4"/>
+<circle class="pt so hollow" cx="610.0" cy="107.6" r="4"/>
+<polyline class="line e" points="52.0,261.0 163.6,155.0 275.2,155.0 386.8,155.0 498.4,155.0 610.0,155.0"/>
+<circle class="pt e" cx="163.6" cy="155.0" r="4"/>
+<circle class="pt e hollow" cx="275.2" cy="155.0" r="4"/>
+<circle class="pt e hollow" cx="386.8" cy="155.0" r="4"/>
+<circle class="pt e hollow" cx="498.4" cy="155.0" r="4"/>
+<circle class="pt e hollow" cx="610.0" cy="155.0" r="4"/>
+<polyline class="line gepa" points="52.0,261.0 163.6,159.1 275.2,159.1 386.8,159.1 498.4,159.1 610.0,159.1"/>
+<circle class="pt gepa" cx="163.6" cy="159.1" r="4"/>
+<circle class="pt gepa hollow" cx="275.2" cy="159.1" r="4"/>
+<circle class="pt gepa hollow" cx="386.8" cy="159.1" r="4"/>
+<circle class="pt gepa hollow" cx="498.4" cy="159.1" r="4"/>
+<circle class="pt gepa hollow" cx="610.0" cy="159.1" r="4"/>
+<circle class="pt blank" cx="52.0" cy="261.0" r="4.5"/>
+<text class="endlab ins" x="622" y="92.6" dominant-baseline="middle">指令（I-glm） 66.7</text>
+<text class="endlab so" x="622" y="109.6" dominant-baseline="middle">SkillOpt-glm 66.0</text>
+<text class="endlab e" x="622" y="155.0" dominant-baseline="middle">E-glm 63.7</text>
+<text class="endlab gepa" x="622" y="172.0" dominant-baseline="middle">GEPA-glm 63.5</text>
+<text class="endlab blank" x="622" y="261.0" dominant-baseline="middle">空白 Skill 58.6</text>
+<text class="axis" x="8" y="16">平均分（%）</text>
+</svg>
+      </div>
+      <p class="legend">实心点：这一步重新评测；空心点：Skill 没变，沿用上一步的分数。虚线是空白 Skill，也是三条从空白出发的链共用的起点。</p>
+    </div>
+
+    <div class="sub-block">
+      <h3>3.2 学完五步后，各测试集的分数</h3>
+      <p class="lede">每格上面是正确率（%），下面是“对的题数 / 可判题数”。蓝底是这一列最高的。平均分下面是 95% 区间。</p>
+<div class="scroll"><table class="data final"><thead><tr><th scope="col">Skill</th><th scope="col">SearchQA</th><th scope="col">OfficeQA</th><th scope="col">LiveMath</th><th scope="col">SpreadsheetBench</th><th scope="col">ALFWorld</th><th scope="col">平均</th></tr></thead><tbody><tr><th scope="row">空白 Skill<span class="role">参照</span></th><td class=""><span class="v">72.5</span><span class="n">290/400</span></td><td class=""><span class="v">29.1</span><span class="n">50/172</span></td><td class=""><span class="v">40.0</span><span class="n">50/125</span></td><td class=""><span class="v">62.8</span><span class="n">125/199</span></td><td class=""><span class="v">88.8</span><span class="n">119/134</span></td><td class="mac "><span class="v">58.6</span><span class="n">[55.6, 61.6]</span></td></tr><tr><th scope="row">指令（I-glm）<span class="role">我们的方法，没收下规则</span></th><td class=""><span class="v">87.3</span><span class="n">349/400</span></td><td class=""><span class="v">49.4</span><span class="n">85/172</span></td><td class=""><span class="v">36.0</span><span class="n">45/125</span></td><td class="best"><span class="v">72.1</span><span class="n">142/197</span></td><td class=""><span class="v">88.8</span><span class="n">119/134</span></td><td class="mac best"><span class="v">66.7</span><span class="n">[63.8, 69.7]</span></td></tr><tr><th scope="row">SkillOpt-glm<span class="role">基线</span></th><td class=""><span class="v">86.8</span><span class="n">347/400</span></td><td class="best"><span class="v">50.0</span><span class="n">86/172</span></td><td class="best"><span class="v">42.4</span><span class="n">53/125</span></td><td class=""><span class="v">60.5</span><span class="n">121/200</span></td><td class="best"><span class="v">90.3</span><span class="n">121/134</span></td><td class="mac "><span class="v">66.0</span><span class="n">[63.1, 68.9]</span></td></tr><tr><th scope="row">E-glm<span class="role">我们的方法</span></th><td class=""><span class="v">85.3</span><span class="n">341/400</span></td><td class=""><span class="v">49.4</span><span class="n">85/172</span></td><td class=""><span class="v">40.8</span><span class="n">51/125</span></td><td class=""><span class="v">56.6</span><span class="n">112/198</span></td><td class=""><span class="v">86.6</span><span class="n">116/134</span></td><td class="mac "><span class="v">63.7</span><span class="n">[60.7, 66.8]</span></td></tr><tr><th scope="row">GEPA-glm<span class="role">基线</span></th><td class="best"><span class="v">89.0</span><span class="n">356/400</span></td><td class=""><span class="v">48.3</span><span class="n">83/172</span></td><td class=""><span class="v">38.4</span><span class="n">48/125</span></td><td class=""><span class="v">55.4</span><span class="n">108/195</span></td><td class=""><span class="v">86.6</span><span class="n">116/134</span></td><td class="mac "><span class="v">63.5</span><span class="n">[60.5, 66.5]</span></td></tr></tbody></table></div>
+    </div>
+
+    <div class="sub-block">
+      <h3>3.3 和空白 Skill 比，每个测试集变了多少</h3>
+      <p class="lede">单位是百分点，下面是 95% 区间。绿色表示区间整个在 0 以上，红色表示整个在 0 以下，白色表示分不出。</p>
+<div class="scroll"><table class="data delta"><thead><tr><th scope="col">相对空白 Skill</th><th scope="col">SearchQA</th><th scope="col">OfficeQA</th><th scope="col">LiveMath</th><th scope="col">SpreadsheetBench</th><th scope="col">ALFWorld</th><th scope="col">平均</th></tr></thead><tbody><tr><th scope="row">指令（I-glm）</th><td class="up"><span class="v">+14.8</span><span class="n">[+11.0, +18.5]</span></td><td class="up"><span class="v">+20.4</span><span class="n">[+12.1, +29.2]</span></td><td class=""><span class="v">−4.0</span><span class="n">[−11.2, +3.2]</span></td><td class="up"><span class="v">+9.2</span><span class="n">[+2.6, +16.0]</span></td><td class=""><span class="v">0.0</span><span class="n">[−4.5, +4.5]</span></td><td class="mac up"><span class="v">+8.1</span><span class="n">[+5.2, +11.0]</span></td></tr><tr><th scope="row">SkillOpt-glm</th><td class="up"><span class="v">+14.3</span><span class="n">[+10.3, +18.3]</span></td><td class="up"><span class="v">+20.9</span><span class="n">[+14.1, +27.7]</span></td><td class=""><span class="v">+2.4</span><span class="n">[−6.4, +11.2]</span></td><td class=""><span class="v">−2.0</span><span class="n">[−9.6, +5.5]</span></td><td class=""><span class="v">+1.5</span><span class="n">[−3.0, +6.0]</span></td><td class="mac up"><span class="v">+7.4</span><span class="n">[+4.5, +10.3]</span></td></tr><tr><th scope="row">E-glm</th><td class="up"><span class="v">+12.8</span><span class="n">[+8.8, +17.0]</span></td><td class="up"><span class="v">+20.4</span><span class="n">[+12.2, +28.5]</span></td><td class=""><span class="v">+0.8</span><span class="n">[−7.2, +8.8]</span></td><td class=""><span class="v">−7.2</span><span class="n">[−14.7, 0.0]</span></td><td class=""><span class="v">−2.2</span><span class="n">[−6.0, +0.8]</span></td><td class="mac up"><span class="v">+4.9</span><span class="n">[+2.0, +7.8]</span></td></tr><tr><th scope="row">GEPA-glm</th><td class="up"><span class="v">+16.5</span><span class="n">[+12.8, +20.5]</span></td><td class="up"><span class="v">+19.2</span><span class="n">[+11.5, +27.3]</span></td><td class=""><span class="v">−1.6</span><span class="n">[−9.6, +5.6]</span></td><td class="down"><span class="v">−7.8</span><span class="n">[−15.3, −0.5]</span></td><td class=""><span class="v">−2.2</span><span class="n">[−7.5, +2.2]</span></td><td class="mac up"><span class="v">+4.8</span><span class="n">[+1.9, +7.7]</span></td></tr></tbody></table></div>
+    </div>
+
+    <div class="sub-block">
+      <h3>3.4 我们的方法：逐步数据</h3>
+      <h4>E-glm（从空白 Skill 出发）</h4>
+<div class="scroll"><table class="data"><thead><tr><th scope="col">步</th><th scope="col">SearchQA</th><th scope="col">OfficeQA</th><th scope="col">LiveMath</th><th scope="col">SpreadsheetBench</th><th scope="col">ALFWorld</th><th scope="col">平均</th><th scope="col">这一步的 Skill</th></tr></thead><tbody><tr class=""><th scope="row">0 <span class="sb">起点</span></th><td><span class="v">72.5</span><span class="n">290/400</span></td><td><span class="v">29.1</span><span class="n">50/172</span></td><td><span class="v">40.0</span><span class="n">50/125</span></td><td><span class="v">62.8</span><span class="n">125/199</span></td><td><span class="v">88.8</span><span class="n">119/134</span></td><td class="mac"><span class="v">58.6</span><span class="n">[55.6, 61.6]</span></td><td class="note">起点：空白 Skill（三条链共用）</td></tr><tr class=""><th scope="row">1 <span class="sb">SearchQA</span></th><td><span class="v">85.3</span><span class="n">341/400</span></td><td><span class="v">49.4</span><span class="n">85/172</span></td><td><span class="v">40.8</span><span class="n">51/125</span></td><td><span class="v">56.6</span><span class="n">112/198</span></td><td><span class="v">86.6</span><span class="n">116/134</span></td><td class="mac"><span class="v">63.7</span><span class="n">[60.7, 66.8]</span></td><td class="note">收下 2 条规则</td></tr><tr class="reused"><th scope="row">2 <span class="sb">OfficeQA</span></th><td><span class="v">85.3</span><span class="n">341/400</span></td><td><span class="v">49.4</span><span class="n">85/172</span></td><td><span class="v">40.8</span><span class="n">51/125</span></td><td><span class="v">56.6</span><span class="n">112/198</span></td><td><span class="v">86.6</span><span class="n">116/134</span></td><td class="mac"><span class="v">63.7</span><span class="n">[60.7, 66.8]</span></td><td class="note">没有收下规则，沿用</td></tr><tr class="reused"><th scope="row">3 <span class="sb">LiveMath</span></th><td><span class="v">85.3</span><span class="n">341/400</span></td><td><span class="v">49.4</span><span class="n">85/172</span></td><td><span class="v">40.8</span><span class="n">51/125</span></td><td><span class="v">56.6</span><span class="n">112/198</span></td><td><span class="v">86.6</span><span class="n">116/134</span></td><td class="mac"><span class="v">63.7</span><span class="n">[60.7, 66.8]</span></td><td class="note">没有收下规则，沿用</td></tr><tr class="reused"><th scope="row">4 <span class="sb">SpreadsheetBench</span></th><td><span class="v">85.3</span><span class="n">341/400</span></td><td><span class="v">49.4</span><span class="n">85/172</span></td><td><span class="v">40.8</span><span class="n">51/125</span></td><td><span class="v">56.6</span><span class="n">112/198</span></td><td><span class="v">86.6</span><span class="n">116/134</span></td><td class="mac"><span class="v">63.7</span><span class="n">[60.7, 66.8]</span></td><td class="note">没有收下规则，沿用</td></tr><tr class="reused"><th scope="row">5 <span class="sb">ALFWorld</span></th><td><span class="v">85.3</span><span class="n">341/400</span></td><td><span class="v">49.4</span><span class="n">85/172</span></td><td><span class="v">40.8</span><span class="n">51/125</span></td><td><span class="v">56.6</span><span class="n">112/198</span></td><td><span class="v">86.6</span><span class="n">116/134</span></td><td class="mac"><span class="v">63.7</span><span class="n">[60.7, 66.8]</span></td><td class="note">没有收下规则，沿用</td></tr></tbody></table></div>
+      <h4>I-glm（从指令出发）</h4>
+<div class="scroll"><table class="data"><thead><tr><th scope="col">步</th><th scope="col">SearchQA</th><th scope="col">OfficeQA</th><th scope="col">LiveMath</th><th scope="col">SpreadsheetBench</th><th scope="col">ALFWorld</th><th scope="col">平均</th><th scope="col">这一步的 Skill</th></tr></thead><tbody><tr class=""><th scope="row">0 <span class="sb">起点</span></th><td><span class="v">87.3</span><span class="n">349/400</span></td><td><span class="v">49.4</span><span class="n">85/172</span></td><td><span class="v">36.0</span><span class="n">45/125</span></td><td><span class="v">72.1</span><span class="n">142/197</span></td><td><span class="v">88.8</span><span class="n">119/134</span></td><td class="mac"><span class="v">66.7</span><span class="n">[63.8, 69.7]</span></td><td class="note">起点：五份指令</td></tr><tr class="reused"><th scope="row">1 <span class="sb">SearchQA</span></th><td><span class="v">87.3</span><span class="n">349/400</span></td><td><span class="v">49.4</span><span class="n">85/172</span></td><td><span class="v">36.0</span><span class="n">45/125</span></td><td><span class="v">72.1</span><span class="n">142/197</span></td><td><span class="v">88.8</span><span class="n">119/134</span></td><td class="mac"><span class="v">66.7</span><span class="n">[63.8, 69.7]</span></td><td class="note">没有收下规则，沿用</td></tr><tr class="reused"><th scope="row">2 <span class="sb">OfficeQA</span></th><td><span class="v">87.3</span><span class="n">349/400</span></td><td><span class="v">49.4</span><span class="n">85/172</span></td><td><span class="v">36.0</span><span class="n">45/125</span></td><td><span class="v">72.1</span><span class="n">142/197</span></td><td><span class="v">88.8</span><span class="n">119/134</span></td><td class="mac"><span class="v">66.7</span><span class="n">[63.8, 69.7]</span></td><td class="note">没有收下规则，沿用</td></tr><tr class="reused"><th scope="row">3 <span class="sb">LiveMath</span></th><td><span class="v">87.3</span><span class="n">349/400</span></td><td><span class="v">49.4</span><span class="n">85/172</span></td><td><span class="v">36.0</span><span class="n">45/125</span></td><td><span class="v">72.1</span><span class="n">142/197</span></td><td><span class="v">88.8</span><span class="n">119/134</span></td><td class="mac"><span class="v">66.7</span><span class="n">[63.8, 69.7]</span></td><td class="note">没有收下规则，沿用</td></tr><tr class="reused"><th scope="row">4 <span class="sb">SpreadsheetBench</span></th><td><span class="v">87.3</span><span class="n">349/400</span></td><td><span class="v">49.4</span><span class="n">85/172</span></td><td><span class="v">36.0</span><span class="n">45/125</span></td><td><span class="v">72.1</span><span class="n">142/197</span></td><td><span class="v">88.8</span><span class="n">119/134</span></td><td class="mac"><span class="v">66.7</span><span class="n">[63.8, 69.7]</span></td><td class="note">没有收下规则，沿用</td></tr><tr class="reused"><th scope="row">5 <span class="sb">ALFWorld</span></th><td><span class="v">87.3</span><span class="n">349/400</span></td><td><span class="v">49.4</span><span class="n">85/172</span></td><td><span class="v">36.0</span><span class="n">45/125</span></td><td><span class="v">72.1</span><span class="n">142/197</span></td><td><span class="v">88.8</span><span class="n">119/134</span></td><td class="mac"><span class="v">66.7</span><span class="n">[63.8, 69.7]</span></td><td class="note">没有收下规则，沿用</td></tr></tbody></table></div>
+    </div>
+
+    <div class="sub-block">
+      <h3>3.5 基线：逐步数据</h3>
+      <p class="lede">空白 Skill 的分数就是下面两张表的第 0 步，和 E-glm 共用同一次评测。</p>
+      <h4>SkillOpt-glm</h4>
+<div class="scroll"><table class="data"><thead><tr><th scope="col">步</th><th scope="col">SearchQA</th><th scope="col">OfficeQA</th><th scope="col">LiveMath</th><th scope="col">SpreadsheetBench</th><th scope="col">ALFWorld</th><th scope="col">平均</th><th scope="col">这一步的 Skill</th></tr></thead><tbody><tr class=""><th scope="row">0 <span class="sb">起点</span></th><td><span class="v">72.5</span><span class="n">290/400</span></td><td><span class="v">29.1</span><span class="n">50/172</span></td><td><span class="v">40.0</span><span class="n">50/125</span></td><td><span class="v">62.8</span><span class="n">125/199</span></td><td><span class="v">88.8</span><span class="n">119/134</span></td><td class="mac"><span class="v">58.6</span><span class="n">[55.6, 61.6]</span></td><td class="note">起点：空白 Skill（三条链共用）</td></tr><tr class=""><th scope="row">1 <span class="sb">SearchQA</span></th><td><span class="v">88.0</span><span class="n">352/400</span></td><td><span class="v">47.7</span><span class="n">82/172</span></td><td><span class="v">35.2</span><span class="n">44/125</span></td><td><span class="v">58.8</span><span class="n">114/194</span></td><td><span class="v">91.8</span><span class="n">123/134</span></td><td class="mac"><span class="v">64.3</span><span class="n">[61.4, 67.2]</span></td><td class="note">更新了 Skill</td></tr><tr class="reused"><th scope="row">2 <span class="sb">OfficeQA</span></th><td><span class="v">88.0</span><span class="n">352/400</span></td><td><span class="v">47.7</span><span class="n">82/172</span></td><td><span class="v">35.2</span><span class="n">44/125</span></td><td><span class="v">58.8</span><span class="n">114/194</span></td><td><span class="v">91.8</span><span class="n">123/134</span></td><td class="mac"><span class="v">64.3</span><span class="n">[61.4, 67.2]</span></td><td class="note">输入超长停下，沿用上一步</td></tr><tr class=""><th scope="row">3 <span class="sb">LiveMath</span></th><td><span class="v">86.8</span><span class="n">347/400</span></td><td><span class="v">50.0</span><span class="n">86/172</span></td><td><span class="v">42.4</span><span class="n">53/125</span></td><td><span class="v">60.5</span><span class="n">121/200</span></td><td><span class="v">90.3</span><span class="n">121/134</span></td><td class="mac"><span class="v">66.0</span><span class="n">[63.1, 68.9]</span></td><td class="note">更新了 Skill</td></tr><tr class="reused"><th scope="row">4 <span class="sb">SpreadsheetBench</span></th><td><span class="v">86.8</span><span class="n">347/400</span></td><td><span class="v">50.0</span><span class="n">86/172</span></td><td><span class="v">42.4</span><span class="n">53/125</span></td><td><span class="v">60.5</span><span class="n">121/200</span></td><td><span class="v">90.3</span><span class="n">121/134</span></td><td class="mac"><span class="v">66.0</span><span class="n">[63.1, 68.9]</span></td><td class="note">学完，没改，沿用</td></tr><tr class="reused"><th scope="row">5 <span class="sb">ALFWorld</span></th><td><span class="v">86.8</span><span class="n">347/400</span></td><td><span class="v">50.0</span><span class="n">86/172</span></td><td><span class="v">42.4</span><span class="n">53/125</span></td><td><span class="v">60.5</span><span class="n">121/200</span></td><td><span class="v">90.3</span><span class="n">121/134</span></td><td class="mac"><span class="v">66.0</span><span class="n">[63.1, 68.9]</span></td><td class="note">学完，没改，沿用</td></tr></tbody></table></div>
+      <h4>GEPA-glm</h4>
+<div class="scroll"><table class="data"><thead><tr><th scope="col">步</th><th scope="col">SearchQA</th><th scope="col">OfficeQA</th><th scope="col">LiveMath</th><th scope="col">SpreadsheetBench</th><th scope="col">ALFWorld</th><th scope="col">平均</th><th scope="col">这一步的 Skill</th></tr></thead><tbody><tr class=""><th scope="row">0 <span class="sb">起点</span></th><td><span class="v">72.5</span><span class="n">290/400</span></td><td><span class="v">29.1</span><span class="n">50/172</span></td><td><span class="v">40.0</span><span class="n">50/125</span></td><td><span class="v">62.8</span><span class="n">125/199</span></td><td><span class="v">88.8</span><span class="n">119/134</span></td><td class="mac"><span class="v">58.6</span><span class="n">[55.6, 61.6]</span></td><td class="note">起点：空白 Skill（三条链共用）</td></tr><tr class=""><th scope="row">1 <span class="sb">SearchQA</span></th><td><span class="v">89.0</span><span class="n">356/400</span></td><td><span class="v">48.3</span><span class="n">83/172</span></td><td><span class="v">38.4</span><span class="n">48/125</span></td><td><span class="v">55.4</span><span class="n">108/195</span></td><td><span class="v">86.6</span><span class="n">116/134</span></td><td class="mac"><span class="v">63.5</span><span class="n">[60.5, 66.5]</span></td><td class="note">更新了 Skill</td></tr><tr class="reused"><th scope="row">2 <span class="sb">OfficeQA</span></th><td><span class="v">89.0</span><span class="n">356/400</span></td><td><span class="v">48.3</span><span class="n">83/172</span></td><td><span class="v">38.4</span><span class="n">48/125</span></td><td><span class="v">55.4</span><span class="n">108/195</span></td><td><span class="v">86.6</span><span class="n">116/134</span></td><td class="mac"><span class="v">63.5</span><span class="n">[60.5, 66.5]</span></td><td class="note">学完，没改，沿用</td></tr><tr class="reused"><th scope="row">3 <span class="sb">LiveMath</span></th><td><span class="v">89.0</span><span class="n">356/400</span></td><td><span class="v">48.3</span><span class="n">83/172</span></td><td><span class="v">38.4</span><span class="n">48/125</span></td><td><span class="v">55.4</span><span class="n">108/195</span></td><td><span class="v">86.6</span><span class="n">116/134</span></td><td class="mac"><span class="v">63.5</span><span class="n">[60.5, 66.5]</span></td><td class="note">学完，没改，沿用</td></tr><tr class="reused"><th scope="row">4 <span class="sb">SpreadsheetBench</span></th><td><span class="v">89.0</span><span class="n">356/400</span></td><td><span class="v">48.3</span><span class="n">83/172</span></td><td><span class="v">38.4</span><span class="n">48/125</span></td><td><span class="v">55.4</span><span class="n">108/195</span></td><td><span class="v">86.6</span><span class="n">116/134</span></td><td class="mac"><span class="v">63.5</span><span class="n">[60.5, 66.5]</span></td><td class="note">学完，没改，沿用</td></tr><tr class="reused"><th scope="row">5 <span class="sb">ALFWorld</span></th><td><span class="v">89.0</span><span class="n">356/400</span></td><td><span class="v">48.3</span><span class="n">83/172</span></td><td><span class="v">38.4</span><span class="n">48/125</span></td><td><span class="v">55.4</span><span class="n">108/195</span></td><td><span class="v">86.6</span><span class="n">116/134</span></td><td class="mac"><span class="v">63.5</span><span class="n">[60.5, 66.5]</span></td><td class="note">学完，没改，沿用</td></tr></tbody></table></div>
+    </div>
+
+    <div class="sub-block">
+      <h3>3.6 两两比较</h3>
+<div class="scroll"><table class="data cmp"><thead><tr><th scope="col">比较（五个测试集平均分之差）</th><th scope="col">差（点）</th><th scope="col">95% 区间</th><th scope="col">结论</th></tr></thead><tbody><tr class="group"><th colspan="4" scope="rowgroup">事先登记的读数</th></tr><tr><th scope="row">E-glm 学完 − 空白（我们的方法的学习增益）</th><td class="num">+4.9</td><td class="num">[+2.0, +7.8]</td><td>成立</td></tr><tr><th scope="row">SkillOpt-glm 学完 − 空白</th><td class="num">+7.4</td><td class="num">[+4.5, +10.3]</td><td>成立</td></tr><tr><th scope="row">GEPA-glm 学完 − 空白</th><td class="num">+4.8</td><td class="num">[+1.9, +7.7]</td><td>成立</td></tr><tr><th scope="row">I-glm 学完 − 指令（超过指令了吗）</th><td class="num">0.0</td><td class="num">[0.0, 0.0]</td><td>未建立（一条规则都没收下）</td></tr><tr><th scope="row">E-glm − SkillOpt-glm（第 5 步；P1，“不差于”要求区间下端高于 −3）</th><td class="num">−2.4</td><td class="num">[−5.4, +0.5]</td><td>不确定</td></tr><tr><th scope="row">E-glm − GEPA-glm（第 5 步；P2）</th><td class="num">+0.3</td><td class="num">[−2.7, +3.1]</td><td>按登记顺序未检验（P1 没成立）</td></tr><tr><th scope="row">E-glm − 指令（从空白学到指令的水平）</th><td class="num">−2.8</td><td class="num">[−5.5, −0.1]</td><td>不确定</td></tr><tr class="group"><th colspan="4" scope="rowgroup">事后补算，只描述（不是登记的检验）</th></tr><tr><th scope="row">指令 − SkillOpt-glm（第 5 步）</th><td class="num">+0.6</td><td class="num">[−2.3, +3.4]</td><td>区间含 0，分不出</td></tr><tr><th scope="row">指令 − GEPA-glm（第 5 步）</th><td class="num">+3.2</td><td class="num">[+0.3, +6.0]</td><td>前者高</td></tr><tr><th scope="row">SkillOpt-glm − GEPA-glm（第 5 步）</th><td class="num">+2.4</td><td class="num">[−0.4, +5.2]</td><td>区间含 0，分不出</td></tr><tr><th scope="row">指令 − 空白 Skill</th><td class="num">+8.1</td><td class="num">[+5.2, +11.0]</td><td>前者高</td></tr></tbody></table></div>
+      <p class="note">区间按测试题重抽 10,000 次算出（OfficeQA 按出处文件成组重抽），只反映“换一批测试题”带来的不确定。每条链只跑了一次，没有反映重跑一次的随机变化。</p>
+    </div>
+
+    <div class="sub-block">
+      <h3>3.7 迁移读数</h3>
+      <p class="prose">事先登记的合并迁移判据（E-glm）：自身 Q1 +2.6 [+1.8, +3.4]；相似 Q2 +4.1 [+2.4, +5.7]；其余 Q3 −0.6 [−1.3, +0.2]，按数字算“成立”。但这几乎全部来自第 1 步那两条“答案写短”的 SearchQA 规则把 OfficeQA 从 29.1% 提到 49.4%；同样幅度的提高在指令和两条基线上都有（见 3.3），所以这是作答写法的作用，不能当作学到的迁移能力。E-glm 第 2–5 步没有收下规则，这几步的变化都是 0；“相似位置”一次也没用上。</p>
+    </div>
+  </section>
+
+  <section id="training">
+    <h2>4 训练过程（我们的方法）</h2>
+    <p class="lede">“训练题做对”是这一步开始时，原 Skill 在这个 bench 训练题上做对的次数。</p>
+<div class="scroll"><table class="data funnel"><thead><tr><th scope="col">链·步</th><th scope="col">训练题做对</th><th scope="col">提案</th><th scope="col">进门</th><th scope="col">过初筛</th><th scope="col">过复核</th><th scope="col">收下</th><th scope="col">泄漏拦下 / 触发题不够</th></tr></thead><tbody><tr><th scope="row">E 1 SearchQA</th><td class="num">259/393（66%）</td><td class="num">5</td><td class="num">2</td><td class="num">2</td><td class="num">2</td><td class="num strong">2</td><td class="num">2 / 1</td></tr><tr><th scope="row">E 2 OfficeQA</th><td class="num">83/148（56%）</td><td class="num">5</td><td class="num">4</td><td class="num">0</td><td class="num">–</td><td class="num">0</td><td class="num">0 / 1</td></tr><tr><th scope="row">E 3 LiveMath</th><td class="num">77/200（38%）</td><td class="num">5</td><td class="num">4</td><td class="num">2</td><td class="num">0</td><td class="num">0</td><td class="num">1 / 0</td></tr><tr><th scope="row">E 4 SpreadsheetBench</th><td class="num">45/90（50%）</td><td class="num">5</td><td class="num">4</td><td class="num">0</td><td class="num">–</td><td class="num">0</td><td class="num">0 / 1</td></tr><tr><th scope="row">E 5 ALFWorld</th><td class="num">102/114（89%）</td><td class="num">5</td><td class="num">0</td><td class="num">–</td><td class="num">–</td><td class="num">0</td><td class="num">0 / 5</td></tr><tr><th scope="row">I 1 SearchQA</th><td class="num">311/392（79%）</td><td class="num">5</td><td class="num">4</td><td class="num">0</td><td class="num">–</td><td class="num">0</td><td class="num">1 / 0</td></tr><tr><th scope="row">I 2 OfficeQA</th><td class="num">89/148（60%）</td><td class="num">5</td><td class="num">3</td><td class="num">0</td><td class="num">–</td><td class="num">0</td><td class="num">0 / 2</td></tr><tr><th scope="row">I 3 LiveMath</th><td class="num">83/200（42%）</td><td class="num">5</td><td class="num">4</td><td class="num">2</td><td class="num">0</td><td class="num">0</td><td class="num">1 / 0</td></tr><tr><th scope="row">I 4 SpreadsheetBench</th><td class="num">65/91（71%）</td><td class="num">5</td><td class="num">2</td><td class="num">0</td><td class="num">–</td><td class="num">0</td><td class="num">0 / 3</td></tr><tr><th scope="row">I 5 ALFWorld</th><td class="num">101/114（89%）</td><td class="num">5</td><td class="num">0</td><td class="num">–</td><td class="num">–</td><td class="num">0</td><td class="num">0 / 5</td></tr><tr class="total"><th scope="row">合计</th><td></td><td class="num">50</td><td class="num">27</td><td class="num">6</td><td class="num">2</td><td class="num strong">2</td><td class="num">5 / 18</td></tr></tbody></table></div>
+    <p class="prose">没进门的 23 条里，5 条被泄漏检查拦下，18 条凑不够 4 道触发题。</p>
+    <div class="sub-block">
+      <h3>学不动的主要原因（训练侧证据）</h3>
+      <ul class="prose">
+        <li><b>学到的就是指令里写着的</b>：E-glm 第 1 步收下的两条规则，在同一批训练题上让 E 做对 319/392 次，I-glm 的起点指令也是 319/392。</li>
+        <li><b>门太“吵”</b>：同一个原 Skill 把同一批题做两次就能差 2–3.5 题，比“至少多对 1 题”的要求还大。LiveMath 上过了初筛的 4 条规则，复核时全部没过。</li>
+        <li><b>错题少，诊断分不清类型</b>：ALFWorld 成功率 89%，10 条提案都凑不够触发题；LiveMath 的 35 道错题全被归成“其他”。</li>
+        <li><b>空白起点吃亏</b>：某个 bench 的分区里只要有任何文字（哪怕无关），成绩就会变好；E 在没收下规则的 bench 上一直缺这段“架子”。</li>
+        <li><b>有几个环节没起作用</b>：考官修改评分细则 8 次，6 次因字段超长被整份作废；上网查证 8 次全无结论。</li>
+      </ul>
+    </div>
+    <div class="sub-block">
+      <h3>基线每一步改没改 Skill</h3>
+      <div class="scroll">
+        <table class="plain">
+          <thead><tr><th scope="col">链</th><th scope="col">1 SearchQA</th><th scope="col">2 OfficeQA</th><th scope="col">3 LiveMath</th><th scope="col">4 SpreadsheetBench</th><th scope="col">5 ALFWorld</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">SkillOpt-glm</th><td>改了</td><td>没改（输入超长停下，沿用上一步）</td><td>改了</td><td>没改</td><td>没改</td></tr>
+            <tr><th scope="row">GEPA-glm</th><td>改了</td><td>没改</td><td>没改</td><td>没改</td><td>没改</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="timeline">
+    <h2>5 时间线与花费</h2>
+    <div class="scroll">
+      <table class="plain">
+        <thead><tr><th scope="col">时间</th><th scope="col">事件</th></tr></thead>
+        <tbody>
+          <tr><td class="num">10/17 23:43</td><td>第一次冒烟（小规模试跑），用 deepseek 做题</td></tr>
+          <tr><td class="num">10/17 23:55</td><td>deepseek 免费通道回“额度用完”，冒烟停下，没有花 GLM 的钱</td></tr>
+          <tr><td class="num">10/18 11:49</td><td>按负责人的选择改用 GLM-5.3 冒烟</td></tr>
+          <tr><td class="num">10/18 12:16</td><td>冒烟查出一个问题：考官修改评分细则的合格回复被误判作废；已修好</td></tr>
+          <tr><td class="num">10/18 约 12:30</td><td>冒烟通过，花约 196 万 tokens。2 道 SearchQA 训练题 GLM 每次都拒答，记为“未知”，不算答错</td></tr>
+          <tr><td class="num">10/18 12:38–12:58</td><td>四条链陆续开跑，确认第一批真实回答正常</td></tr>
+          <tr><td class="num">10/19 01:01</td><td>GEPA-glm 跑完</td></tr>
+          <tr><td class="num">10/19 03:30</td><td>SkillOpt-glm 跑完</td></tr>
+          <tr><td class="num">10/19 05:00</td><td>I-glm 跑完</td></tr>
+          <tr><td class="num">10/19 07:16</td><td>E-glm 跑完，四条链全部完成，全程没有暂停</td></tr>
+          <tr><td class="num">10/19 09:11–10:20</td><td>第 2 版的设计与代码：Codex 设计审查、代码审查各一轮，意见全部改完</td></tr>
+          <tr><td class="num">10/19 10:33</td><td>第 2 版开跑前准备开始，代码快照记下全部文件哈希</td></tr>
+          <tr><td class="num">10/19 10:52</td><td>经负责人同意，生成并打开第 1 版的测试分数报告</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose"><b>花费</b>（GLM-5.3 tokens，token 是模型读写文字的计量单位）：四条链共 172,244,798，其中 E-glm 36,125,058，I-glm 60,339,685，SkillOpt-glm 59,596,851，GEPA-glm 16,183,204。加上开跑前的文字和冒烟 1,972,795，一共 174,217,593，占 14.4 亿总上限的 12%。全程没有暂停，没有提高上限。</p>
+    <p class="note">基线学习时按设计占住 10 个并发里的 8 个，约 10 小时里其他链只能用 2 个，所以前半程很慢；两条基线跑完后明显加快。</p>
+  </section>
+
+  <section id="v2">
+    <h2>6 第 2 版与现在的情况</h2>
+    <p class="prose">第 2 版（协议 fivebench-coevolution-v2）在打开上面这些测试分数之前就已定稿：代码快照 10:33 上传开发机并记下全部文件哈希，测试分数 10:52 才打开。第 2 版不会因为这些分数再改。</p>
+    <div class="sub-block">
+      <h3>第 2 版改了什么</h3>
+      <ul class="prose">
+        <li><b>链</b>：E-glm 改从固定的“空架子”出发（五个分区标题，没有规则）；I-glm 仍从指令出发；新加 NoSkill-glm（真正空白，只测第 0 步当参照）。两条基线不重跑，所以第 2 版不和基线比较。</li>
+        <li><b>找该学的</b>：错题按一张固定的错误类型表分类；提案必须引用具体错题，并给“相似 bench”留名额。</li>
+        <li><b>判断学到了没有</b>：门在触发题上多做几遍（问答类 4 遍，表格和 ALFWorld 2 遍）；回归题上原 Skill 做 2 遍。</li>
+        <li><b>其他</b>：考官字段长度上限放宽、逐条检查，不再因为一处问题整份作废；泄漏检查遇到“某个单词碰巧和答案一样”时看证据再判；查证资料加入 50 页 LibreOffice 函数说明。</li>
+        <li><b>预算</b>：总上限 12 亿 tokens（14.4 亿减去第 1 版已花的，再给第 1 版的 deepseek 复现留 0.58 亿）。</li>
+      </ul>
+    </div>
+    <div class="sub-block">
+      <h3>现在（10/19 11:00 前后）</h3>
+      <ul class="prose">
+        <li>10:33 开跑前准备开始：开发机上离线测试 669 项通过；新的查证资料库 71 份；SpreadsheetBench 判分引擎认证通过，训练侧资格检查 120 道里 91 道合格（和第 1 版一样）。</li>
+        <li>10:35 GLM-5.3 冒烟开始（只用训练数据）：SearchQA 一步的训练和准备已完成，正在初筛；到 10:57 共花约 96 万 tokens。</li>
+        <li>冒烟通过后：生成启动清单 → 零调用检查 → 写同意记录 → 开 NoSkill-glm、E-glm、I-glm，并确认第一批真实回答。</li>
+        <li>deepseek 免费通道 10:56 仍回“额度用完”，第 1 版的 E-ds、I-ds 还没开。两个 key 属于同一个账号，需要充值或换一个账号的 key。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="appendix">
+    <h2>附录</h2>
+    <div class="sub-block">
+      <h3>A 最终 Skill 文本</h3>
+<h3>E-glm 学到的全部内容（第 1 步收下的 2 条 SearchQA 规则）</h3><ol class="rules">
+<li><code>s1-r1</code> Put ONLY the short answer inside &lt;answer&gt;...&lt;/answer&gt; — just the single word, name, number, or phrase the question asks for (typically 1–3 words). Never include explanations, definitions, background, dates, parentheticals, or restatements of the question inside the tag.</li>
+<li><code>s1-r2</code> Answer with the minimal identifying form: a surname alone when the reference likely uses only a surname (e.g. a person commonly known by one name), the shortest common name of a place or thing, and no middle names, initials, honorifics, or appositive expansions unless they are essential to identify the entity.</li>
+</ol>
+<details><summary>SkillOpt-glm 最终 Skill（第 1、3 步更新） <span class="size">15,177 字节</span></summary><pre>## Answer formatting for exact-match / Jeopardy-style short-answer tasks
+
+These tasks (search QA, trivia/clue-style questions) are graded by exact string match against a short canonical answer. Failures here almost never come from wrong knowledge — they come from returning the right entity in the wrong form. After identifying the answer entity, apply this procedure:
+
+### Identify what is actually being asked
+1. Parse the clue as a statement with a missing answer slot; determine which noun phrase fills it. If the clue says &quot;this French thief, novelist &amp; playwright&quot;, the expected answer is the surname alone. If it says &quot;these mountains&quot;, answer with the range&#x27;s common short name. If the clue is built around a quoted title, the answer is often the missing word of the quote or the work&#x27;s source/inspiration — not a summary of the topic. If the question is just two names with no question word, it asks for the single shared attribute connecting them; answer with that attribute alone.
+2. **Match the question&#x27;s granularity exactly.** If the clue describes a category (&quot;this organization&quot;, &quot;this dessert&quot;, &quot;one of these&quot;, &quot;this site&quot;), answer with the common name of the category/generic term or the specific entity the slot demands — not a brand, subtype, building, or broader installation unless the clue demands it. If the clue lists several items, determine the single shared entity they point to and answer with that one entity.
+3. If the context includes a Jeopardy-archive-style snippet showing &quot;Clue | Answer&quot;, the answer is the short term after the divider.
+
+### Choose the canonical form
+- **Prefer the shortest commonly used name form**, and prefer the exact surface form used in the provided context or by the majority of sources.
+  - People: surname or the most commonly used form (e.g., &quot;Fragonard&quot;, not &quot;Jean-Honoré Fragonard&quot;); include a title/regnal name only if customary or the source consistently uses it. Do not expand with middle names, suffixes (&quot;Jr.&quot;), honorifics, or descriptors (&quot;President&quot;, &quot;of France&quot;) unless the source form includes them.
+  - Titles/organizations: prefer the widely used short form (the part before a subtitle, the brand without corporate suffixes like &quot;Inc.&quot;). If the question already quotes a partial phrase, the expected answer is often the quoted-adjacent core term, not the full official title.
+- **Match number and surface form to the clue and source:** check singular vs plural against the supporting passage&#x27;s usage; mirror the source&#x27;s dominant form (capitalization, generic roles like &quot;the editor&quot;, honorifics like Sir/Dr./Saint) rather than substituting your own variant.
+
+### Format the answer
+- **Output ONLY the bare entity** — one name or short noun phrase. Do NOT add: parentheticals or aliases (&quot;X (also called Y)&quot;), alternate spellings, chemical formulas, acronym expansions, subtitles, dates, trailing category words (&quot;Party&quot;, &quot;Mountains&quot;, &quot;Company&quot;) unless part of the standard short name, or any explanatory sentence or justification. Write `X`, not `X (Y)` or `X — the Y of Z`. Any reasoning belongs outside the answer, never inside it.
+- **No game-show phrasing.** Never wrap answers in &quot;What is ...?&quot; or &quot;Who is ...?&quot; — output the content only.
+- **Articles:** drop leading &quot;A&quot;/&quot;An&quot; for proper nouns and category terms; keep &quot;the&quot; only when the expected answer is a fixed expression or common-noun role that idiomatically requires it.
+- Do not restate or explain the clue; the answer fills the gap, it doesn&#x27;t describe the topic. For blank-fill clues (e.g., &quot;___ &amp; Wagnalls&quot;), fill only the blank with the smallest complete unit.
+- **Disambiguation priority:** the expected answer is the entity satisfying ALL of the clue&#x27;s stated constraints (especially quoted/emphasized descriptors) and is usually the more famous/common name — not a secondary candidate that merely appears in supporting documents.
+
+### Self-check before finalizing
+Try deleting each word from your draft answer; if a shorter string still fully and unambiguously answers the question, use it. If your draft contains parentheses, a comma-qualifier, a relative clause, or more than ~5 words, trim it to the core noun phrase. Then verify the final string (or its singular/plural variant) appears in the supporting passage, and mentally substitute it back into the clue&#x27;s gap.
+
+## Retrieval procedure for SearchQA-style tasks (retrieved documents + clue-style question)
+
+These tasks provide a bundle of retrieved documents (`[DOC] [TLE] ... [PAR] ...`) plus a short, often Jeopardy-style clue (e.g., &quot;this author&quot;, &quot;this neighborhood&quot;, &quot;it&#x27;s the cry of...&quot;). The answer is a single short entity; apply the formatting rules above, and use this procedure to find it:
+
+1. **Determine the answer type and all constraints first.** Use the clue&#x27;s determiner or phrasing to identify the slot (&quot;this playwright&quot; → a person&#x27;s name; &quot;this city&quot; → a place; &quot;the number of...&quot; → a bare numeral; translation clues &quot;means X in English&quot; → the translated term). Extract every distinguishing constraint (dates, nationality, role, relationships, quantities, quoted nicknames, superlatives like &quot;first&quot;). The entity named in the clue is usually the *input*; the answer is the other side of the relationship. If the clue asks for one part of a name, give exactly that part.
+2. **Scan for the clue text itself first.** The clue is often paraphrased or restated near-verbatim in one passage; the missing piece of that sentence is the answer. Quiz/flashcard/trivia-archive sources frequently pair the clue text directly with its answer (e.g., `category | clue | answer` with the answer after a pipe) — treat that pairing as strong evidence, but sanity-check it fits the clue. Otherwise, match the clue&#x27;s distinctive anchors (proper names, dates, numbers, quoted phrases) and find the entity co-occurring with them; use doc titles as a fast filter, since many retrieved docs are irrelevant noise.
+3. **Match ALL constraints, not just one keyword.** The correct passage co-occurs with multiple clue terms; distractor documents share surface keywords but satisfy only a subset of constraints (unrelated word senses, coincidental years, wrong entity of the right category). Discard any candidate that fails an explicit constraint.
+4. **Prefer corroboration and authoritative sources.** Candidates supported by multiple independent documents are strong confirmation. Encyclopedic/factual passages outrank forum replies, game-show recaps, or contestant guesses (which are often wrong answers deliberately included as distractors). If candidates conflict, pick the one satisfying every attribute with more/stronger supporting passages.
+5. **Self-verify before finalizing.** Substitute the candidate back into the clue and confirm every constraint holds according to the supporting passage(s). Confirm the answer is the described entity itself, not a related one mentioned alongside it (e.g., if the clue asks for the parent, don&#x27;t answer the child). If any constraint fails, search the docs again; only fall back on general knowledge if no snippet states the answer.
+
+### Output format
+- Respond with ONLY the concise entity wrapped in `&lt;answer&gt;...&lt;/answer&gt;` tags — no preamble or explanation. Preserve capitalization/hyphenation and articles only when part of the standard name (e.g., &quot;Winnie-the-Pooh&quot;, &quot;The Outsiders&quot;); common nouns are lowercase. Answers are typically 1–3 words; give a fuller phrase only when the clue explicitly asks for one (e.g., a quoted &quot;3-word phrase&quot;).
+
+## Procedure for research-level multiple-choice math tasks (&quot;strongest provable / equivalent statement&quot; questions)
+
+These tasks present a specialized mathematical setup (definitions, hypotheses) quoted from a research-level area, plus 4–5 lettered options (A–E) that share a common core and differ in fine details; the question asks which is the *strongest statement that holds or can be proved*, which statement is *equivalent* to a given theorem, or what is *exactly characterized*. One option is often a **meta-option**: &quot;One of the remaining options is correct, but a stronger result can be proven.&quot; Do not answer from plausibility or first impressions — apply this procedure:
+
+### Reason before choosing
+1. **Write out a derivation in your reasoning text before naming a letter.** Restate the question&#x27;s demand in one line (strongest provable? exact equivalence? a specific constant/regularity?), then check every option against it. A bare letter with no derivation is a guess; the correct option is usually a subtle variant of a distractor.
+
+### Parse and diff the options
+2. **Diff near-identical options token by token.** Options in this family are near-copies differing in one detail: numerical constants, exponents (1/n vs 1, $k^{-\alpha}$ vs constant), strict vs non-strict inequality (including `lim` vs `limsup`/`liminf`), endpoint inclusivity of parameter ranges (q &lt; c vs q ≤ c), index shifts (n vs n+1), quantifier order (&quot;there exist signs such that for every n&quot; vs &quot;for every n there exist signs&quot;), an added converse clause or structural conclusion (uniqueness, periodicity), regularity indices, uniformity of constants in parameters vs dependence on them, smooth/linear vs arbitrary coefficients, whole domain vs bounded subinterval, sup-norm vs L¹ convergence, presence/absence of a `+ε` term, or presence/absence of an extra hypothesis. The answer is determined solely by these differences — not by which option reads most impressively, is longest, or comes first; do not anchor on option A. Eliminate any variant containing a sub-clause you cannot independently justify.
+
+### Recognize standard distractor transformations
+3. Treat these as the likelier wrong choices:
+   - **Overstated:** adds an unjustified specific — a claimed mechanism (&quot;obtained from a conjugacy&quot;), sharper regularity, a strengthened quantifier (&quot;every such...&quot;, &quot;only finitely many&quot;), or a clause not implied by the hypotheses.
+   - **Understated:** weakens the true conclusion (subsequential instead of full convergence, non-sharp bound when a sharp constant is known) — correct but non-strongest, so loses when &quot;strongest&quot; is requested.
+   - **Near-miss:** changes one quantifier, modulus, exponent, or arithmetic condition (divisor of m vs of 2m, n ≥ 10 vs n ≥ 9).
+   - **Hypothesis tampering:** silently adds extra assumptions not given, or drops a needed one.
+
+### Rank options by logical strength
+4. **Build an explicit partial order among the concrete options.** Option X is stronger than Y iff X implies Y but not conversely: an extra conclusion, a sharper constant or exponent, a two-sided (matching lower+upper) bound vs an upper bound only, a wider or closed parameter range, an iff characterization vs a one-way existence statement, equality of structures vs a coarser invariant (group isomorphism vs equality of invariants), exact value vs inequality, uniform-in-time vs single-time. Discard options strictly weaker than another surviving option. The correct answer is the maximal element among options that are actually TRUE — a stronger false option and a weaker true option are the two standard traps.
+
+### Audit each strengthening clause for provability
+5. **Reconstruct the theorem, then test the marginal claim of each option on its own merits.** Re-derive the critical quantity from the problem&#x27;s own definitions (check scaling/homogeneity, limiting/special cases like n=1, n=2, smallest prime, and boundary inclusions) rather than pattern-matching to a familiar theorem. Common over-reach traps: upgrading an upper bound to a two-sided bound when only a weaker lower bound is proven, upgrading numerical equality of invariants to an isomorphism, claiming constants uniform in a parameter when they depend on it, strengthening o(·) to an exact constant, closing an interval endpoint, or reversing a quantifier. If any single added clause is false or unproven, reject the whole option even if its core is correct. Options making *incomparable* claims must each be checked independently. Use every stated hypothesis as a signal: an unused hypothesis suggests a strengthening is available.
+
+### Treat the meta-option seriously
+6. **The meta-option is a first-class candidate, not a throwaway.** It asserts (a) some concrete option is correct as far as it goes, AND (b) the true theorem proves strictly more. After identifying the strongest provable concrete option, explicitly ask whether the actual result from the literature is strictly stronger on any dimension — sharper constants or exponents, an exact closed-form where options give only bounds, uniqueness or an added structural/classification conclusion, weaker hypotheses, or broader scope. If any concrete option still understates the known result, the meta-option is correct; in these tasks it is very frequently the intended key, and option sets are often built from a real theorem plus deliberately slightly-weakened concrete variants. Conversely, if the strongest concrete option exactly reproduces the source theorem (matching constants, exponents, quantifier pattern, and exceptional cases), the meta-option is a trap. Do not reflexively pick a concrete option because it looks detailed, and do not pick the meta-option reflexively either.
+
+### Equivalence / &quot;exactly characterized&quot; questions
+7. **Check both directions.** For &quot;which statement is equivalent to P&quot;, verify P ⇒ option AND option ⇒ P. Reject options that are merely necessary consequences of P, sufficient-but-stronger conditions not implied by P, or that change the quantifier structure. The correct option is often the weakest/softest statement that is still bidirectionally equivalent (e.g., a plain inequality with an unrestricted positive constant rather than a contraction constant &lt; 1). When the question asks what is *exactly characterized*, the answer is the option stating a full biconditional — not a one-way implication, not an averaged/Hamming-style surrogate, and not a coarser equivalence (equality up to permutation is strictly weaker than exact tuple equality when exact equality is characterizable).
+
+### Self-check
+8. Before finalizing, restate the chosen option&#x27;s claim in your own words and confirm every quantifier and constant against the recalled theorem. For each rejected option, name the single feature that makes it fail (too weak — misses a provable strengthening — or false at the specific delta you identified); try a counterexample against the chosen option. Check you have not confused &quot;strongest provable statement&quot; with &quot;most detailed-sounding option&quot;. If you chose a concrete option over a present meta-option, articulate exactly why no stronger statement holds (e.g., the option already matches the known-sharp constant or full biconditional); if you cannot, prefer the meta-option. If you cannot confirm a specific exponent, constant, or endpoint, prefer the weaker option.
+
+**Output format for these tasks:** respond with ONLY the single option letter wrapped in `&lt;answer&gt;...&lt;/answer&gt;` tags (e.g., `&lt;answer&gt;B&lt;/answer&gt;`), no preamble, derivation, or explanation inside the tags, unless the task explicitly requests the full statement.</pre></details>
+<details><summary>GEPA-glm 最终 Skill（只在第 1 步更新） <span class="size">4,325 字节</span></summary><pre>You are answering Jeopardy!-style trivia questions. Each input gives a clue (the &quot;question&quot;) and a set of retrieved context documents. Your job is to produce the correct Jeopardy &quot;answer&quot; (the response the contestant would give).
+
+Input format:
+- question: the Jeopardy clue, sometimes with a parenthetical letter count like &quot;(4)&quot; indicating the number of letters in the expected answer.
+- context: a list of [DOC]/[TLE]/[PAR] blocks (title and paragraph text from web pages). Relevant facts are usually buried in one or two of these; many blocks are irrelevant noise.
+
+Procedure:
+1. Read the clue carefully and determine exactly what entity is being asked for. Jeopardy clues are precise: identify the specific noun (a person, place, thing, or term) the clue points to.
+2. Scan the context for sentences that directly confirm the answer. Prefer authoritative sources (Wikipedia, Britannica, encyclopedia entries) over crossword-clue aggregators or fan pages, but note that crossword/flashcard aggregator pages (StudyStack, Fikkle Fame, jService) sometimes contain the literal expected answer string — if you find the exact clue text in such a block, the answer usually follows it verbatim.
+3. Match the specificity of the expected answer to the clue:
+   - If the clue asks &quot;this city&quot;, answer with the city name only (e.g., &quot;Richmond&quot;, not &quot;Richmond, Virginia&quot;).
+   - If the clue asks for a river, answer with the river&#x27;s common name (e.g., &quot;the Amazon&quot;, not &quot;the Amazon River&quot;).
+   - If a clue asks &quot;these animals&quot; and multiple are listed but one is the primary/most commonly cited answer, give the single most prominent one.
+   - If a clue asks &quot;this structure&quot;, give the generic structure name, not an elaborated description with extra details like ship names.
+   - If the clue gives two names of the same category (e.g., two kings), the answer is often the shared category/country.
+4. CRITICAL — match the determiner used in the clue to the article in your answer:
+   - When a clue says &quot;...one of these&quot;, the expected answer typically starts with the indefinite article: e.g., a clue about a chair back shaped like &quot;one of these&quot; expects &quot;a balloon&quot;, not &quot;hot air balloon&quot;. Strip modifiers and give the bare category noun with &quot;a&quot;/&quot;an&quot;.
+   - When a clue says &quot;this [category noun]&quot; and the category noun itself is a compound whose head word is what&#x27;s really being asked for (e.g., &quot;this market that features a lengthy period of price drops&quot;), the expected answer is often the head noun alone with the definite article (&quot;the bear&quot;), not the full compound (&quot;bear market&quot;).
+   - Conversely, when the clue names a specific entity (&quot;this city&quot;, &quot;this state&quot;, &quot;he&#x27;s the woodcarver who...&quot;), give the proper name with no article (e.g., &quot;Buffalo&quot;, &quot;Pennsylvania&quot;, &quot;Geppetto&quot;).
+   - When in doubt between a longer descriptive phrase and a short generic noun, prefer the shorter generic noun that still uniquely fits the clue.
+5. If the clue contains a parenthetical letter count like &quot;(4)&quot;, count the letters of your candidate answer (ignoring spaces/punctuation) and verify it matches exactly. Use wordplay (rhymes, alliteration, overlapping words in the clue) if applicable.
+6. Self-verify: re-read the clue and check that your answer directly substitutes into it. Check every stated constraint (dates, distances, events, letter counts). Then check your answer&#x27;s article and length against rule 4 one final time.
+
+Output format — CRITICAL:
+- Respond with ONLY the answer inside &lt;answer&gt;&lt;/answer&gt; tags.
+- The answer must be SHORT: typically one to three words. Give exactly the entity the clue asks for, with no additional explanations, descriptions, context sentences, or qualifiers that were not requested.
+- Do NOT list multiple alternatives or hedge. Pick the single best answer.
+- Do NOT add state/country qualifiers to city names, vessel names to generic structures, or comparisons when the clue expects one category word.
+- Include an article (&quot;a balloon&quot;, &quot;the bear&quot;) only when the clue&#x27;s phrasing (&quot;one of these&quot;, &quot;this [compound noun]&quot;) calls for it, per rule 4.
+
+Examples of correct answer style (format only):
+- City clue → &lt;answer&gt;Edmonton&lt;/answer&gt;
+- Person clue → &lt;answer&gt;Geppetto&lt;/answer&gt;
+- &quot;One of these&quot; clue → &lt;answer&gt;a balloon&lt;/answer&gt;
+- &quot;This market&quot; head-noun clue → &lt;answer&gt;the bear&lt;/answer&gt;</pre></details>
+<details><summary>I-glm 的起点指令（也是它的最终 Skill）<span class="size">12,078 字节</span></summary><pre>## SearchQA
+- Read the question first and note its type (person, place, date, number, title, etc.) so you know what form the answer should take.
+- Scan all snippets, not just the first: the answer may appear only in a later snippet, and early snippets are often irrelevant.
+- Snippets are noisy: ignore SEO text, navigation fragments, and off-topic content. Use only what directly answers the question.
+- Prefer an answer that appears verbatim in the snippets over one you synthesize; the metric is exact match, so the exact surface form from the context is safest.
+- If snippets disagree, favor the most authoritative, specific, or repeated source; consider whether the question&#x27;s phrasing (e.g., &quot;Jeopardy!&quot;-style clue) implies a well-known fact.
+- Answer with the minimal entity or value requested, not a full sentence: e.g., a name, a date, a title, a number.
+- Match the question&#x27;s expected unit and granularity: if asked &quot;how many&quot;, give just the number (unless the source shows a unit is part of the canonical answer).
+- If the question asks for one of several (e.g., &quot;which city&quot;), return only that item, not a list, unless the question explicitly asks for multiple.
+- Watch for near-miss distractors in the snippets (similar names, different dates, related works); verify the snippet actually matches all constraints in the question.
+- Handle titles and proper nouns carefully: include articles that are part of a title (e.g., &quot;the great gatsby&quot; keeps &quot;great gatsby&quot;), since normalization only strips articles ambiguously — keeping the source&#x27;s wording avoids risk.
+- If no snippet contains the answer, still give your best short guess from the context or general knowledge; an empty answer scores zero.
+- Output the final answer inside `&lt;answer&gt;...&lt;/answer&gt;`, ensuring that the last such tag in your reply contains exactly the concise answer text.
+
+## OfficeQA
+### Guidance for U.S. Treasury Bulletin Questions (OfficeQA, one-call)
+
+- Read the **question first** to identify the exact quantity sought (a date, a single value, a percentage change, a sum/ratio across line items, etc.) — this determines what to hunt for in the context and whether a calculation is needed.
+- Search the supplied **context** for the relevant table or passage. Treasury Bulletin pages mix running text with tables rendered as text; match on row/column labels, table titles, footnote markers, and period labels (e.g., fiscal-year vs. calendar-year, month, quarter) before trusting any number.
+- **Use only the supplied context.** Do not fill gaps from memory of Treasury data, and do not &quot;correct&quot; numbers that look odd — the reference answer is derived from these pages.
+- Watch for **units and scaling**: tables may state &quot;millions of dollars&quot;, &quot;percent&quot;, or &quot;billions&quot; in headers or notes. If the answer must be in a specific unit, convert carefully; the normalization removes the words million/billion/dollars/nominal, so the *digits* you emit must already reflect the intended magnitude.
+- Pay close attention to **row and column alignment** in flattened tables: parsed text can misalign headers, so verify a candidate value by checking neighboring values that you can cross-check against totals or subtotals in the same table.
+- If a computation is required (difference, sum, growth rate, share of total), show the work in your reasoning, then perform it **exactly** with the figures as printed — round only if the question or table conventions clearly imply it (e.g., &quot;percent change to one decimal&quot;).
+- Be careful with **signs and negatives**: values in parentheses typically mean negative; the normalization keeps &#x27;-&#x27;, so include it when the answer is negative.
+- Distinguish similar series that commonly appear together (e.g., fiscal year-to-date vs. monthly, assets vs. liabilities, holdings vs. transactions, different maturities or instrument types) — a one-word mismatch in the label usually means the wrong figure.
+- If the context is cut off or the needed figure is genuinely absent, pick the best-supported answer from what is present rather than guessing wildly; prefer a value from the same table over one inferred from text.
+- Format the final answer to survive normalization: **emit the bare number (or short string) inside `&lt;answer&gt;...&lt;/answer&gt;`**, without commas, currency symbols, or units if the reference is a pure number; keep &#x27;%&#x27; only if the answer is a percentage. Avoid thousand separators, since commas are stripped anyway but any extra words will break exact match.
+- If multiple `&lt;answer&gt;` tags appear, only the **last** one is scored — so place exactly one final tag at the end with your definitive answer.
+- Keep the answer **concise**: a number, a short label, or a date in the form most likely used by the reference (e.g., &quot;12345.6&quot; rather than &quot;12,345.6 million dollars&quot;).
+
+## LiveMath
+- The question is built from a theorem in a recent arXiv paper, so expect precise, technical mathematical content; read the statement carefully for quantifiers, hypotheses, and exact constants.
+- Do not assume the theorem is one you know from classical literature; it may be a recent refinement, so verify each option against the statement rather than against memory of older results.
+- Parse the &quot;question&quot; field completely before looking at the choices: identify what is being asked (a value, an inclusion, a yes/no decision, a completion of a sentence).
+- Examine all five options; distractors are typically near-misses such as swapped quantifiers, weakened/strengthened hypotheses, wrong constants or dimensions, or plausible but false generalizations.
+- Check edge cases and boundary conditions: strict vs. non-strict inequalities, open vs. closed sets, equality vs. containment, &quot;for all&quot; vs. &quot;there exists&quot;.
+- Beware of options that are true statements in general but do not answer the specific question, or that hold only under additional assumptions not present in the question.
+- Use only the supplied public information; do not rely on external knowledge of the specific paper, but standard mathematical reasoning and background are fine.
+- If two options look close, translate both into precise mathematical language and test them against simple examples or limiting cases consistent with the hypotheses.
+- Eliminate clearly wrong options first; among the remainder, prefer the option that matches the theorem&#x27;s exact formulation rather than a paraphrase that changes meaning.
+- When the question asks to &quot;complete&quot; a statement, ensure grammatical and logical continuity with the stem; a choice may be correct only when read in the full sentence.
+- Decide on exactly one letter; if uncertain, choose the most defensible option after elimination rather than leaving the answer ambiguous.
+- Return only a single letter (A–E) inside `&lt;answer&gt;...&lt;/answer&gt;`, with nothing else in the tag, as the final part of your reply; the last such tag is what gets scored.
+
+## SpreadsheetBench
+- Write a single, self-contained Python program in exactly one ```python code block; use openpyxl (the standard tool for this benchmark) and nothing requiring network access.
+- The program must read `input.xlsx` (hardcode this path or read it from the supplied JSON&#x27;s `input_path`) and save to `output.xlsx`; do not rename sheets or move data unless the instruction explicitly says so — only the cells named in `required_answer_position` are compared.
+- Inspect the `workbook_preview` carefully: note sheet names (including exact spelling, spaces, and capitalization), dimensions, and the first rows/columns. Formulas appear as formulas in the preview, so the stored cell values may differ from what is shown; if the preview shows formulas, expect the real workbook to contain them and handle them via openpyxl&#x27;s formula-preserving mode (`load_workbook(path, data_only=False)` is the default).
+- Decide whether the answer position should contain literal values (computed in Python) or formulas. Safest: write literal values that equal the recalculated reference result, unless the instruction explicitly asks for formulas. If you do write formulas, they must recalculate to the correct values when the grader recalculates the workbook.
+- When reading values, remember `data_only=True` returns cached results (None if the file was never recalculated by Excel) and `data_only=False` returns formula strings. Load twice (once each way) if you need both formulas and cached values.
+- Match data types exactly where the comparison is value-based: numbers as numbers (not strings), dates as datetimes, and beware of text that looks like numbers. Preserve number formats only if the instruction concerns formatting; otherwise prefer writing plain values.
+- Locate the target cells robustly: the answer may span a range (e.g. `Sheet1!B2:D5`) or multiple sheets. Ensure every cell in the range is written, including empty strings/None where the reference is empty, if that&#x27;s plausible from the instruction.
+- Handle merged cells, hidden sheets, and sheets beyond the 20-sheet preview limit — the actual workbook may be larger than the preview, so iterate dynamically rather than assuming preview bounds.
+- Avoid operations that depend on Excel itself (no xlwings/win32com); openpyxl cannot evaluate formulas, so compute any derived results in Python rather than relying on cached formula values unless verified present.
+- Keep runtime well under the 300-second limit: avoid O(n²) scans over huge ranges; operate only on the relevant sheets and columns.
+- Wrap risky operations defensively: if a sheet or column mentioned in the instruction might not exist, check and fall back sensibly rather than raising. A raised error means zero credit.
+- After writing the required cells, save the workbook with `wb.save(&quot;output.xlsx&quot;)` and ensure the program exits cleanly; verify the save path matches `required_output_path`.
+
+## ALFWorld
+- Always emit exactly one action per reply, wrapped in `&lt;action&gt;...&lt;/action&gt;`; anything outside the tag is ignored, and a missing tag causes the whole reply to be executed, which almost always fails.
+- The action must be one of the strings listed in `admissible_commands` — copy it character-for-character rather than paraphrasing, since the environment only accepts the listed commands.
+- Before acting, re-read `initial_observation` to keep the goal in mind; it states both the task type (e.g., heat/cool/clean/examine an object, or place two objects somewhere) and the specific objects and receptacles involved.
+- Parse the task into a concrete subgoal sequence, e.g., &quot;find object → pick it up → find the required appliance (basin, fridge, microwave, etc.) → use it → move to the destination receptacle → put the object down&quot;.
+- Use navigation commands (`go to X`) to explore locations named in the room description; `admissible_commands` reveals which receptacles and locations currently exist, so use it as a map of what is reachable.
+- When you need an object&#x27;s location, check the likely receptacles listed in the room description one at a time (e.g., `go to countertop 1`, `open drawer 1`, `examine X`) until you find it.
+- Keep your physical state in mind: you can hold at most two objects (hands are used in commands like `take A from B`); note what you took from `recent_history` since it is not restated each turn.
+- For cleaning tasks you need a sinkbasin; for heating a microwave; for cooling a fridge. Put the object in/on the appliance (e.g., `put A in/on sinkbasin 1`, `heat A with microwave 1`), then take it back out before delivering it to the final receptacle.
+- Prefer efficient exploration: plan multi-step routes (e.g., go directly to a likely receptacle rather than re-visiting ones already seen as empty in `recent_history`).
+- Watch `observation` after each action for success/failure feedback — &quot;Nothing happens&quot; or an error message usually means the action was inapplicable; adjust rather than repeating it.
+- Do not emit empty actions or replies over 1000 characters; keep the action short and exact.
+- Track progress against the 50-step limit: if a plan stalls, fall back to systematically exploring all receptacles named in the room description rather than wandering.</pre></details>
+    </div>
+    <div class="sub-block">
+      <h3>B 数据来源与读法</h3>
+      <ul class="prose">
+        <li>运行 <span class="path">7e91d88f…</span>：启动清单 <span class="path">/data/coevo5-20261017-run-manifest.json</span>，运行目录 <span class="path">/data/coevo5-20261017-run</span>，代码快照 <span class="path">/data/coevo5-20261017-source-e</span>（开发机）。</li>
+        <li>报告 <span class="path">/data/coevo5-20261019-v1-report/</span>（report.md sha256 <span class="path">0103fb13…</span>，report.json sha256 <span class="path">a4a71bcd…</span>）：10:51–10:52 生成，零模型调用，代码与启动清单一致。3.3 和 3.6 里“事后补算”的差值用同一套代码与重抽设置另算（<span class="path">/data/coevo5-20261019-v1-report-compare.json</span>），不是登记的检验。</li>
+        <li>正确率口径：没做完算错；SpreadsheetBench 少数产物判不了的题（每格 4–10 道）不计入分母。把它们全算错或全算对，平均分最多变 0.6 点。</li>
+        <li>每条链只跑了一次；所有区间只反映测试题抽样。</li>
+      </ul>
+    </div>
+  </section>
+</main>
+</body>
+</html>

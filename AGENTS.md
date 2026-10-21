@@ -29,7 +29,11 @@ Never publish secrets, `.env`, private API caches, or unreviewed third-party dat
 
 Keep README and `docs/research-overview.md` as discoverable entry points to the
 two living documents. Check relative links and numeric consistency when editing
-them. Documentation-only work does not require paid experiments. These
+them. `docs/project-status.md` is the session-handoff entry point (goal,
+established results, what is running, pending owner decisions, Linux
+operations): whenever a result, decision, launch or stop changes the current
+state, update its status sections and timestamp, keeping it a short summary
+that points to the two living documents. Documentation-only work does not require paid experiments. These
 maintenance instructions do not authorize unrelated edits, experiments, commits,
 or pushes during read-only explanation/review requests.
 

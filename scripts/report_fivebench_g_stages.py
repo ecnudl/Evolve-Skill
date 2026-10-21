@@ -112,7 +112,10 @@ def markdown(rows):
                             f"{t['wins_vs_no_skill']}胜/{t['losses_vs_no_skill']}负）")
             test = (test + "<br>" if test not in {"—", ""} else "") + "重复测量 " + "；".join(reps)
         elif row.get("action") in {"completed_no_update", "pending_carry_parent"}:
-            test = "父Skill已有记录"
+            # a fixed-text parent (generated-validation stages) was never measured on the test panel
+            test = "父Skill为固定文本，未在测试面板上测过" if str(row.get("parent", "")).startswith("f:") else "父Skill已有记录"
+        if row["benchmark"] in ("livemath", "officeqa"):  # an extension study has no test cells at all
+            test = "扩展研究没有测试格（测试部分只有题号）"
         lines.append(f"| {row['method']} | {row['benchmark']} | {row['parent']} | {row['train_tasks']}/{row['selection_tasks']} "
                      f"| {_steps(row)} | {outcome} | {test} |")
     return "\n".join(lines)

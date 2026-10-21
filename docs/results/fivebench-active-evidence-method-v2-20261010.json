@@ -1,0 +1,1114 @@
+{
+  "version": "active-evidence-stage-export-v1",
+  "stages": [
+    {
+      "method": "active_evidence",
+      "arms": {
+        "feedback": "diagnosis_research",
+        "post_update": "challenge_replay"
+      },
+      "benchmark": "searchqa",
+      "reference_skills": [],
+      "limits": {
+        "view_rows": 16,
+        "view_output_chars": 3000,
+        "max_hypotheses": 4,
+        "max_checks_per_case": 2,
+        "max_diagnoser_calls_per_step": 2,
+        "max_research_pages": 3,
+        "fresh_tasks": 96,
+        "replay_rows": 32,
+        "local_fix_rows": 8,
+        "min_paired_known": 87,
+        "decision_alpha_permille": 50,
+        "edit_budget": 4,
+        "report_chars": 1800,
+        "summary_chars": 2500,
+        "restriction_attempts": 0
+      },
+      "limits_requested": {
+        "view_rows": 16,
+        "view_output_chars": 3000,
+        "max_hypotheses": 4,
+        "max_checks_per_case": 2,
+        "max_diagnoser_calls_per_step": 2,
+        "max_research_pages": 3,
+        "fresh_tasks": 96,
+        "replay_rows": 32,
+        "local_fix_rows": 8,
+        "min_paired_known": 87,
+        "decision_alpha_permille": 50,
+        "edit_budget": 4,
+        "report_chars": 1800,
+        "summary_chars": 2500,
+        "restriction_attempts": 0
+      },
+      "eligible_fresh_tasks": 272,
+      "parent": "none",
+      "train_tasks": 128,
+      "challenge_tasks": 272,
+      "status": "completed",
+      "reason": "active_evidence_diagnosis_research_challenge_replay_frozen_decision",
+      "action": "selected_update",
+      "decisions": [
+        "keep"
+      ],
+      "skill_bytes": 4134,
+      "costs": {
+        "logical_calls": 440,
+        "solver_calls": 400,
+        "verifier_calls": 18,
+        "reflection_calls": 22,
+        "reported_tokens_known_subtotal": 934985,
+        "missing_usage_calls": 3,
+        "unclosed_calls": 0
+      },
+      "tests": [],
+      "test": null,
+      "steps": [
+        {
+          "matched": null,
+          "information_release": null,
+          "release": null,
+          "study_audits": null,
+          "step": 0,
+          "rollout": {
+            "kind": "fresh",
+            "rollout": 0,
+            "rows": 128,
+            "known": 127,
+            "unknown": 1,
+            "outputs_new": true,
+            "tasks_reused_across_steps": false
+          },
+          "problem": {
+            "host_fail": 41,
+            "host_pass": 86
+          },
+          "diagnosis": {
+            "status": "completed",
+            "cases": 16,
+            "hypotheses": [
+              {
+                "id": "h1",
+                "kind": "task_error_candidate",
+                "needs_fact": false
+              },
+              {
+                "id": "h2",
+                "kind": "task_error_candidate",
+                "needs_fact": false
+              },
+              {
+                "id": "h3",
+                "kind": "task_error_candidate",
+                "needs_fact": true
+              },
+              {
+                "id": "h4",
+                "kind": "unexplained",
+                "needs_fact": false
+              }
+            ],
+            "grades": {
+              "pending_explanation": 30,
+              "unknown": 1
+            },
+            "executed_checks": 0,
+            "observations": [
+              {
+                "hypothesis_id": "h1",
+                "verdict": "undecided",
+                "checks": 8
+              },
+              {
+                "hypothesis_id": "h2",
+                "verdict": "undecided",
+                "checks": 4
+              },
+              {
+                "hypothesis_id": "h3",
+                "verdict": "undecided",
+                "checks": 2
+              },
+              {
+                "hypothesis_id": "h4",
+                "verdict": "undecided",
+                "checks": 16
+              }
+            ],
+            "research": [],
+            "fact_needs": [
+              {
+                "hypothesis_id": "h3",
+                "status": "not_consulted:no_check_reached_review",
+                "checks": 2,
+                "reviewed_checks": 0,
+                "consulted_checks": [],
+                "research_statuses": [],
+                "resolved": false,
+                "research_hashes": [],
+                "binding": "structural (this hypothesis's own checks); the declared question is not matched semantically"
+              }
+            ],
+            "rows_with_evidence": 16,
+            "cases_skipped_for_reserve": [],
+            "delivery": {
+              "cases": 16,
+              "cases_attempted": 16,
+              "cases_with_checks": 16,
+              "cases_format_failed": 0,
+              "cases_without_checks": 0,
+              "cases_skipped_for_reserve": 0,
+              "rows_with_reports": 16,
+              "summary_present": true
+            }
+          },
+          "edits": {
+            "proposal_hash": "68b24186e3e14f4037f9434b1bdb839813d8278daa3eb431758249689589e175",
+            "status": "candidate_ready",
+            "candidate_hash": "13a88c3397f6e596cfc967540651c9979089fa10992218ed471870039a3759f3",
+            "edit_count": 2,
+            "native_fallbacks": []
+          },
+          "challenge": {
+            "draw_hash": "902a377492c6430d700a173e741db5eacec054d3ddf2e71f455c9bcff183e99f",
+            "outcome_hash": "1f2614db0f671b12772841dc60e39e63d4cf6c50c67b2c19c96131cbf2e7ad30",
+            "status": "completed",
+            "summary": {
+              "fresh": {
+                "positions": 96,
+                "wins": 13,
+                "losses": 0,
+                "ties": 82,
+                "candidate_unknown": 0,
+                "current_unknown": 0,
+                "both_unknown": 1,
+                "jointly_known": 95,
+                "net_wins": 13,
+                "families": 95,
+                "families_improving": 13,
+                "families_regressing": 0,
+                "families_tied": 82,
+                "families_non_tied": 13,
+                "family_p_value": 0.0001220703125,
+                "family_harm_p_value": 1.0,
+                "strata": {
+                  "seen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  },
+                  "unseen_family": {
+                    "positions": 96,
+                    "wins": 13,
+                    "losses": 0
+                  }
+                },
+                "adverse": {
+                  "rule": "every position with an unknown side counted as a candidate loss",
+                  "unknown_positions": 1,
+                  "net_wins": 12,
+                  "families_improving": 13,
+                  "families_regressing": 1,
+                  "family_p_value": 0.00091552734375
+                },
+                "regressions": 0,
+                "fixed": 13
+              },
+              "replay": {
+                "positions": 32,
+                "wins": 1,
+                "losses": 0,
+                "ties": 31,
+                "candidate_unknown": 0,
+                "current_unknown": 0,
+                "both_unknown": 0,
+                "jointly_known": 32,
+                "net_wins": 1,
+                "families": 32,
+                "families_improving": 1,
+                "families_regressing": 0,
+                "families_tied": 31,
+                "families_non_tied": 1,
+                "family_p_value": 0.5,
+                "family_harm_p_value": 1.0,
+                "strata": {
+                  "seen_family": {
+                    "positions": 32,
+                    "wins": 1,
+                    "losses": 0
+                  },
+                  "unseen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  }
+                },
+                "adverse": {
+                  "rule": "every position with an unknown side counted as a candidate loss",
+                  "unknown_positions": 0,
+                  "net_wins": 1,
+                  "families_improving": 1,
+                  "families_regressing": 0,
+                  "family_p_value": 0.5
+                },
+                "regressions": 0,
+                "fixed": 1
+              },
+              "local_fix": {
+                "positions": 8,
+                "wins": 4,
+                "losses": 0,
+                "ties": 4,
+                "candidate_unknown": 0,
+                "current_unknown": 0,
+                "both_unknown": 0,
+                "jointly_known": 8,
+                "net_wins": 4,
+                "families": 8,
+                "families_improving": 4,
+                "families_regressing": 0,
+                "families_tied": 4,
+                "families_non_tied": 4,
+                "family_p_value": 0.0625,
+                "family_harm_p_value": 1.0,
+                "strata": {
+                  "seen_family": {
+                    "positions": 8,
+                    "wins": 4,
+                    "losses": 0
+                  },
+                  "unseen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  }
+                },
+                "adverse": {
+                  "rule": "every position with an unknown side counted as a candidate loss",
+                  "unknown_positions": 0,
+                  "net_wins": 4,
+                  "families_improving": 4,
+                  "families_regressing": 0,
+                  "family_p_value": 0.0625
+                },
+                "regressions": 0,
+                "fixed": 4
+              }
+            },
+            "reason": null
+          },
+          "decision": {
+            "record_hash": "b531151428865d6c57d566fb8cc99bf43fd345d62bb7741c96d5097ccc01775f",
+            "action": "keep",
+            "reason": "fresh_gain_significant_with_aggregate_guard_and_adverse_completion",
+            "rule_version": "active-evidence-decision-v2",
+            "limits": {
+              "min_paired_known": 87,
+              "alpha": 0.05
+            },
+            "flags": {
+              "replay_harm": false,
+              "fresh_admissible": true,
+              "fresh_harm": false,
+              "fresh_gain": true,
+              "aggregate_guard": true,
+              "adverse_completion": true
+            },
+            "fresh": {
+              "positions": 96,
+              "jointly_known": 95,
+              "net_wins": 13,
+              "families": 95,
+              "families_improving": 13,
+              "families_regressing": 0,
+              "families_tied": 82,
+              "families_non_tied": 13,
+              "family_p_value": 0.0001220703125,
+              "family_harm_p_value": 1.0
+            },
+            "replay": {
+              "positions": 32,
+              "jointly_known": 32,
+              "net_wins": 1,
+              "families": 32,
+              "families_improving": 1,
+              "families_regressing": 0,
+              "families_tied": 31,
+              "families_non_tied": 1,
+              "family_p_value": 0.5,
+              "family_harm_p_value": 1.0
+            },
+            "fresh_adverse": {
+              "unknown_positions": 1,
+              "net_wins": 12,
+              "families_improving": 13,
+              "families_regressing": 1,
+              "family_p_value": 0.00091552734375
+            }
+          },
+          "intervened": {
+            "research_consulted": false,
+            "label_feedback": false,
+            "research_new_information": false,
+            "feedback_differs_from_scalar": true,
+            "skill_changed": true,
+            "challenge_delta": true,
+            "decision": "keep"
+          }
+        }
+      ],
+      "note": "learning-process data (dynamic tasks and replay); never a final evaluation",
+      "stage_basename": "fivebench-g-20261010-searchqa-active-m1"
+    },
+    {
+      "method": "active_evidence",
+      "arms": {
+        "feedback": "diagnosis_research",
+        "post_update": "challenge_replay"
+      },
+      "benchmark": "bigcodebench",
+      "reference_skills": [],
+      "limits": {
+        "view_rows": 16,
+        "view_output_chars": 3000,
+        "max_hypotheses": 4,
+        "max_checks_per_case": 2,
+        "max_diagnoser_calls_per_step": 2,
+        "max_research_pages": 3,
+        "fresh_tasks": 96,
+        "replay_rows": 32,
+        "local_fix_rows": 8,
+        "min_paired_known": 87,
+        "decision_alpha_permille": 50,
+        "edit_budget": 4,
+        "report_chars": 1800,
+        "summary_chars": 2500,
+        "restriction_attempts": 0
+      },
+      "limits_requested": {
+        "view_rows": 16,
+        "view_output_chars": 3000,
+        "max_hypotheses": 4,
+        "max_checks_per_case": 2,
+        "max_diagnoser_calls_per_step": 2,
+        "max_research_pages": 3,
+        "fresh_tasks": 96,
+        "replay_rows": 32,
+        "local_fix_rows": 8,
+        "min_paired_known": 87,
+        "decision_alpha_permille": 50,
+        "edit_budget": 4,
+        "report_chars": 1800,
+        "summary_chars": 2500,
+        "restriction_attempts": 0
+      },
+      "eligible_fresh_tasks": 272,
+      "parent": "none",
+      "train_tasks": 128,
+      "challenge_tasks": 272,
+      "status": "completed",
+      "reason": "active_evidence_diagnosis_research_challenge_replay_frozen_decision",
+      "action": "completed_no_update",
+      "decisions": [
+        "park"
+      ],
+      "skill_bytes": 0,
+      "costs": {
+        "logical_calls": 434,
+        "solver_calls": 400,
+        "verifier_calls": 12,
+        "reflection_calls": 22,
+        "reported_tokens_known_subtotal": 477035,
+        "missing_usage_calls": 0,
+        "unclosed_calls": 0
+      },
+      "tests": [],
+      "test": null,
+      "steps": [
+        {
+          "matched": null,
+          "information_release": null,
+          "release": null,
+          "study_audits": null,
+          "step": 0,
+          "rollout": {
+            "kind": "fresh",
+            "rollout": 0,
+            "rows": 128,
+            "known": 128,
+            "unknown": 0,
+            "outputs_new": true,
+            "tasks_reused_across_steps": false
+          },
+          "problem": {
+            "host_fail": 62,
+            "host_pass": 66
+          },
+          "diagnosis": {
+            "status": "completed",
+            "cases": 16,
+            "hypotheses": [
+              {
+                "id": "h1",
+                "kind": "task_error_candidate",
+                "needs_fact": false
+              },
+              {
+                "id": "h2",
+                "kind": "task_error_candidate",
+                "needs_fact": true
+              },
+              {
+                "id": "h3",
+                "kind": "task_error_candidate",
+                "needs_fact": false
+              },
+              {
+                "id": "h4",
+                "kind": "coverage_gap",
+                "needs_fact": false
+              }
+            ],
+            "grades": {
+              "confirmed_preserved": 2,
+              "confirmed_violation": 1,
+              "format_or_env_error": 1,
+              "pending_explanation": 1
+            },
+            "executed_checks": 4,
+            "observations": [
+              {
+                "hypothesis_id": "h1",
+                "verdict": "undecided",
+                "checks": 0
+              },
+              {
+                "hypothesis_id": "h2",
+                "verdict": "consistent",
+                "checks": 1
+              },
+              {
+                "hypothesis_id": "h3",
+                "verdict": "undecided",
+                "checks": 2
+              },
+              {
+                "hypothesis_id": "h4",
+                "verdict": "not_observed",
+                "checks": 2
+              }
+            ],
+            "research": [],
+            "fact_needs": [
+              {
+                "hypothesis_id": "h2",
+                "status": "not_consulted:review_raised_no_fact_question",
+                "checks": 1,
+                "reviewed_checks": 1,
+                "consulted_checks": [],
+                "research_statuses": [],
+                "resolved": false,
+                "research_hashes": [],
+                "binding": "structural (this hypothesis's own checks); the declared question is not matched semantically"
+              }
+            ],
+            "rows_with_evidence": 4,
+            "cases_skipped_for_reserve": [],
+            "delivery": {
+              "cases": 16,
+              "cases_attempted": 6,
+              "cases_with_checks": 4,
+              "cases_format_failed": 0,
+              "cases_without_checks": 2,
+              "cases_skipped_for_reserve": 0,
+              "rows_with_reports": 4,
+              "summary_present": true
+            }
+          },
+          "edits": {
+            "proposal_hash": "99d161c1435d810f9a48b42a3447d2090666ba2e878b79c794c528382b7741b1",
+            "status": "candidate_ready",
+            "candidate_hash": "2c1ec199577810aa7fada8a2d097a37309e535b8a37b9e52c0000b299d5c3b59",
+            "edit_count": 4,
+            "native_fallbacks": []
+          },
+          "challenge": {
+            "draw_hash": "d8510ac93fa9fd81ef0a8cc17ec10a70343b1d817330f036134d84cd8a169d73",
+            "outcome_hash": "766377c9cd78f4d5a1bb54f2f733e07154f165ca5cd3ee40a7c3501a9e16eaf9",
+            "status": "completed",
+            "summary": {
+              "fresh": {
+                "positions": 96,
+                "wins": 5,
+                "losses": 4,
+                "ties": 87,
+                "candidate_unknown": 0,
+                "current_unknown": 0,
+                "both_unknown": 0,
+                "jointly_known": 96,
+                "net_wins": 1,
+                "families": 96,
+                "families_improving": 5,
+                "families_regressing": 4,
+                "families_tied": 87,
+                "families_non_tied": 9,
+                "family_p_value": 0.5,
+                "family_harm_p_value": 0.74609375,
+                "strata": {
+                  "seen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  },
+                  "unseen_family": {
+                    "positions": 96,
+                    "wins": 5,
+                    "losses": 4
+                  }
+                },
+                "adverse": {
+                  "rule": "every position with an unknown side counted as a candidate loss",
+                  "unknown_positions": 0,
+                  "net_wins": 1,
+                  "families_improving": 5,
+                  "families_regressing": 4,
+                  "family_p_value": 0.5
+                },
+                "regressions": 4,
+                "fixed": 5
+              },
+              "replay": {
+                "positions": 32,
+                "wins": 1,
+                "losses": 2,
+                "ties": 29,
+                "candidate_unknown": 0,
+                "current_unknown": 0,
+                "both_unknown": 0,
+                "jointly_known": 32,
+                "net_wins": -1,
+                "families": 32,
+                "families_improving": 1,
+                "families_regressing": 2,
+                "families_tied": 29,
+                "families_non_tied": 3,
+                "family_p_value": 0.875,
+                "family_harm_p_value": 0.5,
+                "strata": {
+                  "seen_family": {
+                    "positions": 32,
+                    "wins": 1,
+                    "losses": 2
+                  },
+                  "unseen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  }
+                },
+                "adverse": {
+                  "rule": "every position with an unknown side counted as a candidate loss",
+                  "unknown_positions": 0,
+                  "net_wins": -1,
+                  "families_improving": 1,
+                  "families_regressing": 2,
+                  "family_p_value": 0.875
+                },
+                "regressions": 2,
+                "fixed": 1
+              },
+              "local_fix": {
+                "positions": 8,
+                "wins": 0,
+                "losses": 1,
+                "ties": 7,
+                "candidate_unknown": 0,
+                "current_unknown": 0,
+                "both_unknown": 0,
+                "jointly_known": 8,
+                "net_wins": -1,
+                "families": 8,
+                "families_improving": 0,
+                "families_regressing": 1,
+                "families_tied": 7,
+                "families_non_tied": 1,
+                "family_p_value": 1.0,
+                "family_harm_p_value": 0.5,
+                "strata": {
+                  "seen_family": {
+                    "positions": 8,
+                    "wins": 0,
+                    "losses": 1
+                  },
+                  "unseen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  }
+                },
+                "adverse": {
+                  "rule": "every position with an unknown side counted as a candidate loss",
+                  "unknown_positions": 0,
+                  "net_wins": -1,
+                  "families_improving": 0,
+                  "families_regressing": 1,
+                  "family_p_value": 1.0
+                },
+                "regressions": 1,
+                "fixed": 0
+              }
+            },
+            "reason": null
+          },
+          "decision": {
+            "record_hash": "05cc126b089e68ec92a07381030cc3c3bd99fb993ea571552483c8a04b544b1c",
+            "action": "park",
+            "reason": "fresh_gain_not_significant",
+            "rule_version": "active-evidence-decision-v2",
+            "limits": {
+              "min_paired_known": 87,
+              "alpha": 0.05
+            },
+            "flags": {
+              "replay_harm": false,
+              "fresh_admissible": true,
+              "fresh_harm": false,
+              "fresh_gain": false,
+              "aggregate_guard": true,
+              "adverse_completion": false
+            },
+            "fresh": {
+              "positions": 96,
+              "jointly_known": 96,
+              "net_wins": 1,
+              "families": 96,
+              "families_improving": 5,
+              "families_regressing": 4,
+              "families_tied": 87,
+              "families_non_tied": 9,
+              "family_p_value": 0.5,
+              "family_harm_p_value": 0.74609375
+            },
+            "replay": {
+              "positions": 32,
+              "jointly_known": 32,
+              "net_wins": -1,
+              "families": 32,
+              "families_improving": 1,
+              "families_regressing": 2,
+              "families_tied": 29,
+              "families_non_tied": 3,
+              "family_p_value": 0.875,
+              "family_harm_p_value": 0.5
+            },
+            "fresh_adverse": {
+              "unknown_positions": 0,
+              "net_wins": 1,
+              "families_improving": 5,
+              "families_regressing": 4,
+              "family_p_value": 0.5
+            }
+          },
+          "intervened": {
+            "research_consulted": false,
+            "label_feedback": false,
+            "research_new_information": false,
+            "feedback_differs_from_scalar": true,
+            "skill_changed": true,
+            "challenge_delta": true,
+            "decision": "park"
+          }
+        }
+      ],
+      "note": "learning-process data (dynamic tasks and replay); never a final evaluation",
+      "stage_basename": "fivebench-g-20261010-bigcodebench-active-m1"
+    },
+    {
+      "method": "active_evidence",
+      "arms": {
+        "feedback": "diagnosis_research",
+        "post_update": "challenge_replay"
+      },
+      "benchmark": "korbench",
+      "reference_skills": [],
+      "limits": {
+        "view_rows": 16,
+        "view_output_chars": 3000,
+        "max_hypotheses": 4,
+        "max_checks_per_case": 2,
+        "max_diagnoser_calls_per_step": 2,
+        "max_research_pages": 3,
+        "fresh_tasks": 96,
+        "replay_rows": 32,
+        "local_fix_rows": 8,
+        "min_paired_known": 87,
+        "decision_alpha_permille": 50,
+        "edit_budget": 4,
+        "report_chars": 1800,
+        "summary_chars": 2500,
+        "restriction_attempts": 0
+      },
+      "limits_requested": {
+        "view_rows": 16,
+        "view_output_chars": 3000,
+        "max_hypotheses": 4,
+        "max_checks_per_case": 2,
+        "max_diagnoser_calls_per_step": 2,
+        "max_research_pages": 3,
+        "fresh_tasks": 96,
+        "replay_rows": 32,
+        "local_fix_rows": 8,
+        "min_paired_known": 87,
+        "decision_alpha_permille": 50,
+        "edit_budget": 4,
+        "report_chars": 1800,
+        "summary_chars": 2500,
+        "restriction_attempts": 0
+      },
+      "eligible_fresh_tasks": 200,
+      "parent": "none",
+      "train_tasks": 90,
+      "challenge_tasks": 200,
+      "status": "completed",
+      "reason": "active_evidence_diagnosis_research_challenge_replay_frozen_decision",
+      "action": "completed_no_update",
+      "decisions": [
+        "park"
+      ],
+      "skill_bytes": 0,
+      "costs": {
+        "logical_calls": 399,
+        "solver_calls": 366,
+        "verifier_calls": 16,
+        "reflection_calls": 17,
+        "reported_tokens_known_subtotal": 2106613,
+        "missing_usage_calls": 5,
+        "unclosed_calls": 0
+      },
+      "tests": [],
+      "test": null,
+      "steps": [
+        {
+          "matched": null,
+          "information_release": null,
+          "release": null,
+          "study_audits": null,
+          "step": 0,
+          "rollout": {
+            "kind": "fresh",
+            "rollout": 0,
+            "rows": 90,
+            "known": 90,
+            "unknown": 0,
+            "outputs_new": true,
+            "tasks_reused_across_steps": false
+          },
+          "problem": {
+            "host_fail": 25,
+            "host_pass": 65
+          },
+          "diagnosis": {
+            "status": "completed",
+            "cases": 16,
+            "hypotheses": [
+              {
+                "id": "h1",
+                "kind": "task_error_candidate",
+                "needs_fact": true
+              },
+              {
+                "id": "h2",
+                "kind": "coverage_gap",
+                "needs_fact": true
+              },
+              {
+                "id": "h3",
+                "kind": "task_error_candidate",
+                "needs_fact": true
+              },
+              {
+                "id": "h4",
+                "kind": "unexplained",
+                "needs_fact": false
+              }
+            ],
+            "grades": {
+              "pending_explanation": 24,
+              "unknown": 3
+            },
+            "executed_checks": 0,
+            "observations": [
+              {
+                "hypothesis_id": "h1",
+                "verdict": "undecided",
+                "checks": 8
+              },
+              {
+                "hypothesis_id": "h2",
+                "verdict": "undecided",
+                "checks": 4
+              },
+              {
+                "hypothesis_id": "h3",
+                "verdict": "undecided",
+                "checks": 2
+              },
+              {
+                "hypothesis_id": "h4",
+                "verdict": "undecided",
+                "checks": 13
+              }
+            ],
+            "research": [],
+            "fact_needs": [
+              {
+                "hypothesis_id": "h1",
+                "status": "not_consulted:no_check_reached_review",
+                "checks": 8,
+                "reviewed_checks": 0,
+                "consulted_checks": [],
+                "research_statuses": [],
+                "resolved": false,
+                "research_hashes": [],
+                "binding": "structural (this hypothesis's own checks); the declared question is not matched semantically"
+              },
+              {
+                "hypothesis_id": "h2",
+                "status": "not_consulted:no_check_reached_review",
+                "checks": 4,
+                "reviewed_checks": 0,
+                "consulted_checks": [],
+                "research_statuses": [],
+                "resolved": false,
+                "research_hashes": [],
+                "binding": "structural (this hypothesis's own checks); the declared question is not matched semantically"
+              },
+              {
+                "hypothesis_id": "h3",
+                "status": "not_consulted:no_check_reached_review",
+                "checks": 2,
+                "reviewed_checks": 0,
+                "consulted_checks": [],
+                "research_statuses": [],
+                "resolved": false,
+                "research_hashes": [],
+                "binding": "structural (this hypothesis's own checks); the declared question is not matched semantically"
+              }
+            ],
+            "rows_with_evidence": 14,
+            "cases_skipped_for_reserve": [],
+            "delivery": {
+              "cases": 16,
+              "cases_attempted": 14,
+              "cases_with_checks": 14,
+              "cases_format_failed": 0,
+              "cases_without_checks": 0,
+              "cases_skipped_for_reserve": 0,
+              "rows_with_reports": 14,
+              "summary_present": true
+            }
+          },
+          "edits": {
+            "proposal_hash": "e3d317350c48152ba9bfbf30f3c112150304124b82d48eae588333b5993db627",
+            "status": "candidate_ready",
+            "candidate_hash": "f9530acc867f455cd435d3c74941cde393909cc075818a12583c858248f77b10",
+            "edit_count": 4,
+            "native_fallbacks": []
+          },
+          "challenge": {
+            "draw_hash": "d6427253e34cb2090355676cd57c0943983f767534f8d50411409f3e21ea7a6b",
+            "outcome_hash": "1d91ea96db0ae520c74e19e823d19932df75ec8edc7c2276f47b4b07b73c23f0",
+            "status": "completed",
+            "summary": {
+              "fresh": {
+                "positions": 96,
+                "wins": 11,
+                "losses": 9,
+                "ties": 73,
+                "candidate_unknown": 0,
+                "current_unknown": 3,
+                "both_unknown": 0,
+                "jointly_known": 93,
+                "net_wins": 2,
+                "families": 20,
+                "families_improving": 4,
+                "families_regressing": 5,
+                "families_tied": 11,
+                "families_non_tied": 9,
+                "family_p_value": 0.74609375,
+                "family_harm_p_value": 0.5,
+                "strata": {
+                  "seen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  },
+                  "unseen_family": {
+                    "positions": 96,
+                    "wins": 11,
+                    "losses": 9
+                  }
+                },
+                "adverse": {
+                  "rule": "every position with an unknown side counted as a candidate loss",
+                  "unknown_positions": 3,
+                  "net_wins": -1,
+                  "families_improving": 4,
+                  "families_regressing": 8,
+                  "family_p_value": 0.927001953125
+                },
+                "regressions": 9,
+                "fixed": 11
+              },
+              "replay": {
+                "positions": 32,
+                "wins": 4,
+                "losses": 1,
+                "ties": 27,
+                "candidate_unknown": 0,
+                "current_unknown": 0,
+                "both_unknown": 0,
+                "jointly_known": 32,
+                "net_wins": 3,
+                "families": 21,
+                "families_improving": 3,
+                "families_regressing": 1,
+                "families_tied": 17,
+                "families_non_tied": 4,
+                "family_p_value": 0.3125,
+                "family_harm_p_value": 0.9375,
+                "strata": {
+                  "seen_family": {
+                    "positions": 32,
+                    "wins": 4,
+                    "losses": 1
+                  },
+                  "unseen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  }
+                },
+                "adverse": {
+                  "rule": "every position with an unknown side counted as a candidate loss",
+                  "unknown_positions": 0,
+                  "net_wins": 3,
+                  "families_improving": 3,
+                  "families_regressing": 1,
+                  "family_p_value": 0.3125
+                },
+                "regressions": 1,
+                "fixed": 4
+              },
+              "local_fix": {
+                "positions": 8,
+                "wins": 1,
+                "losses": 1,
+                "ties": 6,
+                "candidate_unknown": 0,
+                "current_unknown": 0,
+                "both_unknown": 0,
+                "jointly_known": 8,
+                "net_wins": 0,
+                "families": 8,
+                "families_improving": 1,
+                "families_regressing": 1,
+                "families_tied": 6,
+                "families_non_tied": 2,
+                "family_p_value": 0.75,
+                "family_harm_p_value": 0.75,
+                "strata": {
+                  "seen_family": {
+                    "positions": 8,
+                    "wins": 1,
+                    "losses": 1
+                  },
+                  "unseen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  }
+                },
+                "adverse": {
+                  "rule": "every position with an unknown side counted as a candidate loss",
+                  "unknown_positions": 0,
+                  "net_wins": 0,
+                  "families_improving": 1,
+                  "families_regressing": 1,
+                  "family_p_value": 0.75
+                },
+                "regressions": 1,
+                "fixed": 1
+              }
+            },
+            "reason": null
+          },
+          "decision": {
+            "record_hash": "f3b1f63352e625c3e4b46ab066a06a31fb7e1514ddf3899d8394c74ef2da8229",
+            "action": "park",
+            "reason": "fresh_gain_not_significant",
+            "rule_version": "active-evidence-decision-v2",
+            "limits": {
+              "min_paired_known": 87,
+              "alpha": 0.05
+            },
+            "flags": {
+              "replay_harm": false,
+              "fresh_admissible": true,
+              "fresh_harm": false,
+              "fresh_gain": false,
+              "aggregate_guard": true,
+              "adverse_completion": false
+            },
+            "fresh": {
+              "positions": 96,
+              "jointly_known": 93,
+              "net_wins": 2,
+              "families": 20,
+              "families_improving": 4,
+              "families_regressing": 5,
+              "families_tied": 11,
+              "families_non_tied": 9,
+              "family_p_value": 0.74609375,
+              "family_harm_p_value": 0.5
+            },
+            "replay": {
+              "positions": 32,
+              "jointly_known": 32,
+              "net_wins": 3,
+              "families": 21,
+              "families_improving": 3,
+              "families_regressing": 1,
+              "families_tied": 17,
+              "families_non_tied": 4,
+              "family_p_value": 0.3125,
+              "family_harm_p_value": 0.9375
+            },
+            "fresh_adverse": {
+              "unknown_positions": 3,
+              "net_wins": -1,
+              "families_improving": 4,
+              "families_regressing": 8,
+              "family_p_value": 0.927001953125
+            }
+          },
+          "intervened": {
+            "research_consulted": false,
+            "label_feedback": false,
+            "research_new_information": false,
+            "feedback_differs_from_scalar": true,
+            "skill_changed": true,
+            "challenge_delta": true,
+            "decision": "park"
+          }
+        }
+      ],
+      "note": "learning-process data (dynamic tasks and replay); never a final evaluation",
+      "stage_basename": "fivebench-g-20261010-korbench-active-m1"
+    }
+  ],
+  "note": "learning-process data; counts and hashes only; never a final evaluation",
+  "record_hash": "eb8dfd8ea9d85e236bb414a480098be83b62f5f2b818ca646e5c33cfdae8ee66"
+}

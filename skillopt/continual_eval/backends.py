@@ -29,7 +29,10 @@ from skillopt.skill_validation.sandbox import _IMAGE, _bounded_command, _strict_
 
 VERSION = "continual-eval-native-backends-v1"
 PROTOCOL = "continual-eval-native-v1"
-BENCHMARKS = {"searchqa", "korbench", "bigcodebench", "spreadsheetbench", "alfworld"}
+BENCHMARKS = {"searchqa", "korbench", "bigcodebench", "spreadsheetbench", "alfworld", "livemath", "officeqa"}
+# Extension benchmarks (2026-10-13): one call, the answer inside the last <answer> tag, scored on the host.
+ANSWER_TAG_BENCHMARKS = {"livemath", "officeqa"}
+LIVEMATH_CONTRACT = "\nChoose exactly one of the listed options and return only its letter inside <answer>...</answer>."
 MAX_RESPONSE = 262144
 MAX_WORKBOOK = 8 * 1024 * 1024
 ALFWORLD_TRACE_VERSION = "alfworld-public-transitions-v1"
@@ -37,10 +40,25 @@ ALFWORLD_TRACE_OBSERVATION_CHARS = 12000
 SHEET_PREVIEW_VERSION = "public-formula-preview-v1"
 SHEET_PREVIEW_FIELD_CHARS = 200
 CODE_EXTRACTION_VERSION = "explicit-python-fences-v1"
+# Opt-in prompt layout (coevo5 v3): the answer-format contract right after the opening line, before the Skill, so a
+# Skill whose last section concerns another task kind cannot appear to own it. An empty Skill's prompt is unchanged;
+# without the option every caller keeps the historical order (Skill, then contract). ALFWorld already states its
+# contract first.
+CONTRACT_FIRST_LAYOUT = "contract-first-v1"
+# coevo5 v3 after its format check (the owner, 2026-10-19): v1 with SpreadsheetBench's contract also stating the
+# deliverable -- a program that writes output.xlsx, not a formula on its own -- and the opening fence on its own line
+# (the code extraction reads line-delimited fences). Every other benchmark's prompt is v1's.
+CONTRACT_FIRST_LAYOUT_V2 = "contract-first-v2"
+CONTRACT_FIRST_LAYOUTS = (CONTRACT_FIRST_LAYOUT, CONTRACT_FIRST_LAYOUT_V2)
+SHEET_CONTRACT_V2 = ("\nReturn one complete Python program in a ```python code block whose opening fence starts its own "
+                     "line. The program reads input.xlsx and saves output.xlsx with the answer at the required answer "
+                     "position. A formula alone is not an answer: when the task asks for a formula, the program writes "
+                     "it into the answer cells.")
 _PUBLIC = {
     "searchqa": ("question", "context"), "korbench": ("rule", "question"),
     "bigcodebench": ("prompt", "entry_point"),
     "spreadsheetbench": ("instruction", "input_files", "answer_position"), "alfworld": ("game_file",),
+    "livemath": ("question", "choices"), "officeqa": ("question", "context"),
 }
 
 
@@ -217,8 +235,12 @@ def readiness(benchmark, runtime=None):
     if extraction is not None and (extraction != CODE_EXTRACTION_VERSION
                                    or benchmark not in {"bigcodebench", "spreadsheetbench"}):
         return {"status": "unsupported", "reason": "invalid_code_extraction_version"}
+    if not _layout_supported(benchmark, runtime):
+        return {"status": "unsupported", "reason": "invalid_prompt_layout"}
     if benchmark == "searchqa":
         return {"status": "ready", "reason": "repository_native_em_f1"}
+    if benchmark in ANSWER_TAG_BENCHMARKS:
+        return {"status": "ready", "reason": "repository_native_answer_tag_match"}
     if benchmark == "alfworld":
         missing = [name for name in ("alfworld", "gymnasium", "yaml", "numpy")
                    if importlib.util.find_spec(name) is None]
@@ -334,6 +356,11 @@ def _sheet_preview(path, *, version=None):
         wb.close()
 
 
+def _layout_supported(benchmark, runtime):
+    layout = runtime.get("prompt_layout")
+    return layout is None or (layout in CONTRACT_FIRST_LAYOUTS and benchmark != "alfworld")
+
+
 def solve(benchmark, public, skill_text, call, *, runtime=None):
     """Only public contract/observations enter `call(system, user)`. No grading."""
     runtime = runtime or {}
@@ -341,6 +368,8 @@ def solve(benchmark, public, skill_text, call, *, runtime=None):
     if extraction is not None and (extraction != CODE_EXTRACTION_VERSION
                                    or benchmark not in {"bigcodebench", "spreadsheetbench"}):
         return _prediction_unknown("invalid_code_extraction_version")
+    if not _layout_supported(benchmark, runtime):
+        return _prediction_unknown("invalid_prompt_layout")
     try:
         view = _public_view(benchmark, public)
     except (KeyError, ValueError, TypeError):
@@ -348,14 +377,21 @@ def solve(benchmark, public, skill_text, call, *, runtime=None):
     if benchmark == "alfworld":
         return _solve_alfworld(view, skill_text, call, runtime)
     system = "Solve the supplied task using only the supplied public information."
-    if skill_text.strip():
-        system += "\n\nFrozen skill guidance (use only where applicable):\n" + skill_text
-    if benchmark == "searchqa":
-        system += "\nReturn the concise final answer inside <answer>...</answer>."
+    guidance = ("\n\nFrozen skill guidance (use only where applicable):\n" + skill_text) if skill_text.strip() else ""
+    if benchmark in {"searchqa", "officeqa"}:
+        contract = "\nReturn the concise final answer inside <answer>...</answer>."
+    elif benchmark == "livemath":
+        contract = LIVEMATH_CONTRACT
     elif benchmark == "korbench":
-        system += "\nApply the given rules; enclose the final answer in [[...]]."
+        contract = "\nApply the given rules; enclose the final answer in [[...]]."
+    elif benchmark == "spreadsheetbench" and runtime.get("prompt_layout") == CONTRACT_FIRST_LAYOUT_V2:
+        contract = SHEET_CONTRACT_V2
     else:
-        system += "\nReturn one complete Python program in a ```python code block."
+        contract = "\nReturn one complete Python program in a ```python code block."
+    if runtime.get("prompt_layout") in CONTRACT_FIRST_LAYOUTS:
+        system += contract + guidance
+    else:  # the historical order
+        system += guidance + contract
     costs = {}
     try:
         if benchmark == "spreadsheetbench":
@@ -371,7 +407,19 @@ def solve(benchmark, public, skill_text, call, *, runtime=None):
                     "workbook_preview": _sheet_preview(files[0], version=preview_version),
                     "input_path": "input.xlsx", "required_output_path": "output.xlsx",
                     "required_answer_position": view["answer_position"]}
-        response, costs, reason = _response(call, system, json.dumps(view, ensure_ascii=False))
+        receipts = []
+        if benchmark in ANSWER_TAG_BENCHMARKS:
+            def recorded(system, user, inner=call):
+                receipts.append(inner(system, user))
+                return receipts[-1]
+        else:
+            recorded = call
+        response, costs, reason = _response(recorded, system, json.dumps(view, ensure_ascii=False))
+        if response is None and receipts and _completed_without_text(receipts[-1]):
+            # extension benchmarks: the provider completed a reply that carries no text -- a delivered answer in no
+            # valid form (scored wrong), not a missing one. Undelivered, truncated, filtered and oversized replies
+            # stay unknown as for every benchmark.
+            response, reason = "", "model_response_completed_without_text"
         if response is None:
             return _prediction_unknown(reason, costs=costs)
         delivery = {}
@@ -385,7 +433,7 @@ def solve(benchmark, public, skill_text, call, *, runtime=None):
             output = extracted["code"]
         else:
             # Historical profiles retain their exact extraction behavior.
-            output = response if benchmark in {"searchqa", "korbench"} else _code(response)
+            output = response if benchmark in {"searchqa", "korbench"} | ANSWER_TAG_BENCHMARKS else _code(response)
         if benchmark == "spreadsheetbench":
             cases = []
             for index, path in enumerate(public["input_files"]):
@@ -424,6 +472,48 @@ def _sheet_scorer(profile=None):
     return module
 
 
+def _completed_without_text(receipt):
+    """A reply the provider completed (finish reason ``stop``, a complete stream, HTTP 200) whose text is blank, is
+    within the response size bound, and whose usage the provider reported -- a delivered answer must be an
+    accounted one (the client marks a completed blank reply ``ok: false``, which the ledger's own
+    delivered-without-usage stop does not cover; without usage such a reply therefore stays unknown)."""
+    if (not isinstance(receipt, dict) or receipt.get("finish_reason") != "stop"
+            or receipt.get("stream_complete") is False or receipt.get("status", 200) != 200):
+        return False
+    response, usage = receipt.get("response"), receipt.get("usage")
+    if (not isinstance(response, str) or response.strip() or len(response.encode()) > MAX_RESPONSE
+            or type(usage) is not dict
+            or not all(type(usage.get(key)) is int and usage[key] >= 0 for key in ("prompt_tokens", "completion_tokens"))):
+        return False
+    return receipt.get("ok") is True or (receipt.get("ok") is False and receipt.get("error_type") == "empty_content")
+
+
+def _score_answer_tag(benchmark, output, answer):
+    """Strict host scoring of the extension benchmarks: only the text inside the LAST <answer> tag counts, and a
+    delivered reply without a usable tag is a wrong answer (``invalid_format``), never an unknown.
+
+    livemath: exactly one letter A-E (case, surrounding space and one trailing '.', ')' or ':' ignored) against the
+    correct option's letter. officeqa: the original environment's normalised exact match (no numeric tolerance)."""
+    if not isinstance(output, str) or not isinstance(answer, str) or not answer.strip():
+        return _unknown("invalid_answer_tag_score_input")
+    found = re.findall(r"<answer>(.*?)</answer>", output, re.DOTALL | re.IGNORECASE)
+    text = found[-1].strip() if found else ""
+    if benchmark == "livemath":
+        label = text.upper()
+        label = label[:-1].strip() if label[-1:] in {".", ")", ":"} else label
+        valid = len(label) == 1 and label in "ABCDE"
+        ok = valid and label == answer
+        reason = "livemath_strict_letter_in_last_answer_tag"
+    else:
+        from skillopt.envs.officeqa.evaluator import exact_match
+
+        valid = bool(text)
+        ok = valid and exact_match(text, answer) == 1.0
+        reason = "officeqa_native_normalized_em_on_last_answer_tag"
+    return {"status": "pass" if ok else "fail", "score": float(ok), "reason": reason,
+            "metrics": {"em": float(ok), "invalid_format": float(not valid)}}
+
+
 def score(benchmark, public, private, prediction, *, runtime=None):
     """Hidden audit only; never call the model or feed results into inference."""
     runtime = runtime or {}
@@ -439,6 +529,8 @@ def score(benchmark, public, private, prediction, *, runtime=None):
             result = evaluate(output, answers)
             return {"status": "pass" if result["em"] else "fail", "score": result["em"],
                     "reason": "repository_searchqa_native_em", "metrics": {k: result[k] for k in ("em", "f1", "sub_em")}}
+        if benchmark in ANSWER_TAG_BENCHMARKS:
+            return _score_answer_tag(benchmark, output, private.get("answer"))
         if benchmark == "korbench":
             required = ("answer", "category", "rule_id", "upstream_index")
             if any(not isinstance(private.get(k), str) for k in required):

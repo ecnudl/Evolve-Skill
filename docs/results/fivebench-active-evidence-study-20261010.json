@@ -1,0 +1,728 @@
+{
+  "version": "active-evidence-stage-export-v1",
+  "stages": [
+    {
+      "method": "active_evidence",
+      "arms": {
+        "feedback": "hidden_failure",
+        "post_update": "matched_scalar_branch"
+      },
+      "benchmark": "bigcodebench",
+      "parent": "none",
+      "train_tasks": 128,
+      "challenge_tasks": 272,
+      "status": "completed",
+      "reason": "active_evidence_hidden_failure_matched_scalar_branch_frozen_decision",
+      "action": "completed_no_update",
+      "decisions": [
+        "keep"
+      ],
+      "skill_bytes": 0,
+      "costs": {
+        "logical_calls": 657,
+        "solver_calls": 612,
+        "verifier_calls": 0,
+        "reflection_calls": 45,
+        "reported_tokens_known_subtotal": 1598108,
+        "missing_usage_calls": 0,
+        "unclosed_calls": 0
+      },
+      "tests": [],
+      "test": null,
+      "steps": [
+        {
+          "matched": {
+            "study": "matched-scalar-branch-study-v1",
+            "comparator": {
+              "proposal_hash": "9f8ac310e50906444a73f0cc0beea303689c62317f52a128c55d9aa26df261d7",
+              "status": "candidate_ready",
+              "skill_hash": "8ce6910b3e609809cf6b2a24e4ca8ce71e84bcfbfb23b3b26b7bdeb1ccab4eb6",
+              "request_candidate_hash": "3c82feacc24665caf503549c66b6a3cd067b9307f612359b236b7f586ce85e5e",
+              "skill_bytes": 6267,
+              "edit_count": 4,
+              "native_fallbacks": [],
+              "is_parent": false
+            },
+            "treatment": {
+              "proposal_hash": "c8414fe2475596ca5c06f716ae5229221ad3bc00d7b0ab3a225ced76b8226c8d",
+              "status": "candidate_ready",
+              "skill_hash": "7e3236070a506094a87b218e5a603924805459fe97e7caaba1470c3fa60a57c6",
+              "request_candidate_hash": "b3982fb8ca07314e588259183d196f87b01c27200d645b25830a7e9fc4c98663",
+              "skill_bytes": 13750,
+              "edit_count": 2,
+              "native_fallbacks": []
+            },
+            "candidates_identical": false,
+            "diff_lines": 107,
+            "delivery": {
+              "status": "completed",
+              "release_profile": "development-failure-messages-v1",
+              "denominators": {
+                "step_rows": 128,
+                "host_fail_rows": 67,
+                "rows_with_details": 67,
+                "rows_without_detail": 0,
+                "rows_released": 65,
+                "rows_withheld": 2,
+                "tests_total": 240,
+                "tests_omitted_by_cap": 45,
+                "tests_withheld": 8,
+                "tests_extracted": 187,
+                "tests_shown": 187,
+                "tests_cut_by_row_cap": 0,
+                "tests_truncated": 3,
+                "rows_truncated": 0,
+                "rows_with_partial_last_entry": 0
+              },
+              "message_classes": {
+                "value_diff": 73,
+                "not_raised": 10,
+                "bare_assertion": 10,
+                "typed_error": 82,
+                "other_assertion": 12
+              }
+            },
+            "holdout": {
+              "positions": 242,
+              "jointly_known": 242,
+              "wins": 20,
+              "losses": 17,
+              "ties": 205,
+              "candidate_unknown": 0,
+              "current_unknown": 0,
+              "both_unknown": 0,
+              "family_p_value": 0.3714146793645341
+            },
+            "holdout_note": "challenge 'fresh' set drawn from the REUSED development pool (earlier stages' fresh draws overlap it; the zero-call report records the overlap per prior stage) after both candidates were frozen; one task per family by construction -- family independence is an assumption of the sign test and the interval, semantic independence is not audited; family_p_value is the frozen one-sided sign test, not used for the outcome class",
+            "outcome": {
+              "outcome": "inconclusive",
+              "reason": "interval_includes_both",
+              "estimand": "paired pass difference (treatment minus comparator) on jointly known holdout positions",
+              "independence_assumption": "one task per family by construction; family independence is assumed by the sign test and the interval; semantic independence is not audited",
+              "positions": 242,
+              "jointly_known": 242,
+              "unknown_positions": 0,
+              "wins": 20,
+              "losses": 17,
+              "ties": 205,
+              "net_wins": 3,
+              "discordant": 37,
+              "sign_test_two_sided_p": 0.742829,
+              "difference": {
+                "estimate": 0.012397,
+                "ci95": [
+                  -0.03823,
+                  0.06361
+                ],
+                "interval": "tango-1998-score-interval-paired-difference"
+              },
+              "useful_gain": 0.05,
+              "worst_case_unknowns_as_treatment_losses": {
+                "estimate": 0.012397,
+                "ci95": [
+                  -0.03823,
+                  0.06361
+                ],
+                "interval": "tango-1998-score-interval-paired-difference"
+              }
+            }
+          },
+          "information_release": "final exception messages (with test names) of the failing hidden tests of FAILED development step rows, to the analysts of the message branch only",
+          "release": {
+            "release_profile": "development-failure-messages-v1",
+            "denominators": {
+              "step_rows": 128,
+              "host_fail_rows": 67,
+              "rows_with_details": 67,
+              "rows_without_detail": 0,
+              "rows_released": 65,
+              "rows_withheld": 2,
+              "tests_total": 240,
+              "tests_omitted_by_cap": 45,
+              "tests_withheld": 8,
+              "tests_extracted": 187,
+              "tests_shown": 187,
+              "tests_cut_by_row_cap": 0,
+              "tests_truncated": 3,
+              "rows_truncated": 0,
+              "rows_with_partial_last_entry": 0
+            },
+            "message_classes": {
+              "value_diff": 73,
+              "not_raised": 10,
+              "bare_assertion": 10,
+              "typed_error": 82,
+              "other_assertion": 12
+            },
+            "delivered": true
+          },
+          "study_audits": {
+            "released_rows": 65,
+            "released_test_names": 85,
+            "released_exception_classes": [
+              "AssertionError",
+              "AttributeError",
+              "FileNotFoundError",
+              "IndexError",
+              "KeyError",
+              "TypeError",
+              "ValueError"
+            ],
+            "released_literals": 180,
+            "label_echo": {
+              "literals_in_treatment_skill": 11,
+              "test_names_in_treatment_skill": 0
+            },
+            "attribution": {
+              "selected_edit_reasoning": {
+                "cites_test_names": 0,
+                "cites_exception_classes": [],
+                "cites_released_literals": 1,
+                "mentions_failure_messages": false
+              },
+              "minibatch_proposal_reasoning": {
+                "cites_test_names": 0,
+                "cites_exception_classes": [],
+                "cites_released_literals": 2,
+                "mentions_failure_messages": true
+              },
+              "reasoning_texts": {
+                "selected": true,
+                "minibatch_files": 17
+              },
+              "mechanism": "cited_in_selected_edits"
+            }
+          },
+          "step": 0,
+          "rollout": {
+            "kind": "fresh",
+            "rollout": 0,
+            "rows": 128,
+            "known": 128,
+            "unknown": 0,
+            "outputs_new": true,
+            "tasks_reused_across_steps": false
+          },
+          "problem": {
+            "host_fail": 67,
+            "host_pass": 61
+          },
+          "diagnosis": {
+            "status": "completed",
+            "cases": 0,
+            "hypotheses": [],
+            "grades": {},
+            "executed_checks": 0,
+            "observations": [],
+            "research": [],
+            "fact_needs": [],
+            "rows_with_evidence": 65,
+            "cases_skipped_for_reserve": []
+          },
+          "edits": {
+            "proposal_hash": "c8414fe2475596ca5c06f716ae5229221ad3bc00d7b0ab3a225ced76b8226c8d",
+            "status": "candidate_ready",
+            "candidate_hash": "7e3236070a506094a87b218e5a603924805459fe97e7caaba1470c3fa60a57c6",
+            "edit_count": 2,
+            "native_fallbacks": []
+          },
+          "challenge": {
+            "draw_hash": "b544cfde9afd913528b950c872f5baae5537993cebd49abd319872962567251c",
+            "outcome_hash": "075968f1ff89a7595a9c8462f285d4e96261b35d5b5a61a8985b5552861f8c70",
+            "status": "completed",
+            "summary": {
+              "fresh": {
+                "positions": 242,
+                "wins": 20,
+                "losses": 17,
+                "ties": 205,
+                "candidate_unknown": 0,
+                "current_unknown": 0,
+                "both_unknown": 0,
+                "jointly_known": 242,
+                "net_wins": 3,
+                "families": 242,
+                "families_improving": 20,
+                "families_regressing": 17,
+                "family_p_value": 0.3714146793645341,
+                "strata": {
+                  "seen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  },
+                  "unseen_family": {
+                    "positions": 242,
+                    "wins": 20,
+                    "losses": 17
+                  }
+                },
+                "regressions": 17,
+                "fixed": 20
+              },
+              "replay": {
+                "positions": 0,
+                "wins": 0,
+                "losses": 0,
+                "ties": 0,
+                "candidate_unknown": 0,
+                "current_unknown": 0,
+                "both_unknown": 0,
+                "jointly_known": 0,
+                "net_wins": 0,
+                "families": 0,
+                "families_improving": 0,
+                "families_regressing": 0,
+                "family_p_value": 1.0,
+                "strata": {
+                  "seen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  },
+                  "unseen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  }
+                },
+                "regressions": 0,
+                "fixed": 0
+              },
+              "local_fix": {
+                "positions": 0,
+                "wins": 0,
+                "losses": 0,
+                "ties": 0,
+                "candidate_unknown": 0,
+                "current_unknown": 0,
+                "both_unknown": 0,
+                "jointly_known": 0,
+                "net_wins": 0,
+                "families": 0,
+                "families_improving": 0,
+                "families_regressing": 0,
+                "family_p_value": 1.0,
+                "strata": {
+                  "seen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  },
+                  "unseen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  }
+                },
+                "regressions": 0,
+                "fixed": 0
+              }
+            },
+            "reason": null
+          },
+          "decision": {
+            "record_hash": "441183515716c478bd00f55c7a3b6e52c94829719c7848d983755a50a42d332c",
+            "action": "keep",
+            "reason": "net_wins_at_or_above_minimum_without_excess_regressions"
+          },
+          "intervened": {
+            "research_consulted": false,
+            "label_feedback": true,
+            "research_new_information": false,
+            "feedback_differs_from_scalar": true,
+            "skill_changed": true,
+            "challenge_delta": true,
+            "decision": "keep"
+          }
+        }
+      ],
+      "note": "learning-process data (dynamic tasks and replay); never a final evaluation",
+      "holdout_reuse": {
+        "holdout_positions": 242,
+        "overlap_by_prior_stage": {
+          "fivebench-g-20261009-bigcodebench-active-r": 23,
+          "fivebench-g-20261009-bigcodebench-active-s": 22,
+          "fivebench-g-20261009-bigcodebench-active-t": 22,
+          "fivebench-g-20261009-bigcodebench-active-v": 22
+        },
+        "holdout_tasks_used_by_any_prior_stage": 76,
+        "note": "reused development evaluation: these tasks were solved in earlier stages under other Skills; no analyst, diagnoser or Research call ever saw them"
+      },
+      "stage_basename": "fivebench-g-20261009-bigcodebench-active-x4"
+    },
+    {
+      "method": "active_evidence",
+      "arms": {
+        "feedback": "diagnosis_research",
+        "post_update": "matched_scalar_branch"
+      },
+      "benchmark": "bigcodebench",
+      "parent": "none",
+      "train_tasks": 128,
+      "challenge_tasks": 272,
+      "status": "completed",
+      "reason": "active_evidence_diagnosis_research_matched_scalar_branch_frozen_decision",
+      "action": "completed_no_update",
+      "decisions": [
+        "park"
+      ],
+      "skill_bytes": 0,
+      "costs": {
+        "logical_calls": 684,
+        "solver_calls": 612,
+        "verifier_calls": 29,
+        "reflection_calls": 43,
+        "reported_tokens_known_subtotal": 1115414,
+        "missing_usage_calls": 0,
+        "unclosed_calls": 0
+      },
+      "tests": [],
+      "test": null,
+      "steps": [
+        {
+          "matched": {
+            "study": "matched-scalar-branch-study-v1",
+            "comparator": {
+              "proposal_hash": "b57ce4a5f035820cbe39a441011fbb2e2669b08344788a0694f5a2088a9f2893",
+              "status": "candidate_ready",
+              "skill_hash": "a7b85e4fe63434e928ae150322e1c3bb708fee3948f5a5ac2eee6e99b1b24b5f",
+              "request_candidate_hash": "451d350a7eac7904e5a2196b70c4381fb06fe520d2972cfa9044b2aefad5a5b5",
+              "skill_bytes": 4334,
+              "edit_count": 4,
+              "native_fallbacks": [],
+              "is_parent": false
+            },
+            "treatment": {
+              "proposal_hash": "21890ed4e7519fbbc74eab74280681207b92a836b412594bf9857859e215a9d5",
+              "status": "candidate_ready",
+              "skill_hash": "8d00590119cdb0c9be23388e40047906cdf3890d5e5721b0d5a2a2a88b2e2be5",
+              "request_candidate_hash": "79c692f01f06217ccea0f655af1d69744b19f83c503b03d5735693db0c5f0ac4",
+              "skill_bytes": 6035,
+              "edit_count": 3,
+              "native_fallbacks": []
+            },
+            "candidates_identical": false,
+            "diff_lines": 52,
+            "delivery": {
+              "status": "completed",
+              "release_profile": null,
+              "denominators": null,
+              "message_classes": null
+            },
+            "holdout": {
+              "positions": 242,
+              "jointly_known": 241,
+              "wins": 15,
+              "losses": 14,
+              "ties": 212,
+              "candidate_unknown": 0,
+              "current_unknown": 0,
+              "both_unknown": 1,
+              "family_p_value": 0.5
+            },
+            "holdout_note": "challenge 'fresh' set drawn from the REUSED development pool (earlier stages' fresh draws overlap it; the zero-call report records the overlap per prior stage) after both candidates were frozen; one task per family by construction -- family independence is an assumption of the sign test and the interval, semantic independence is not audited; family_p_value is the frozen one-sided sign test, not used for the outcome class",
+            "outcome": {
+              "outcome": "inconclusive",
+              "reason": "interval_includes_both",
+              "estimand": "paired pass difference (treatment minus comparator) on jointly known holdout positions",
+              "independence_assumption": "one task per family by construction; family independence is assumed by the sign test and the interval; semantic independence is not audited",
+              "positions": 242,
+              "jointly_known": 241,
+              "unknown_positions": 1,
+              "wins": 15,
+              "losses": 14,
+              "ties": 212,
+              "net_wins": 1,
+              "discordant": 29,
+              "sign_test_two_sided_p": 1.0,
+              "difference": {
+                "estimate": 0.004149,
+                "ci95": [
+                  -0.041576,
+                  0.050165
+                ],
+                "interval": "tango-1998-score-interval-paired-difference"
+              },
+              "useful_gain": 0.05,
+              "worst_case_unknowns_as_treatment_losses": {
+                "estimate": 0.0,
+                "ci95": [
+                  -0.046379,
+                  0.046379
+                ],
+                "interval": "tango-1998-score-interval-paired-difference"
+              }
+            }
+          },
+          "information_release": null,
+          "release": null,
+          "study_audits": null,
+          "step": 0,
+          "rollout": {
+            "kind": "fresh",
+            "rollout": 0,
+            "rows": 128,
+            "known": 128,
+            "unknown": 0,
+            "outputs_new": true,
+            "tasks_reused_across_steps": false
+          },
+          "problem": {
+            "host_fail": 61,
+            "host_pass": 67
+          },
+          "diagnosis": {
+            "status": "completed",
+            "cases": 16,
+            "hypotheses": [
+              {
+                "id": "h1",
+                "kind": "environment",
+                "needs_fact": true
+              },
+              {
+                "id": "h2",
+                "kind": "task_error_candidate",
+                "needs_fact": true
+              },
+              {
+                "id": "h3",
+                "kind": "task_error_candidate",
+                "needs_fact": true
+              },
+              {
+                "id": "h4",
+                "kind": "unexplained",
+                "needs_fact": true
+              }
+            ],
+            "grades": {
+              "confirmed_preserved": 6,
+              "format_or_env_error": 1,
+              "pending_explanation": 1
+            },
+            "executed_checks": 7,
+            "observations": [
+              {
+                "hypothesis_id": "h1",
+                "verdict": "undecided",
+                "checks": 1
+              },
+              {
+                "hypothesis_id": "h2",
+                "verdict": "undecided",
+                "checks": 3
+              },
+              {
+                "hypothesis_id": "h3",
+                "verdict": "undecided",
+                "checks": 1
+              },
+              {
+                "hypothesis_id": "h4",
+                "verdict": "not_observed",
+                "checks": 3
+              }
+            ],
+            "research": [
+              {
+                "evidence_hash": "1291bdcf1722ce0dd46b0b73423902b45bf393517151340ec7188a69b1fc44a2",
+                "status": "resolved",
+                "documented": [
+                  0
+                ],
+                "new_information": true
+              }
+            ],
+            "fact_needs": [
+              {
+                "hypothesis_id": "h1",
+                "status": "not_consulted:review_raised_no_fact_question",
+                "checks": 1,
+                "reviewed_checks": 1,
+                "consulted_checks": [],
+                "research_statuses": [],
+                "resolved": false,
+                "research_hashes": [],
+                "binding": "structural (this hypothesis's own checks); the declared question is not matched semantically"
+              },
+              {
+                "hypothesis_id": "h2",
+                "status": "consulted:resolved",
+                "checks": 3,
+                "reviewed_checks": 3,
+                "consulted_checks": [
+                  "1291bdcf1722/0"
+                ],
+                "research_statuses": [
+                  "resolved"
+                ],
+                "resolved": true,
+                "research_hashes": [
+                  "ec07be30788796dace445691ef7b55ce96f61187c0f17f5f742a49151858e833"
+                ],
+                "binding": "structural (this hypothesis's own checks); the declared question is not matched semantically"
+              },
+              {
+                "hypothesis_id": "h3",
+                "status": "not_consulted:review_raised_no_fact_question",
+                "checks": 1,
+                "reviewed_checks": 1,
+                "consulted_checks": [],
+                "research_statuses": [],
+                "resolved": false,
+                "research_hashes": [],
+                "binding": "structural (this hypothesis's own checks); the declared question is not matched semantically"
+              },
+              {
+                "hypothesis_id": "h4",
+                "status": "not_consulted:review_raised_no_fact_question",
+                "checks": 3,
+                "reviewed_checks": 3,
+                "consulted_checks": [],
+                "research_statuses": [],
+                "resolved": false,
+                "research_hashes": [],
+                "binding": "structural (this hypothesis's own checks); the declared question is not matched semantically"
+              }
+            ],
+            "rows_with_evidence": 7,
+            "cases_skipped_for_reserve": []
+          },
+          "edits": {
+            "proposal_hash": "21890ed4e7519fbbc74eab74280681207b92a836b412594bf9857859e215a9d5",
+            "status": "candidate_ready",
+            "candidate_hash": "8d00590119cdb0c9be23388e40047906cdf3890d5e5721b0d5a2a2a88b2e2be5",
+            "edit_count": 3,
+            "native_fallbacks": []
+          },
+          "challenge": {
+            "draw_hash": "45f48aa31eb10bd6f1e1ad0862b3c9fa837936d51b3354be5ee57ef9fee66ae1",
+            "outcome_hash": "95e2f983119866dad68fe366060a7d557972e46d53442644a0f72d8e2301e06c",
+            "status": "completed",
+            "summary": {
+              "fresh": {
+                "positions": 242,
+                "wins": 15,
+                "losses": 14,
+                "ties": 212,
+                "candidate_unknown": 0,
+                "current_unknown": 0,
+                "both_unknown": 1,
+                "jointly_known": 241,
+                "net_wins": 1,
+                "families": 241,
+                "families_improving": 15,
+                "families_regressing": 14,
+                "family_p_value": 0.5,
+                "strata": {
+                  "seen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  },
+                  "unseen_family": {
+                    "positions": 242,
+                    "wins": 15,
+                    "losses": 14
+                  }
+                },
+                "regressions": 14,
+                "fixed": 15
+              },
+              "replay": {
+                "positions": 0,
+                "wins": 0,
+                "losses": 0,
+                "ties": 0,
+                "candidate_unknown": 0,
+                "current_unknown": 0,
+                "both_unknown": 0,
+                "jointly_known": 0,
+                "net_wins": 0,
+                "families": 0,
+                "families_improving": 0,
+                "families_regressing": 0,
+                "family_p_value": 1.0,
+                "strata": {
+                  "seen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  },
+                  "unseen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  }
+                },
+                "regressions": 0,
+                "fixed": 0
+              },
+              "local_fix": {
+                "positions": 0,
+                "wins": 0,
+                "losses": 0,
+                "ties": 0,
+                "candidate_unknown": 0,
+                "current_unknown": 0,
+                "both_unknown": 0,
+                "jointly_known": 0,
+                "net_wins": 0,
+                "families": 0,
+                "families_improving": 0,
+                "families_regressing": 0,
+                "family_p_value": 1.0,
+                "strata": {
+                  "seen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  },
+                  "unseen_family": {
+                    "positions": 0,
+                    "wins": 0,
+                    "losses": 0
+                  }
+                },
+                "regressions": 0,
+                "fixed": 0
+              }
+            },
+            "reason": null
+          },
+          "decision": {
+            "record_hash": "1bdf8be4bf0eaaa533d81c12815698ea8ed36e153c17e0220b61df295ab4cd67",
+            "action": "park",
+            "reason": "inconclusive_net_wins_below_minimum"
+          },
+          "intervened": {
+            "research_consulted": true,
+            "label_feedback": false,
+            "research_new_information": true,
+            "feedback_differs_from_scalar": true,
+            "skill_changed": true,
+            "challenge_delta": true,
+            "decision": "park"
+          }
+        }
+      ],
+      "note": "learning-process data (dynamic tasks and replay); never a final evaluation",
+      "holdout_reuse": {
+        "holdout_positions": 242,
+        "overlap_by_prior_stage": {
+          "fivebench-g-20261009-bigcodebench-active-r": 19,
+          "fivebench-g-20261009-bigcodebench-active-s": 19,
+          "fivebench-g-20261009-bigcodebench-active-t": 21,
+          "fivebench-g-20261009-bigcodebench-active-v": 18
+        },
+        "holdout_tasks_used_by_any_prior_stage": 68,
+        "note": "reused development evaluation: these tasks were solved in earlier stages under other Skills; no analyst, diagnoser or Research call ever saw them"
+      },
+      "stage_basename": "fivebench-g-20261009-bigcodebench-active-y2"
+    }
+  ],
+  "note": "learning-process data; counts and hashes only; never a final evaluation",
+  "record_hash": "71a2fa7c2dfa0d989c2241fa7e83b9bd3a112790210e7e0246073d63bb841358"
+}

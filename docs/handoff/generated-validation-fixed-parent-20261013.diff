@@ -1,0 +1,119 @@
+--- a/scripts/run_fivebench_g_stage.py	2026-10-13 06:20:01
++++ scripts/run_fivebench_g_stage.py	2026-10-13 06:25:12
+@@ -105,7 +105,8 @@
+     compatible predecessor, with its manifest/panel/result bindings re-verified.
+     """
+     if type(name) is str and name.startswith("f:"):
+-        # ``f:<text file>``: a FIXED operator-supplied text as the parent (learning v11 only), e.g. the hand-written
++        # ``f:<text file>``: a FIXED operator-supplied text as the parent (learning v11, and v9 / v10 stages whose
++        # selection set is generated -- see ``prepare``), e.g. the hand-written
+         # generic instruction of active-evidence-generic-control-design-20261011.md, so that a step measures what
+         # learning adds ON TOP of it. Bound by its hash: the file must stay unchanged for the life of the stage.
+         # Authorship and what the author had seen are disclosed in the design memo, not verifiable here.
+@@ -553,7 +554,13 @@
+     require(arms is None and not references and update_mode == "native" and train_families is None and not limits
+             and analyst_profile == "native",
+             "Arms and reference Skills belong to the active-evidence method")
+-    require(not (type(parent) is str and parent.startswith("f:")), "A fixed-text parent is a learning v11 option")
++    # a fixed-text parent outside learning v11: only for the SkillOpt / Rubric+Research learners with a GENERATED
++    # selection set (generated-validation-design-20261013.md, section 6: what the gated learner adds on top of an
++    # initial instruction); stages gated on the canonical validation partition keep their chain parents
++    require(not (type(parent) is str and parent.startswith("f:"))
++            or (generated_val is not None and method in {"skillopt", VERIFIER_METHOD}
++                and learning_version in {"v9", "v10"}),
++            "A fixed-text parent is a learning v11 option, or goes with a generated validation set (v9 / v10)")
+     version, policy, budget = _protocol(learning_version)
+ 
+     require(benchmark in API_ONLY, "This tool runs API-only domains; Sheet/ALF need the native learning environment")
+@@ -870,6 +877,10 @@
+ 
+ def test(output, test_eval, benchmark=None, replicate=None):
+     out, record, root, protocol, value, panel = _load(output)
++    # a v9 / v10 stage that started from a fixed text has no test cell: its parent was never measured on the test
++    # panel, so neither "the parent is already measured" (no update) nor a chain comparison holds for it
++    require(record.get("parent_action") != "fixed_text" or _method(record) == ACTIVE_EVIDENCE,
++            "A v9 / v10 stage with a fixed-text parent has no test cell; it is read with the panel evaluation tool")
+     learned = _recorded_outcome(out, record, value)
+     # The primary cell exists only for an accepted update (a stage without one deploys its parent,
+     # whose cells are already recorded). A replicate cell re-measures whatever a COMPLETED stage
+--- a/scripts/report_fivebench_g_stages.py	2026-10-13 06:26:54
++++ scripts/report_fivebench_g_stages.py	2026-10-13 06:25:12
+@@ -112,7 +112,8 @@
+                             f"{t['wins_vs_no_skill']}胜/{t['losses_vs_no_skill']}负）")
+             test = (test + "<br>" if test not in {"—", ""} else "") + "重复测量 " + "；".join(reps)
+         elif row.get("action") in {"completed_no_update", "pending_carry_parent"}:
+-            test = "父Skill已有记录"
++            # a fixed-text parent (generated-validation stages) was never measured on the test panel
++            test = "父Skill为固定文本，未在测试面板上测过" if str(row.get("parent", "")).startswith("f:") else "父Skill已有记录"
+         lines.append(f"| {row['method']} | {row['benchmark']} | {row['parent']} | {row['train_tasks']}/{row['selection_tasks']} "
+                      f"| {_steps(row)} | {outcome} | {test} |")
+     return "\n".join(lines)
+--- a/tests/test_continual_learning_generated_validation.py	2026-10-13 06:20:01
++++ tests/test_continual_learning_generated_validation.py	2026-10-13 06:25:12
+@@ -174,3 +174,66 @@
+                        fixture_evaluate=evaluate("candidate_wins"), fixture_probe_executor=executor())
+     assert result["status"] == "completed", result.get("reason")
+     assert result["candidate_skill"] != "" and result["steps"][0]["gate_action"] == "accept_confirmed"
++
++
++def test_fixed_text_parent_goes_with_generated_validation(tmp_path, monkeypatch):
++    """A fixed initial instruction as the parent of the frozen Rubric+Research learner, allowed only when the
++    selection set is generated (v9 / v10): the stage records the text by hash, the gate compares candidates with
++    that text, a stage without an accepted update carries it, and such a stage has no test cell."""
++    from skillopt.continual_learning.skillopt import run_stage
++    from tests.test_continual_learning_active_evidence import evaluate
++    from tests.test_continual_learning_verifier_v10 import executor
++
++    _study(tmp_path, monkeypatch)
++    text = "Answer with the bare entity only.\n"
++    (tmp_path / "b.md").write_text(text, encoding="utf-8")
++    parent = "f:" + str(tmp_path / "b.md")
++    gen.prepare(str(tmp_path / "study"), str(tmp_path / "split.json"), str(tmp_path / "g"), str(tmp_path), seed=3)
++    gen.run(str(tmp_path / "g"), fixture_api=Writer())
++    common = dict(benchmark="searchqa", parent=parent, method="rubric_research", learning_version="v10")
++    where = (str(tmp_path / "study"), str(tmp_path / "split.json"))
++    record = tool.prepare(*where, str(tmp_path / "stage"), str(tmp_path), val_source=None, seed=3,
++                          generated_val=str(tmp_path / "g"), **common)
++    assert record["parent"] == parent and record["parent_action"] == "fixed_text" and record["parent_stage_hash"] is None
++    assert record["parent_skill_sha256"] == hashlib.sha256(text.encode()).hexdigest()
++    value, panel = read_json(tmp_path / "stage/manifest.json", sealed=True), read_json(tmp_path / "stage/panel.json")
++    assert value["parent_skill"] == text and value["parent_verifier_policy"] is None
++    assert tool._load(str(tmp_path / "stage"))[1] == record
++    # refusals: the canonical validation partition (chain stages keep chain parents), learning v8, a test cell
++    with pytest.raises(ValueError, match="fixed-text parent"):
++        tool.prepare(*where, str(tmp_path / "r1"), str(tmp_path), val_source=str(tmp_path / "split.json"), seed=3, **common)
++    with pytest.raises(ValueError, match="fixed-text parent"):
++        tool.prepare(*where, str(tmp_path / "r2"), str(tmp_path), val_source=None, seed=3, benchmark="searchqa",
++                     parent=parent, method="skillopt", learning_version="v8", generated_val=str(tmp_path / "g"))
++    with pytest.raises(ValueError, match="no test cell"):
++        tool.test(str(tmp_path / "stage"), str(tmp_path / "unused"))
++
++    def spy(mode, seen):
++        base = evaluate(mode)
++
++        def execute(task, skill):
++            if task["task_id"].startswith("gen-"):
++                seen.add(skill)
++            return base(task, skill)
++        return execute
++
++    # the gate's parent on the generated tasks is the fixed text; a rejected candidate leaves that text in place
++    seen = set()
++    result = run_stage(value, panel, tmp_path / "stage/learning", fixture_api=API(),
++                       fixture_evaluate=spy("parent_wins", seen), fixture_probe_executor=executor())
++    assert result["status"] == "completed", result.get("reason")
++    assert text in seen and len(seen) > 1 and all(s.startswith(text) or s == text for s in seen)
++    assert result["candidate_skill"] == text and not any(step.get("accepted") for step in result["steps"])
++    # an accepted candidate is an edit of the fixed text and was compared with it
++    tool.prepare(*where, str(tmp_path / "stage2"), str(tmp_path), val_source=None, seed=3,
++                 generated_val=str(tmp_path / "g"), **common)
++    value2, panel2 = read_json(tmp_path / "stage2/manifest.json", sealed=True), read_json(tmp_path / "stage2/panel.json")
++    seen = set()
++    result = run_stage(value2, panel2, tmp_path / "stage2/learning", fixture_api=API(),
++                       fixture_evaluate=spy("candidate_wins", seen), fixture_probe_executor=executor())
++    assert result["status"] == "completed" and result["steps"][0]["gate_action"] == "accept_confirmed"
++    assert text in seen and result["candidate_skill"] != text and result["candidate_skill"].startswith(text)
++    # the file is bound for the life of the stage: a changed text is refused when the stage is loaded
++    (tmp_path / "b.md").write_text(text + "More.\n", encoding="utf-8")
++    with pytest.raises(ValueError, match="Parent changed"):
++        tool._load(str(tmp_path / "stage"))

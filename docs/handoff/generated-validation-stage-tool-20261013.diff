@@ -1,0 +1,134 @@
+--- a/scripts/run_fivebench_g_stage.py
++++ b/scripts/run_fivebench_g_stage.py
+@@ -312,7 +312,43 @@
+             and all(t["partition"] == "skill_confirmation" for t in panel["tasks"]),
+             f"{benchmark}: val panel differs from the split")
+     return panel
++
++
++
++def generated_val_panel(directory, protocol, split, benchmark, seed, dev_panel):
++    """The selection set of a validation-gated stage made of GENERATED tasks instead of the canonical validation
++    partition (docs/handoff/generated-validation-design-20261013.md): the published items of a COMPLETED generation
++    (scripts/generate_searchqa_tasks.py) that was made from exactly this stage's training tasks -- same study, split
++    and seed, the same training-task hashes. The tasks carry the selection label the frozen learner expects; no
++    canonical validation, test or reserve item is read. Returns (panel, provenance)."""
++    from scripts import generate_searchqa_tasks as generation
++    from skillopt.continual_eval import datasets
+ 
++    require(benchmark == "searchqa", "Generated validation tasks exist for SearchQA only so far")
++    path, record, result = generation.check(directory)
++    train, _ = train_tasks(dev_panel, split, benchmark, seed)
++    require(record["protocol_hash"] == protocol["record_hash"] and record["split_hash"] == split["record_hash"]
++            and record["benchmark"] == benchmark and record["seed"] == seed
++            and record["source_task_hashes"] == sorted(digest(t) for t in train),
++            "The generated tasks were not made from this stage's training tasks")
++    # One family per SOURCE training task: the questions written from the same snippets are siblings, and the
++    # frozen gate's sign test counts one sign per family (never one per sibling).
++    family_map = generation.family_map(directory)
++    panel = datasets.import_searchqa(read_json(path), partition="skill_confirmation",
++                                     revision=f"{record['version']}:{result['items_sha256'][:12]}",
++                                     family_map=family_map)
++    datasets.validate_panel(panel)
++    canonical = [e for part in split["splits"][benchmark].values() for e in part]
++    families = {t["family_id"] for t in panel["tasks"]}
++    require(len(panel["tasks"]) >= 1 and all(f.startswith("generated-") for f in families)
++            and not families & {e["family_id"] for e in canonical}
++            and not families & {t["family_id"] for t in dev_panel["tasks"]}
++            and not {str(t["task_id"]) for t in panel["tasks"]} & {str(e["task_id"]) for e in canonical},
++            "A generated task collides with a task or family of the canonical split")
++    return panel, {"generation": safe_path(directory).name, "generation_hash": record["record_hash"],
++                   "generation_result_hash": result["record_hash"], "items": result["items"],
++                   "items_sha256": result["items_sha256"], "source_tasks": record["source_tasks"],
++                   "families": len(families), "generator_version": record["version"]}
+ 
+ def train_tasks(dev_panel, split, benchmark, seed, spec=None):
+     """Outcome-blind train families from F's development panel (all inside canonical train). ``spec`` overrides the
+@@ -498,14 +534,15 @@
+ 
+ def prepare(study, split_path, output, repo, *, benchmark, parent, val_source, seed, method="skillopt",
+             gepa_source=None, learning_version="v8", arms=None, references=(), update_mode="native",
+-            train_families=None, limits=()):
++            train_families=None, limits=(), generated_val=None):
+     from skillopt.continual_learning.contracts import VERIFIER_METHOD, manifest
+     from skillopt.continual_learning.feedback import LABELED_PROFILE, VERIFIER_PROFILE
+     from skillopt.continual_learning.recovery import RETRY_POLICIES
+ 
+     if method == ACTIVE_EVIDENCE or learning_version == "v11":
+-        require(method == ACTIVE_EVIDENCE and learning_version == "v11" and gepa_source is None,
+-                "The active-evidence method is learning v11 and vice versa (no GEPA source)")
++        require(method == ACTIVE_EVIDENCE and learning_version == "v11" and gepa_source is None
++                and generated_val is None,
++                "The active-evidence method is learning v11 and vice versa (no GEPA source, no generated validation)")
+         return prepare_active_evidence(study, split_path, output, repo, benchmark=benchmark, parent=parent, seed=seed,
+                                        learning_version=learning_version,
+                                        arms=arms or {"feedback": "diagnosis_research", "post_update": "challenge_replay"},
+@@ -527,7 +564,11 @@
+         official_gepa(gepa_source)  # pinned commit, clean tree, installed package byte-identical
+     root, protocol = _study(study)
+     out = safe_path(output)
+-    _outside(out, root, protocol, [split_path, val_source])
++    require((val_source is None) != (generated_val is None),
++            "Give the canonical validation source or a generated validation set, not both")
++    require(generated_val is None or method in {"skillopt", VERIFIER_METHOD},
++            "Generated validation tasks serve the SkillOpt and Rubric+Research learners")
++    _outside(out, root, protocol, [split_path, val_source or generated_val])
+     require(not out.exists(), "Use a new directory")
+     split = read_json(split_path, sealed=True)
+     require(split["version"] == SPLIT_VERSION and split["f_study_usage"][benchmark]["protocol_hash"] == protocol["record_hash"],
+@@ -539,7 +580,11 @@
+     require(protocol["files"].get(str(safe_path(dev_path))) == _sha(dev_path),
+             "F's development panel is not the frozen input the study recorded")
+     dev_panel = read_json(dev_path)
+-    val = val_panel(split, benchmark, val_source)
++    generated = None
++    if generated_val is None:
++        val = val_panel(split, benchmark, val_source)
++    else:
++        val, generated = generated_val_panel(generated_val, protocol, split, benchmark, seed, dev_panel)
+     skill, parent_record = parent_skill(root, protocol, parent, split["record_hash"])
+     panel, train_families, selection_families = learning_panel(dev_panel, val, split, benchmark, seed)
+     model = deepcopy(protocol["model"])  # F's learning model: same service, 3600 s recovery ceiling
+@@ -568,12 +613,19 @@
+                    "train_spec": TRAIN[benchmark], "train_families": train_families,
+                    "train_tasks": sum(t["partition"] == "development" for t in panel["tasks"]),
+                    "selection_tasks": len(val["tasks"]), "selection_families": len(selection_families),
+-                   "selection_partition": "skill_confirmation", "val_source_sha256": _sha(val_source),
++                   "selection_partition": "skill_confirmation",
++                   "selection_source": ("canonical_validation_partition" if generated is None else
++                                        "generated_from_this_stage_training_tasks__no_canonical_validation_read"),
++                   **({} if generated is None else {"generated_val": generated}),
++                   "val_source_sha256": _sha(val_source) if generated is None else generated["items_sha256"],
+                    "dev_panel_sha256": protocol["files"][str(safe_path(dev_path))],
+                    "manifest_hash": value["record_hash"], "panel_sha256": _sha(out / "panel.json"),
+                    "native_lock": protocol["config"]["native_lock"], "budget": budget,
+                    "tool_sha256": _sha(Path(__file__)), "learning_sources": value["source_identity"],
+-                   "data_scope": "train_is_development_inside_canonical_train_selection_is_canonical_val_test_untouched",
++                   "data_scope": ("train_is_development_inside_canonical_train_selection_is_canonical_val_test_untouched"
++                                  if generated is None else
++                                  "train_is_development_inside_canonical_train_selection_is_generated_from_these_"
++                                  "training_tasks_canonical_val_and_test_untouched"),
+                    "deployment_authorized": False})
+     write_json(out / "stage.json", record)
+     return record
+@@ -981,6 +1033,10 @@
+     parser.add_argument("--test-benchmark", choices=API_ONLY + ("spreadsheetbench", "alfworld"),
+                         help="test cell domain (default: the stage's own domain)")
+     parser.add_argument("--val-source")
++    parser.add_argument("--generated-val",
++                        help="SkillOpt / Rubric+Research stages only, instead of --val-source: the directory of a "
++                             "completed scripts/generate_searchqa_tasks.py generation made from this stage's training "
++                             "tasks; its tasks become the selection set (no canonical validation data is read)")
+     parser.add_argument("--seed", type=int, default=20261006)
+     parser.add_argument("--test-eval")
+     parser.add_argument("--request")
+@@ -1019,7 +1075,8 @@
+                          parent=args.parent, val_source=args.val_source, seed=args.seed, method=args.method,
+                          gepa_source=args.gepa_source, learning_version=args.learning_version, arms=arms,
+                          references=tuple(args.reference), update_mode=args.arm_update,
+-                         train_families=args.train_families, limits=tuple(args.limit))
++                         train_families=args.train_families, limits=tuple(args.limit),
++                         generated_val=args.generated_val)
+     elif args.command == "learn":
+         result = learn(args.output)
+     elif args.command == "test":

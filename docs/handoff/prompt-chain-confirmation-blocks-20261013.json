@@ -1,0 +1,275 @@
+{
+ "source": "block B of the fresh SearchQA sample of 2026-10-12 (positions 251-1000; positions 1-250 are R01..R10)",
+ "blocks": [
+  {
+   "block": "block_s01",
+   "tasks": 25,
+   "block_b_positions": [
+    251,
+    275
+   ],
+   "sha256": "0c013c32562261609221adc3376dc31e6c65467ad18f2d3399510a009ed78ba7"
+  },
+  {
+   "block": "block_s02",
+   "tasks": 25,
+   "block_b_positions": [
+    276,
+    300
+   ],
+   "sha256": "d60805d2b584bb42c4d1ae3f8eb3f3d45c1ff8589ed00e7d4e3520505e242e1b"
+  },
+  {
+   "block": "block_s03",
+   "tasks": 25,
+   "block_b_positions": [
+    301,
+    325
+   ],
+   "sha256": "b9ef34d4dfae414e6af6bb5d4e56191765f555e192847a1733d0dcd5961bea74"
+  },
+  {
+   "block": "block_s04",
+   "tasks": 25,
+   "block_b_positions": [
+    326,
+    350
+   ],
+   "sha256": "c6730eccd30fb54c3fb85bffd627ecee5976988c6af50d6371c9c894510d6552"
+  },
+  {
+   "block": "block_s05",
+   "tasks": 25,
+   "block_b_positions": [
+    351,
+    375
+   ],
+   "sha256": "9ac49d4ddb0c2a5e1f78637b9b92c443fc6167ef6e640aa3ea121f68370cb148"
+  },
+  {
+   "block": "block_s06",
+   "tasks": 25,
+   "block_b_positions": [
+    376,
+    400
+   ],
+   "sha256": "bc182a87cd1c6c214c1eb9faf9712b896ceb418218704204e70e402159902d34"
+  },
+  {
+   "block": "block_s07",
+   "tasks": 25,
+   "block_b_positions": [
+    401,
+    425
+   ],
+   "sha256": "61993a3a03f35c01f60309eae876c8570a2ada534dac7ade9e6f5bf746c002d7"
+  },
+  {
+   "block": "block_s08",
+   "tasks": 25,
+   "block_b_positions": [
+    426,
+    450
+   ],
+   "sha256": "6b6949010196b7e69919fcfef5fdb981c0027a16ee35e160227c3a62c0ac5e7e"
+  },
+  {
+   "block": "block_s09",
+   "tasks": 25,
+   "block_b_positions": [
+    451,
+    475
+   ],
+   "sha256": "5357d37329db05b0636d4cce0a8d808a9e22d7911cb9c0dd5c94c2ea49be5747"
+  },
+  {
+   "block": "block_s10",
+   "tasks": 25,
+   "block_b_positions": [
+    476,
+    500
+   ],
+   "sha256": "c70da064467d4dfecac5a3a2ea6775fe96fc466e9b9fee20374522065d837b42"
+  },
+  {
+   "block": "block_s11",
+   "tasks": 25,
+   "block_b_positions": [
+    501,
+    525
+   ],
+   "sha256": "baae1f4897ca117563b737279a3957fed89aeb5bb262f303a1023d34ba551c1c"
+  },
+  {
+   "block": "block_s12",
+   "tasks": 25,
+   "block_b_positions": [
+    526,
+    550
+   ],
+   "sha256": "da8c36d767bbae6a2cc810f8461f9cbf4ae74be78d8336aea791381332adaf9f"
+  },
+  {
+   "block": "block_s13",
+   "tasks": 25,
+   "block_b_positions": [
+    551,
+    575
+   ],
+   "sha256": "e9f2da9dbe29ad4f952780dac19d802f4345d0333fe219c1d2f0cf5b5a3cb402"
+  },
+  {
+   "block": "block_s14",
+   "tasks": 25,
+   "block_b_positions": [
+    576,
+    600
+   ],
+   "sha256": "cf7fcfa256333249e368ac4384e553b515983466f5804a50bca5f9eba1aa6f8c"
+  },
+  {
+   "block": "block_s15",
+   "tasks": 25,
+   "block_b_positions": [
+    601,
+    625
+   ],
+   "sha256": "2132e8126de97a80f92b3e09743efc38bd36f30f8e717f840ca07071391b6d26"
+  },
+  {
+   "block": "block_s16",
+   "tasks": 25,
+   "block_b_positions": [
+    626,
+    650
+   ],
+   "sha256": "b47cee74a16e86993c09ac8a517a0bbdb52c196dd39146aaff9757e724c4a80f"
+  },
+  {
+   "block": "block_s17",
+   "tasks": 25,
+   "block_b_positions": [
+    651,
+    675
+   ],
+   "sha256": "d6062e25605ad6cc947e1773f2ad945f27e2140c17a4cf0de9c38f17dfceabc8"
+  },
+  {
+   "block": "block_s18",
+   "tasks": 25,
+   "block_b_positions": [
+    676,
+    700
+   ],
+   "sha256": "ecb69b605a8f7920b875f640aa74504901d585032860dadf56406c87fa0413ee"
+  },
+  {
+   "block": "block_s19",
+   "tasks": 25,
+   "block_b_positions": [
+    701,
+    725
+   ],
+   "sha256": "8d3cb8642e5144ba3ee9470ba2fa2eb5bd8b0c7a569101d9797a5f7174e2d1a3"
+  },
+  {
+   "block": "block_s20",
+   "tasks": 25,
+   "block_b_positions": [
+    726,
+    750
+   ],
+   "sha256": "3ae4cd051c24075f70d51244042f662819b2c4bdd69e66d0e80a379547298c22"
+  },
+  {
+   "block": "block_s21",
+   "tasks": 25,
+   "block_b_positions": [
+    751,
+    775
+   ],
+   "sha256": "eb248408a80064e723a4ae83fe72279ddec442bb57e438bde6961c189263765a"
+  },
+  {
+   "block": "block_s22",
+   "tasks": 25,
+   "block_b_positions": [
+    776,
+    800
+   ],
+   "sha256": "f1d323faa6fb5a9277b46c71f334a5be08dbd1c6be4f25be06631ef1dd574ed2"
+  },
+  {
+   "block": "block_s23",
+   "tasks": 25,
+   "block_b_positions": [
+    801,
+    825
+   ],
+   "sha256": "1533f3182c0493095932dc7c20c1f2b4434a739e81a678db59903059213c5335"
+  },
+  {
+   "block": "block_s24",
+   "tasks": 25,
+   "block_b_positions": [
+    826,
+    850
+   ],
+   "sha256": "e81124e0f304f65a94b9da4277708c05d01ea467862e2a223b655fb3736301b7"
+  },
+  {
+   "block": "block_s25",
+   "tasks": 25,
+   "block_b_positions": [
+    851,
+    875
+   ],
+   "sha256": "7cc6f823daf6c3fad020df3c849ae8607d6300019fc075ce46d642eee4bfa395"
+  },
+  {
+   "block": "block_s26",
+   "tasks": 25,
+   "block_b_positions": [
+    876,
+    900
+   ],
+   "sha256": "1b1d54ebb16260cddc7c0947158fdda7ddf743b050aa853ea8f9e967b2c3d8f5"
+  },
+  {
+   "block": "block_s27",
+   "tasks": 25,
+   "block_b_positions": [
+    901,
+    925
+   ],
+   "sha256": "4062ebb558a666db58044f084ea459797a71cc04cfb6970100add423e5fff36e"
+  },
+  {
+   "block": "block_s28",
+   "tasks": 25,
+   "block_b_positions": [
+    926,
+    950
+   ],
+   "sha256": "54be0654a70fa25226a2c8eab1359c160baab0b6d58ce28f37a1196e76fc56c0"
+  },
+  {
+   "block": "block_s29",
+   "tasks": 25,
+   "block_b_positions": [
+    951,
+    975
+   ],
+   "sha256": "46cbcf963996e4458b4a9aa3224763bec51811d7bdef86b5a1dc1e8b8eed7971"
+  },
+  {
+   "block": "block_s30",
+   "tasks": 25,
+   "block_b_positions": [
+    976,
+    1000
+   ],
+   "sha256": "f2dcce22a9a591f4c69b44338d41e35f5ea530bfb38223a9861b939d400313d9"
+  }
+ ]
+}

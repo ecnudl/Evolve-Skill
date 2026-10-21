@@ -1,5 +1,7 @@
 # Evolve-Skill
 
+> **新会话 / 接手请先读 [项目介绍与当前状态](docs/project-status.md)**（活文档：研究目标、已确立的结论、正在跑什么、等决定的事、开发机操作手册）。下面的段落是历史快照。
+
 **10/3 18:57：新 F（序列 v4 / 学习 v7）运行中**：SkillOpt 与官方 GEPA 依次在五域进化，Skill 接口提高到 32,000 字节，用于得到 No-Skill / SkillOpt / GEPA 的完整五域对比；尚无成绩，见[新 F 报告](docs/fivebench-f-skillopt-gepa-20261003.md)。
 
 无上下文的代码代理请先读 [AGENTS.md](AGENTS.md) 和[接手指南](docs/agent-start-here.md)，再核对两份主文档：[当前流程](docs/current-workflow.md)、[结果账本](docs/results-and-lessons.md)。本轮运行以[新 E：SkillOpt 五域补跑](docs/skillopt-generalization-e-20261003.md)及实际回执为准，不把历史快照当当前状态。
@@ -69,7 +71,7 @@ H 指冻结的独立宿主审计，本身仍有契约争议。不能将不同任
 
 新 D baseline 入口为[五阶段编排](scripts/continue_fivebench_baselines.py)、[显式 v2 配置](configs/continual_learning/fivebench_sequence_v2.pjlab.json)、[学习器](skillopt/continual_learning/skillopt.py)及[只读对比报告器](scripts/report_fivebench_generalization.py)。学习端恢复策略与原评测身份分开冻结；相同 Skill 的评测引用不算新增独立样本。已有运行不可通过重执行启动脚本覆盖，操作边界见本轮报告。
 
-新评测流可零API运行：`python -m skillopt.continual_eval smoke --output outputs/continual_eval/offline_demo`。这是5基准×6阶段的编排fixture，不是真实benchmark分数；[配置模板](configs/continual_eval/five_benchmarks.json)与[Linux原生运行环境](skillopt/continual_eval/runtime/README.md)供下一步采集基线使用。
+学习v11（主动证据驱动、无固定val关卡，10/9）的离线smoke：`python -m skillopt.active_evidence smoke --output outputs/active_evidence/offline_smoke`（全fixture，只证明控制流程；设计与边界见[学习v11说明](docs/learning-v11-active-evidence-20261009.md)）。新评测流可零API运行：`python -m skillopt.continual_eval smoke --output outputs/continual_eval/offline_demo`。这是5基准×6阶段的编排fixture，不是真实benchmark分数；[配置模板](configs/continual_eval/five_benchmarks.json)与[Linux原生运行环境](skillopt/continual_eval/runtime/README.md)供下一步采集基线使用。
 
 Research 双门主线集中于 [`skillopt/skill_validation/`](skillopt/skill_validation/)：`stage2.py`（验证器比较）、`closed_loop.py`（带准入的一轮流程）、`natural_study.py`（自然任务对照）；另有 `natural_verifier_replay.py`（真实固定产物诊断）、`probe_review.py`（盲审消融）、`public_examples.py`（公开示例覆盖诊断）。它与新 D 原生 baseline 分支分开，历史入口保留，不改写冻结协议。
 

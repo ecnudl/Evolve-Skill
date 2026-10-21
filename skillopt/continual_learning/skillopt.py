@@ -609,7 +609,9 @@ def _train_labels(benchmark, items, rows):
         if row["score"] is None or row["score"] != 0:
             continue
         private = item["task"]["private"]
-        if benchmark == "korbench":
+        if benchmark in {"korbench", "livemath", "officeqa"}:
+            # a one-letter livemath label (and most short OfficeQA values) lies below the leak check's minimum
+            # length: for them the check is inert by design, as for any short label
             values = [private["answer"]]
         elif benchmark == "searchqa":
             values = list(private["answers"])

@@ -1,5 +1,7 @@
 # 无上下文代码代理接手指南
 
+> **当前状态以 [项目介绍与当前状态](project-status.md) 为准**（2026-10-15 起维护的活文档）；本页其余内容是 10/4 以前的历史接手指南。
+
 **新测量仪器：KOR无标签适用性验证器（10/4，零调用，Codex四轮后ACCEPTABLE）**——见[验证器报告](kor-applicability-verifier-20261004.md)；Linux冻结源码`/root/kor-applicability-20261004-v4-source`，结果`/root/kor-applicability-20261004-v4-{e,f-s1}`（v1–v3目录为审查前版本，勿引用）；**v5加入9条cipher规则（Codex两轮后ACCEPTABLE）**：冻结源码`/root/kor-applicability-20261004-v5-source`，结果`/root/kor-applicability-20261004-v5-{e,f-s3}`（`-v5pre-*`为审查前试跑，勿引用）。cipher探针`/root/kor-probes-20261004-v5`（生成器v5，Codex两轮ACCEPTABLE）与v8备选试点目录`/root/kor-probe-pilot-20261004-h`（冻结源码`/root/kor-probe-pilot-20261004-v8-source`；启动需用户批准标记`user-approved-v8`）。
 
 **10/4夜间值守与待运行队列**：见[值守记录](overnight-status-20261004.md)——F进度与原因分析、两个已审查待付费的试点（BCB反馈内容、KOR探针阶段，均等F完成）、以及提案。

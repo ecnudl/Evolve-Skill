@@ -104,6 +104,24 @@ DEFAULT_POLICIES = {
         "check_generation": "Check at most two obligations: format compliance and one rule step whose application is visible in the response.",
         "uncertainty": "A verifier without the reference answer judges procedure and format; a correct-looking procedure can still end wrong.",
     },
+    "livemath": {
+        "mechanism": "Decide between the listed options by testing each against the question's exact hypotheses and conclusion, and answer with one letter.",
+        "obligation": "requested_behavior",
+        "applicability": "Only what the question and the listed options state.",
+        "exceptions": "Abstain when the response's reasoning cannot be compared with the question text.",
+        "evidence_required": "The response's visible reasoning and final letter, compared with the question and the options.",
+        "check_generation": "Check at most two obligations: answer form (exactly one listed letter in the answer tag) and whether the visible reasoning contradicts a hypothesis or the option it selects.",
+        "uncertainty": "A verifier without the reference answer judges form and visible reasoning; a plausible derivation can still select a wrong option.",
+    },
+    "officeqa": {
+        "mechanism": "Answer exactly the quantity the question asks for, in the form the question implies.",
+        "obligation": "requested_behavior",
+        "applicability": "Only obligations stated or clearly implied by the question.",
+        "exceptions": "Abstain when the question is ambiguous or does not determine the check.",
+        "evidence_required": "The response text itself, compared with the question's explicit demands.",
+        "check_generation": "Check at most two obligations: answer form (one final value with the requested unit, scale and rounding, no commentary) and question scope (the asked series, period and operation).",
+        "uncertainty": "A verifier without the reference answer, quoting the question only, can judge form and scope -- not whether the right values were read from the pages or the arithmetic is right.",
+    },
 }
 HOST_AUDIT = {"information_origin": "host_development_audit", "research_independent_discovery": False}
 # Executed outcomes: an assertion failure is a contract violation hypothesis and decides calibration; a
@@ -469,8 +487,10 @@ def parse_reviews(value, count):
 def task_text(benchmark, public):
     if benchmark == "bigcodebench":
         return public["prompt"]
-    if benchmark == "searchqa":
+    if benchmark in {"searchqa", "officeqa"}:
         return public["question"]
+    if benchmark == "livemath":
+        return public["question"] + "\n\n" + public["choices"]
     if benchmark == "korbench":
         return public["rule"] + "\n\n" + public["question"]
     raise ValueError("Unsupported verifier domain")
@@ -493,6 +513,14 @@ def _public_view(benchmark, public, *, full=False):
             context = "\n".join(context)
         return {"domain": "open_domain_question_answering", "question": _clip(public["question"], limit),
                 "context": _clip(context, 4000)}
+    if benchmark == "officeqa":
+        # as for SearchQA: obligations are quoted from the question only; the pages are shown clipped, for
+        # orientation, and are not a quotation corpus
+        return {"domain": "document_question_answering", "question": _clip(public["question"], limit),
+                "context": _clip(public["context"], 4000)}
+    if benchmark == "livemath":
+        return {"domain": "multiple_choice_mathematics", "question": _clip(public["question"], limit),
+                "choices": _clip(public["choices"], limit)}
     return {"domain": "rule_following", "rule": _clip(public["rule"], limit), "question": _clip(public["question"], limit)}
 
 

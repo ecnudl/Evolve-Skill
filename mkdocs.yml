@@ -16,6 +16,7 @@ exclude_docs: |
   !/review_guidelines.md
   /results/
   /superpowers/
+  /handoff/
   *.local.*
 
 theme:
