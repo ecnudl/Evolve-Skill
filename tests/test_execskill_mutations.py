@@ -19,7 +19,7 @@ label, ALFWorld pool and the S0 equivalence verdict (88-93), registry ownership 
 the memory lock of mixed-bench units, the completion commit, the band probe's minimum and the finding counter (94-101),
 SearchQA's kept tail and its exclusion, LiveMath's options-only J7 probe and ALFWorld's fresh supply and views
 (102-107), and chain D's route B: balance exhaustion, no switch under a running process, one pause per switch
-(108-110). (21) is checked on its "after dispatch" half: donor trajectories changed after sealing are accepted
+(108-110); 111 for the smoke S0 of 2026-10-22 22:07: the supply row accepts the room-capped selection slice. (21) is checked on its "after dispatch" half: donor trajectories changed after sealing are accepted
 (``donors.verify``); its "from acceptance items" half has no single mutation site, because the donor builder never
 receives an acceptance item (``donors.donor_corpus`` takes the run-slice trajectories only), and T-PLACEBO-6 scans the
 sealed text for acceptance-item text. (27) is checked on both halves: a changed archive file accepted on open, and a
@@ -526,6 +526,12 @@ MUTATIONS = {
         PE + "routes.py", "        require(reason is not None or (kind == BALANCE_EXHAUSTED and not spent), ",
         "        require(True or (kind == BALANCE_EXHAUSTED and not spent), ",
         [T + "routes.py::test_switch_route_refuses_a_live_or_unexplained_switch_then_writes_once_and_prints_recover"]),
+    "111-s0-supply-row-demands-the-full-selection-slice": (
+        PE + "s0.py",
+        "    full = set(cut) == set(sizes) and all(len(cut[name]) <= size if name in supply.UPTO else len(cut[name]) == size\n",
+        "    full = len(wanted) == sum(sizes.values()) and all(len(cut[name]) <= size if name in supply.UPTO else "
+        "len(cut[name]) == size\n",
+        [T + "s0.py::test_s0_supply_row_accepts_the_room_capped_selection_slice"]),
 }
 
 

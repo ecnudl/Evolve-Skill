@@ -761,24 +761,35 @@ def _qualify_fixtures(tasks, target, runtime):
                            workers=3, evidence="engineering_fixture")
 
 
-def _supply(root, history_root, exclusion_check):
-    """§10 S0 supply row on the persisted supply files (``make-items``) and exclusion records (``exclude-tests``)."""
+def _alfworld_cut(history_root):
+    """The supply row's ALFWorld part: ``(passed, evidence)`` of the persisted supply (``make-items``), its registered
+    cut and the cut's pre-reset views. Every slice is cut in full except the selection slice, an upper bound
+    (``supply.UPTO``): its 20 rooms of at most ``MAX_GAMES_PER_ROOM`` games hold at most 100 of the registered 200, so
+    the 108-room cut is 12 + 60 + 150 + 100 = 322, never ``sum(PRERESET_GAMES)`` = 422 (smoke S0 10/22 22:07)."""
     folder = safe_path(history_root) / "supply"
     alfworld = protocol.verified(read_json(folder / "alfworld-xs.json"), supply.RECORD_KIND)
     views = protocol.verified(read_json(folder / "alfworld-xs-views.json"), "alfworld-views")
-    tail = protocol.verified(read_json(folder / "searchqa-tail.json"), supply.RECORD_KIND)
-    items = alfworld["items"]
-    cut = supply.slices("alfworld", supply.order("alfworld", items), supply.registered_sizes("alfworld"))
+    sizes = supply.registered_sizes("alfworld")
+    cut = supply.slices("alfworld", supply.order("alfworld", alfworld["items"]), sizes)
     wanted = {i["task_id"] for part in cut.values() for i in part}
     views_ok = (views["supply_sha256"] == alfworld[protocol.RECORD_HASH] and set(views["views"]) == wanted
                 and all(digest(v["view"]) == v["view_sha256"] for v in views["views"].values()))
+    full = set(cut) == set(sizes) and all(len(cut[name]) <= size if name in supply.UPTO else len(cut[name]) == size
+                                          for name, size in sizes.items())
+    return views_ok and full, {"counts": alfworld["counts"], "preset": len(views["views"]), "cut": len(wanted),
+                               "slices": {name: len(part) for name, part in sorted(cut.items())}}
+
+
+def _supply(root, history_root, exclusion_check):
+    """§10 S0 supply row on the persisted supply files (``make-items``) and exclusion records (``exclude-tests``)."""
+    passed, alfworld = _alfworld_cut(history_root)
+    tail = protocol.verified(read_json(safe_path(history_root) / "supply" / "searchqa-tail.json"), supply.RECORD_KIND)
     exclusion_check(root)
     kept = exclusion.apply_exclusion(tail["items"], root)
     tail_items = [i for i in tail["items"] if i["task_id"] in {k["task_id"] for k in kept["items"]}]
     accepted = supply.slices("searchqa", supply.order("searchqa", tail_items),
                              supply.registered_sizes("searchqa", "tail"), kept=kept)
-    passed = views_ok and len(wanted) == sum(supply.registered_sizes("alfworld").values())
-    return passed, {"alfworld": {"counts": alfworld["counts"], "preset": len(views["views"]), "cut": len(wanted)},
+    return passed, {"alfworld": alfworld,
                     "searchqa_tail": {"counts": tail["counts"], "kept": len(kept["items"]),
                                       "accept": len(accepted["accept"])}, "exclusion": "verified"}
 

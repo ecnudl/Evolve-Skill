@@ -256,16 +256,20 @@ def test_a_failing_row_is_recorded_and_no_limits_are_pinned_without_a_passing_me
 
 
 # ------------------------------------------------------------------------------------------- smoke item files (§10)
-def _alfworld_supply(tmp_path):
-    """A synthetic supply of 108 rooms x 3 games with its pre-reset views (the shape ``make-items`` writes)."""
+def _alfworld_supply(tmp_path, per_room=3, cut_views=False):
+    """A synthetic supply of 108 rooms x ``per_room`` games with its pre-reset views (the shape ``make-items``
+    writes): of every game, or (``cut_views``) of the registered cut only, as ``make-items`` makes them."""
     items = []
     for room in range(108):
-        for game in range(3):
+        for game in range(per_room):
             relative = "json_2.1.1/train/pick_and_place_simple-Obj%d-None-Shelf-%d/trial_T%03d_%d/game.tw-pddl" % (
                 game, 200 + room, room, game)
             items.append({"benchmark": "alfworld", "task_id": supply.xs_id(relative), "gamefile": relative,
                           "room": str(200 + room), "task_type": "pick_and_place_simple", "game_sha256": "0" * 64})
     value = supply.supply_record("alfworld-xs", "alfworld", items, sources={}, evidence="smoke")
+    if cut_views:
+        cut = supply.slices("alfworld", supply.order("alfworld", value["items"]), supply.registered_sizes("alfworld"))
+        items = [item for part in cut.values() for item in part]
     views = {}
     for item in items:
         view = alf_routing_view("You are in room %s.\n\nYour task is to: put a mug in shelf." % item["room"],
@@ -275,6 +279,29 @@ def _alfworld_supply(tmp_path):
     write_json(tmp_path / "supply" / "alfworld-xs-views.json", protocol.record("alfworld-views", "smoke", {
         "supply_sha256": value[protocol.RECORD_HASH], "views": views, "slices": {}}))
     return value
+
+
+def test_s0_supply_row_accepts_the_room_capped_selection_slice(tmp_path):
+    """Smoke S0 10/22 22:07: on a 108-room supply with more than 5 games per room the selection slice holds 20 rooms x
+    ``MAX_GAMES_PER_ROOM`` = 100 games of its registered upper bound 200 (``supply.UPTO``), so the cut is 322, not
+    ``sum(PRERESET_GAMES)`` = 422, and the row passes on it (before the fix it could never pass)."""
+    _alfworld_supply(tmp_path, per_room=6, cut_views=True)
+    passed, evidence = s0._alfworld_cut(tmp_path)
+    assert evidence["slices"] == {"accept": 150, "run": 60, "select": 100, "smoke": 12}
+    assert evidence["cut"] == evidence["preset"] == 322 < sum(protocol.PRERESET_GAMES.values())
+    assert passed is True
+
+
+def test_s0_supply_row_checks_views_and_short_slices(tmp_path):
+    """The row still fails on views of games outside the cut, and a supply too small for a full slice cannot be cut
+    (4 games per room pass: select 80; 3 games per room leave the run slice short)."""
+    _alfworld_supply(tmp_path / "all", per_room=6)  # views of every game, not only of the cut
+    assert s0._alfworld_cut(tmp_path / "all")[0] is False
+    _alfworld_supply(tmp_path / "four", per_room=4, cut_views=True)
+    passed, evidence = s0._alfworld_cut(tmp_path / "four")
+    assert passed is True and evidence["slices"] == {"accept": 150, "run": 60, "select": 80, "smoke": 12}
+    with pytest.raises(Exception, match="Too few items for the run slice"):
+        _alfworld_supply(tmp_path / "three", per_room=3, cut_views=True)
 
 
 def _searchqa_export(folder, count=600):

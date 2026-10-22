@@ -346,7 +346,8 @@ ALFWORLD_ID_HEX = 16
 ALFWORLD_UNUSED_GAMES = 3_514  # §3.1: train games outside the 57-game pool
 ROOM_GROUPS = {"smoke": 4, "run": 16, "accept": 40, "select": 20, "spare": 28}  # §3.1 (O6): 108 rooms, seeded order
 MAX_GAMES_PER_ROOM = 5  # per slice
-PRERESET_GAMES = {"smoke": 12, "run": 60, "accept": 150, "select": 200}  # §3.1 (O10): the cut slices only, 422
+PRERESET_GAMES = {"smoke": 12, "run": 60, "accept": 150, "select": 200}  # §3.1 (O10): the cut slices only; select is
+# an upper bound (supply.UPTO): 20 rooms x MAX_GAMES_PER_ROOM = 100, so the 108-room cut is 322 (smoke S0 10/22 22:07)
 # §3.3: (items, runs) of the run and acceptance slices, and the acceptance blocks. LiveMath and SearchQA run only in
 # the formal chain and are tentative there (fixed by the formal-chain addendum); SearchQA's acceptance slice comes
 # from the fresh tail.
@@ -686,7 +687,8 @@ MIN_PRODUCTION_RECEIPTS = 300  # Codex F19: registered body and registered M and
 
 # ---------------------------------------------------------------------------------------------- places (§1, §10)
 BUILD_TREE = "/data/execskill-dev"
-SNAPSHOT_ROOT = "/data/execskill-20261021-source"
+SNAPSHOT_ROOT = "/data/execskill-20261021-source-b"  # registrar 10/22 22:1x: snapshot b after the S0 supply-row fix;
+# snapshot a (/data/execskill-20261021-source) stays untouched as the failed S0 attempt's record
 OPS_ROOT = "/data/execskill-20261021-ops"
 PRE_ROOT = "/data/execskill-20261021-pre"
 SMOKE_ROOT = PRE_ROOT + "/smoke"  # §10: the smoke's run root, its own ledger

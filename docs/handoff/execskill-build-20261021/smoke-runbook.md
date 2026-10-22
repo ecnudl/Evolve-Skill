@@ -62,7 +62,7 @@ Resolved since C7b-1 first wrote this runbook:
 
 ```bash
 PY=/root/continual-alf-prep-20260928/env/bin/python                  # 3.11.16
-SRC=/data/execskill-20261021-source        # protocol.SNAPSHOT_ROOT: created in step 2, never edited afterwards
+SRC=/data/execskill-20261021-source-b      # protocol.SNAPSHOT_ROOT: created in step 2, never edited afterwards
 PRE=/data/execskill-20261021-pre           # protocol.PRE_ROOT
 IN=$PRE/inputs                             # OPS1's six input files (directory 700, files 600)
 SMOKE=$PRE/smoke                           # protocol.SMOKE_ROOT; shared/exclusion-consent.json: NEVER modify
@@ -70,7 +70,7 @@ HIST=/data/execskill-history               # protocol.HISTORY_ROOT (registry + s
 V3=/data/coevo5-20261019-v3-run-manifest.json                        # sha256 20d9ffcc5ad00a96bb1d90360c2ad43d157aaa72e774bb4109d12b9941e5ad5c
 V3SHEET=/data/coevo5-20261019-v3-sheet-train-f/sheet/qualification.json
 V3SHEET_HASH=acc5c07f76a088969181cf45e8224fae2d4d033aa49385713802cba5338827a1   # its RECORD hash, not the file sha256
-Q23=/data/execskill-20261021-sheet-q23     # step 2b: this snapshot's v7 engine qualification (a new directory)
+Q23=/data/execskill-20261021-sheet-q23-b   # step 2b: this snapshot's v7 engine qualification (a new directory)
 ELUCID=/root/.config/weak-solver/elucid.env          # chain D credentials: path only, never printed
 GREPO=/root/continual-noskill-bcb-20260928-a         # GLM role credentials repository: path only
 export ALFWORLD_DATA=/root/continual-alf-prep-20260928/data     # json_2.1.1/train holds 3,553 games
@@ -153,7 +153,7 @@ $CLI import-sheet-qualification --source $V3SHEET --sha256 $V3SHEET_HASH --out $
 #   train side, 120 items, 91 qualified
 $CLI make-items --bench alfworld --history-root $HIST --data-root $ALFWORLD_DATA \
      --pool-games $IN/alfworld-pool-games.json --runtime $IN/alfworld-runtime.json
-#   ~422 zero-call pre-resets, 7-21 min; writes $HIST/supply/alfworld-xs.json and alfworld-xs-views.json
+#   322 zero-call pre-resets (12 + 60 + 150 + select 100: 20 rooms x 5 games; select is an upper bound), 7-21 min; writes $HIST/supply/alfworld-xs.json and alfworld-xs-views.json
 #   (10/22 dry run, --dry-run: 3,514 games in 108 rooms, 81 s, no reset)
 $HFCLI make-items --bench searchqa --history-root $HIST --dry-run \
      --fresh-manifest $IN/searchqa-sample-manifest.json --dataset lucadiliello/searchqa \

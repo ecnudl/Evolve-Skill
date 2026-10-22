@@ -84,7 +84,7 @@ The steps each row blocks:
 
 ```bash
 PY=/root/continual-alf-prep-20260928/env/bin/python                  # 3.11.16
-SRC=/data/execskill-20261021-source        # protocol.SNAPSHOT_ROOT; never edited (a change terminates both chains)
+SRC=/data/execskill-20261021-source-b      # protocol.SNAPSHOT_ROOT; never edited (a change terminates both chains)
 PRE=/data/execskill-20261021-pre           # protocol.PRE_ROOT
 IN=$PRE/inputs                             # OPS1's input files
 SMOKE=$PRE/smoke                           # protocol.SMOKE_ROOT; shared/exclusion-consent.json: NEVER modify
@@ -92,7 +92,7 @@ HIST=/data/execskill-history               # protocol.HISTORY_ROOT: consumption/
 V3=/data/coevo5-20261019-v3-run-manifest.json
 V3SHEET=/data/coevo5-20261019-v3-sheet-train-f/sheet/qualification.json
 V3SHEET_HASH=acc5c07f76a088969181cf45e8224fae2d4d033aa49385713802cba5338827a1   # record hash, not the file sha256
-Q23=/data/execskill-20261021-sheet-q23     # this snapshot's v7 engine qualification (smoke-runbook §2b)
+Q23=/data/execskill-20261021-sheet-q23-b   # this snapshot's v7 engine qualification (smoke-runbook §2b)
 PILOT=/data/execskill-20261021-pilot       # protocol.PILOT_ROOT; make-manifest creates it
 PM=/data/execskill-20261021-pilot-manifest.json   # protocol.PILOT_MANIFEST; written once
 OPS=/data/execskill-20261021-ops           # protocol.OPS_ROOT: pins, launcher, run logs, readout (never inside $PILOT)
@@ -466,7 +466,7 @@ C=${1:?chain G or D}
 OPS=/data/execskill-20261021-ops
 export ALFWORLD_DATA=/root/continual-alf-prep-20260928/data PYTHONDONTWRITEBYTECODE=1
 unset OPENAI_API_KEY OPENAI_BASE_URL HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy
-cd /data/execskill-20261021-source || exit 2
+cd /data/execskill-20261021-source-b || exit 2
 n=1; while [ -e "$OPS/pilot-$C-run-$n.log" ]; do n=$((n+1)); done
 log="$OPS/pilot-$C-run-$n.log"
 echo "START $(date -u +%FT%TZ) chain $C" > "$log"

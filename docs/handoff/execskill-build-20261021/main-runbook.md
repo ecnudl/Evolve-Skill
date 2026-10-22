@@ -291,7 +291,7 @@ C=${1:?chain G or D}
 OPS=/data/execskill-20261021-ops
 export ALFWORLD_DATA=/root/continual-alf-prep-20260928/data PYTHONDONTWRITEBYTECODE=1
 unset OPENAI_API_KEY OPENAI_BASE_URL HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy
-cd /data/execskill-20261021-source || exit 2
+cd /data/execskill-20261021-source-b || exit 2
 n=1; while [ -e "$OPS/main-$C-run-$n.log" ]; do n=$((n+1)); done
 log="$OPS/main-$C-run-$n.log"
 echo "START $(date -u +%FT%TZ) chain $C" > "$log"
