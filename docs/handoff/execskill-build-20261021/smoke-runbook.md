@@ -18,14 +18,60 @@ before S0 and S1 have passed (S1 fixes branch E/N and `longest` in the smoke man
 17:3x; `main-runbook.md`). The smoke is of configuration `main` (section 5), and the SB → OQ pilot of
 `pilot-runbook.md` is not run.
 
+## Registrar addendum 2026-10-23 05:3x: research User-Agent; owner smoke waiver; re-smoke on snapshot d
+
+The chain-G smoke on snapshot c failed (smoke-result `passed: false`). S3 `generator_research` got HTTP 403 from
+Wikimedia on every search, because the User-Agent had no contact. S2 `format` failed on GLM-5.3's merits: ALFWorld's
+J4 admissible share, SearchQA C 35/40 and OfficeQA P 36/40. Snapshot d (`protocol.SNAPSHOT_ROOT` =
+`/data/execskill-20261021-source-d`; the next section now names d) changes two things:
+
+- `research.USER_AGENT` carries a contact URL. Nothing else in the research client changed.
+- The owner may waive the failed `S2.format` row and no other row (`protocol.WAIVABLE_SMOKE_ROWS`), in
+  `$SMOKE/shared/owner-smoke-waiver.json` (`protocol.SMOKE_WAIVER`). Only the owner writes that file. An agent never
+  creates, edits or moves it.
+
+Re-smoke:
+
+1. Archive the snapshot-c attempt with a sha256 check, as the snapshot-b attempt was archived. The owner's exclusion
+   consent, S0's exclusion records and the canaries stay in place. The c smoke's ledger goes into the archive, so the
+   d smoke starts on a fresh ledger.
+
+   ```bash
+   A=$PRE/archive/smoke-glm-c-20261023
+   cd $PRE && test ! -e $A && mkdir -p $A/smoke/shared && echo ready      # stop unless it prints ready
+   L="build-head.txt s0 s0-pins.json sheet-q23.log sheet-runtime.json smoke-pins.json source-sha256.txt
+      smoke/manifest.json smoke/s0 smoke/smoke.json smoke/smoke-result.json smoke/stages smoke/units smoke/shared/ledger"
+   find $L -type f -print0 | sort -z | xargs -0 sha256sum > $A.sha256      # every listed path must exist
+   for p in $L; do mv $p $A/$p; done
+   (cd $A && sha256sum -c --quiet $A.sha256) && echo archive-ok
+   find $SMOKE -type f | sort   # left: shared/exclusion-consent.json, shared/exclusion/*, shared/test-canaries.json
+   $CLI consent --root $SMOKE   # {"exclusion": "valid"}
+   ```
+
+2. Run the chain-G sequence of the next section on snapshot d: steps 2 and 2b, S0 (its pytest row runs the whole
+   suite), `smoke-make --solver-chain G`, the pins of section 5, S2 and S3, S-E6, then `smoke-summary`.
+3. If the smoke fails only on `S2.format` and S-E6 passed, the main agent shows the owner the rows and the result's
+   hash, `$PY -c "import json; print(json.load(open('$SMOKE/smoke-result.json'))['record_sha256'])"`. The owner
+   decides. To waive, the owner runs this one line, with `<SMOKE_RESULT_SHA256>` and `<NOTE>` filled in:
+
+   ```bash
+   python3 -c 'import json,sys; json.dump({"decision": "waive", "smoke_result": sys.argv[1], "rows": ["S2.format"], "note": sys.argv[2]}, open(sys.argv[3], "x"))' '<SMOKE_RESULT_SHA256>' '<NOTE>' /data/execskill-20261021-pre/smoke/shared/owner-smoke-waiver.json
+   ```
+
+4. `$CLI smoke-waiver --spec $SMOKE/smoke.json` (zero calls, writes nothing) prints `{"waiver": "absent"}`, or
+   `{"waiver": "valid", "rows": ["S2.format"], "sha256": ...}`. Otherwise it is refused with the reason: another
+   failing row, another hash, other keys, a missing stage, a failed S-E6, or a waiver beside a passed smoke. Then
+   there is no main run. `test-read-estimate` accepts a waived smoke and records the waiver's sha256 and rows.
+
 ## Chain-G smoke (registrar addendum 10/23 02:3x): this run
 
 Elucid's upstream rotation makes the elucid-only smoke unpassable, so this smoke runs GLM-5.3 as its solver (owner
 10/21 21:18: the smoke may use any model). Code: branch `research/exec-skill-glm-smoke` (`smoke.make(...,
-solver_chain="G")`); snapshot c, `protocol.SNAPSHOT_ROOT` = `/data/execskill-20261021-source-c`. Step 2 copies
-`/data/execskill-dev`, so fast-forward that checkout to the branch first. The sections below apply with these changes:
+solver_chain="G")`); snapshot d, `protocol.SNAPSHOT_ROOT` = `/data/execskill-20261021-source-d` (addendum 10/23 05:3x;
+snapshot c ran the first chain-G smoke). Step 2 copies `/data/execskill-dev`, so fast-forward that checkout to the
+branch first. The sections below apply with these changes:
 
-1. Section 1: `SRC=/data/execskill-20261021-source-c`, and a new `Q23=/data/execskill-20261021-sheet-q23-c` for step 2b.
+1. Section 1: `SRC=/data/execskill-20261021-source-d`, and a new `Q23=/data/execskill-20261021-sheet-q23-d` for step 2b.
 2. Section 3: `$CLI smoke-make --solver-chain G --items <SET=FILE ...> --selftest $PRE/s0/sandbox-selftest.json`, with
    no `--probe-root`, `--control-cells` or `--noise-anchor` (each is refused). The spec records `solver.chain: "G"`,
    glm-5.3 with M = B = 65,536 and a 2,400 s read timeout on every bench, echo `["glm-5.3"]`, `probe_root: null`,

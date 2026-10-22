@@ -22,7 +22,11 @@ SearchQA's kept tail and its exclusion, LiveMath's options-only J7 probe and ALF
 (108-110); 111 for the smoke S0 of 2026-10-22 22:07: the supply row accepts the room-capped selection slice;
 112-122 for the registrar addendum 2026-10-23 02:3x (the chain-G smoke): no S1, probe root or control cell in a
 chain-G spec, neither S1 probe nor S1 record on one, the S2 receipt criterion without S1-e, and the smoke endpoint,
-confirmation echo set, manifest solver block, mini-step model and real-mode credential of the spec's chain. (21) is
+confirmation echo set, manifest solver block, mini-step model and real-mode credential of the spec's chain;
+123-135 for the registrar addendum 2026-10-23 05:3x: the research User-Agent's contact and header, and the owner's
+smoke waiver (refused beside a passed smoke, for another result, without exactly the failing rows, outside the
+allowlist, without S-E6, with another key set, with a missing stage or a failing stage without a failing row), the
+estimate's check and record of it, and the CLI's check. (21) is
 checked on its "after dispatch" half: donor trajectories changed after sealing are accepted
 (``donors.verify``); its "from acceptance items" half has no single mutation site, because the donor builder never
 receives an acceptance item (``donors.donor_corpus`` takes the run-slice trajectories only), and T-PLACEBO-6 scans the
@@ -246,8 +250,8 @@ MUTATIONS = {
         "        proc = card * PROCEDURE_ARM_FACTOR[0] if assumed else",
         [T + "protocol.py::test_the_test_read_estimate_is_calc_t5s_high_row_at_the_high_anchors"]),
     "46-estimate-from-a-smoke-that-did-not-pass": (
-        PE + "chain.py", "result[\"spec\"] == spec[RECORD_HASH] and result[\"passed\"] is True and \"SE6\" in",
-        "result[\"spec\"] == spec[RECORD_HASH] and \"SE6\" in",
+        PE + "chain.py", "result[\"spec\"] == spec[RECORD_HASH] and (result[\"passed\"] is True or waived is not None)",
+        "result[\"spec\"] == spec[RECORD_HASH] and (True or waived is not None)",  # its site since addendum 10/23 05:3x
         [T + "cli.py::test_test_read_estimate_writes_the_sealed_estimate_of_a_passed_smoke_once"]),
     "47-test-read-estimate-file-rewritten": (
         "scripts/run_execskill.py",
@@ -581,6 +585,59 @@ MUTATIONS = {
         "scripts/run_execskill.py",
         "    smoke.require_s1(spec)  # registrar addendum 2026-10-23 02:3x: a chain-G smoke has no S1\n", "",
         [T + "glm_smoke.py::test_probe_and_the_s1_record_refuse_a_chain_g_spec"]),
+    # registrar addendum 2026-10-23 05:3x: the research User-Agent and the owner's smoke waiver
+    "123-research-agent-drops-its-contact": (
+        PE + "research.py", 'USER_AGENT = "execskill-research/1 (%s; %s)" % (VERSION, CONTACT)\n',
+        'USER_AGENT = "execskill-research/1 (%s)" % VERSION\n',
+        [T + "research.py::test_the_research_user_agent_carries_the_version_and_an_https_contact"]),
+    "124-wikipedia-client-sends-no-agent": (
+        PE + "research.py", '                                   headers={"User-Agent": USER_AGENT}, **options)\n',
+        "                                   **options)\n",
+        [T + "research.py::test_the_wikipedia_client_sends_exactly_the_research_user_agent"]),
+    "125-waiver-beside-a-passed-smoke-accepted": (
+        PE + "smoke.py",
+        '    require(result["passed"] is not True, "A passed smoke needs no waiver: %s beside a passed smoke-result '
+        'is refused"\n            % protocol.SMOKE_WAIVER)\n', "",
+        [T + "smoke_waiver.py::test_a_waiver_beside_a_passed_smoke_is_refused"]),
+    "126-waiver-takes-another-smoke-result": (
+        PE + "smoke.py",
+        '    require(value["smoke_result"] == result[protocol.RECORD_HASH], "The owner\'s smoke waiver names another "\n'
+        '            "smoke-result")\n', "",
+        [T + "smoke_waiver.py::test_the_waiver_must_name_this_smoke_result"]),
+    "127-waiver-rows-may-leave-a-failing-row-out": (
+        PE + "smoke.py", "    require(rows == failing, ", "    require(set(rows) <= set(failing), ",
+        [T + "smoke_waiver.py::test_the_waived_rows_are_exactly_the_failing_rows"]),
+    "128-waiver-takes-a-row-outside-the-allowlist": (
+        PE + "smoke.py", "    require(set(rows) <= protocol.WAIVABLE_SMOKE_ROWS, ", "    require(True, ",
+        [T + "smoke_waiver.py::test_only_the_allowlisted_rows_may_be_waived"]),
+    "129-waiver-skips-se6": (
+        PE + "smoke.py",
+        '    require("SE6" in required and stages.get("SE6") == "pass", "A waived smoke\'s S-E6 is required and '
+        'passed")\n', "",
+        [T + "smoke_waiver.py::test_a_waived_smoke_needs_its_se6_required_and_passed"]),
+    "130-waiver-takes-another-key-set": (
+        PE + "smoke.py", "    require(isinstance(value, dict) and set(value) == WAIVER_KEYS,",
+        "    require(isinstance(value, dict) and WAIVER_KEYS <= set(value),",
+        [T + "smoke_waiver.py::test_the_waiver_holds_exactly_its_four_keys_and_their_forms"]),
+    "131-waiver-takes-a-missing-stage": (
+        PE + "smoke.py",
+        '    require(all(stages.get(stage) in ("pass", "fail") for stage in required), "A waived smoke has no missing '
+        'stage")\n', "",
+        [T + "smoke_waiver.py::test_a_waiver_refuses_a_missing_stage_and_a_failing_stage_without_a_failing_row"]),
+    "132-waiver-takes-a-failing-stage-without-a-failing-row": (
+        PE + "smoke.py",
+        '    require(all(any(row.partition(".")[0] == stage for row in rows) for stage in required if stages[stage] '
+        '== "fail"),\n            "Every failing required stage of a waived smoke fails on a waived row")\n', "",
+        [T + "smoke_waiver.py::test_a_waiver_refuses_a_missing_stage_and_a_failing_stage_without_a_failing_row"]),
+    "133-estimate-skips-the-owner-waiver-check": (
+        PE + "chain.py", "    waived = smoke.waiver(root, result)  # registrar", "    waived = None  # registrar",
+        [T + "smoke_waiver.py::test_a_waiver_beside_a_passed_smoke_is_refused"]),
+    "134-estimate-drops-the-waiver": (
+        PE + "chain.py", '        "waiver": waived,  # registrar', '        "waiver": None,  # registrar',
+        [T + "smoke_waiver.py::test_a_valid_waiver_admits_the_estimate_and_is_recorded_in_it"]),
+    "135-cli-smoke-waiver-skips-the-check": (
+        "scripts/run_execskill.py", "    found = smoke.waiver(root, result)\n", "    found = None\n",
+        [T + "smoke_waiver.py::test_the_waiver_must_name_this_smoke_result"]),
 }
 
 

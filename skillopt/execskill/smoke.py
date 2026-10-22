@@ -79,6 +79,7 @@ from __future__ import annotations
 import contextlib
 import datetime
 import fnmatch
+import hashlib
 import json
 import math
 import re
@@ -526,6 +527,61 @@ def summary(spec):
     if all(found[stage] != "missing" for stage in required):  # a smoke still running is reported, not sealed
         write_json(root / RESULT, result)
     return result
+
+
+# ------------------------------------------------- the owner's smoke waiver (registrar addendum 2026-10-23 05:3x)
+WAIVER_KEYS = frozenset({"decision", "smoke_result", "rows", "note"})
+
+
+def _waiver_pairs(pairs):
+    require(len({key for key, _ in pairs}) == len(pairs), "The owner's smoke waiver repeats a key")
+    return dict(pairs)
+
+
+def waiver(root, result):
+    """Registrar addendum 2026-10-23 05:3x (zero calls, writes nothing): the owner's smoke waiver of ``result``, the
+    sealed ``smoke-result`` of the smoke at ``root``: ``<root>/shared/owner-smoke-waiver.json``
+    (``protocol.SMOKE_WAIVER``), which only the owner writes. None when the file is absent; else -- fail closed, any
+    violation raises -- {"sha256": the sha256 of the file's bytes, "rows": the waived rows}. The file holds exactly
+    ``decision`` ("waive"), ``smoke_result`` (``result``'s record hash), ``rows`` (a sorted, unique, non-empty list
+    of "STAGE.row" within ``protocol.WAIVABLE_SMOKE_ROWS`` and exactly the failing rows of the result's required
+    stages) and a non-empty ``note``; no required stage is missing, every failing required stage fails on waived
+    rows only, and S-E6 is required and passed. A waiver beside a passed result is refused (a passed smoke needs
+    none)."""
+    path = safe_path(root) / protocol.SMOKE_WAIVER
+    if not path.exists():
+        return None
+    result = protocol.verified(result, "smoke-result")
+    require(result["passed"] is not True, "A passed smoke needs no waiver: %s beside a passed smoke-result is refused"
+            % protocol.SMOKE_WAIVER)
+    raw = path.read_bytes()
+    value = json.loads(raw.decode("utf-8"), object_pairs_hook=_waiver_pairs)
+    require(isinstance(value, dict) and set(value) == WAIVER_KEYS,
+            "The owner's smoke waiver holds exactly decision, smoke_result, rows and note")
+    require(value["decision"] == "waive" and type(value["note"]) is str and value["note"].strip() != "",
+            "The owner's smoke waiver decides \"waive\" and gives a non-empty note")
+    require(value["smoke_result"] == result[protocol.RECORD_HASH], "The owner's smoke waiver names another "
+            "smoke-result")
+    rows = value["rows"]
+    require(isinstance(rows, list) and rows != [] and all(type(row) is str for row in rows)
+            and rows == sorted(set(rows)) and all(row.partition(".")[0] in STAGES and row.partition(".")[2]
+                                                  for row in rows),
+            "The waived rows are a sorted, unique, non-empty list of \"STAGE.row\"")
+    require(set(rows) <= protocol.WAIVABLE_SMOKE_ROWS, "Only %s may be waived (registrar addendum 2026-10-23 05:3x)"
+            % ", ".join(sorted(protocol.WAIVABLE_SMOKE_ROWS)))
+    required, stages = result["required"], result["stages"]
+    require("SE6" in required and stages.get("SE6") == "pass", "A waived smoke's S-E6 is required and passed")
+    require(all(stages.get(stage) in ("pass", "fail") for stage in required), "A waived smoke has no missing stage")
+    verdicts = {stage: result["rows"].get(stage, {}) for stage in required}
+    require(all(verdict in ("pass", "fail") for found in verdicts.values() for verdict in found.values()),
+            "Every row of a waived smoke passed or failed")
+    failing = sorted("%s.%s" % (stage, row) for stage, found in verdicts.items()
+                     for row, verdict in found.items() if verdict == "fail")
+    require(rows == failing, "The waived rows are exactly the failing rows of the required stages (%s)"
+            % ", ".join(failing))
+    require(all(any(row.partition(".")[0] == stage for row in rows) for stage in required if stages[stage] == "fail"),
+            "Every failing required stage of a waived smoke fails on a waived row")
+    return {"sha256": hashlib.sha256(raw).hexdigest(), "rows": list(rows)}
 
 
 # ------------------------------------------------------------------------------- S0: the sandbox self-test

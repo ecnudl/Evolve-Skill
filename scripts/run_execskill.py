@@ -56,8 +56,12 @@ Before the pilot (zero calls unless stated):
                                                     chain G's credential repository as --env-path and --roles-repo
   smoke-recovery --spec S --attempt A --decision TEXT   the S4 drill's owner-format recovery.json (operator only)
   smoke-summary --spec S                            smoke-result.json once every stage of the spec is recorded
+  smoke-waiver --spec S                             the owner's smoke waiver beside the sealed smoke-result (registrar
+                                                    addendum 2026-10-23 05:3x; zero calls, writes nothing): prints
+                                                    "absent", or "valid" with its rows and sha256; else refused
   test-read-estimate --smoke R --out F [--configuration C]
                                                     the S-E6-corrected test-read estimate of the passed smoke at R
+                                                    (or of one under the owner's valid smoke waiver, 10/23 05:3x)
                                                     (registrar addendum 14:10, row 8), a sealed record written once
                                                     to F: the run pins' data.test_read_estimate and its per-bench
                                                     terms, data.test_read_terms (ticket P2C-2), for the configuration
@@ -537,9 +541,26 @@ def smoke_summary(args):
     return 0 if result["passed"] else 3
 
 
+def smoke_waiver(args):
+    """Registrar addendum 2026-10-23 05:3x (zero calls, writes nothing): the owner's smoke waiver
+    (``protocol.SMOKE_WAIVER``, which only the owner writes) beside the sealed ``smoke-result.json`` of the smoke at
+    ``--spec``, checked by ``smoke.waiver``: prints {"waiver": "absent"} or {"waiver": "valid", "rows", "sha256"};
+    an invalid waiver, or one beside a passed result, is refused with the reason (nonzero exit)."""
+    spec = smoke.load(args.spec)
+    root = safe_path(spec["root"])
+    require((root / smoke.RESULT).exists(), "The smoke has no sealed smoke-result.json yet (smoke-summary seals it)")
+    result = protocol.verified(read_json(root / smoke.RESULT), "smoke-result")
+    require(result["spec"] == spec[protocol.RECORD_HASH], "The result of another smoke")
+    found = smoke.waiver(root, result)
+    _print({"waiver": "absent"} if found is None else {"waiver": "valid", "rows": found["rows"],
+                                                         "sha256": found["sha256"]})
+    return 0
+
+
 def read_estimate(args):
     """Registrar addendum 2026-10-22 14:10, row 8 (zero calls): the S-E6-corrected test-read estimate of the passed
-    smoke at ``--smoke`` (``chain.read_estimate_record``: inputs and value, sealed), written once to ``--out`` -- an
+    smoke at ``--smoke``, or of one under the owner's valid smoke waiver (registrar addendum 2026-10-23 05:3x; printed
+    as ``waiver``) (``chain.read_estimate_record``: inputs and value, sealed), written once to ``--out`` -- an
     existing file is refused, never overwritten -- for the pilot pins' ``data.test_read_estimate`` and, from its
     ``terms``, ``data.test_read_terms`` (registrar addendum 15:3x, ticket P2C-2; pilot-runbook §3.3), for the run
     configuration S-E6 projected; ``--configuration`` names the one expected (main-runbook: ``main``)."""
@@ -548,7 +569,7 @@ def read_estimate(args):
     value = chain.read_estimate_record(args.smoke, args.configuration)
     write_json(out, value)
     _print({"out": str(out), "test_read_estimate": value["test_read_estimate"], "configuration": value["pilot"],
-            "record_sha256": value[protocol.RECORD_HASH]})
+            "waiver": value["waiver"], "record_sha256": value[protocol.RECORD_HASH]})
 
 
 # ------------------------------------------------------------------------------------------ manifest and consent
@@ -831,6 +852,7 @@ def parser():
     command.add_argument("--stage", required=True, choices=MANUAL_STAGES)
     command.add_argument("--input", required=True)
     sub.add_parser("smoke-summary").add_argument("--spec", required=True)
+    sub.add_parser("smoke-waiver").add_argument("--spec", required=True)  # registrar addendum 2026-10-23 05:3x
     command = sub.add_parser("test-read-estimate")
     command.add_argument("--smoke", required=True)
     command.add_argument("--out", required=True)
@@ -879,7 +901,7 @@ HANDLERS = {"verify-snapshot": verify_snapshot, "zero-call-checks": zero_call_ch
             "smoke-items": smoke_items, "s0-collect": s0_collect, "smoke-run": smoke_run,
             "smoke-recovery": smoke.recovery_cli, "smoke-make": smoke_make, "probe": probe, "smoke": smoke_stage,
             "smoke-summary": smoke_summary, "test-read-estimate": read_estimate, "make-manifest": make_manifest,
-            "consent": consent,
+            "consent": consent, "smoke-waiver": smoke_waiver,
             "replay": replay_package, "recover": recover, "resume-ledger": resume_ledger, "switch-route": switch_route,
             "show-package": show_package, "monitor": monitor, **{name: _delegated for name in ENTRY},
             **runcli.HANDLERS}

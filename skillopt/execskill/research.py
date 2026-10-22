@@ -4,8 +4,9 @@
 A copy of the frozen v3 research machinery (``skillopt/coevo5/research.py``) under this protocol's version: the
 sources, the archive, the write-once store, the call ceilings, the verbatim check and the request loop are the frozen
 code with byte-identical API parameters (``search_params``/``page_params``, coevo5/research.py:135-143); only
-``USER_AGENT`` names the new version. Left out: v3's ``rewrite`` and its ``skill.Rule`` import (route B has no rule
-texts) and v3's forward ``material`` (replaced by the route-B request kinds below).
+``USER_AGENT`` names the new version (and, registrar addendum 2026-10-23 05:3x, a contact URL). Left out: v3's
+``rewrite`` and its ``skill.Rule`` import (route B has no rule texts) and v3's forward ``material`` (replaced by the
+route-B request kinds below).
 
 The sources are frozen (§7.2): the English Wikipedia API at fixed parameters -- the final title, the revision id and
 the redirects followed are kept; disambiguation pages and titles containing "Jeopardy" (SearchQA's source) are
@@ -71,7 +72,13 @@ from .protocol import (
 
 # §7.2: the frozen sources (recorded in the manifest).
 WIKIPEDIA_API = "https://en.wikipedia.org/w/api.php"
-USER_AGENT = "execskill-research/1 (%s)" % VERSION
+# registrar addendum 2026-10-23 05:3x: Wikimedia's User-Agent policy asks for contact information. From dl through
+# the PJLAB gateway the contact-free agent "execskill-research/1 (fivebench-execskill-v1)" got HTTP 403 ("Please
+# respect our robot policy", https://w.wiki/4wJS) on 9 of 9 requests -- the chain-G smoke's S3 generator_research
+# row failed on it -- and the same request with a contact URL got 200 on 7 of 7. Only the header changed: the
+# parameters, limits, retries and timeouts are as before.
+CONTACT = "https://github.com/ecnudl/Evolve-Skill"
+USER_AGENT = "execskill-research/1 (%s; %s)" % (VERSION, CONTACT)
 SEARCH_LIMIT = 5  # results of one Wikipedia query
 ARCHIVE_LIMIT = 5  # results of one archive query
 EXCLUDED_TITLE = "jeopardy"  # SearchQA's source: no page or result whose title contains it

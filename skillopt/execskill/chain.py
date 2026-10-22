@@ -334,7 +334,9 @@ def _failed_start(setting, root, code):
 def read_estimate_record(smoke_root, configuration=None):
     """Registrar addendum 2026-10-22 14:10, row 8 (§9.3; pilot-runbook §3.4; zero calls): the sealed record
     ``test-read-estimate`` of the S-E6-corrected test-read estimate (``protocol.estimate_test_read``) of the passed
-    smoke at ``smoke_root``: its result (``smoke-result.json``: passed, S-E6 required and passed) and S-E6's stage
+    smoke at ``smoke_root``: its result (``smoke-result.json``: passed -- or failed under the owner's valid smoke
+    waiver, ``smoke.waiver``, recorded as ``waiver``, registrar addendum 2026-10-23 05:3x --, S-E6 required and
+    passed) and S-E6's stage
     record (``stages/SE6.json``: passed, ``result.per_cell`` and ``result.ratio``), both of the smoke's own
     specification (``smoke.json``), for the run configuration S-E6 projected (``result.configuration``; a record
     without one projected ``protocol.PILOT``); ``configuration``, when given, must be that one (registrar 17:0x: the
@@ -348,8 +350,11 @@ def read_estimate_record(smoke_root, configuration=None):
     root = safe_path(smoke_root)
     spec = smoke.load(root / smoke.SPEC)
     result = verified(read_json(root / smoke.RESULT), "smoke-result")
-    require(result["spec"] == spec[RECORD_HASH] and result["passed"] is True and "SE6" in result["required"]
-            and result["stages"].get("SE6") == "pass", "The estimate needs a passed smoke whose S-E6 passed (§10)")
+    waived = smoke.waiver(root, result)  # registrar addendum 2026-10-23 05:3x: None, or the owner's valid smoke waiver
+    require(result["spec"] == spec[RECORD_HASH] and (result["passed"] is True or waived is not None)
+            and "SE6" in result["required"] and result["stages"].get("SE6") == "pass",
+            "The estimate needs a passed smoke (or a failed one under the owner's valid smoke waiver, registrar "
+            "addendum 2026-10-23 05:3x) whose S-E6 passed (§10)")
     stage = verified(read_json(root / smoke.STAGES_DIR / "SE6.json"), "smoke-stage")
     require(stage["stage"] == "SE6" and stage["spec"] == spec[RECORD_HASH] and stage["result"].get("passed") is True,
             "S-E6's passed stage record of this smoke")
@@ -367,6 +372,7 @@ def read_estimate_record(smoke_root, configuration=None):
     return record("test-read-estimate", result["evidence"], {  # a rehearsal smoke's estimate is a fixture (15:0x)
         "smoke": {"root": str(root), "spec": spec[RECORD_HASH], "result": result[RECORD_HASH],
                   "se6": stage[RECORD_HASH]},
+        "waiver": waived,  # registrar addendum 2026-10-23 05:3x: None, or {"sha256", "rows"} of the owner's waiver
         "pilot": projected, "formula": "ceil(ratio x sum_b n_b x (card_b + 4 x f_b x proc_b)); registrar addendum "
                                         "2026-10-22 14:10, row 8",
         "inputs": {"ratio": se6["ratio"], "per_cell": per_cell,

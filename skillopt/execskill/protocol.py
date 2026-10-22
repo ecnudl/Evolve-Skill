@@ -496,6 +496,10 @@ OWNER_CONTINUATION = "shared/owner-continuation.json"
 FORMAL_ADDENDUM = "shared/formal-addendum.json"  # the sealed record of the document below (evaluation.seal_addendum)
 FORMAL_ADDENDUM_DOCUMENT = "shared/formal-addendum.md"  # §8.1, owner #32: the owner's formal-chain addendum
 CANARIES = "shared/test-canaries.json"
+# registrar addendum 2026-10-23 05:3x: the owner's smoke waiver (smoke-root relative; only the owner writes it) and the
+# only smoke rows it may waive (smoke.waiver, chain.read_estimate_record)
+SMOKE_WAIVER = "shared/owner-smoke-waiver.json"
+WAIVABLE_SMOKE_ROWS = frozenset({"S2.format"})
 EXCLUSION_DIR = "shared/exclusion"  # ``exclude-tests`` writes the two S0 exclusion records here (fixer-8, C3-2)
 LEDGER = "shared/ledger"  # the smoke's ledger; chains G and D each have their own (budgets.ledger_root, C2-1)
 
@@ -690,9 +694,11 @@ MIN_PRODUCTION_RECEIPTS = 300  # Codex F19: registered body and registered M and
 
 # ---------------------------------------------------------------------------------------------- places (§1, §10)
 BUILD_TREE = "/data/execskill-dev"
-SNAPSHOT_ROOT = "/data/execskill-20261021-source-c"  # registrar addendum 10/23 02:3x: snapshot c, the chain-G smoke;
-# snapshot b (/data/execskill-20261021-source-b, after the S0 supply-row fix of 10/22 22:1x) stays untouched as the
-# elucid smoke attempt's record, snapshot a (/data/execskill-20261021-source) as the failed S0 attempt's
+SNAPSHOT_ROOT = "/data/execskill-20261021-source-d"  # registrar addendum 10/23 05:3x: snapshot d, the chain-G re-smoke
+# (research User-Agent, owner smoke waiver); snapshot c (/data/execskill-20261021-source-c, the chain-G smoke of
+# addendum 10/23 02:3x) and snapshot b (/data/execskill-20261021-source-b, after the S0 supply-row fix of 10/22 22:1x)
+# stay untouched as the chain-G and elucid smoke attempts' records, snapshot a (/data/execskill-20261021-source) as
+# the failed S0 attempt's
 OPS_ROOT = "/data/execskill-20261021-ops"
 PRE_ROOT = "/data/execskill-20261021-pre"
 SMOKE_ROOT = PRE_ROOT + "/smoke"  # §10: the smoke's run root, its own ledger

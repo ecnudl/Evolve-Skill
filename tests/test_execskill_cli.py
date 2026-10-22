@@ -1132,7 +1132,7 @@ def test_test_read_estimate_writes_the_sealed_estimate_of_a_passed_smoke_once(tm
     found = protocol.verified(read_json(out), "test-read-estimate")
     assert json.loads(capsys.readouterr().out) == {"out": str(out), "test_read_estimate": {"D": 54_409_087,
                                                                                            "G": 54_409_087},
-                                                   "configuration": "default",
+                                                   "configuration": "default", "waiver": None,
                                                    "record_sha256": found[protocol.RECORD_HASH]}
     assert found["value"] == 54_409_087 and found["pilot"] == "default" and found["evidence"] == "smoke"
     assert found["smoke"]["spec"] == spec[protocol.RECORD_HASH] and found["smoke"]["root"] == str(tmp_path / "smoke")

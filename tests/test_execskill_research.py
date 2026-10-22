@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 
+import httpx
 import pytest
 
 from tests.execskill_fakes import glm_roles
@@ -210,3 +211,28 @@ def test_isolation_8_every_string_the_researcher_sees_is_screened_and_names_are_
             researcher.parameter_choice(question="A typical annual growth rate.", names=names)
     leaked_rule = researcher.family_material(concept="government revenue", topic=item)
     assert leaked_rule["status"] == "not_dispatched" and fake.seen == []
+
+
+# ------------------------------------------------------ registrar addendum 2026-10-23 05:3x: the research User-Agent
+def test_the_research_user_agent_carries_the_version_and_an_https_contact():
+    """Wikimedia's User-Agent policy asks for contact information: from dl the contact-free agent got HTTP 403 on 9 of
+    9 requests, one with a contact URL 200 on 7 of 7. The agent names the protocol version and the contact."""
+    assert research.CONTACT == "https://github.com/ecnudl/Evolve-Skill"
+    assert research.USER_AGENT == "execskill-research/1 (fivebench-execskill-v1; https://github.com/ecnudl/Evolve-Skill)"
+    assert research.VERSION in research.USER_AGENT and research.CONTACT.startswith("https://")
+
+
+def test_the_wikipedia_client_sends_exactly_the_research_user_agent():
+    """The frozen client sends that header, once and no other agent, on every request (a capturing mock transport)."""
+    seen = []
+
+    def handle(request):
+        seen.append(request.headers.get_list("user-agent"))
+        return httpx.Response(200, json={"query": {"search": [{"title": "Government revenue"}]}})
+
+    wiki = research.Wikipedia(transport=httpx.MockTransport(handle))
+    try:
+        assert wiki.search("government revenue") == ["Government revenue"]
+    finally:
+        wiki.close()
+    assert seen == [[research.USER_AGENT]]

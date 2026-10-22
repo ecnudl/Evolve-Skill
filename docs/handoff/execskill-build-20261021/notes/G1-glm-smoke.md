@@ -40,5 +40,19 @@ Brief: registrar addendum 2026-10-23 02:3x ("smoke solver chain"). Zero paid cal
   temporary directories (/tmp/pytest-of-root/pytest-110..113) were removed.
 - no code changed after the registrar's Codex review of the working tree (03:18).
 
+- committed as 344ddcc (report sent).
+
+## G2 (registrar addendum 2026-10-23 05:3x), on top of 344ddcc
+- research.USER_AGENT gains CONTACT (https://github.com/ecnudl/Evolve-Skill); nothing else in the research client.
+- protocol.SMOKE_WAIVER, WAIVABLE_SMOKE_ROWS = {S2.format}; smoke.waiver(root, result), fail closed;
+  chain.read_estimate_record accepts a passed smoke or a valid waiver and records "waiver"; CLI smoke-waiver --spec.
+- SNAPSHOT_ROOT -> source-d; runbook sections (archive c, re-smoke on d, go-check with the waiver, owner-only file).
+- tests: tests/test_execskill_smoke_waiver.py (20), 2 UA tests in test_execskill_research.py, the estimate print in
+  test_execskill_cli.py; mutation entries 123-135 and entry 46 moved to the new gate text.
+
+- affected files (research 16, smoke 26, chain 35, manifest 21, cli 37, glm_smoke 12, smoke_waiver 20, protocol 36):
+  203 passed in 26:51; mutation entries 46 and 123-135: 14 passed in 80.6 s. Collection: 1451 (1416 at 344ddcc).
+  The whole suite is S0's pytest row of the re-smoke on snapshot d (registrar).
+
 ## Next
-- commit on research/exec-skill-glm-smoke; report to the registrar.
+- commit on research/exec-skill-glm-smoke; /data/execskill-dev-g-G2.patch; report.

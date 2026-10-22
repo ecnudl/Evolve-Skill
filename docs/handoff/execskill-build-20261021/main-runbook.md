@@ -19,12 +19,29 @@ runbook names the pilot-runbook section and gives the commands with the main pat
 The main root holds exactly one file: the owner's read consent `$MAIN/shared/consent.json`. The owner wrote it at
 18:06 (registrar: 290 bytes, sha256 prefix `d3c89a8f70ff249d`). Never modify, move or rewrite it.
 
+## Registrar addendum 2026-10-23 05:3x: research User-Agent; owner smoke waiver; re-smoke on snapshot d
+
+The smoke is re-run on snapshot d (smoke-runbook, section of the same name). Snapshot d's research client sends a
+User-Agent with a contact URL. The next section now names snapshot d. Changes for the main run:
+
+1. Section 2: the go-check passes when the smoke passed or the owner's smoke waiver is valid. First run
+   `W=$($CLI smoke-waiver --spec $SMOKE/smoke.json | $PY -c "import json,sys; print(json.load(sys.stdin)['waiver'])")`.
+   It makes no call and writes nothing, and it exits nonzero on an invalid waiver: stop there. In the script, replace
+   the `assert r['passed'] is True and ...` statement by
+   `assert (r['passed'] is True or '$W' == 'valid') and sorted(r['required']) == ['S0', 'S2', 'S3', 'SE6']`. A
+   valid waiver covers `S2.format` only, so every other required stage passed and S-E6 passed. Without a valid
+   waiver, a required stage that is not `pass` stops the run as before.
+2. Section 3.3: `test-read-estimate` accepts a waived smoke. Its record and its output carry `waiver` (the waiver
+   file's sha256 and rows; `null` for a passed smoke). Keep that output with the ops records.
+3. Only the owner writes `$SMOKE/shared/owner-smoke-waiver.json` (the one-line command is in the smoke-runbook).
+   Never create, edit or move it.
+
 ## Chain-G smoke (registrar addendum 10/23 02:3x): this run
 
 The smoke ran with GLM-5.3 as its solver and no S1 (smoke-runbook, section "Chain-G smoke"). The sections below apply
 with these changes:
 
-1. Section 1: `SRC=/data/execskill-20261021-source-c` (snapshot c).
+1. Section 1: `SRC=/data/execskill-20261021-source-d` (snapshot d, registrar addendum 10/23 05:3x).
 2. Section 2: the result's required stages are S0, S2, S3 and SE6, and S1 is `not_required`. No
    `$SMOKE/stages/S1.json` exists. In the go-check script, drop the `s1 = ...` line and its `branch`/`longest` output,
    assert `sorted(r['required']) == ['S0', 'S2', 'S3', 'SE6']`, and assert that the spec
@@ -35,7 +52,7 @@ with these changes:
    test-read estimate (3.3) prices both chains at the glm-5.3 per-cell tokens.
 4. Section 4: unchanged. `make-manifest` needs no S1 record; `check_clients` and `routes.check_pins` accept the
    branch-N, longest-256 block and its pin.
-5. Section 5.2: `cd /data/execskill-20261021-source-c` in `main-run.sh`. Start chain G only (`execskill-main-G`).
+5. Section 5.2: `cd /data/execskill-20261021-source-d` in `main-run.sh`. Start chain G only (`execskill-main-G`).
    **Chain D is not launched in this run.** It needs a passing elucid probe (S1) and the owner's approval first.
    Its block in this manifest is the unprobed conservative bound that the manifest format requires.
 
