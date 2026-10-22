@@ -184,6 +184,32 @@ def test_a_waiver_refuses_a_missing_stage_and_a_failing_stage_without_a_failing_
     _refused(rowless, result, "fails on a waived row")
 
 
+def test_a_symlink_to_a_valid_draft_elsewhere_is_refused(tmp_path):
+    """Codex G2 (MAJOR): a symlink at the waiver path to a valid draft outside the smoke root is no owner's waiver."""
+    root = tmp_path / "smoke"
+    _, result = _smoke(root)
+    draft = _waive(tmp_path / "drafts", result)  # valid fields and this very result's hash
+    (root / "shared").mkdir()
+    (root / protocol.SMOKE_WAIVER).symlink_to(draft)
+    _refused(root, result, "Symlink paths are not supported")
+
+
+def test_a_dangling_symlink_at_the_waiver_path_is_refused_not_absent(tmp_path):
+    root = tmp_path / "smoke"
+    _, result = _smoke(root)
+    (root / "shared").mkdir()
+    (root / protocol.SMOKE_WAIVER).symlink_to(tmp_path / "nowhere.json")
+    _refused(root, result, "Symlink paths are not supported")
+
+
+def test_a_symlinked_shared_directory_is_refused(tmp_path):
+    root = tmp_path / "smoke"
+    _, result = _smoke(root)
+    elsewhere = _waive(tmp_path / "elsewhere", result).parent  # a shared/ directory holding a valid waiver
+    (root / "shared").symlink_to(elsewhere, target_is_directory=True)
+    _refused(root, result, "Symlink paths are not supported")
+
+
 def test_smoke_waiver_reads_only_a_sealed_result_and_writes_nothing(tmp_path):
     root = tmp_path / "smoke"
     _smoke(root, stages=("S2", "S3", "SE6"))  # S3 not recorded: nothing is sealed

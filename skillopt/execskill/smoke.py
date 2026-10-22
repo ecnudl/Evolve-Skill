@@ -82,6 +82,7 @@ import fnmatch
 import hashlib
 import json
 import math
+import os
 import re
 import threading
 import time
@@ -547,10 +548,12 @@ def waiver(root, result):
     of "STAGE.row" within ``protocol.WAIVABLE_SMOKE_ROWS`` and exactly the failing rows of the result's required
     stages) and a non-empty ``note``; no required stage is missing, every failing required stage fails on waived
     rows only, and S-E6 is required and passed. A waiver beside a passed result is refused (a passed smoke needs
-    none)."""
-    path = safe_path(root) / protocol.SMOKE_WAIVER
-    if not path.exists():
+    none). The whole waiver path is checked before anything is read (Codex G2, registrar G2b): a symlink in it or in
+    its parents, dangling or not, is refused, never read and never taken as absent; the waiver is a regular file."""
+    path = safe_path(safe_path(root) / protocol.SMOKE_WAIVER)  # G2b: no symlink in the waiver path or its parents
+    if not os.path.lexists(path):
         return None
+    require(path.is_file(), "The owner's smoke waiver is a regular file")
     result = protocol.verified(result, "smoke-result")
     require(result["passed"] is not True, "A passed smoke needs no waiver: %s beside a passed smoke-result is refused"
             % protocol.SMOKE_WAIVER)

@@ -26,7 +26,7 @@ confirmation echo set, manifest solver block, mini-step model and real-mode cred
 123-135 for the registrar addendum 2026-10-23 05:3x: the research User-Agent's contact and header, and the owner's
 smoke waiver (refused beside a passed smoke, for another result, without exactly the failing rows, outside the
 allowlist, without S-E6, with another key set, with a missing stage or a failing stage without a failing row), the
-estimate's check and record of it, and the CLI's check. (21) is
+estimate's check and record of it, and the CLI's check; 136 (G2b): no symlink in the waiver path. (21) is
 checked on its "after dispatch" half: donor trajectories changed after sealing are accepted
 (``donors.verify``); its "from acceptance items" half has no single mutation site, because the donor builder never
 receives an acceptance item (``donors.donor_corpus`` takes the run-slice trajectories only), and T-PLACEBO-6 scans the
@@ -638,6 +638,12 @@ MUTATIONS = {
     "135-cli-smoke-waiver-skips-the-check": (
         "scripts/run_execskill.py", "    found = smoke.waiver(root, result)\n", "    found = None\n",
         [T + "smoke_waiver.py::test_the_waiver_must_name_this_smoke_result"]),
+    "136-waiver-path-may-be-a-symlink": (  # Codex G2 (MAJOR), registrar G2b
+        PE + "smoke.py",
+        "    path = safe_path(safe_path(root) / protocol.SMOKE_WAIVER)  # G2b: no symlink in the waiver path or its "
+        "parents\n", "    path = safe_path(root) / protocol.SMOKE_WAIVER\n",
+        [T + "smoke_waiver.py::test_a_symlink_to_a_valid_draft_elsewhere_is_refused",
+         T + "smoke_waiver.py::test_a_symlinked_shared_directory_is_refused"]),
 }
 
 
