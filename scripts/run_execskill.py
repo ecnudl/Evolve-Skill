@@ -36,19 +36,24 @@ Before the pilot (zero calls unless stated):
                                                     the equivalence row on the imported cards (--texts) and the pinned
                                                     runtimes (v3's, SpreadsheetBench --sheet-runtime; Codex #13)
   smoke-make --root P/smoke --items SET=FILE ... --selftest F [--control-cells F] [--noise-anchor F] [--dry-run]
-             [--probe-root R]                       the sealed smoke specification (§10, trimmed by the registrar's
+             [--probe-root R] [--solver-chain D|G]  the sealed smoke specification (§10, trimmed by the registrar's
                                                     addendum 13:0x: stages S0, S1, S2, S3, SE6; control cells default
                                                     [], no noise anchor without S-N1; the probe root P/probe unless a
-                                                    rehearsal names its own, 15:0x)
+                                                    rehearsal names its own, 15:0x); --solver-chain G (registrar
+                                                    addendum 2026-10-23 02:3x): GLM-5.3 is the smoke solver -- stages
+                                                    S0, S2, S3, SE6, no S1, no probe root, no control cells (D, the
+                                                    default, is unchanged)
   probe --spec S --env-path F [--probe-root R] [--fake]
                                                     S1 on the spec's probe ledger root (paid: <= 60 calls; counts
-                                                    only); --fake: the zero-call rehearsal, no credential (15:0x)
+                                                    only); --fake: the zero-call rehearsal, no credential (15:0x); a
+                                                    chain-G smoke has no S1 and is refused
   smoke --spec S --stage S0|S1 --input F            judge S0's or S1's measured inputs and record it once (S2, S3 and
                                                     S-E6 only through smoke-run, registrar addendum 15:0x)
   smoke-run --spec S --manifest M --stage S2|SN1|S3|S4|SE6 [--fake] [--env-path F] [--roles-repo D]
                                                     dispatch one paid smoke stage (smoke.run_stage; recorded once);
                                                     exit 0 passed, 3 failed or stopped (a stopped unit is printed);
-                                                    --fake names no credential (ticket C7d-3)
+                                                    --fake names no credential (ticket C7d-3); a chain-G smoke names
+                                                    chain G's credential repository as --env-path and --roles-repo
   smoke-recovery --spec S --attempt A --decision TEXT   the S4 drill's owner-format recovery.json (operator only)
   smoke-summary --spec S                            smoke-result.json once every stage of the spec is recorded
   test-read-estimate --smoke R --out F [--configuration C]
@@ -342,11 +347,12 @@ def smoke_make(args):
     spec = smoke.make(args.root, items=items,
                       control_cells=read_json(args.control_cells) if args.control_cells else [],
                       noise_anchor=read_json(args.noise_anchor) if args.noise_anchor else None,
-                      selftest=args.selftest, write=not args.dry_run, probe_root=args.probe_root)
+                      selftest=args.selftest, write=not args.dry_run, probe_root=args.probe_root,
+                      solver_chain=args.solver_chain)
     _print({"smoke": str(Path(args.root) / smoke.SPEC), "spec": spec[protocol.RECORD_HASH],
             "written": not args.dry_run, "items": {k: v["count"] for k, v in spec["items"].items()},
             "stages": spec["stages"], "control_cells": len(spec["control_cells"]),
-            "noise_anchor": spec["noise_anchor"] is not None})
+            "noise_anchor": spec["noise_anchor"] is not None, "solver_chain": smoke.solver_of(spec).chain})
 
 
 def probe(args):
@@ -354,8 +360,10 @@ def probe(args):
     the judged rows only -- never a reply or a credential. ``--fake`` (registrar addendum 2026-10-22 15:0x): the
     zero-call CLI rehearsal only -- a scripted elucid gateway (``tests/execskill_fakes.ProbeGateway``) behind the real
     client with a throwaway fake credential file and slot pool under the probe root; it names no credential, never
-    runs on the registered smoke or probe root, and its attempt and S1 record carry ``smoke.REHEARSAL_EVIDENCE``."""
+    runs on the registered smoke or probe root, and its attempt and S1 record carry ``smoke.REHEARSAL_EVIDENCE``. A
+    chain-G smoke has no S1 and is refused (``smoke.NO_S1``, registrar addendum 2026-10-23 02:3x)."""
     spec = smoke.load(args.spec)
+    smoke.require_s1(spec)  # registrar addendum 2026-10-23 02:3x: a chain-G smoke has no S1
     if args.fake:
         require(args.env_path is None, "probe --fake names no credential (registrar addendum 15:0x, as C7d-3)")
         smoke.rehearsal_roots(spec, probe=True)
@@ -507,7 +515,9 @@ def smoke_run(args):
     """One paid smoke stage (§10 S2, S-N1, S3, S4, S-E6) through ``smoke.run_stage``, which writes the stage record
     once: prints its verdict (exit 0 passed, 3 failed). A unit that stopped (a cap, connectivity, the first reply not
     confirmed, the S4 drill) leaves the stage unjudged: its stopped report is printed (S4: the ``paused`` attempts
-    awaiting ``smoke-recovery``) and the exit code is ``chain.EXIT_PAUSED`` (3)."""
+    awaiting ``smoke-recovery``) and the exit code is ``chain.EXIT_PAUSED`` (3). A real chain-G smoke stage names
+    chain G's credential repository as ``--env-path`` and ``--roles-repo`` (registrar addendum 2026-10-23 02:3x; an
+    omitted ``--env-path``, the elucid default, is refused there as not the manifest's)."""
     require(not args.fake or (args.env_path is None and args.roles_repo is None),
             "smoke-run --fake names no credential (ticket C7d-3)")
     env_path = None if args.fake else (args.env_path or protocol.ELUCID_ENV)
@@ -804,7 +814,8 @@ def parser():
     smoke.add_arguments(sub)  # smoke-recovery: the S4 drill's operator step (ticket C7c-1)
     command = sub.add_parser("smoke-make")
     command.add_argument("--root", default=protocol.SMOKE_ROOT)
-    command.add_argument("--probe-root", default=protocol.PROBE_ROOT)  # a rehearsal names its own (15:0x)
+    command.add_argument("--probe-root")  # default protocol.PROBE_ROOT (smoke.make); a rehearsal names its own (15:0x)
+    command.add_argument("--solver-chain", default="D", choices=protocol.SMOKE_SOLVER_CHAINS)  # addendum 10/23 02:3x
     command.add_argument("--items", action="append", required=True)
     command.add_argument("--control-cells")  # optional, default [] (registrar addendum 13:4x)
     command.add_argument("--noise-anchor")  # not required without S-N1 (registrar addendum 13:4x)

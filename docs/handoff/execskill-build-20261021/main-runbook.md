@@ -19,6 +19,26 @@ runbook names the pilot-runbook section and gives the commands with the main pat
 The main root holds exactly one file: the owner's read consent `$MAIN/shared/consent.json`. The owner wrote it at
 18:06 (registrar: 290 bytes, sha256 prefix `d3c89a8f70ff249d`). Never modify, move or rewrite it.
 
+## Chain-G smoke (registrar addendum 10/23 02:3x): this run
+
+The smoke ran with GLM-5.3 as its solver and no S1 (smoke-runbook, section "Chain-G smoke"). The sections below apply
+with these changes:
+
+1. Section 1: `SRC=/data/execskill-20261021-source-c` (snapshot c).
+2. Section 2: the result's required stages are S0, S2, S3 and SE6, and S1 is `not_required`. No
+   `$SMOKE/stages/S1.json` exists. In the go-check script, drop the `s1 = ...` line and its `branch`/`longest` output,
+   assert `sorted(r['required']) == ['S0', 'S2', 'S3', 'SE6']`, and assert that the spec
+   (`protocol.verified(read_json('$SMOKE/smoke.json'), 'smoke-spec')`) has `solver.chain == 'G'`.
+3. Section 3.2: build chain D's block as the smoke manifest has it,
+   `manifest.solver_block('D', env_path='$ELUCID', branch='N', longest=routes.S1B_CEILING)`, with the route-B pin
+   from it. Drop the `s1 = ...` line and its `branch`/`longest` output. The `clients` equality assert then holds. The
+   test-read estimate (3.3) prices both chains at the glm-5.3 per-cell tokens.
+4. Section 4: unchanged. `make-manifest` needs no S1 record; `check_clients` and `routes.check_pins` accept the
+   branch-N, longest-256 block and its pin.
+5. Section 5.2: `cd /data/execskill-20261021-source-c` in `main-run.sh`. Start chain G only (`execskill-main-G`).
+   **Chain D is not launched in this run.** It needs a passing elucid probe (S1) and the owner's approval first.
+   Its block in this manifest is the unprobed conservative bound that the manifest format requires.
+
 ## 0. What `main` changes
 
 | Item | Pilot (`default`) | Main (`main`) | Code |

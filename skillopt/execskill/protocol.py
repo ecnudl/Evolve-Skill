@@ -97,7 +97,10 @@ MAIN = "main"
 # ------------------------------------------------------------------------------- solvers and chains (§0 (c), §4.1)
 CHAINS = {"G": "glm-5.3", "D": "deepseek-v4.1-flash-1017"}  # §21: two parallel chains, each its own caps and scopes
 SOLVERS = tuple(CHAINS.values())
-SMOKE_SOLVER = CHAINS["D"]  # §0 (c), §10: the one smoke stays elucid-only
+SMOKE_SOLVER = CHAINS["D"]  # §0 (c), §10: the registered default smoke solver (chain D, elucid)
+# registrar addendum 2026-10-23 02:3x ("smoke solver chain"): the smoke specification pins its solver chain -- "D",
+# the registered default (unchanged), or "G": GLM-5.3 through its frozen client with chain G's settings, and no S1
+SMOKE_SOLVER_CHAINS = ("D", "G")
 NAMESPACES = ("G", "D", "smoke")  # §3.4: one consumption namespace per chain, the smoke its own
 ROLE_MODEL = "glm-5.3"  # §4.2, §4.3, §7.2: every method role of both chains
 # §4.1 chain G: M = B = 65,536 on every bench and a 2,400 s read timeout (the frozen route, coevo5 protocol.py:327,
@@ -687,8 +690,9 @@ MIN_PRODUCTION_RECEIPTS = 300  # Codex F19: registered body and registered M and
 
 # ---------------------------------------------------------------------------------------------- places (§1, §10)
 BUILD_TREE = "/data/execskill-dev"
-SNAPSHOT_ROOT = "/data/execskill-20261021-source-b"  # registrar 10/22 22:1x: snapshot b after the S0 supply-row fix;
-# snapshot a (/data/execskill-20261021-source) stays untouched as the failed S0 attempt's record
+SNAPSHOT_ROOT = "/data/execskill-20261021-source-c"  # registrar addendum 10/23 02:3x: snapshot c, the chain-G smoke;
+# snapshot b (/data/execskill-20261021-source-b, after the S0 supply-row fix of 10/22 22:1x) stays untouched as the
+# elucid smoke attempt's record, snapshot a (/data/execskill-20261021-source) as the failed S0 attempt's
 OPS_ROOT = "/data/execskill-20261021-ops"
 PRE_ROOT = "/data/execskill-20261021-pre"
 SMOKE_ROOT = PRE_ROOT + "/smoke"  # §10: the smoke's run root, its own ledger

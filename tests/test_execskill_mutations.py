@@ -19,7 +19,11 @@ label, ALFWorld pool and the S0 equivalence verdict (88-93), registry ownership 
 the memory lock of mixed-bench units, the completion commit, the band probe's minimum and the finding counter (94-101),
 SearchQA's kept tail and its exclusion, LiveMath's options-only J7 probe and ALFWorld's fresh supply and views
 (102-107), and chain D's route B: balance exhaustion, no switch under a running process, one pause per switch
-(108-110); 111 for the smoke S0 of 2026-10-22 22:07: the supply row accepts the room-capped selection slice. (21) is checked on its "after dispatch" half: donor trajectories changed after sealing are accepted
+(108-110); 111 for the smoke S0 of 2026-10-22 22:07: the supply row accepts the room-capped selection slice;
+112-122 for the registrar addendum 2026-10-23 02:3x (the chain-G smoke): no S1, probe root or control cell in a
+chain-G spec, neither S1 probe nor S1 record on one, the S2 receipt criterion without S1-e, and the smoke endpoint,
+confirmation echo set, manifest solver block, mini-step model and real-mode credential of the spec's chain. (21) is
+checked on its "after dispatch" half: donor trajectories changed after sealing are accepted
 (``donors.verify``); its "from acceptance items" half has no single mutation site, because the donor builder never
 receives an acceptance item (``donors.donor_corpus`` takes the run-slice trajectories only), and T-PLACEBO-6 scans the
 sealed text for acceptance-item text. (27) is checked on both halves: a changed archive file accepted on open, and a
@@ -532,6 +536,51 @@ MUTATIONS = {
         "    full = len(wanted) == sum(sizes.values()) and all(len(cut[name]) <= size if name in supply.UPTO else "
         "len(cut[name]) == size\n",
         [T + "s0.py::test_s0_supply_row_accepts_the_room_capped_selection_slice"]),
+    # registrar addendum 2026-10-23 02:3x ("smoke solver chain"): the chain-G smoke
+    "112-chain-g-spec-may-list-s1": (
+        PE + "smoke.py",
+        "        require(set(G_SMOKE_STAGES) <= set(stages) <= set(STAGES) - {\"S1\"} and len(set(stages)) == len(stages),\n",
+        "        require(set(G_SMOKE_STAGES) <= set(stages) <= set(STAGES) and len(set(stages)) == len(stages),\n",
+        [T + "glm_smoke.py::test_a_chain_g_spec_refuses_s1_a_probe_root_and_control_cells"]),
+    "113-chain-g-spec-names-a-probe-root": (
+        PE + "smoke.py", "        require(probe_root is None, \"A chain-G smoke names no probe root: \" + NO_S1)\n", "",
+        [T + "glm_smoke.py::test_a_chain_g_spec_refuses_s1_a_probe_root_and_control_cells"]),
+    "114-s2-demands-s1e-on-a-chain-g-spec": (
+        PE + "smoke.py", "    s1e_wanted = [True] if _has_s1(spec) else []", "    s1e_wanted = [True]",
+        [T + "glm_smoke.py::test_the_s2_receipt_criterion_asks_s1e_only_of_a_smoke_with_s1"]),
+    "115-smoke-endpoint-ignores-the-specs-chain": (
+        PE + "smoke.py", "    model = solver_of(spec).model\n    watched = _Watched(",
+        "    model = protocol.SMOKE_SOLVER\n    watched = _Watched(",
+        [T + "glm_smoke.py::test_the_smoke_setting_endpoint_and_mini_step_of_a_chain_g_spec_are_glm"]),
+    "116-smoke-confirmation-takes-the-elucid-echo-set": (
+        PE + "smoke.py", "    return receipt.get(\"ok\") is True and receipt.get(\"returned_model\") in echo\n",
+        "    return receipt.get(\"ok\") is True and receipt.get(\"returned_model\") in client.ELUCID_RESPONSE_MODEL_IDS\n",
+        [T + "glm_smoke.py::test_the_confirmation_reads_the_echo_set_of_the_specs_chain"]),
+    "117-s1-probe-runs-on-a-chain-g-spec": (
+        PE + "smoke.py",
+        "    require_s1(spec)\n    probe_root = safe_path(spec[\"probe_root\"] if probe_root is None else probe_root)\n",
+        "    probe_root = safe_path(spec[\"probe_root\"] if probe_root is None else probe_root)\n",
+        [T + "glm_smoke.py::test_probe_and_the_s1_record_refuse_a_chain_g_spec"]),
+    "118-chain-g-spec-records-s1": (
+        PE + "smoke.py", "    require(stage != \"S1\" or _has_s1(spec), NO_S1)  # registrar addendum 2026-10-23 02:3x\n", "",
+        [T + "glm_smoke.py::test_probe_and_the_s1_record_refuse_a_chain_g_spec"]),
+    "119-smoke-manifest-takes-chain-ds-block-for-a-chain-g-smoke": (
+        PE + "manifest.py", "    return smoke.solver_of(smoke.load(safe_path(root) / smoke.SPEC)).chain\n",
+        "    return \"D\"\n",
+        [T + "glm_smoke.py::test_the_smoke_setting_endpoint_and_mini_step_of_a_chain_g_spec_are_glm"]),
+    "120-smoke-mini-step-ignores-its-model": (
+        PE + "step.py", "        on, model = (self.bench if cell_bench is None else cell_bench), self.smoke.model\n",
+        "        on, model = (self.bench if cell_bench is None else cell_bench), SMOKE_SOLVER\n",
+        [T + "glm_smoke.py::test_the_smoke_setting_endpoint_and_mini_step_of_a_chain_g_spec_are_glm"]),
+    "121-chain-g-smoke-takes-the-elucid-credential": (
+        PE + "smoke.py",
+        "        require(str(safe_path(env_path)) == str(safe_path(solvers[ours.chain][\"env_path\"]))\n",
+        "        require(str(safe_path(env_path)) == str(safe_path(solvers[\"D\"][\"env_path\"]))\n",
+        [T + "glm_smoke.py::test_a_real_chain_g_stage_names_chain_gs_repository_as_both_credentials"]),
+    "122-cli-probe-takes-a-chain-g-spec": (
+        "scripts/run_execskill.py",
+        "    smoke.require_s1(spec)  # registrar addendum 2026-10-23 02:3x: a chain-G smoke has no S1\n", "",
+        [T + "glm_smoke.py::test_probe_and_the_s1_record_refuse_a_chain_g_spec"]),
 }
 
 

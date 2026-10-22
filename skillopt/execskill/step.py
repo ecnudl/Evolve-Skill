@@ -78,8 +78,9 @@ command line (ticket A13-1), one step from the verified manifest.
 The smoke's S4 mini-step (registration §10 S4; plan §10 step 7; ticket C7b2-1) is ``run_step`` with chain
 ``budgets.SMOKE`` and a ``SmokeStep``: SearchQA step 1 from the empty parent on the 60 S4 smoke items (run 20, accept
 40, ``S4_SLICES``), sub-steps run, accept and freeze only, the candidate S' given (the registrar's fixture package X;
-the method roles that write one are S3's). Its solver calls go to the smoke ledger's one solver scope with chain D's
-model and bound B, its role calls (the describer at freeze) to ``smoke:glm``, its consumption to the smoke namespace,
+the method roles that write one are S3's). Its solver calls go to the smoke ledger's one solver scope with the smoke
+solver's model and bound B (``SmokeStep.model``: chain D's, or glm-5.3 in a chain-G smoke, registrar addendum
+2026-10-23 02:3x), its role calls (the describer at freeze) to ``smoke:glm``, its consumption to the smoke namespace,
 whose one purpose is ``smoke``, and the registered fault switch (``SmokeStep.drill``) gives the acceptance cells of
 the accept unit's first attempt their workers.
 
@@ -174,11 +175,13 @@ class SmokeStep:
     run slice is the first ``S4_SLICES["run"]``, the acceptance slice the next ``S4_SLICES["accept"]``;
     ``candidate``: the registered candidate S' (the registrar's fixture package X of S2, an engineering fixture);
     ``drill``: the registered fault switch (``smoke.FaultSwitch``) whose ``worker(**options)`` gives the acceptance
-    cells of the accept unit's first attempt their workers, or None."""
+    cells of the accept unit's first attempt their workers, or None; ``model``: the smoke solver's model
+    (``smoke.solver_of``: chain D's by default, glm-5.3 in a chain-G smoke, registrar addendum 2026-10-23 02:3x)."""
 
     items: tuple
     candidate: Package
     drill: object = None
+    model: str = SMOKE_SOLVER
 
 
 @dataclass(frozen=True)
@@ -235,15 +238,15 @@ class _Step:
         blocks that no earlier attempt started, on the kind's own scope in any attempt, §9.3; ``g_acc``: the round's
         G_acc cells, on the examiner's own scope in any attempt, §3.3, §9.2, ticket C7e-1; ``cell_bench``: the bench
         the cells run on when it is not the step's -- its client, M, timeout and B on the step's scopes, Codex finding
-        #4); in the smoke chain D's model on the smoke ledger's one solver scope, with its ledger bound B (§4.1, §9.3,
-        §10)."""
+        #4); in the smoke the smoke solver's model (``SmokeStep.model``: chain D's, or glm-5.3 in a chain-G smoke) on
+        the smoke ledger's one solver scope, with its ledger bound B (§4.1, §9.3, §10)."""
         if self.smoke is None:
             return units.solver_endpoint(self.setting, self.chain, self.bench, self.k, kind, attempt,
                                          first_run=first_run, g_acc=g_acc, cell_bench=cell_bench)
-        on = self.bench if cell_bench is None else cell_bench
-        bound = ledger_bound(SMOKE_SOLVER, on, branch=self.setting.branch, longest=self.setting.longest)
+        on, model = (self.bench if cell_bench is None else cell_bench), self.smoke.model
+        bound = ledger_bound(model, on, branch=self.setting.branch, longest=self.setting.longest)
         return budgets.endpoint(self.setting, budgets.solver_scopes(budgets.SMOKE, None, None, "smoke"),
-                                client=self.setting.clients(SMOKE_SOLVER, on), max_tokens_bound=bound)
+                                client=self.setting.clients(model, on), max_tokens_bound=bound)
 
     def purpose(self, name):
         """A registration's purpose: the slice's (``run``, ``accept``); in the smoke namespace its one purpose
@@ -1215,7 +1218,7 @@ def run_step(setting, chain, bench, k, parent, *, services, chain_root=None, smo
     else:
         require(isinstance(smoke, SmokeStep) and chain == budgets.SMOKE and bench == SMOKE_BENCH and k == 1
                 and isinstance(parent, Package) and not parent.procedures and isinstance(smoke.candidate, Package)
-                and smoke.candidate.parent_sha256 == parent.sha256,
+                and smoke.candidate.parent_sha256 == parent.sha256 and smoke.model in CHAINS.values(),
                 "The S4 mini-step: the smoke's SearchQA step 1 from the empty parent with its candidate")
     st = _Step(setting, services, chain, bench, k, parent, safe_path(chain_root or Path(setting.root) / chain), smoke)
     final = st.root / STEP_FILE

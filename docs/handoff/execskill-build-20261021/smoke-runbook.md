@@ -18,6 +18,35 @@ before S0 and S1 have passed (S1 fixes branch E/N and `longest` in the smoke man
 17:3x; `main-runbook.md`). The smoke is of configuration `main` (section 5), and the SB → OQ pilot of
 `pilot-runbook.md` is not run.
 
+## Chain-G smoke (registrar addendum 10/23 02:3x): this run
+
+Elucid's upstream rotation makes the elucid-only smoke unpassable, so this smoke runs GLM-5.3 as its solver (owner
+10/21 21:18: the smoke may use any model). Code: branch `research/exec-skill-glm-smoke` (`smoke.make(...,
+solver_chain="G")`); snapshot c, `protocol.SNAPSHOT_ROOT` = `/data/execskill-20261021-source-c`. Step 2 copies
+`/data/execskill-dev`, so fast-forward that checkout to the branch first. The sections below apply with these changes:
+
+1. Section 1: `SRC=/data/execskill-20261021-source-c`, and a new `Q23=/data/execskill-20261021-sheet-q23-c` for step 2b.
+2. Section 3: `$CLI smoke-make --solver-chain G --items <SET=FILE ...> --selftest $PRE/s0/sandbox-selftest.json`, with
+   no `--probe-root`, `--control-cells` or `--noise-anchor` (each is refused). The spec records `solver.chain: "G"`,
+   glm-5.3 with M = B = 65,536 and a 2,400 s read timeout on every bench, echo `["glm-5.3"]`, `probe_root: null`,
+   `control_cells: []` and `stages: S0 S2 S3 SE6`. S0 is recorded as before.
+3. Section 4 (S1) is skipped. `probe` and `smoke --stage S1` refuse the spec ("S1 is chain D's elucid probe; a chain-G
+   smoke has no S1"). S1 stays chain D's launch precondition for later.
+4. Section 5: with no S1 record, chain D's block takes the conservative unprobed bound, branch N with longest
+   `routes.S1B_CEILING` = 256 (B = max(4M, 384): 32,768 on the QA benches, 65,536 on SpreadsheetBench, 4,096 on
+   ALFWorld), and the route-B pin is built from it. In the pins builder, replace the `s1 = ...` and `d = ...` lines with
+   `d = manifest.solver_block('D', env_path='$ELUCID', branch='N', longest=routes.S1B_CEILING)`. A `main` manifest needs
+   chain D's block and route-B pin by format only; the chain-G smoke sends nothing to elucid.
+5. Section 6.1: the smoke solver's credential is chain G's repository (the manifest's `clients.solver.G.env_path`):
+   `$RUN --stage S2 --env-path $GREPO --roles-repo $GREPO` and the same for S3. An omitted `--env-path` (default
+   `$ELUCID`) or `$ELUCID` is refused as "not the smoke manifest's". S2, S3's run unit and S3's roles now share the
+   GLM-5.3 slot pool (10). A QA call reserves about 4 x (request bytes + 66K) on `smoke:solver` (cap 14M), so
+   admission may slow S2 ∥ S3; the cell anchors put the settled spend near 4M.
+6. Section 6.2: S-E6 prices chain D at the glm-5.3 per-cell tokens (its `chain_d` note) and chain G at its own.
+7. Section 7: `smoke-summary` passes on S0, S2, S3 and SE6; S1 shows `not_required`.
+8. Section 9: this path's rehearsal is
+   `tests/test_execskill_glm_smoke.py::test_cli_rehearsal_runs_the_chain_g_smoke_end_to_end_as_an_engineering_fixture`.
+
 ## 0. Open items
 
 | What | Effect | Ticket |

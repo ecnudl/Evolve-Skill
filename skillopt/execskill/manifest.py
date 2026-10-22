@@ -359,10 +359,16 @@ def solver_config(manifest, chain, bench, route=None):
 
 
 # --------------------------------------------------------------------------------- the run adapters (A13-1)
-def _solver_chain(chain):
-    """The solver block a run uses: the smoke's solver is chain D's model (§10, §21 (c))."""
+def _solver_chain(chain, root):
+    """The solver block a run on ``root`` uses: chain G's or chain D's own; the smoke's, the solver chain of its
+    specification ``<root>/smoke.json`` (``smoke.solver_of``: chain D's model by default, §10, §21 (c); chain G's in a
+    chain-G smoke, registrar addendum 2026-10-23 02:3x)."""
     require(chain in RUNS, "Chain G, chain D or the smoke")
-    return "D" if chain == budgets.SMOKE else chain
+    if chain != budgets.SMOKE:
+        return chain
+    from . import smoke  # imported here: smoke imports this module
+
+    return smoke.solver_of(smoke.load(safe_path(root) / smoke.SPEC)).chain
 
 
 def _items(entry, bench):
@@ -381,7 +387,9 @@ def _smoke_pools(m, root):
     from . import smoke  # imported here: smoke imports this module
 
     spec = smoke.load(root / smoke.SPEC)
-    require(spec["root"] == str(root) and spec["solver"]["model"] == protocol.SMOKE_SOLVER, "The smoke's own spec")
+    ours = smoke.solver_of(spec)  # registrar addendum 2026-10-23 02:3x: chain D's model, or glm-5.3 in a chain-G smoke
+    require(spec["root"] == str(root) and spec["solver"]["model"] == protocol.CHAINS[ours.chain]
+            and m["clients"]["solver"].get(ours.chain, {}).get("model") == ours.model, "The smoke's own spec")
     measured = spec["sandbox"]["measured"]
     shared = MEASURED_FIELDS & set(measured)  # the self-test has no native peak; the manifest no start latency
     require(spec["sandbox"]["limits"] == m["sandbox"]["limits"] and shared
@@ -415,7 +423,7 @@ def _clients(m, chain, transport, route=None):
     process runs on (``setting_of``); the chain's route history is read again at every solver client request -- every
     unit start -- and a route changed under the running process refuses it (``routes.check_bound``), so a unit never
     switches mid-unit (registrar row "deepseek route B")."""
-    solvers, run = m["clients"]["solver"], _solver_chain(chain)
+    solvers, run = m["clients"]["solver"], _solver_chain(chain, m["root"])
     require(run in solvers and "G" in solvers, "The manifest names the run's solver and the roles' GLM-5.3 credentials")
     model, roles = solvers[run]["model"], m["clients"]["roles"]
     cache = {}
@@ -459,8 +467,9 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
     """The ``units.Setting`` of ``chain`` (``RUNS``) from the verified manifest ``m`` (module docstring; ticket C2-1
     §1). Chains G and D run on their own ledgers (``budgets.ledger_root``; ``chain.run`` declares their caps), the
     smoke on ``<root>/shared/ledger`` with ``budgets.smoke_caps()`` declared here; the solver is the chain's (the smoke:
-    chain D's model through the elucid client), every role GLM-5.3; ``branch`` / ``longest`` are the verified solver
-    block's (fixer-6 item 5). ``extra``: ``verify`` (``verify_unit`` before every unit), ``drain`` (the unit drain,
+    its specification's, ``smoke.solver_of``: chain D's elucid model, or GLM-5.3 in a chain-G smoke, registrar
+    addendum 2026-10-23 02:3x), every role GLM-5.3; ``branch`` / ``longest`` are the verified solver block's (fixer-6
+    item 5). ``extra``: ``verify`` (``verify_unit`` before every unit), ``drain`` (the unit drain,
     ``sandbox.client.drain_unit``), ``slot_root``, ``configuration`` (the manifest's run configuration, which every
     consumer follows: ``protocol.configuration_of``), ``manifest`` (``path``, the file the read children are started
     with) and, for G and D, ``test_read_estimate`` and ``test_read_terms`` (ticket P2C-2) and, when the
@@ -470,12 +479,13 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
     branch N), with ``extra["route"]`` its id (registrar row "deepseek route B"). ``docker``: the docker CLI
     of the workers, the drain and the image check (a fake in tests); ``transport``: the clients' httpx transport
     (tests)."""
-    solver_chain = _solver_chain(chain)
+    require(chain in RUNS, "Chain G, chain D or the smoke")
     require((m["evidence"] == SMOKE_EVIDENCE) == (chain == budgets.SMOKE),
             "The smoke runs on a smoke manifest and the chains on a pilot manifest")
     require(m["lexicon_sha"] == notes.lexicon_sha256() and m["prompt_sha"] == prompt_sha(),
             "The lexicon or a pinned prompt differs from the manifest")
     root, docker = safe_path(m["root"]), docker or sandbox.Docker()
+    solver_chain = _solver_chain(chain, root)  # the smoke: its specification's (registrar addendum 2026-10-23 02:3x)
     route = routes.current(root / chain, run=m[protocol.RECORD_HASH], chain=chain) if chain in routes.ROUTED else None
     block = m["clients"]["solver"][solver_chain]
     bound = block if route is None else {**routes.block_of(m, chain, route), "model": block["model"]}  # M4

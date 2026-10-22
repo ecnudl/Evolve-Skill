@@ -2,8 +2,10 @@
 specification, one judged record per stage, the S0 sandbox self-test, the S1 probe dispatch, the dispatch-time receipt
 classes, the S4 fault switch and ``smoke-result.json``.
 
-``make`` writes the specification once (``<root>/smoke.json``, zero calls): the elucid-only solver (owner rule 22:3x
-(c)), the smoke and probe ledgers' caps, the bound item files (SearchQA tail and ALFWorld smoke games; the
+``make`` writes the specification once (``<root>/smoke.json``, zero calls): the smoke solver (chain D's elucid model,
+owner rule 22:3x (c), the registered default; or, pinned by ``solver_chain`` -- registrar addendum 2026-10-23 02:3x
+-- chain G's GLM-5.3 through its frozen client, with no S1, no probe root and no control cells: ``solver_of``), the
+smoke and probe ledgers' caps, the bound item files (SearchQA tail and ALFWorld smoke games; the
 registrar's engineering fixtures for OfficeQA, LiveMath and SpreadsheetBench), the stage plan of §10, the stages the
 smoke passes on (``stages``, default ``SMOKE_STAGES`` = S0, S1, S2, S3 and S-E6: the registrar's trim of 2026-10-22
 13:0x on the owner's instruction; S-N1 and S4 stay runnable and never gate unless listed), the control cells (the
@@ -68,7 +70,9 @@ Dispatch (the parts of the smoke that send or start something):
 Receipt classes (Codex F19): CONTROL = S1-e and the enumerated fault-drill cells (listed, excluded); PROBE = S1-a..d
 and f (registered body, probe-only M/B; listed, not counted, leak-free); PRODUCTION = S2, S-N1 and S4 receipts sent
 with the registered body AND the registered M and B; RESEND = frozen-path resends (counted apart, leak-free). Any
-other receipt is UNREGISTERED and fails the stage. A leak is a receipt with subtype ``reasoning_mismatch``.
+other receipt is UNREGISTERED and fails the stage. A leak is a receipt with subtype ``reasoning_mismatch``. A chain-G
+smoke (registrar addendum 2026-10-23 02:3x) has no S1-e and no control cells, and the frozen GLM client's receipts
+carry no subtype (its thinking stays enabled, so it never reports ``thinking_mismatch``): its leak counts stay zero.
 """
 from __future__ import annotations
 
@@ -101,6 +105,7 @@ from . import (acceptance, budgets, client, engineer, fixtures, manifest, preche
                slots, solver, step, trajectories, units)
 from . import placebo as placebos
 from .cells import Arm, Pause, cell_id
+from .chain import FIRST_CALL_ECHO
 from .errors import AssumptionBroken, BudgetStop, LedgerFailure, SandboxUnavailable
 from .package import empty
 from .registry import Registry
@@ -109,6 +114,10 @@ from .sandbox import client as sandbox
 SPEC, RESULT, STAGES_DIR = "smoke.json", "smoke-result.json", "stages"
 STAGES = ("S0", "S1", "S2", "SN1", "SE6", "S3", "S4")
 SMOKE_STAGES = ("S0", "S1", "S2", "S3", "SE6")  # registrar addendum 2026-10-22 13:0x (owner): the stages that gate
+# registrar addendum 2026-10-23 02:3x ("smoke solver chain"): a chain-G smoke has no S1 -- chain D's elucid probe stays
+# chain D's launch precondition -- and gates on every other registered smoke stage
+G_SMOKE_STAGES = tuple(stage for stage in SMOKE_STAGES if stage != "S1")
+NO_S1 = "S1 is chain D's elucid probe; a chain-G smoke has no S1 (registrar addendum 2026-10-23 02:3x)"
 TRIMMED = ("registrar addendum 2026-10-22 13:0x (owner instruction): S-N1 is not a stage of this smoke, so no noise "
            "anchor is registered (addendum 13:4x)")
 S0_ROWS = ("pytest", "equivalence", "exceptions", "ledger", "sandbox", "escape_probe", "measurements", "determinism",
@@ -168,26 +177,43 @@ def _fraction(value):
     return "%d/%d" % (value.numerator, value.denominator)
 
 
-def make(root, *, items, selftest, control_cells=(), noise_anchor=None, stages=SMOKE_STAGES, environment_found=None,
-         write=True, probe_root=protocol.PROBE_ROOT):
+def make(root, *, items, selftest, control_cells=(), noise_anchor=None, stages=None, environment_found=None,
+         write=True, probe_root=None, solver_chain="D"):
     """The sealed smoke specification at ``<root>/smoke.json`` (zero calls). ``items``: {set: path} of the item files
     (``ITEM_SETS``); ``selftest``: the path of the sealed, passing S0 sandbox self-test (``sandbox_selftest``), whose
     limits and measurements the spec binds; ``control_cells``: the enumerated fault-drill cell ids (default none,
     registrar addendum 13:4x); ``noise_anchor``: {bench: the registered per-item SD of a same-text paired difference}
     for S-N1, required when S-N1 is one of ``stages``, else optional (None: recorded null with the reason
-    ``TRIMMED``); ``stages``: the stages ``summary`` passes on, recorded in the spec (``SMOKE_STAGES``, plus S-N1
-    and/or S4 if listed); ``write`` False: a dry run that writes nothing; ``probe_root``: the S1 probe's own ledger
-    root, apart from the smoke root (``protocol.PROBE_ROOT``; a rehearsal names its own, registrar addendum 15:0x),
-    where ``run_probe`` writes and S2 reads the probe's receipts. Returns the record."""
+    ``TRIMMED``); ``stages``: the stages ``summary`` passes on, recorded in the spec (default ``SMOKE_STAGES``, plus
+    S-N1 and/or S4 if listed); ``write`` False: a dry run that writes nothing; ``probe_root``: the S1 probe's own
+    ledger root, apart from the smoke root (default ``protocol.PROBE_ROOT``; a rehearsal names its own, registrar
+    addendum 15:0x), where ``run_probe`` writes and S2 reads the probe's receipts; ``solver_chain`` (registrar addendum
+    2026-10-23 02:3x, ``protocol.SMOKE_SOLVER_CHAINS``): "D", the registered default, whose specification is
+    unchanged, or "G" -- GLM-5.3 through its frozen client with chain G's registered settings (M = B = 65,536 on every
+    bench, read timeout 2,400 s, echo glm-5.3), recorded as the solver block's ``chain``, the elucid-only fields
+    (``reasoning_effort``, ``b_probe``, ``s1d_tokens``) null; a chain-G smoke has no S1 (``NO_S1``): its stages are
+    ``G_SMOKE_STAGES`` (plus S-N1 and/or S4 if listed, never S1), its probe root null and its control cells none (the
+    control client is elucid's). Returns the record."""
+    require(solver_chain in protocol.SMOKE_SOLVER_CHAINS, "The smoke solver chain is D or G (registrar addendum "
+            "2026-10-23 02:3x)")
+    chain_g = solver_chain == "G"
     root = safe_path(root)
-    probe = safe_path(probe_root)
+    probe = None if chain_g else safe_path(protocol.PROBE_ROOT if probe_root is None else probe_root)
     require(not (root / SPEC).exists(), "A smoke runs in a new directory")
-    require(probe != root and not probe.is_relative_to(root) and not root.is_relative_to(probe),
-            "The S1 probe has its own ledger root, apart from the smoke's")
+    if chain_g:
+        require(probe_root is None, "A chain-G smoke names no probe root: " + NO_S1)
+        require(not control_cells, "A chain-G smoke has no control cells (the control client is elucid's)")
+    else:
+        require(probe != root and not probe.is_relative_to(root) and not root.is_relative_to(probe),
+                "The S1 probe has its own ledger root, apart from the smoke's")
     require(set(items) == set(ITEM_SETS), "One item file per set: %s" % (ITEM_SETS,))
-    stages = tuple(stages)
-    require(set(SMOKE_STAGES) <= set(stages) <= set(STAGES) and len(set(stages)) == len(stages),
-            "The smoke passes on S0, S1, S2, S3 and S-E6 (registrar addendum 13:0x), with S-N1 or S4 optionally")
+    stages = tuple((G_SMOKE_STAGES if chain_g else SMOKE_STAGES) if stages is None else stages)
+    if chain_g:  # registrar addendum 2026-10-23 02:3x: S0, S2, S3 and S-E6 gate; S1 never
+        require(set(G_SMOKE_STAGES) <= set(stages) <= set(STAGES) - {"S1"} and len(set(stages)) == len(stages),
+                "A chain-G smoke passes on S0, S2, S3 and S-E6, with S-N1 or S4 optionally; " + NO_S1)
+    else:
+        require(set(SMOKE_STAGES) <= set(stages) <= set(STAGES) and len(set(stages)) == len(stages),
+                "The smoke passes on S0, S1, S2, S3 and S-E6 (registrar addendum 13:0x), with S-N1 or S4 optionally")
     require(isinstance(control_cells, (list, tuple)) and all(type(c) is str and c for c in control_cells)
             and len(set(control_cells)) == len(control_cells), "The control cells are enumerated by id")
     require(noise_anchor is not None or "SN1" not in stages, "A noise anchor per S-N1 bench when S-N1 is a stage")
@@ -200,12 +226,15 @@ def make(root, *, items, selftest, control_cells=(), noise_anchor=None, stages=S
         found = read_json(path)
         require(isinstance(found, list) and found, "An item file holds a list of items")
         bound[name] = {"path": str(safe_path(path)), "sha256": manifest._sha(safe_path(path)), "count": len(found)}
-    model = protocol.SMOKE_SOLVER
-    fields = {"root": str(root), "probe_root": str(probe), "solver": {
+    model = protocol.CHAINS[solver_chain]  # chain D: protocol.SMOKE_SOLVER, the registered default
+    elucid_only = ({"reasoning_effort": None, "b_probe": None, "s1d_tokens": None} if chain_g else
+                   {"reasoning_effort": protocol.REASONING_EFFORT, "b_probe": protocol.B_PROBE,
+                    "s1d_tokens": protocol.S1D_TOKENS})
+    fields = {"root": str(root), "probe_root": None if chain_g else str(probe), "solver": {
+        **({"chain": "G"} if chain_g else {}),  # a chain D spec stays as registered (no ``chain``: "D")
         "model": model, "M": {b: protocol.solver_tokens(model, b) for b in protocol.BENCHES},
         "read_timeout": {b: protocol.read_timeout(model, b) for b in protocol.BENCHES}, "proxy": protocol.GATEWAY,
-        "reasoning_effort": protocol.REASONING_EFFORT, "b_probe": protocol.B_PROBE, "s1d_tokens": protocol.S1D_TOKENS,
-        "response_model_ids": sorted(client.ELUCID_RESPONSE_MODEL_IDS)},
+        **elucid_only, "response_model_ids": sorted(FIRST_CALL_ECHO[solver_chain])},
         "caps": {"smoke": budgets.smoke_caps(), "probe": budgets.probe_caps()}, "items": bound, "plan": PLAN,
         "format": {"floor": _fraction(protocol.SMOKE_FORMAT_FLOOR), "margin": _fraction(protocol.SMOKE_FORMAT_MARGIN)},
         "min_production_receipts": protocol.MIN_PRODUCTION_RECEIPTS, "control_cells": sorted(control_cells),
@@ -226,12 +255,37 @@ def load(path):
     return protocol.verified(read_json(path), "smoke-spec")
 
 
+def solver_of(spec):
+    """The smoke's solver (registrar addendum 2026-10-23 02:3x, "smoke solver chain") from a verified specification:
+    ``chain`` (the solver block's; "D" when it names none, as every chain D spec), ``model`` (``protocol.CHAINS``) and
+    ``echo``, the model ids a confirmed reply may carry (``chain.FIRST_CALL_ECHO``: chain D the registered elucid set,
+    chain G glm-5.3). The spec's solver block must say the same, and a chain-G spec never lists S1."""
+    block = spec["solver"]
+    name = block.get("chain", "D")
+    require(name in protocol.SMOKE_SOLVER_CHAINS and block["model"] == protocol.CHAINS[name]
+            and block["response_model_ids"] == sorted(FIRST_CALL_ECHO[name])
+            and (name == "D" or not _has_s1(spec)),
+            "The smoke's solver is chain D's or chain G's, with its echo set (registrar addendum 2026-10-23 02:3x)")
+    return SimpleNamespace(chain=name, model=block["model"], echo=FIRST_CALL_ECHO[name])
+
+
+def _has_s1(spec):
+    """S1 is a stage of this smoke (every chain D smoke; never a chain-G one, registrar addendum 2026-10-23 02:3x)."""
+    return "S1" in spec.get("stages", STAGES)
+
+
+def require_s1(spec):
+    """S1 runs only in a smoke that lists it: chain D's (``NO_S1``)."""
+    require(solver_of(spec).chain == "D" and _has_s1(spec), NO_S1)
+
+
 def record(spec, stage, result, *, evidence=manifest.SMOKE_EVIDENCE):
     """Stage ``stage``'s judged result, write-once at ``<root>/stages/<stage>.json``; ``evidence``: "smoke", or
     ``REHEARSAL_EVIDENCE`` for what a zero-call rehearsal measured."""
     require(stage in STAGES and isinstance(result, dict) and type(result.get("passed")) is bool,
             "A judged result of a registered stage")
     require(evidence in (manifest.SMOKE_EVIDENCE, REHEARSAL_EVIDENCE), "A smoke stage is smoke evidence or a rehearsal")
+    require(stage != "S1" or _has_s1(spec), NO_S1)  # registrar addendum 2026-10-23 02:3x
     value = protocol.record("smoke-stage", evidence, {"stage": stage, "spec": spec[protocol.RECORD_HASH],
                                                       "result": result})
     write_json(safe_path(spec["root"]) / STAGES_DIR / (stage + ".json"), value)
@@ -289,7 +343,7 @@ def s1_probe(probes):
     overhead = max(overheads) if overheads else None
     rows = {"a": a.get("ok") is True and a.get("model") in client.ELUCID_RESPONSE_MODEL_IDS and usage_ok,
             "b": measured,
-            "c": c.get("ok") is True and c["seconds"] <= protocol.read_timeout(protocol.SMOKE_SOLVER, "spreadsheetbench"),
+            "c": c.get("ok") is True and c["seconds"] <= protocol.read_timeout(protocol.CHAINS["D"], "spreadsheetbench"),
             "d": len(d) == protocol.S1_CONCURRENCY and all(r.get("ok") is True for r in d),
             "e": _leak(e),
             "f": f == {"gateway": protocol.GATEWAY, "trust_env": False, "first_confirmed": True}}
@@ -342,8 +396,9 @@ def receipt_class(entry, spec, *, ledger_bound):
 def receipt_classes(entries, spec, *, ledger_bound):
     """The receipt criterion (Codex F19, T-SMOKE-1): counts and leaks per class; passes with ≥ 300 production
     receipts, zero leaks in production, probe and resend receipts, no unregistered receipt, and S1-e present and
-    judged ``reasoning_mismatch``. An entry stamped at dispatch (``classed_sends``) whose stamp differs from this
-    verdict is unregistered."""
+    judged ``reasoning_mismatch`` when S1 is a stage of the spec (a chain-G smoke has no S1: no S1-e entry at all,
+    registrar addendum 2026-10-23 02:3x). An entry stamped at dispatch (``classed_sends``) whose stamp differs from
+    this verdict is unregistered."""
     counts = {name: 0 for name in (CONTROL, PROBE, PRODUCTION, RESEND, UNREGISTERED)}
     leaks, control, s1e = dict(counts), [], []
     for entry in entries:
@@ -356,8 +411,9 @@ def receipt_classes(entries, spec, *, ledger_bound):
             control.append(entry["cell"])
         if entry.get("probe") == "e":
             s1e.append(_leak(entry["receipt"]))
+    s1e_wanted = [True] if _has_s1(spec) else []  # registrar addendum 2026-10-23 02:3x: a chain-G smoke has no S1-e
     passed = (counts[PRODUCTION] >= spec["min_production_receipts"] and counts[UNREGISTERED] == 0
-              and not any(leaks[k] for k in (PRODUCTION, PROBE, RESEND)) and s1e == [True])
+              and not any(leaks[k] for k in (PRODUCTION, PROBE, RESEND)) and s1e == s1e_wanted)
     return {"counts": counts, "leaks": leaks, "control_cells": sorted(set(control)), "s1e_mismatch": s1e,
             "passed": passed}
 
@@ -630,7 +686,8 @@ def run_probe(spec, *, env_path, probe_root=None, slot_root=protocol.SLOT_ROOT, 
     (default; another root is refused). ``env_path``: the elucid credential file (read by path only); ``transport``:
     an ``httpx`` mock transport in tests and the rehearsal; ``evidence``: "smoke", or ``REHEARSAL_EVIDENCE`` for
     ``probe --fake`` (registrar addendum 15:0x: the attempt and its S1 record are labelled a rehearsal's). Returns the
-    attempt record."""
+    attempt record. A chain-G smoke has no S1: refused (``NO_S1``, registrar addendum 2026-10-23 02:3x)."""
+    require_s1(spec)
     probe_root = safe_path(spec["probe_root"] if probe_root is None else probe_root)
     require(probe_root != safe_path(spec["root"]) and not probe_root.is_relative_to(safe_path(spec["root"])),
             "The S1 probe has its own ledger root, apart from the smoke's")
@@ -643,7 +700,7 @@ def run_probe(spec, *, env_path, probe_root=None, slot_root=protocol.SLOT_ROOT, 
     require(spent + PROBE_CALLS <= protocol.S1_MAX_CALLS, "The S1 probe would exceed %d calls" % protocol.S1_MAX_CALLS)
     ledger = Budget(probe_root / "ledger")
     ledger.declare(budgets.probe_caps())
-    model = protocol.SMOKE_SOLVER
+    model = protocol.CHAINS["D"]  # S1 is chain D's elucid probe (NO_S1)
     slots = Slots(safe_path(slot_root), model, protocol.SLOTS[model])
     made, sent, lock = [], [], threading.Lock()
 
@@ -773,21 +830,23 @@ class _Watched:
         return self.solver_client.call(system, user)
 
 
-def _endpoint(setting, bench):
-    """(endpoint, watched client) of one smoke unit: chain D's model on ``bench`` with the registered nominal M,
-    charged to ``smoke:solver`` with the ledger bound B (§4.1, §9.3)."""
-    model = protocol.SMOKE_SOLVER
+def _endpoint(spec, setting, bench):
+    """(endpoint, watched client) of one smoke unit: the smoke solver's model on ``bench`` (``solver_of``: chain D's,
+    or glm-5.3 in a chain-G smoke, registrar addendum 2026-10-23 02:3x) with its registered nominal M, charged to
+    ``smoke:solver`` with the ledger bound B (§4.1, §9.3)."""
+    model = solver_of(spec).model
     watched = _Watched(setting.clients(model, bench), setting.slots[slots.NATIVE].holdings)
     bound = protocol.ledger_bound(model, bench, branch=setting.branch, longest=setting.longest)
     return budgets.endpoint(setting, budgets.solver_scopes(budgets.SMOKE, None, None, "smoke"), client=watched,
                             max_tokens_bound=bound), watched
 
 
-def _confirmed(found):
-    """The first send of a cell came back as an ok reply of the registered model."""
+def _confirmed(found, echo):
+    """The first send of a cell came back as an ok reply of the registered model: an echo in ``echo``, the smoke
+    solver's (``solver_of``; registrar addendum 2026-10-23 02:3x)."""
     sends = found["sends"]
     receipt = sends[0].get("receipt") if sends and isinstance(sends[0].get("receipt"), dict) else {}
-    return receipt.get("ok") is True and receipt.get("returned_model") in client.ELUCID_RESPONSE_MODEL_IDS
+    return receipt.get("ok") is True and receipt.get("returned_model") in echo
 
 
 def _usage(found):
@@ -868,9 +927,10 @@ def _unit(spec, setting, stage, name, items, *, first):
     runs = PLAN[stage][name]["runs"]
     package = fixtures.fixture_package()
     local = units.for_unit(setting, budgets.SMOKE, bench, unit)
+    ours = solver_of(spec)
 
     def work(attempt):
-        endpoint, watched = _endpoint(local, bench)
+        endpoint, watched = _endpoint(spec, local, bench)
         bound, nominal = endpoint.max_tokens, watched.max_tokens
         done = []
         if first:
@@ -879,9 +939,9 @@ def _unit(spec, setting, stage, name, items, *, first):
             confirm = rounds.run_round(replace(local, workers=1), attempt, endpoint, unit, {CONFIRM_ARM: card},
                                        {CONFIRM_ARM: [(item, 1)]}, tasks, tag="confirm")
             done += [f for found in confirm.values() for f in found]
-            if not _confirmed(done[0]):
+            if not _confirmed(done[0], ours.echo):
                 raise Pause("first_call_not_confirmed", "the single first reply is not a confirmed %s reply"
-                            % protocol.SMOKE_SOLVER, done[0]["cell"]["id"])
+                            % ours.model, done[0]["cell"]["id"])
         arms = _arms(stage, bench, unit, items, package)
         schedule = {arm: [(item, runs) for item in sorted(tasks)] for arm in arms}
         if stage == "S2" and name in TWIN_SETS:
@@ -1007,7 +1067,10 @@ def _leftover(docker, *, fake, root=None):
 
 
 def _probe_entries(spec):
-    """The S1 receipt-class entries of the complete probe attempt (S2's receipt criterion reads them too)."""
+    """The S1 receipt-class entries of the complete probe attempt (S2's receipt criterion reads them too); none in a
+    smoke without S1 (a chain-G smoke has no probe root, registrar addendum 2026-10-23 02:3x)."""
+    if not _has_s1(spec):
+        return []
     probe_root = safe_path(spec["probe_root"])
     complete = [protocol.verified(read_json(p), "smoke-probe") for p in _attempts(probe_root)]
     complete = [p for p in complete if p["complete"]]
@@ -1016,15 +1079,19 @@ def _probe_entries(spec):
 
 @contextlib.contextmanager
 def _backends(spec, m, manifest_path, *, fake, env_path, roles_repo):
-    """(Setting, docker) of the smoke from the verified manifest (``manifest.setting_of(m, "smoke")``). Real: the
-    elucid credential file and the roles' credential repository must be named explicitly and be the manifest's (so
-    nothing is sent by accident), the code map and image are verified. ``fake`` (plan §7): FakeDocker, the scripted
-    elucid gateway, FakeAlfEnv and FakeNative from ``tests/`` (imported only here), zero network."""
-    solvers = m["clients"]["solver"]
+    """(Setting, docker) of the smoke from the verified manifest (``manifest.setting_of(m, "smoke")``: the smoke
+    solver's block, ``solver_of``). Real: the smoke solver's credential -- chain D's elucid credential file; in a
+    chain-G smoke (registrar addendum 2026-10-23 02:3x) the GLM credential repository, the manifest's chain G
+    ``env_path``, so ``env_path`` and ``roles_repo`` name the same repository -- and the roles' credential repository
+    must be named explicitly and be the manifest's (so nothing is sent by accident), the code map and image are
+    verified. ``fake`` (plan §7): FakeDocker, the scripted gateway of the smoke solver's model, FakeAlfEnv and
+    FakeNative from ``tests/`` (imported only here), zero network."""
+    solvers, ours = m["clients"]["solver"], solver_of(spec)
     if not fake:
-        require(str(safe_path(env_path)) == str(safe_path(solvers["D"]["env_path"]))
+        named = "" if ours.chain == "D" else " (a chain-G smoke: chain G's credential repository as both)"
+        require(str(safe_path(env_path)) == str(safe_path(solvers[ours.chain]["env_path"]))
                 and str(safe_path(roles_repo)) == str(safe_path(solvers["G"]["env_path"])),
-                "The named credentials are not the smoke manifest's")
+                "The named credentials are not the smoke manifest's" + named)
         docker = sandbox.Docker()
         manifest.verify_unit(m, docker=docker)
         yield manifest.setting_of(m, budgets.SMOKE, path=manifest_path, docker=docker), docker
@@ -1036,7 +1103,7 @@ def _backends(spec, m, manifest_path, *, fake, env_path, roles_repo):
 
     root = safe_path(spec["root"])
     docker = fake_docker.FakeDocker(root / "rehearsal-docker")
-    provider = fakes.FakeProvider(protocol.SMOKE_SOLVER, _rehearsal_reply)
+    provider = fakes.FakeProvider(ours.model, _rehearsal_reply)
     native = fake_env.FakeNative()
     saved = backends._new_alfworld, backends._native, precheck.precheck
     backends._new_alfworld = lambda public, runtime: fake_env.FakeAlfEnv(
@@ -1052,7 +1119,7 @@ def _backends(spec, m, manifest_path, *, fake, env_path, roles_repo):
 
 
 def _rehearsal_reply(system, user):
-    """The rehearsal's scripted elucid reply: on ALFWorld the last admissible command (the fake game's next plan step),
+    """The rehearsal's scripted solver reply: on ALFWorld the last admissible command (the fake game's next plan step),
     on SpreadsheetBench a program, on LiveMath one letter, else one number -- each in its registered carrier."""
     if system.startswith(solver.ALF_SYSTEM):
         return "<action>%s</action>" % json.loads(user)["admissible_commands"][-1]
@@ -1068,11 +1135,14 @@ def run_stage(spec, manifest_path, stage, *, fake=False, env_path=None, roles_re
     the first reply not confirmed, any pause) keeps its attempt and the stage is reported, not judged: {"stage",
     "complete": False, "stopped", "unit"} (S4 adds the ``paused`` attempts awaiting ``write_recovery``). ``fake``:
     the zero-network rehearsal (``_backends``); a real run needs ``env_path`` and ``roles_repo`` (S-E6 makes no call
-    and needs neither). S3 is ``smoke_roles.run``: its own run unit on these backends, then the roles unit (its own
-    fake backends; notes/C7d.md, registrar addendum 14:3x). Returns the stage record, or the stopped report."""
-    require(fake or stage == "SE6" or (env_path is not None and roles_repo is not None), "A real smoke stage names "
-            "the elucid env path and the roles' credential repository explicitly")
+    and needs neither; a chain-G smoke names chain G's credential repository as both, registrar addendum 2026-10-23
+    02:3x). S3 is ``smoke_roles.run``: its own run unit on these backends, then the roles unit (its own fake backends;
+    notes/C7d.md, registrar addendum 14:3x). Returns the stage record, or the stopped report."""
     spec = load(spec) if not isinstance(spec, dict) else protocol.verified(spec, "smoke-spec")
+    ours = solver_of(spec)
+    require(fake or stage == "SE6" or (env_path is not None and roles_repo is not None), "A real smoke stage names "
+            "%s and the roles' credential repository explicitly" % (
+                "the elucid env path" if ours.chain == "D" else "chain G's credential repository as the env path"))
     require(stage in BUILT_STAGES, "Smoke stage %s is not run by run_stage (built: %s)" % (stage, BUILT_STAGES))
     require(not (safe_path(spec["root"]) / STAGES_DIR / (stage + ".json")).exists(), "Stage %s is recorded" % stage)
     m = manifest.load(manifest_path, verify=False)
@@ -1101,8 +1171,8 @@ def run_stage(spec, manifest_path, stage, *, fake=False, env_path=None, roles_re
                     "unit": pause.cell}
         if stage == "SN1":
             return record(spec, stage, _sn1_judged(spec, results), evidence=evidence)
-        bound = {bench: protocol.ledger_bound(protocol.SMOKE_SOLVER, bench, branch=setting.branch,
-                                              longest=setting.longest) for bench in protocol.BENCHES}
+        bound = {bench: protocol.ledger_bound(ours.model, bench, branch=setting.branch, longest=setting.longest)
+                 for bench in protocol.BENCHES}
         verdict, concurrent = _leftover(docker, fake=fake, root=spec["root"])
         judged = _s2_judged(spec, results, ledger_bound=bound, ledger=_ledger_rows(setting), leftover=verdict,
                             concurrent=concurrent, probe_entries=_probe_entries(spec))
@@ -1112,6 +1182,10 @@ def run_stage(spec, manifest_path, stage, *, fake=False, env_path=None, roles_re
 # ------------------------------------------------------------------- S-E6: the zero-call cost check (§9.3, §10)
 SE6_STAGES = ("S2", "S3")  # registrar addendum 13:0x: S-E6 reads the recorded S2 and S3 stages (not S-N1 or S4)
 SE6_CELLS = ("S2",)  # the production stage whose cells S-E6 measures; the ratio's denominator is every charged cell
+# §4.1, §9.3: the chain S-E6 prices at the smoke solver's per-cell tokens, a placeholder -- chain G in a chain D smoke,
+# chain D in a chain-G smoke (registrar addendum 2026-10-23 02:3x)
+SE6_PLACEHOLDER = {"D": {"chain_g": "priced at the elucid per-cell tokens: a placeholder (§4.1, §9.3)"},
+                   "G": {"chain_d": "chain D priced at the glm-5.3 per-cell tokens: a placeholder (§4.1, §9.3)"}}
 # Registrar addendum 14:4x, implementation-time registrations (§5.4 C4 and §5.7 imply them; the registration lists
 # no number), counted as the code allows them per step and bench (R7 decision 2026-10-22 16:1x, R7c): at most one
 # leakage judge call per check of a change (``engineer.leak_check``); each of the step's two engineer units
@@ -1240,9 +1314,10 @@ def se6_projection(spec, m):
     (``coevo5.ledger.reservation``; budget.py:283-314), judged by ``se6_cost`` -- any projection over its cap fails
     S-E6: a v1.1 re-registration before the pilot (§9.3). Every projection is of the smoke manifest's run
     configuration (``m["configuration"]``: its order, maximum schedule and caps; registrar 17:0x: the smoke of the
-    main experiment projects ``main``), recorded as ``configuration``. Chain G's cells are priced at the elucid
-    measurements, a
-    placeholder (§4.1; its own check follows its first run unit). Registrar addendum 14:3x: every GLM scope of both
+    main experiment projects ``main``), recorded as ``configuration``. The other chain's cells are priced at the
+    smoke solver's measurements, a placeholder (``SE6_PLACEHOLDER``, §4.1): chain G's at the elucid ones in a chain D
+    smoke (its own check follows its first run unit), chain D's at glm-5.3's in a chain-G smoke (registrar addendum
+    2026-10-23 02:3x). Registrar addendum 14:3x: every GLM scope of both
     chains is projected too (``glm_projection``) from S3's measured tokens per role call (its roles unit's record,
     bound by the S3 stage record) at the registered maximum role calls per step (``MAX_ROLE_CALLS``) + one full next
     reservation at no less than a full role input (registrar addendum 14:4x); an excess fails S-E6 as well.
@@ -1309,7 +1384,7 @@ def se6_projection(spec, m):
             "per_class": found["per_class"], "per_cell": per_cell, "request_bytes": found["request_bytes"],
             "bounds": bounds, "reservations": reserve, "anchors": anchors, "not_projected": listed,
             "pilot": configuration, "configuration": configuration,
-            "chain_g": "priced at the elucid per-cell tokens: a placeholder (§4.1, §9.3)",
+            **SE6_PLACEHOLDER[solver_of(spec).chain],
             "passed": cost["passed"] and all(row["fits"] for row in glm.values())}
 
 
@@ -1399,23 +1474,24 @@ RECOVERY_FIELDS = ("by", "date", "decision")  # the owner format (coevo5 evaluat
 def _confirm(spec, setting, stage, bench, item):
     """The single production cell (``CONFIRM_ARM``: the card arm on ``item`` of ``bench``) dispatched alone, in its
     own unit ``<root>/units/<stage>/confirm-<n>`` (one per process run), before anything concurrent (plan §10 step 4);
-    a reply that is not a confirmed one of the registered model pauses it."""
+    a reply that is not a confirmed one of the smoke solver's registered model (``solver_of``) pauses it."""
     base = safe_path(spec["root"]) / UNITS_DIR / stage
     n = 1 + (len(list(base.glob("confirm-*"))) if base.is_dir() else 0)
     unit = "smoke/%s/confirm-%d" % (stage, n)
     local = units.for_unit(setting, budgets.SMOKE, bench, unit)
     key = rounds.key(bench, item["task_id"])
+    ours = solver_of(spec)
 
     def work(attempt):
-        endpoint, _ = _endpoint(local, bench)
+        endpoint, _ = _endpoint(spec, local, bench)
         card = Arm("card", empty(step="smoke/" + stage, evidence=manifest.SMOKE_EVIDENCE))
         task = {key: {"public": item["public"], "private": item["private"]}}
         found = rounds.run_round(replace(local, workers=1), attempt, endpoint, unit, {CONFIRM_ARM: card},
                                  {CONFIRM_ARM: [(key, 1)]}, task, tag="confirm")
         cell = [f for cells in found.values() for f in cells][0]
-        if not _confirmed(cell):
+        if not _confirmed(cell, ours.echo):
             raise Pause("first_call_not_confirmed", "the single first reply is not a confirmed %s reply"
-                        % protocol.SMOKE_SOLVER, cell["cell"]["id"])
+                        % ours.model, cell["cell"]["id"])
         return {"cell": cell["cell"]["id"], "tokens": _usage(cell)}
 
     identity = {"unit": unit, "stage": stage, "set": "confirm", "spec": spec[protocol.RECORD_HASH]}
@@ -1449,7 +1525,7 @@ def _s4(spec, m, setting, *, evidence=manifest.SMOKE_EVIDENCE):
     accept_root = units.unit_path(chain_root, 1, step.SMOKE_BENCH, "accept")
     parent = empty(step="smoke/s0", evidence=setting.evidence)
     candidate = replace(fixtures.fixture_package(), parent_sha256=parent.sha256)
-    mini = step.SmokeStep(items=tuple(items), candidate=candidate,
+    mini = step.SmokeStep(items=tuple(items), candidate=candidate, model=solver_of(spec).model,
                           drill=FaultSwitch(spec, accept_root, fail_at=protocol.S4_DRILL_CALL))
     try:
         if not (accept_root.parent / step.STEP_FILE).exists():

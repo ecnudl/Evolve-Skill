@@ -51,8 +51,9 @@ bound (``coevo5.ledger.attempt_bound``) would take S3's spend over ``S3_GLM_CAP`
 cannot, since one 220 KB request reserves four attempt bounds (~0.95M) by itself. The spend -- before this attempt,
 charged in it, per role -- is recorded, and the stage's row ``glm_cap`` fails if retries took it over the cap.
 
-Real mode reuses ``smoke._backends`` (the elucid env path and the roles' credential repository must be the
-manifest's D and G paths, the code map and image are verified); fake mode (``S3Rehearsal`` of
+Real mode reuses ``smoke._backends`` (the smoke solver's credential -- the elucid env path, or in a chain-G smoke chain
+G's credential repository, registrar addendum 2026-10-23 02:3x -- and the roles' credential repository must be the
+manifest's, the code map and image are verified); fake mode (``S3Rehearsal`` of
 ``tests/execskill_fakes_s3.py``, imported only there) names no credential.
 """
 from __future__ import annotations
@@ -123,7 +124,8 @@ def own_run(spec, m, manifest_path, *, fake=False, env_path=None, roles_repo=Non
         services = replace(manifest.services_of(m, budgets.SMOKE, setting=setting),
                            registry=Registry(chain_root / smoke.DRILL_HISTORY, evidence=setting.evidence))
         mini = step.SmokeStep(items=tuple(items), candidate=replace(fixtures.fixture_package(),
-                                                                    parent_sha256=parent.sha256))
+                                                                    parent_sha256=parent.sha256),
+                              model=smoke.solver_of(spec).model)  # registrar addendum 2026-10-23 02:3x
         st = step._Step(setting, services, budgets.SMOKE, step.SMOKE_BENCH, K, parent, chain_root, mini)
         try:
             if not (path / "unit.json").exists():
@@ -408,8 +410,8 @@ def _calls(role_sets):
 @contextlib.contextmanager
 def backends(spec, m, manifest_path, *, fake, env_path, roles_repo, rehearsal=None):
     """(Setting, Wikipedia transport) of S3: real -- ``smoke._backends`` (the named credentials must be the manifest's
-    D and G paths, the code map and image verified), Wikipedia through the gateway; fake -- the ``S3Rehearsal`` (or
-    the given one) on the manifest's Setting, no credential named."""
+    paths of the smoke solver and the roles, the code map and image verified), Wikipedia through the gateway; fake --
+    the ``S3Rehearsal`` (or the given one) on the manifest's Setting, no credential named."""
     if not fake:
         require(rehearsal is None, "A real S3 runs on no fake")
         with smoke._backends(spec, m, manifest_path, fake=False, env_path=env_path,
