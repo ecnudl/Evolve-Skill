@@ -1,0 +1,8 @@
+# PR-C31 progress (ticket C3-1 canaries, option (b))
+
+- 12:40 started: read registrar decisions (C3-1 row, 13:0x addendum, 13:2x pilot authorization), evaluation.py, registration 8.1/F16, fixer notes, fixer-4, C3-1, run_execskill.py make_canaries.
+- 12:58 evaluation.py: select_canaries, make_read_canaries, merged load_canaries, _Windows matcher (canary_scan refactored onto it), root_scan, _root_scanned before every first unseal, marker names the scan, run_unit_spec makes the read record first. test_execskill_evaluation.py: register_canaries helper; 16 passed.
+- 13:08 tests/test_execskill_canaries.py written (10 tests incl. 3 planted places); canaries + evaluation: 26 passed.
+- 13:15 mutations checked in a throwaway copy: skip the run-root scan (5 tests fail), no consent check (2 fail), read unit does not make the record (1 fails). runcli+cli+readout: 49 passed.
+- 13:4x e2e: with this change `tests/test_execskill_e2e.py` errors at the fixture's unseal ("No registered test canaries in the run root") until its fixture registers the S0 record and makes the read record -- exact patch in tickets/PR-C31-2.md (validated on a throwaway copy: 11 passed in 314.8 s, earlier runs 321-330 s). Mutation sites 10 and 19 (evaluation.py) still occur once and still fail their named tests. Root-scan cost measured: 25.5 MB tree, 25 canary lengths, 105 s (microbenchmark: 1.5 M sha256 windows per second; the cost grows with distinct text x distinct canary lengths).
+- 13:5x tickets PR-C31-1 (I1 CLI), PR-C31-2 (I1 e2e patch + mutation 31, validated on a copy), PR-C31-3 (registrar) written; notes/PR-C31.md written; final counts: own 26 passed, runcli+cli+readout 49 passed, e2e (patched copy) 11 passed.

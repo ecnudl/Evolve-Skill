@@ -1,0 +1,791 @@
+"""The engineer's step: one proposal of procedure changes, the fixed checks C1-C9, one fix, the candidate (registration
+§4.2 engineer role, §5.4, §9.2; FA-F6, FA-F12, FA-F13, FA-F17, FE-F7/EE-F1, ME-F2, ME-F3, EE-F12; implementation plan
+§1 engineer.py, §2.1, B4).
+
+The engineer (GLM-5.3 through ``roles.plain``, the pinned ``ENGINEER_SYSTEM``) sees the bench's task card, the parent
+package, at most 12 failures and 6 successes of the bench's stored run-slice trajectories (whitelisted, in the seeded
+order of ``data.ranked``; the reference answers of the shown failures only), detector counts and the previous step's
+outcome, fitted to ``ROLE_INPUT_BYTES``. It replies with one ```json manifest ``{"changes": [...]}`` (at most
+``MAX_CHANGES``: new, revision, deletion, narrowing) and one ```python block per new or revised procedure. An
+unparseable reply gets one new proposal call. The registrar assigns every new or revised procedure its id
+(``p-<bench>-<step>-<n>``; ``fx-...`` in engineering-fixture runs) and its lineage (the parent's version, the
+engineer call's request hash).
+
+Each change passes the fixed checks; at its first failure the engineer gets one fix call (that change and the failed
+check), a second failure drops it. Registered meaning, executed order (each result reported under its registered id):
+- C1 parse: the manifest entry's keys and types, its target in the parent, each parent procedure edited once, and a
+  ``bindings`` hook only in a procedure whose declared scope leaves out SpreadsheetBench and ALFWorld (``bindings`` is
+  QA-only, registration §2.4, §3; registrar addendum 2026-10-22 15:5x R3);
+- C2 syntax and banned names (``policy.check`` without the static bans and the size rule);
+- C4 static bans on the source (LiveMath meta option, OfficeQA bulletin literals, ALFWorld numbered receptacles), run
+  before C3 because a ``Procedure`` refuses any policy violation;
+- C3 size and caps: the ``Procedure`` record (``package.Procedure``) and the one-change candidate (``package.with_``);
+- C5 sandbox load: a fresh worker loads it and does not reject it (``SandboxUnavailable`` is P4 and propagates);
+- C6 zero crash (``replay.zero_crash``) on every stored run trajectory of the route in the procedure's scope;
+- C4 leakage and output bans, after C6 because notes exist only after the replay: the description, every string and
+  number literal and every replayed note, against each run slice's reference-answer corpus (``leakage.findings``),
+  counting only content absent from the item's public view (FA-F12: a note may quote its own item; the description
+  and literals may quote the items their replay tests name); any hit goes to ONE adjudication call
+  (``leakage.adjudicate``), a veto drops the change. A LiveMath note the meta-option screen dropped, or naming an
+  option by its letter, fails without adjudication. The frozen corpus indexes no SpreadsheetBench answer, so the
+  answer-cell values the payload discloses (registrar addendum 2026-10-22 15:5x R1) have their own check over the same
+  texts and the header (``disclosed``, ``sheet_findings``; Codex review 2026-10-22 #2); its hits join that one
+  adjudication, which is then shown the disclosed values (``answer_values``) and the procedure's code;
+- C7 replay tests (``replay.run_tests``), C8 format guard (``replay.format_guard``), C9 output screen
+  (``replay.output_faults``).
+A deletion or a narrowing has no code: C1 and C3 only. ``candidate`` builds S' from the parent and the surviving
+changes (dropping, from the last, any whose combination breaks the package caps); no survivor, no candidate. The step
+is one sealed ``fivebench-execskill-v1-engineer`` record. At most ``ENGINEER_CALLS`` engineer calls per step: one
+count shared by the step's engineer units within an attempt, so ``engineer-2`` gets the calls its first unit left
+(``Context.spent``; a redo attempt restarts its own count; registrar addendum 2026-10-22, R7 decision 16:1x, R7a).
+"""
+from __future__ import annotations
+
+import ast
+import json
+import re
+import unicodedata
+import zipfile
+from dataclasses import dataclass, field
+from decimal import Decimal, InvalidOperation
+from fractions import Fraction
+from pathlib import Path
+from xml.etree import ElementTree as ET
+
+from skillopt.coevo5 import leakage
+from skillopt.coevo5.data import ranked
+from skillopt.coevo5.protocol import LEAK_MIN_SIGNIFICANT_DIGITS, LEAK_MIN_SINGLE_WORD
+from skillopt.coevo5.roles import fit
+from skillopt.continual_eval.core import require
+from skillopt.validator_pilot.api import digest
+
+from . import policy, replay
+from .donors import public_text
+from .errors import PackageInvalid
+from .package import EDIT_KINDS, FIXTURE, Procedure, with_
+from .protocol import (BENCHES, ENGINEER_CALLS, ENGINEER_SHOWN, HOOKS, MAX_CHANGES, QA, ROLE_INPUT_BYTES, SEED,
+                       SHOWN_TAG, record, verified)
+from .trajectories import HIDDEN, whitelisted
+
+ROLE = "engineer"
+STATIC_BANS = ("meta_option", "bulletin_literal", "receptacle_literal")
+BLOCK = re.compile(r"```([A-Za-z]*)[ \t]*\n(.*?)\n[ \t]*```", re.S)
+RUN_UNIT = re.compile(r"(?P<chain>[^/]+)/s(?P<k>\d+)-(?P<bench>[a-z]+)/run")  # a run unit's label
+PREVIOUS_FIELDS = frozenset({"decision", "faults", "format"})  # §4.2: accepted / not accepted + fault, format counts
+OPTION_LETTER = re.compile(r"\b(?i:option|choice)\s*\(?[A-E]\)?(?![A-Za-z])|^\s*(?:-\s*)?\(?[A-E]\)?[.)]?\s*$", re.M)
+CODED = ("new", "revision")
+PROCEDURE_KEYS = {"description": str, "hooks": list, "header": str, "max_note_chars": int,
+                  "requests_second_call": bool, "state_bytes": int, "replay_tests": list, "excluded_benches": list}
+OPTIONAL = {"header": "", "max_note_chars": 0, "requests_second_call": False, "state_bytes": 0, "excluded_benches": []}
+TARGET_KEYS = {"revision": "revises", "deletion": "id", "narrowing": "id"}
+# registration §2.4, §3: ``bindings`` is QA-only, so a new or revised procedure declaring it excludes the benches
+# without the <calc> round trip; C1 fails otherwise, with this detail for the fix call (registrar addendum
+# 2026-10-22 15:5x R3; the shell runs no bindings hook there either, ``solver.Shell.before``)
+NO_CALC_BENCHES = tuple(bench for bench in BENCHES if bench not in QA)
+BINDINGS_SCOPE = "bindings_is_qa_only: list %s in excluded_benches" % " and ".join(NO_CALC_BENCHES)
+MAX_ADJUDICATED_CHARS = 4000
+# Codex review 2026-10-22 #2 (registration §4.2 "参考答案不能进代码", §5.4 C4; registrar addendum 15:5x R1 keeps the
+# frozen corpus, which indexes no SpreadsheetBench answer): the C4 check of the answer-cell values the proposal payload
+# discloses. A disclosed value counts unless it is trivial -- empty, a boolean (``step._scalar``'s TRUE / FALSE; the
+# frozen ``leakage.answer_values`` leaves blanks and booleans out too), a number with fewer than
+# LEAK_MIN_SIGNIFICANT_DIGITS significant digits as Python writes it (0-99, 0.5, 1.25: indices, counts and thresholds
+# of any program; the registered floor of the OfficeQA value check), or a text whose normalized words carry fewer than
+# LEAK_MIN_SINGLE_WORD letters and digits together ("Yes", "N/A", "Q1", "1-2"; the registered floor of a single-word
+# answer, applied to the whole value) -- or public: it appears in its own item's instruction, request view or public
+# workbook (every cell value and formula, what the sandbox's ``public_workbook()`` reads). A text is matched by its
+# normalized word run (frozen ``leakage.normalize``; an ISO date-time's "T" read as a space, a midnight time left
+# out), a number by its exact absolute value however written (frozen ``leakage.NUMBER``/``FRACTION``; four-digit years
+# are checked here: on SpreadsheetBench a year is a plausible answer, and one the item shows is public). A flagged
+# text may also quote its own public context (FA-F12): a note its trajectory's view, workbook and stored pre-check
+# report (``sheet_feedback``'s input), the description, header and literals those of the trajectories their replay
+# tests name.
+SHEET_REASON = "sheet_reference"
+MAX_ADJUDICATED_VALUES = 60  # the frozen ``leakage.answer_values`` bound (v3 §6)
+ISO_TIME = re.compile(r"(\d{4}-\d{2}-\d{2})T(?=\d{2}:\d{2})")
+MIDNIGHT = re.compile(r"^(\d{4}-\d{2}-\d{2})[T ]00:00(?::00(?:\.0+)?)?$")
+BOOLEANS = frozenset({"true", "false"})
+WORKBOOK_ERRORS = (OSError, ValueError, KeyError, TypeError, ET.ParseError, zipfile.BadZipFile)
+ENGINEER_SYSTEM = """\
+You maintain a package of helper programs ("procedures") for a solver model. The shell runs each procedure's hooks in \
+a sandbox without network, files or clock, and shows the solver the typed notes they return. You see the bench's task \
+card, the current package and stored trajectories of the solver (failures and successes; each failure with its \
+reference answer). Propose at most 3 changes that should make the solver right on failures like these without hurting \
+the successes.
+
+Hooks (module-level functions; declare every hook you define; "applies" is required):
+- applies(view) -> bool: whether the procedure runs on this item. view: QA {"question", "context" or "choices"}; \
+SpreadsheetBench {"instruction", "workbook_preview", "input_path", "required_output_path", \
+"required_answer_position"}; ALFWorld {"initial_observation", "admissible_commands_at_reset", "task_text"}.
+- before_call(view, state) -> fields or None (QA and SpreadsheetBench; state is None).
+- bindings(view) -> {"bindings": [{"name", "quote", "value"}]} or None: named numbers quoted verbatim from the task; \
+the solver may then compute with <calc> expressions over these names.
+- sheet_feedback(view, run_report, state) -> {"fields": fields, "request_repair": bool}: after the solver's program \
+ran once on the public input workbook; run_report {"status": "ok", "exception", "missing_output" or "unknown", \
+"exc_type", "message", "answer_cells"}. request_repair true asks for one repair call (declare \
+"requests_second_call": true).
+- alf_before_step(view, state) -> {"fields": fields, "discourage": [admissible commands]}: every ALFWorld step; view \
+{"initial_observation", "observation", "admissible_commands", "recent_history"}.
+- alf_after_step(event, state) -> the new state (JSON, at most "state_bytes" bytes); event {"step", "action", \
+"observation", "admissible_commands"}. A state procedure keeps state["facts"] = {"reached": [receptacles reached or \
+opened], "carrying": [objects held], "nothing_happens": the number of actions answered "Nothing happens."}; these \
+facts must agree with a fixed reference tracker on at least 97% of the steps.
+fields: {"facts": [text <= 200], "table": [[text <= 40]] (<= 20 rows, <= 12 columns), "candidates": [text <= 120], \
+"warnings": [text <= 200], "bindings": as above}. Notes give information, never instructions about the reply's form: \
+a field with words such as answer, output, return, respond, json, format, round, units, decimal places, only the, \
+just the, bare or single letter is dropped and counted as a fault.
+
+Code policy: at most 6000 bytes; module level holds only imports, literal constants (<= 2000 characters) and plain \
+functions; importable: bisect, calendar, collections, copy, datetime, decimal, difflib, fractions, functools, heapq, \
+itertools, json, math, numpy, openpyxl.utils, operator, pandas, re, statistics, string, sympy, textwrap, \
+unicodedata. No classes, globals, I/O, eval, randomness or clock; no dunder names or private attributes. Never write a \
+literal naming a specific OfficeQA bulletin issue or page, a numbered ALFWorld receptacle (such as "drawer 3") or the \
+LiveMath option about a stronger result, never choose options by their position or letter, and never copy a training \
+task's reference answer into code, notes or the description.
+
+Replay tests (1 to 8 per new or revised procedure) show on the stored trajectories that the procedure does what it \
+claims: {"id", "trajectory": the "cell" of a trajectory shown to you, "hook", "property", "claims_fix": true or \
+false, "nonvacuity": {"withheld_expect": false, "mutation": null or a mutation}}. Properties: {"kind": \
+"applies_true"} or "applies_false"; {"kind": "note_contains", "value": text}; {"kind": "note_matches", "value": \
+[text fragments in order]}; {"kind": "discourage_contains" or "discourage_excludes", "value": command}; {"kind": \
+"binding_equals", "name", "value"}; {"kind": "repair_requested", "value": true or false}; {"kind": "state_equals", \
+"key", "value"}; properties of alf_before_step and alf_after_step also give "step" (the step index). Each property \
+must hold with the procedure and be false without it (withheld) or under its mutation: strip_digits (any bench), \
+drop_exception_message or program_ok (SpreadsheetBench), nothing_happens (ALFWorld); applies properties need a \
+mutation. At least one test with "claims_fix": true must hold on a failed trajectory.
+
+Reply with one ```json block {"changes": [...]} and then one ```python block per new or revised procedure, in the \
+order of the changes. A change is {"kind": "new", "description" (<= 600 characters, for people), "hooks", "header" \
+(<= 200 characters, shown above the notes), "max_note_chars" (1-4000 when a hook writes notes, else 0), \
+"requests_second_call", "state_bytes", "replay_tests", optionally "excluded_benches"}; {"kind": "revision", \
+"revises": the procedure's id, and the fields of "new"}; {"kind": "deletion", "id"}; or {"kind": "narrowing", "id", \
+"benches": the benches it stops running on}. {"changes": []} proposes nothing. When the user message has "request": \
+"fix", it names one change and the check it failed: reply in the same format with exactly that change, corrected."""
+ENGINEER_PROMPT_SHA256 = digest(ENGINEER_SYSTEM)
+
+
+class Unparseable(ValueError):
+    """A reply without exactly one manifest, or whose code blocks do not match its changes."""
+
+
+@dataclass
+class Change:
+    """One proposed change: its manifest ``entry``, its code (new, revision), the request hash of the call that wrote
+    it, and what the checks built (``procedure``; ``target``: the parent procedure it edits)."""
+    n: int
+    kind: str
+    entry: dict
+    source: str | None
+    call: str
+    procedure: Procedure | None = None
+    target: str | None = None
+    benches: tuple = ()
+
+    def to_json(self):
+        return {"n": self.n, "kind": self.kind, "target": self.target, "benches": list(self.benches),
+                "id": self.procedure.id if self.procedure else None,
+                "procedure_sha256": self.procedure.sha256 if self.procedure else None, "engineer_call": self.call}
+
+
+@dataclass
+class Context:
+    """One engineer step. ``k``: the chain step number in procedure ids; ``step``: the candidate's step label;
+    ``trajectories``: the stored run trajectories of the route (this bench and the earlier ones; sealed records);
+    ``corpora``: {bench: ``leakage.Corpus``} of the run slices' reference answers; ``workers``: the worker factory of
+    ``replay.replay_many``; ``roles``: the GLM-5.3 method roles; ``label``: the unit's label; ``references``:
+    {task_id: reference answer} of this bench's run-slice items (shown for failures only); ``inputs_dirs``: {cell:
+    public input directory} of SpreadsheetBench trajectories; ``detectors``: detector counts; ``previous``: the previous
+    step's outcome {decision: accepted | not_accepted, faults, format} (counts); ``spent``: the engineer calls the
+    step's earlier engineer unit made in the attempt that completed it (``ENGINEER_CALLS`` is per step, shared by
+    ``engineer`` and ``engineer-2``; registrar addendum 2026-10-22, R7 decision 16:1x, R7a).
+
+    What the engineer may be given is checked here (§4.2; isolation review 5): every trajectory is a sealed record of
+    a run unit (``<chain>/s<k>-<bench>/run``) of this chain (the label's first part) at this step or before -- never an
+    acceptance or test cell; references only on QA and table benches, only for this bench's run-slice failures, in a
+    frozen answer shape (text, list of texts, or answer positions to scalars) -- never an expert plan or a game path;
+    detectors and previous as counts only."""
+    bench: str
+    k: int
+    step: str
+    evidence: str
+    parent: object
+    trajectories: list
+    corpora: dict
+    workers: object
+    roles: object
+    label: str
+    card: str = ""
+    references: dict = field(default_factory=dict)
+    inputs_dirs: dict | None = None
+    detectors: dict = field(default_factory=dict)
+    previous: dict | None = None
+    spent: int = 0
+    # the payload's disclosed SpreadsheetBench values and the public workbooks read for their check (``disclosed``)
+    sheet: dict = field(default_factory=dict, init=False, repr=False, compare=False)
+
+    def __post_init__(self):
+        require(self.bench in BENCHES and type(self.k) is int and 0 <= self.k <= 999, "A known bench and step number")
+        require(type(self.spent) is int and 0 <= self.spent <= ENGINEER_CALLS, "The step's engineer calls so far")
+        chain = str(self.label).split("/", 1)[0]
+        for trajectory in self.trajectories:
+            found = RUN_UNIT.fullmatch(str(verified(trajectory, "trajectory")["unit"]))
+            require(found is not None and found["chain"] == chain and found["bench"] == trajectory["bench"]
+                    and int(found["k"]) <= self.k, "The engineer sees run-slice trajectories of its own chain only")
+        failures = {t["task_id"] for t in self.trajectories if t["bench"] == self.bench and t["token"] == "fail"}
+        require(self.bench != "alfworld" or not self.references, "No reference reaches the engineer on ALFWorld")
+        require(set(self.references) <= failures and all(_answer_shape(v) for v in self.references.values()),
+                "References only for this bench's run-slice failures, in a frozen answer shape")
+        require(_counts(self.detectors), "The engineer sees detector counts only")
+        require(self.previous is None or (
+            isinstance(self.previous, dict) and set(self.previous) == PREVIOUS_FIELDS
+            and self.previous["decision"] in ("accepted", "not_accepted") and _counts(self.previous["faults"])
+            and _counts(self.previous["format"])),
+            "The previous step is shown as accepted / not accepted with fault and format counts only")
+
+
+def _answer_shape(value):
+    """A frozen reference shape: a text, a list of texts (SearchQA's answers), or answer positions to scalars."""
+    if type(value) is str:
+        return bool(value.strip())
+    if isinstance(value, list):
+        return bool(value) and all(type(v) is str for v in value)
+    if isinstance(value, dict):
+        return bool(value) and all(type(k) is str and k not in HIDDEN and type(v) in (str, int, float)
+                                   for k, v in value.items())
+    return False
+
+
+def _counts(value):
+    """Counts only: a non-negative integer, or a mapping of names to counts."""
+    if type(value) is int:
+        return value >= 0
+    return isinstance(value, dict) and all(type(k) is str and _counts(v) for k, v in value.items())
+
+
+# ------------------------------------------------------------------------------------------------- the payload
+def shown(ctx):
+    """The trajectories shown to the engineer: at most ``ENGINEER_SHOWN`` failures and successes of the parent's cells
+    on the bench, in the seeded order (``data.ranked``, ``SHOWN_TAG`` + the unit label)."""
+    tag = "%s:%s" % (SHOWN_TAG, ctx.label)
+    out = []
+    for kind, token in (("failures", "fail"), ("successes", "pass")):
+        found = [{"task_id": t["cell"], "trajectory": t} for t in ctx.trajectories
+                 if t["bench"] == ctx.bench and t.get("arm_kind") == "parent" and t.get("token") == token]
+        out += [(kind, entry["trajectory"]) for entry in ranked(found, SEED, tag)[:ENGINEER_SHOWN[kind]]]
+    return out
+
+
+def _shown_view(kind, trajectory, references):
+    view = whitelisted(trajectory)
+    for call in view["calls"]:
+        call.pop("system")
+    entry = {"kind": kind, **view}
+    if kind == "failures" and trajectory["task_id"] in references:
+        entry["reference"] = references[trajectory["task_id"]]
+    return entry
+
+
+def _listed(procedure, parent):
+    return {"id": procedure.id, "description": procedure.description, "hooks": list(procedure.hooks),
+            "header": procedure.header, "max_note_chars": procedure.max_note_chars,
+            "requests_second_call": procedure.requests_second_call, "state_bytes": procedure.state_bytes,
+            "excluded_benches": list(parent.excluded(procedure.id)), "source": procedure.source}
+
+
+def payload(ctx):
+    """The user message of the proposal call (fitted: the last trajectories are left out first)."""
+    user = {"request": "propose", "bench": ctx.bench, "card": ctx.card,
+            "package": [_listed(p, ctx.parent) for p in ctx.parent.procedures],
+            "trajectories": [_shown_view(kind, t, ctx.references) for kind, t in shown(ctx)],
+            "detectors": ctx.detectors, "previous": ctx.previous}
+    return fit(user, "trajectories", ROLE_INPUT_BYTES)
+
+
+def _ask(ctx, user, purpose):
+    """``(reply or None, request sha256)`` of one engineer call; (None, None) once the step's calls are spent: this
+    unit's and, for ``engineer-2``, those of the step's first engineer unit (``ctx.spent``; R7a)."""
+    prefix = "engineer/%s/" % ctx.label
+    if ctx.spent + ctx.roles.count(prefix) >= ENGINEER_CALLS:
+        return None, None
+    reply = ctx.roles.plain(ROLE, ENGINEER_SYSTEM, json.dumps(user, ensure_ascii=False, sort_keys=True),
+                            label=prefix + purpose)
+    return reply, ctx.roles.calls[-1]["request_sha256"]
+
+
+# ------------------------------------------------------------------------------------------------------ parsing
+def parse(reply):
+    """``(changes, sources)``: the manifest's change entries and the python blocks, one per new or revised change in
+    order. Raises ``Unparseable``."""
+    if type(reply) is not str:
+        raise Unparseable("no_reply")
+    blocks = BLOCK.findall(reply)
+    manifests = [body for lang, body in blocks if lang.lower() == "json"]
+    sources = [body for lang, body in blocks if lang.lower() in ("python", "py")]
+    if len(manifests) != 1:
+        raise Unparseable("manifest_blocks:%d" % len(manifests))
+    try:
+        manifest = json.loads(manifests[0])
+    except ValueError:
+        raise Unparseable("manifest_json") from None
+    changes = manifest.get("changes") if isinstance(manifest, dict) and set(manifest) == {"changes"} else None
+    if type(changes) is not list or len(changes) > MAX_CHANGES or not all(isinstance(c, dict) for c in changes):
+        raise Unparseable("manifest_shape")
+    if len(sources) != sum(1 for c in changes if c.get("kind") in CODED):
+        raise Unparseable("code_blocks")
+    return changes, sources
+
+
+def changes_of(entries, sources, call):
+    """The ``Change`` objects of a parsed reply."""
+    out, code = [], iter(sources)
+    for n, entry in enumerate(entries, 1):
+        kind = entry.get("kind")
+        out.append(Change(n, kind, entry, next(code) if kind in CODED else None, call))
+    return out
+
+
+# ------------------------------------------------------------------------------------------------------ checks
+def _result(check, passed, detail=None):
+    return {"check": check, "passed": bool(passed), "detail": detail}
+
+
+def _structure(change, parent, taken):
+    """C1: None when the entry is well formed for its kind, else why not."""
+    entry, kind = change.entry, change.kind
+    if kind not in EDIT_KINDS:
+        return "kind"
+    if kind in CODED:
+        allowed = {"kind", *PROCEDURE_KEYS, *(("revises",) if kind == "revision" else ())}
+        required = {"kind", "description", "hooks", "replay_tests", *(("revises",) if kind == "revision" else ())}
+        if not required <= set(entry) <= allowed:
+            return "keys"
+        if not all(type(entry[k]) is t for k, t in PROCEDURE_KEYS.items() if k in entry):
+            return "types"
+        if not all(type(h) is str and h in HOOKS for h in entry["hooks"]) \
+                or not all(type(b) is str and b in BENCHES for b in entry.get("excluded_benches", [])):
+            return "unknown_hook_or_bench"
+        if "bindings" in entry["hooks"] and not set(NO_CALC_BENCHES) <= set(entry.get("excluded_benches", [])):
+            return BINDINGS_SCOPE
+    elif set(entry) != {"kind", "id", *(("benches",) if kind == "narrowing" else ())}:
+        return "keys"
+    if kind == "narrowing" and not (type(entry["benches"]) is list and entry["benches"]
+                                    and all(type(b) is str and b in BENCHES for b in entry["benches"])):
+        return "benches"
+    target = entry.get(TARGET_KEYS.get(kind))
+    if kind != "new" and (type(target) is not str or target not in parent.order):
+        return "target_not_in_parent"
+    if kind != "new" and target in taken:
+        return "target_edited_twice"
+    return None
+
+
+def _new_id(ctx, n):
+    """The registrar's id of the n-th coded change: ``p-<bench>-<k>-<n>`` (``fx-`` for engineering fixtures), the next
+    free one."""
+    prefix = "fx" if ctx.evidence == FIXTURE else "p"
+    while "%s-%s-%d-%d" % (prefix, ctx.bench, ctx.k, n) in ctx.parent.order:
+        n += 1
+    return "%s-%s-%d-%d" % (prefix, ctx.bench, ctx.k, n)
+
+
+def _build(change, ctx):
+    """C3: the procedure record and the one-change candidate."""
+    entry, parent = change.entry, ctx.parent
+    if change.kind in CODED:
+        old = parent.get(entry["revises"]) if change.kind == "revision" else None
+        values = {**OPTIONAL, **{k: v for k, v in entry.items() if k in PROCEDURE_KEYS}}
+        change.procedure = Procedure(
+            id=_new_id(ctx, change.n), origin=ctx.bench, description=values["description"],
+            hooks=tuple(h for h in HOOKS if h in values["hooks"]), source=change.source, evidence=ctx.evidence,
+            header=values["header"], max_note_chars=values["max_note_chars"],
+            requests_second_call=values["requests_second_call"], state_bytes=values["state_bytes"],
+            excluded_benches=tuple(b for b in BENCHES if b in values["excluded_benches"]),
+            replay_tests=tuple(values["replay_tests"]),
+            lineage={"parent": old.sha256 if old else None, "revises": old.id if old else None,
+                     "engineer_call": change.call})
+        change.target = old.id if old else None
+    else:
+        change.target = entry["id"]
+        change.benches = tuple(b for b in BENCHES if b in entry.get("benches", []))
+    return candidate(parent, [change], step=ctx.step)
+
+
+def candidate(parent, changes, *, step, evidence=None):
+    """S': ``parent`` with the ``changes`` (``package.with_``). Raises ``PackageInvalid``."""
+    return with_(parent, step=step, add=[c.procedure for c in changes if c.kind == "new"],
+                 revise=[c.procedure for c in changes if c.kind == "revision"],
+                 remove=[c.target for c in changes if c.kind == "deletion"],
+                 narrow={c.target: c.benches for c in changes if c.kind == "narrowing"}, evidence=evidence)
+
+
+def _literals(source):
+    """Every string and number literal of a module, as text."""
+    return [str(node.value) for node in ast.walk(ast.parse(source))
+            if isinstance(node, ast.Constant) and type(node.value) in (str, int, float) and str(node.value).strip()]
+
+
+def _has(tokens, phrase):
+    return any(tokens[i:i + len(phrase)] == list(phrase) for i in range(len(tokens) - len(phrase) + 1))
+
+
+def absent_findings(text, corpus, public):
+    """``leakage.findings`` restricted to content absent from ``public`` (the item's public text, FA-F12):
+    {reason: True, "answer_word": [words]}."""
+    tokens, known = leakage.normalize(text).split(), leakage.normalize(public).split()
+    found, out = leakage.findings(text, corpus), {}
+    if "shared_8gram" in found and (leakage._grams(tokens) & corpus.shared) - leakage._grams(known):
+        out["shared_8gram"] = True
+    if "answer_text" in found and any(_has(tokens, p) and not _has(known, p) for p in corpus.phrases):
+        out["answer_text"] = True
+    if "answer_number" in found and {v for v in leakage._numbers(text) if v in corpus.numbers} \
+            - set(leakage._numbers(public)):
+        out["answer_number"] = True
+    if "option_text" in found:
+        squeezed, own = "".join(tokens), "".join(known)
+        if any(option in squeezed and option not in own for option in corpus.options):
+            out["option_text"] = True
+    words = sorted(set(found.get("answer_word", [])) - set(known))
+    if words:
+        out["answer_word"] = words
+    return out
+
+
+# ------------------------------------------------------------- C4 on SpreadsheetBench references (Codex review #2)
+def _words(text):
+    """The normalized words of a text (frozen ``leakage.normalize``), an ISO date-time's "T" read as a space."""
+    return leakage.normalize(ISO_TIME.sub(r"\1 ", text)).split()
+
+
+def _numbers(text):
+    """The exact absolute values of the numbers written in ``text``, as the frozen ``leakage._numbers`` reads them
+    (``leakage.NUMBER``, ``leakage.FRACTION``, ``leakage._value``) but with four-digit years kept."""
+    text = unicodedata.normalize("NFKC", text)
+    found = {leakage._value(match.group()) for match in leakage.NUMBER.finditer(text)}
+    found |= {Fraction(int(match.group(1)), int(match.group(2))) for match in leakage.FRACTION.finditer(text)
+              if int(match.group(2))}
+    found.discard(None)
+    return found
+
+
+def _number_key(written):
+    """("number", exact absolute value) of a number as written, None below LEAK_MIN_SIGNIFICANT_DIGITS significant
+    digits (sign, point and leading zeros not counted, as the frozen ``leakage._significant``)."""
+    try:
+        digits = len(Decimal(written.replace(",", "")).as_tuple().digits)
+    except InvalidOperation:
+        return None
+    value = leakage._value(written.lstrip("+-"))
+    return ("number", value) if digits >= LEAK_MIN_SIGNIFICANT_DIGITS and value is not None else None
+
+
+def sheet_key(value):
+    """The comparison key of one disclosed reference cell value (``step._scalar``'s shapes), None when it is trivial
+    (``SHEET_REASON``'s comment): ("number", its exact absolute value) or ("text", its normalized words)."""
+    if value is None or isinstance(value, bool):
+        return None
+    if type(value) in (int, float):
+        if value != value or value in (float("inf"), float("-inf")):
+            return None
+        return _number_key(str(int(value)) if float(value).is_integer() else repr(float(value)))
+    text = str(value).strip()
+    if not text or text.lower() in BOOLEANS:
+        return None
+    numeric = leakage._numeric(text)
+    if numeric is not None:
+        return _number_key(numeric)
+    words = tuple(_words(MIDNIGHT.sub(r"\1", text)))
+    return ("text", words) if sum(len(w) for w in words) >= LEAK_MIN_SINGLE_WORD else None
+
+
+class _Seen:
+    """The numbers and word runs of some texts, each text on its own (a word run never spans two texts)."""
+
+    def __init__(self, texts=()):
+        self.numbers, self.vocabulary, self.runs = set(), set(), []
+        for text in texts:
+            words = _words(text)
+            self.runs.append(words)
+            self.vocabulary.update(words)
+            self.numbers |= _numbers(text)
+
+    def extend(self, other):
+        self.numbers |= other.numbers
+        self.vocabulary |= other.vocabulary
+        self.runs += other.runs
+        return self
+
+    def has(self, key):
+        kind, value = key
+        if kind == "number":
+            return value in self.numbers
+        return set(value) <= self.vocabulary and any(_has(run, value) for run in self.runs)
+
+
+def _cell_text(value):
+    return value.isoformat() if hasattr(value, "isoformat") else str(value)
+
+
+def _workbook_texts(path):
+    """Every cell value and formula of the public workbook at ``path`` as text, read as the sandbox's
+    ``public_workbook()`` reads it (openpyxl read-only, cached values and formulas, dates and times as ISO text); []
+    when it cannot be read (nothing is exempted by it)."""
+    from openpyxl import load_workbook
+    from openpyxl.utils.exceptions import InvalidFileException
+
+    out = []
+    for data_only in (True, False):
+        try:
+            book = load_workbook(path, read_only=True, data_only=data_only)
+        except WORKBOOK_ERRORS + (InvalidFileException,):
+            return []
+        try:
+            for sheet in book.worksheets:
+                for row in sheet.iter_rows(values_only=True):
+                    out += [_cell_text(value) for value in row if value is not None]
+        except WORKBOOK_ERRORS:
+            return []
+        finally:
+            book.close()
+    return out
+
+
+def _workbook(ctx, cell):
+    """The ``_Seen`` of the public workbook a stored SpreadsheetBench trajectory ran on (``ctx.inputs_dirs``), read once
+    per context; empty for any other cell."""
+    books = ctx.sheet.setdefault("books", {})
+    if cell not in books:
+        directory = (ctx.inputs_dirs or {}).get(cell)
+        books[cell] = _Seen(_workbook_texts(Path(directory) / "input.xlsx") if directory is not None else ())
+    return books[cell]
+
+
+def _shown_references(user):
+    """[(cell, reference)] of the table-shape references a proposal payload carries: SpreadsheetBench's answer-cell
+    values of the shown failures it kept after fitting (registrar addendum 2026-10-22 15:5x R1)."""
+    return [(t["cell"], t["reference"]) for t in user["trajectories"] if isinstance(t.get("reference"), dict)]
+
+
+def disclosed(ctx):
+    """Codex review 2026-10-22 #2: {key: the value as written} of the SpreadsheetBench reference values the proposal
+    payload disclosed -- exactly those ``run`` sent (``payload`` recomputed, deterministically, for a direct check) --
+    that are not trivial and not public in their own item (``SHEET_REASON``'s comment), in payload order. Read once per
+    context."""
+    if "disclosed" not in ctx.sheet:
+        shown = ctx.sheet.get("shown")
+        if shown is None:
+            shown = ctx.sheet["shown"] = _shown_references(payload(ctx))
+        by_cell, out = {t["cell"]: t for t in ctx.trajectories}, {}
+        for cell, reference in shown:
+            own = None
+            for value in reference.values():
+                key = sheet_key(value)
+                if key is None or key in out:
+                    continue
+                if own is None:  # the item's instruction and request view, and its public workbook
+                    view = replay.inputs_of(by_cell[cell])["request_view"]
+                    own = _Seen([public_text(view)]).extend(_workbook(ctx, cell))
+                if not own.has(key):
+                    out[key] = str(value)
+        ctx.sheet["disclosed"] = out
+    return ctx.sheet["disclosed"]
+
+
+def sheet_findings(ctx, text, public, cited):
+    """The disclosed values (``disclosed``) written in ``text`` and absent from its own public context: ``public``
+    (the text the note's item or the replay tests' items show) and, of the trajectories ``cited`` (``replay.inputs_of``
+    entries), the stored pre-check reports and the public workbooks (FA-F12)."""
+    values = disclosed(ctx)
+    seen = _Seen([text]) if values else None
+    found = [key for key in values if seen.has(key)] if values else []
+    if not found:
+        return []
+    context = _Seen([public] + [public_text(entry["report"]) for entry in cited if entry.get("report")])
+    for entry in cited:
+        context.extend(_workbook(ctx, entry["cell"]))
+    return [key for key in found if not context.has(key)]
+
+
+def leak_check(change, ctx, outcomes, entries):
+    """C4 leakage and output bans (module docstring): ``(passed, detail)``; at most one adjudication call."""
+    procedure = change.procedure
+    bans = replay.meta_option_faults(outcomes)
+    letters = [{"cell": cell, "hook": note["hook"]} for cell, outcome in outcomes.items() if outcome.bench == "livemath"
+               for note in outcome.notes if OPTION_LETTER.search(note["text"])]
+    if bans or letters:
+        return False, {"output_bans": (bans + letters)[:10]}
+    named = [entries[t.get("trajectory")] for t in procedure.replay_tests if t.get("trajectory") in entries]
+    cited = "\n".join(public_text(e["request_view"] or [s["view"] for s in e["steps"]]) for e in named)
+    corpora = list(ctx.corpora.values())
+    # (where, text, its public text, the trajectories whose workbook and report it may quote, the corpora); the header
+    # is shown above every note, so it is checked on its own too (Codex review 2026-10-22 #2)
+    texts = [("description", procedure.description, cited, named, corpora)]
+    texts += [("header", procedure.header, cited, named, corpora)] if procedure.header.strip() else []
+    texts += [("literal", literal, cited, named, corpora) for literal in _literals(procedure.source)]
+    texts += [("note:%s" % cell, note["text"], note["public"], [entries[cell]] if cell in entries else [],
+               [ctx.corpora[outcome.bench]] if outcome.bench in ctx.corpora else [])
+              for cell, outcome in outcomes.items() for note in outcome.notes]
+    hits, colliding, copied = [], [], []
+    for where, text, public, quoted, against in texts:
+        for corpus in against:
+            found = absent_findings(text, corpus, public)
+            if found:
+                hits.append({"where": where, "bench": corpus.benchmark, "reasons": sorted(found), "text": text})
+                colliding += corpus.evidence(found.get("answer_word", []))
+        found = sheet_findings(ctx, text, public, quoted)
+        if found:
+            hits.append({"where": where, "bench": "spreadsheetbench", "reasons": [SHEET_REASON], "text": text})
+            copied += found
+    if not hits:
+        return True, None
+    flagged = "\n".join(dict.fromkeys("- " + h["text"] for h in hits))  # each flagged text once
+    text = ("Procedure description: %s\nFlagged content:\n%s" % (procedure.description, flagged))[
+        :MAX_ADJUDICATED_CHARS]
+    if copied:  # the code tells a value written into it from one it computes on the public workbook (C3: <= 6000 B)
+        text += "\nProcedure code:\n" + procedure.source
+    values = disclosed(ctx)  # the matched values first, then the other disclosed ones, at most the frozen bound
+    matched = set(copied)
+    shown = [values[key] for key in dict.fromkeys(copied)] + [v for key, v in values.items() if key not in matched]
+    shown = list(dict.fromkeys(shown))[:MAX_ADJUDICATED_VALUES]
+    kept = leakage.adjudicate(ctx.roles, text, label="leak/%s/%s" % (ctx.label, procedure.id),
+                              colliding=colliding[:3] or None, values=shown or None)
+    detail = {"hits": [{k: h[k] for k in ("where", "bench", "reasons")} for h in hits[:10]], "adjudicated": True,
+              "kept": kept, "sheet_values": len(shown)}
+    return kept, detail
+
+
+def _scope(ctx, candidate_package, procedure):
+    """{cell: inputs} of the stored run trajectories on the procedure's benches."""
+    excluded = set(candidate_package.excluded(procedure.id))
+    out = {}
+    for trajectory in ctx.trajectories:
+        if trajectory["bench"] not in excluded:
+            entry = replay.inputs_of(trajectory)
+            if entry is not None:
+                out[entry["cell"]] = entry
+    return out
+
+
+def check(change, ctx, taken=()):
+    """The fixed checks of one change (module docstring): ``{"n", "kind", "checks": [...], "passed", "failed"}``
+    with the results in executed order, stopping at the first failure."""
+    report = {"n": change.n, "kind": change.kind, "checks": [], "passed": False, "failed": None}
+
+    def done(check_id, passed, detail=None):
+        report["checks"].append(_result(check_id, passed, detail))
+        if not passed:
+            report["failed"] = check_id
+        return passed
+
+    problem = _structure(change, ctx.parent, taken)
+    if not done("C1", problem is None, problem):
+        return report
+    if change.kind in CODED:
+        violations = [v.to_json() for v in policy.check(change.source)]
+        banned = [v for v in violations if v["rule"] in STATIC_BANS]
+        other = [v for v in violations if v["rule"] not in STATIC_BANS + ("size",)]
+        if not done("C2", not other, other[:5]) or not done("C4", not banned, {"static_bans": banned[:5]}):
+            return report
+    try:
+        single = _build(change, ctx)
+    except PackageInvalid as error:
+        done("C3", False, str(error)[:300])
+        return report
+    done("C3", True)
+    if change.kind not in CODED:
+        report["passed"] = True
+        return report
+    procedure = change.procedure
+    with ctx.workers(replay.solo(procedure), kind="cell", hashseed=0, inputs_dir=None) as worker:
+        worker.ping()
+        rejected = worker.rejected.get(procedure.id)
+    if not done("C5", rejected is None, rejected):
+        return report
+    entries = _scope(ctx, single, procedure)
+    crash, outcomes = replay.zero_crash(procedure, list(entries.values()), ctx.workers, inputs_dirs=ctx.inputs_dirs)
+    if not done("C6", crash["passed"], crash):
+        return report
+    if not done("C4", *leak_check(change, ctx, outcomes, entries)):
+        return report
+    tests = replay.run_tests(procedure, entries, outcomes, ctx.workers, inputs_dirs=ctx.inputs_dirs)
+    if not done("C7", tests["passed"], tests):
+        return report
+    guard = replay.format_guard(outcomes)
+    if not done("C8", not guard, guard[:10]):
+        return report
+    screen = replay.output_faults(outcomes)
+    if not done("C9", not screen, screen[:10]):
+        return report
+    report["passed"] = True
+    return report
+
+
+# ------------------------------------------------------------------------------------------------------ the step
+def fix(ctx, change, report):
+    """The engineer's one fix of ``change`` after its first failure: the corrected ``Change``, or None when the reply
+    holds no single change of the same kind and target."""
+    entry = dict(change.entry, **({"source": change.source} if change.source is not None else {}))
+    failed = [c for c in report["checks"] if not c["passed"]]
+    user = {"request": "fix", "bench": ctx.bench, "change": entry, "failed": failed[-1] if failed else None}
+    reply, call = _ask(ctx, user, "fix/%d" % change.n)
+    try:
+        entries, sources = parse(reply)
+    except Unparseable:
+        return None
+    if len(entries) != 1:
+        return None
+    fixed = changes_of(entries, sources, call)[0]
+    key = TARGET_KEYS.get(change.kind)
+    if fixed.kind != change.kind or (key is not None and fixed.entry.get(key) != change.entry.get(key)):
+        return None
+    fixed.n = change.n
+    return fixed
+
+
+def _combined(parent, survivors, step):
+    """S' from the surviving changes, dropping from the last any whose combination breaks the package."""
+    survivors = list(survivors)
+    while survivors:
+        try:
+            return candidate(parent, survivors, step=step), survivors
+        except PackageInvalid:
+            survivors.pop()
+    return None, []
+
+
+def run(ctx):
+    """The engineer's step: ``(candidate package or None, the sealed engineer record)``."""
+    user, proposals, changes = payload(ctx), [], []
+    ctx.sheet["shown"] = _shown_references(user)  # C4 checks exactly the references this payload discloses (#2)
+    ctx.sheet.pop("disclosed", None)
+    for purpose in ("propose", "repropose"):
+        reply, call = _ask(ctx, user, purpose)
+        try:
+            entries, sources = parse(reply)
+        except Unparseable as error:
+            proposals.append({"call": call, "parsed": False, "reason": str(error)})
+            user = {**user, "unparseable": str(error)}  # the second call says why the first reply was not read
+            continue
+        proposals.append({"call": call, "parsed": True, "changes": len(entries)})
+        changes = changes_of(entries, sources, call)
+        break
+    survivors, outcomes, taken = [], [], set()
+    for change in changes:
+        attempts = [check(change, ctx, taken)]
+        final = change
+        if not attempts[0]["passed"]:
+            fixed = fix(ctx, change, attempts[0])
+            if fixed is not None:
+                attempts.append(check(fixed, ctx, taken))
+                final = fixed
+        survived = attempts[-1]["passed"]
+        if survived:
+            survivors.append(final)
+            taken.add(final.target)
+        outcomes.append({**final.to_json(), "attempts": attempts, "survived": survived})
+    package, kept = _combined(ctx.parent, survivors, ctx.step)
+    sealed = record("engineer", ctx.evidence, {
+        "bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
+        "prompt_sha256": ENGINEER_PROMPT_SHA256, "proposals": proposals, "changes": outcomes,
+        "kept": [c.n for c in kept], "candidate_sha256": package.sha256 if package else None,
+        "procedures": [p.to_json() for p in package.procedures] if package else [],
+        "calls": ctx.roles.count("engineer/%s/" % ctx.label), "earlier_calls": ctx.spent})
+    return package, sealed

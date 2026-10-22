@@ -1,0 +1,13 @@
+# P2-A3 progress (registrar row PR-C31-3, addendum 14:1x: read-record skip of training duplicates, owner release of a scan, process-pool root scan)
+
+- 13:34 read: notes PR-C31 (+progress), tickets PR-C31-1/2/3, registrar decisions (whole file, addenda 13:4x/13:5x/14:1x), evaluation.py (whole), tests/test_execskill_canaries.py, tests/test_execskill_evaluation.py, manifest.py data.pools pins (_pools/_items), frozen coevo5 recovered/attempts, run_execskill.py recover/monitor, pilot runbook data.pools rows.
+- 13:48 evaluation.py: (1a) select_canaries skip=, training_duplicates, _training_side (data.pools pins read and hash-checked when the record is made), read record gains skipped/training_pools (checked by _canary_records); (1b) release_check, _release, _same_hits, hits_sha256 in scan.json, marker canary_scan.release; (3) scan_workers, _root_files/_found/_shares/_scan_process/_scan_share, root_scan(workers=) spawn pool; run_unit_spec passes manifest data.pools. Tests updated + 8 new; own files 34 passed.
+- 13:53 deliberate-breakage checks on throwaway copy /tmp/P2-A3-mut (dl): M1 read selection skips nothing -> 2 failed; M2 release of any record accepted -> 2 failed; M3 release covers any hits -> 1 failed; M4 pool results out of order -> 1 failed; M5 marker forgets the release -> 1 failed; M6 read record without its skip -> 1 failed; each unmutated: passed. Mutation-harness sites 10, 19 and proposed 31 still occur once.
+- 13:58 ticket P2-A3-1 (I1, run_execskill.py recover): optional, use evaluation.release_check (same accept/refuse set as I1's 13:39 rule; one definition).
+- 14:03 tickets P2-A3-2 (I1: e2e fixture = PR-C31-2 amended with data.pools pins, validated on the copy 11 passed in 309.04 s; mutation entries 32-34) and P2-A3-3 (I1: integration_b5 registers both canary records, validated 1 passed in 3.23 s).
+- 14:05 shared tree: own files + cli/runcli/readout 87 passed in 50.5 s; notes/P2-A3.md drafted.
+- 14:11 throwaway copy with the final files + tickets P2-A3-2/3: integration_b5 + e2e 12 passed in 352.37 s.
+- 14:15 pool timing on dl (synthetic 28.8 MB tree, 25 canaries): 1 process 98.1 s, 5 processes 35.8 s, same result: 2.7x (not 5x); evaluation.py:143 comment corrected; ticket P2-A3-4 (I1: runbook 7.4 release wording and measured speed).
+- 14:17 final: own files 34 passed in 11.7 s; notes/P2-A3.md written.
+- 14:19 I1 applied P2-A3-1..3 (14:10-14:15; mutations as 34-36); shared tree: integration_b5 + cli (30) + mutations 34-36: 34 passed in 20.8 s. P2-A3-4 open. Throwaway files on dl and the local scratch removed; no processes or containers left.
+- 14:21 final on the shared tree: mine + cli + runcli + readout + integration_b5 + mutation entries 34-36: 91 passed in 67.5 s, 0 failed. Done.

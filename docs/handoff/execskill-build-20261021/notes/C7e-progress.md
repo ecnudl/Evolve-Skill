@@ -1,0 +1,9 @@
+# C7e progress (ticket C7c-2: a paused acceptance redo redoes one block, registration §9.3 + owner decision #15)
+
+- 0 START 2026-10-22: read ticket C7c-2, acceptance.py, step.py, budgets.py, units.py, smoke.py S4, registration §3.4/§6.2/§9.3/#15/T6, plan §5.
+- 1 DONE: acceptance.py (runner unit_attempt, earlier_blocks, dispatch earlier/redo + gap after a reused block, _provenance in decide, round_cells, per-attempt balance duration), step.py (_accept: first-run vs redo endpoints, earlier blocks, unit result provenance/reused/redone), units.py (solver_endpoint first_run), budgets.py docstring; existing acceptance/units/b3/budgets tests 43 passed.
+- 2 DONE: tests: acceptance (5 C7e tests: pause in b2 keeps b1/redoes b2/runs b3, pause in b1, one missing cell not reused, all-complete reuse, splice/partial mutations), units (first_run endpoint), step (full OQ step, 3 blocks, sandbox stop in b2, recovery, ledger per scope) -- all pass; smoke.s4_judged sealing/redo rows updated.
+- 3 DONE: mutation checks in a throwaway copy (M1 partial-block reuse, M2 splicing, M3 first-run blocks on the redo endpoint, M4 whole-round redo): every one fails tests; copy removed. Targeted: acceptance+units+step+smoke 68 passed, rehearsal 8 passed.
+- 4 DONE 13:12: whole route-B suite 1062 passed, 2 failed, 11 errors (686 s); all 13 in PR-C31's in-progress run-root canary scan (evaluation.unseal -> _root_scanned "No registered test canaries in the run root"; its new canaries test), none in C7e's files; e2e assertions not run (fixture stops at the unseal), for I1 phase 2.
+- 5 DONE: tickets C7e-1 (G_acc charged to accept, registered in examiner) and C7e-2 (owner: a redo after a finished round, J5/J6 undetermined, reproduces it); notes/C7e.md written; ticket C7c-2 closed there.
+- FINAL 2026-10-22: C7e row closed.

@@ -1,0 +1,555 @@
+"""The registered readouts of a test read (protocol ``fivebench-execskill-v1``; registration §8.2, §8.3, §6.3, §6.4;
+Codex F2, F20, F21; implementation plan §1 readout row, T-READ-1).
+
+Input: ``evaluation.unseal``'s cells {bench: {(arm, task_id, run): {"v2", "enabled", "shared_with", "answered",
+"block", "room", "format", ...}}}. Item scores follow §6.3: F and its twins F∖p are read on L (an unknown token counts
+as wrong), C, P_F and T_F on H (right). Two rules come first in every contrast (statistics review 1):
+
+- one cell, one outcome: where an arm shares the card arm's cell (structural-zero sharing, §8.1: F, P_F and T_F on an
+  item F enables nothing on), both arms read the SAME cell, so their difference on that run is 0 by construction --
+  never one cell scored on L against itself on H;
+- the §6.3 mask: the items on which no arm got any reply (``shared_unanswered``: every distinct cell unknown and
+  undelivered) leave every contrast; their count is reported.
+
+All intervals use the paired t of ``stats_ext`` (the registered primary model, §6.4): strata are the read's blocks
+(OfficeQA's two time blocks, §8.1); on ALFWorld the rooms are the clusters (df = rooms - blocks; statistics review 7).
+The bootstrap interval is reported beside it. Every reading is fixed before the read:
+
+- Q1 (home): on each learned bench F − C, the one-sided paired t-test of §6.4, Holm over |L| (sign-flip and Wilcoxon
+  as sensitivity, never deciding);
+- Q2 (similar benches, owner's 10/17 map ``SIMILAR_PAIRS``): description only -- estimate, two-sided 95 % interval, the
+  enable rate and every procedure's τ;
+- Q3 (dissimilar benches): the equal-weight mean of F − C, one-sided 95 % lower bound > −5 points (``NI_MARGIN``) under
+  BOTH the complete-case and the adverse reading (v6 §12.6: a favourable conclusion must hold under both); a package
+  enabled on < 10 % of the dissimilar items "cannot act by construction" and is never "non-inferior";
+- code vs text (Codex F20): F − T_F per bench, the estimand being the difference of the two implementations; readings
+  from the intervals only -- two-sided 95 % lower > 0 "code_better", upper < 0 "text_better"; off home one-sided 95 %
+  lower > −5 points "code_transfer_not_worse", upper < +5 points "text_transfer_not_worse"; otherwise "inconclusive";
+  on a bench where F is enabled on < 10 % of the items (the Q3 guard) the only reading is "cannot_act_by_construction";
+- labels (Codex F21): one primary label per procedure by the priority table, every other holding descriptor listed;
+  the τ statements are Holm-adjusted over the family procedure × bench (each statement's one-sided p at 2.5 %, the
+  side of a two-sided 95 % interval);
+- ``format_withholding``: per procedure and bench, the J4-style format violations with and without it on its twin
+  items (does it change the answer format);
+- ``arm_table`` (§8.3, §6.2): per bench and arm, next to every accuracy (labelled "this period"): v2, official,
+  official completion and lenient shares, the unknown counts, the cell and format flags, the procedure faults, the
+  enable rate and, per 15-minute window of dispatch, the answer-tag share, the mean visible completion tokens and the
+  short-answer share (registrar decision fixer-2, 2026-10-22: a cell whose completion tokens are below a quarter of
+  the median of the same bench and arm in the unit's first window, ``_reference``); F − P_F is described per bench.
+
+The test read is independent GENERALIZATION evidence; acceptance decisions are SELECTION evidence (Codex F2).
+
+``report(manifest, out=)`` (ticket A13-1, A12-1 item 5) is the command line's readout: per chain that has read, once
+the chain has ended and the owner's continuation file exists (``evaluation.unseal`` refuses otherwise), its read units
+are unsealed and the readout written once into the new directory ``out``, with the final package's procedures as
+{procedure id: home bench} (``Procedure.origin``; the integration-B5 contract) and the benches they were learned on.
+"""
+from __future__ import annotations
+
+from collections import Counter
+from datetime import datetime
+from fractions import Fraction
+
+from skillopt.continual_eval.core import read_json, require, safe_path, write_json
+
+from . import evaluation, stats_ext
+from .package import load
+from .protocol import (ALPHA, BENCHES, CANNOT_ACT_FIRED, CHAINS, NI_MARGIN, NI_MIN_FIRED, RECORD_HASH, SIMILAR_PAIRS,
+                       TIME_WINDOW_SECONDS, record, verified)
+
+__all__ = ("arm_table", "code_vs_text", "differences", "format_withholding", "labels", "placebo_contrast", "q1_home",
+           "q2_similar", "q3_noninferiority", "readout", "report", "side", "tau", "unanswered")
+
+TWIN = "withhold:"
+UNKNOWN = ("unknown", "unknown_artifact", "unknown_fault")
+UNANSWERED = ("unknown",)  # §6.3 (acceptance.UNANSWERED): a cell that got no reply
+LEVEL = 0.025  # one side of a two-sided 95 % interval
+PRIORITY = ("harmful_elsewhere", "general", "home_benefit_established", "cannot_act_elsewhere", "no_measurable_effect")
+EVIDENCE_KIND = "generalization"  # Codex F2: acceptance decisions are "selection"
+PERIOD = "this_period"  # §8.3: every absolute accuracy is labelled with its serving period
+# §6.2, §8.3 (registrar decision fixer-2, 2026-10-22): a short answer is below a quarter of its arm's first-window
+# median; the registered value itself, so it stays here and is no protocol.py constant
+SHORT_ANSWER = Fraction(1, 4)
+
+
+# ------------------------------------------------------------------------------------------- cells and contrasts
+def side(arm):
+    """§6.3: F and its twins are read on L, every other arm on H."""
+    return "L" if arm == "F" or arm.startswith(TWIN) else "H"
+
+
+def _runs(cells, arm, item):
+    return sorted(r for (a, i, r) in cells if a == arm and i == item)
+
+
+def _source(cells, arm, item, run):
+    """The cell an arm reads on (item, run): "C" when it is the card arm's own or shares it (§8.1), else the arm."""
+    return "C" if arm == "C" or cells[(arm, item, run)]["shared_with"] is not None else arm
+
+
+def _score(token, on):
+    """One run's score on side ``on`` (``stats_ext.item_scores``: L counts every unknown as wrong, H as right)."""
+    return stats_ext.item_scores({("arm", "item"): [token]}, "arm", ["item"], side=on)["item"]
+
+
+def differences(cells, first, second, items):
+    """Per-item first − second (each arm on its §6.3 side), the mean over the item's runs; a run on which both arms
+    read the same cell contributes 0 by construction (statistics review 1)."""
+    out = []
+    for item in items:
+        runs = _runs(cells, first, item)
+        require(runs and runs == _runs(cells, second, item), "Both arms have the same runs of an item")
+        total = Fraction(0)
+        for run in runs:
+            if _source(cells, first, item, run) != _source(cells, second, item, run):
+                total += (_score(cells[(first, item, run)]["v2"], side(first))
+                          - _score(cells[(second, item, run)]["v2"], side(second)))
+        out.append(total / len(runs))
+    return out
+
+
+def unanswered(cells):
+    """§6.3 ``shared_unanswered``: the items on which no arm got any reply -- every distinct cell (a shared cell is
+    C's) unknown and undelivered."""
+    by_item = {}
+    for (_, item, _), value in cells.items():
+        if value["shared_with"] is None:
+            by_item.setdefault(item, []).append(value)
+    return sorted(i for i, found in by_item.items()
+                  if all(v["v2"] in UNANSWERED and not v["answered"] for v in found))
+
+
+def _items(cells, *arms):
+    """The items every arm has cells on, the §6.3 mask removed."""
+    found = set.intersection(*({i for (a, i, _) in cells if a == arm} for arm in arms))
+    return sorted(found - set(unanswered(cells)))
+
+
+def _known(cells, items, *arms):
+    """The complete cases: items on which no run of the arms is unknown."""
+    return [i for i in items if not any(cells[(arm, i, r)]["v2"] in UNKNOWN for arm in arms
+                                        for r in _runs(cells, arm, i))]
+
+
+def _design(cells, items):
+    """The read's design for ``items``: its blocks as strata (OfficeQA's two time blocks, §8.1) and, on ALFWorld, the
+    rooms as clusters (§6.4); {} when neither is recorded."""
+    of_c = {i: v for (arm, i, _), v in cells.items() if arm == "C"}
+    design = {}
+    if any(of_c[i].get("block") is not None for i in items):
+        design["strata"] = [str(of_c[i]["block"]) for i in items]
+    if any(of_c[i].get("room") is not None for i in items):
+        require(all(of_c[i].get("room") is not None for i in items), "Every item of a clustered read has its room")
+        design["clusters"] = [str(of_c[i]["room"]) for i in items]
+    return design
+
+
+def _clustered(bench, cells):
+    """ALFWorld's readouts are room-clustered (§6.4): its cells must carry their rooms."""
+    if bench == "alfworld":
+        require(all(v.get("room") is not None for v in cells.values()), "ALFWorld test cells carry their rooms")
+
+
+# ------------------------------------------------------------------------------------------------- estimates
+def _t_quantile(q, df):
+    """The upper ``q`` quantile of Student's t (bisection on ``stats_ext.t_upper``)."""
+    low, high = 0.0, 1e3
+    for _ in range(200):
+        mid = (low + high) / 2
+        if stats_ext.t_upper(mid, df) > q:
+            low = mid
+        else:
+            high = mid
+    return (low + high) / 2
+
+
+def _p_above(test, shift):
+    """One-sided p of mean > ``shift`` from a ``paired_t`` result."""
+    if test["se"] == 0:
+        return 0.0 if test["mean"] > shift else 1.0
+    return stats_ext.t_upper((test["mean"] - shift) / test["se"], test["df"])
+
+
+def _p_below(test, shift):
+    if test["se"] == 0:
+        return 0.0 if test["mean"] < shift else 1.0
+    return stats_ext.t_upper((shift - test["mean"]) / test["se"], test["df"])
+
+
+def estimate(d, *, design=None, bootstrap=False, sensitivity=False):
+    """A contrast's paired-t description: n, mean, se, df, the one-sided p (greater), the two-sided 95 % t interval
+    and the one-sided 95 % bounds (``design``: strata and, on ALFWorld, room clusters); with ``bootstrap`` the
+    bootstrap interval beside it, with ``sensitivity`` (Q1's registered sensitivity analyses) the sign-flip and
+    Wilcoxon p, which never decide."""
+    require(len(d) >= 2, "A contrast needs two or more items")
+    design = design or {}
+    test = stats_ext.paired_t(d, **design)
+    two, one = _t_quantile(LEVEL, test["df"]), _t_quantile(ALPHA, test["df"])
+    out = {"n": len(d), "mean": test["mean"], "se": test["se"], "df": test["df"], "p_t": test["p"],
+           "ci95": [test["mean"] - two * test["se"], test["mean"] + two * test["se"]],
+           "lower95_one_sided": test["mean"] - one * test["se"], "upper95_one_sided": test["mean"] + one * test["se"]}
+    if "clusters" in design:
+        out["rooms"] = len(set(design["clusters"]))
+    if bootstrap:
+        out["bootstrap_ci95"] = list(stats_ext.bootstrap_ci(d, **design))
+    if sensitivity:
+        out["sensitivity"] = {"p_signflip": stats_ext.signflip(d, **design), "p_wilcoxon": stats_ext.wilcoxon(d)}
+    return out
+
+
+def _contrast(cells, first, second, items, **options):
+    return estimate(differences(cells, first, second, items), design=_design(cells, items), **options)
+
+
+def enable_rate(cells, procedure=None):
+    """The share of the bench's items on which F enables ``procedure`` (any procedure when None)."""
+    rows = [v for (arm, _, _), v in cells.items() if arm == "F"]
+    require(rows, "The bench has F cells")
+    hit = [bool(v["enabled"]) if procedure is None else procedure in v["enabled"] for v in rows]
+    return sum(hit) / len(hit)
+
+
+# ----------------------------------------------------------------------------------------------- Q1, Q2, Q3
+def q1_home(units, learned):
+    """Q1: F − C on each learned bench, one-sided paired t, Holm over |L|."""
+    require(learned and set(learned) <= set(units), "Q1 reads the learned benches")
+    out = {}
+    for bench in learned:
+        cells = units[bench]
+        _clustered(bench, cells)
+        out[bench] = _contrast(cells, "F", "C", _items(cells, "F", "C"), bootstrap=True, sensitivity=True)
+    adjusted = stats_ext.holm([out[b]["p_t"] for b in learned])
+    for bench, p in zip(learned, adjusted):
+        out[bench].update(p_holm=p, established=p <= ALPHA)
+    return out
+
+
+def similar(learned):
+    """The benches similar to a learned one (``SIMILAR_PAIRS``), outside L."""
+    found = {b for pair in SIMILAR_PAIRS for a, b in (pair, pair[::-1]) if a in learned}
+    return sorted(found - set(learned), key=BENCHES.index)
+
+
+def dissimilar(learned):
+    return [b for b in BENCHES if b not in learned and b not in similar(learned)]
+
+
+def q2_similar(units, learned, procedures):
+    """Q2: description only on the similar benches -- F − C, the enable rate and each procedure's τ."""
+    out = {}
+    for bench in similar(learned):
+        if bench not in units:
+            continue
+        cells = units[bench]
+        _clustered(bench, cells)
+        out[bench] = {"reading": "descriptive", **_contrast(cells, "F", "C", _items(cells, "F", "C"), bootstrap=True),
+                      "enable_rate": enable_rate(cells), "tau": {p: tau(cells, p) for p in procedures}}
+    return out
+
+
+def _pooled(parts):
+    """The equal-weight mean of per-bench estimates with its Satterthwaite df and one-sided 95 % lower bound."""
+    k = len(parts)
+    mean = sum(p["mean"] for p in parts) / k
+    variance = sum(p["se"] ** 2 for p in parts) / k ** 2
+    se = variance ** 0.5
+    if se == 0:
+        return {"mean": mean, "se": 0.0, "lower95_one_sided": mean}
+    df = (sum(p["se"] ** 2 for p in parts) ** 2) / sum(p["se"] ** 4 / p["df"] for p in parts if p["se"] > 0)
+    return {"mean": mean, "se": se, "df": df, "lower95_one_sided": mean - _t_quantile(ALPHA, df) * se}
+
+
+def q3_noninferiority(units, learned):
+    """Q3: the dissimilar benches' pooled F − C against −5 points under the complete-case and the adverse readings."""
+    benches = [b for b in dissimilar(learned) if b in units]
+    require(benches, "Q3 needs a dissimilar bench in the read")
+    fired = [v for b in benches for (arm, _, _), v in units[b].items() if arm == "F"]
+    rate = sum(bool(v["enabled"]) for v in fired) / len(fired)
+    if rate < NI_MIN_FIRED:
+        return {"benches": benches, "enable_rate": rate, "reading": "cannot_act_by_construction"}
+    readings = {}
+    for name in ("adverse", "complete_case"):
+        parts = []
+        for bench in benches:
+            cells = units[bench]
+            _clustered(bench, cells)
+            items = _items(cells, "F", "C")
+            if name == "complete_case":
+                items = _known(cells, items, "F", "C")
+            parts.append(_contrast(cells, "F", "C", items))
+        readings[name] = _pooled(parts)
+    holds = all(r["lower95_one_sided"] > -float(NI_MARGIN) for r in readings.values())
+    return {"benches": benches, "enable_rate": rate, "margin": -float(NI_MARGIN), **readings,
+            "shared_unanswered": {b: len(unanswered(units[b])) for b in benches},
+            "reading": "noninferiority_established" if holds else "noninferiority_not_established"}
+
+
+# ------------------------------------------------------------------------------------------- code vs text
+def code_vs_text(units, learned):
+    """F − T_F per bench with the interval readings of §8.2 (Codex F20); the rest "inconclusive"; below the Q3
+    enable threshold "cannot_act_by_construction" (the two arms differ only where F is enabled)."""
+    out = {}
+    for bench in sorted(units, key=BENCHES.index):
+        cells = units[bench]
+        _clustered(bench, cells)
+        items = _items(cells, "F", "T_F")
+        rate = enable_rate(cells)
+        if len(items) < 2:
+            out[bench] = {"n": len(items), "enable_rate": rate, "readings": ["inconclusive"]}
+            continue
+        found = _contrast(cells, "F", "T_F", items, bootstrap=True)
+        readings = []
+        if rate < NI_MIN_FIRED:
+            readings.append("cannot_act_by_construction")
+        else:
+            if found["ci95"][0] > 0:
+                readings.append("code_better")
+            if found["ci95"][1] < 0:
+                readings.append("text_better")
+            if bench not in learned:
+                if found["lower95_one_sided"] > -float(NI_MARGIN):
+                    readings.append("code_transfer_not_worse")
+                if found["upper95_one_sided"] < float(NI_MARGIN):
+                    readings.append("text_transfer_not_worse")
+        out[bench] = {**found, "enable_rate": rate, "estimand": "difference_of_the_two_implementations",
+                      "readings": readings or ["inconclusive"]}
+    return out
+
+
+def placebo_contrast(units):
+    """F − P_F per bench, description only (§8.1's sham arm of the read)."""
+    out = {}
+    for bench in sorted(units, key=BENCHES.index):
+        cells = units[bench]
+        _clustered(bench, cells)
+        items = _items(cells, "F", "P_F")
+        out[bench] = {"n": len(items), "reading": "descriptive",
+                      **(_contrast(cells, "F", "P_F", items) if len(items) >= 2 else {})}
+    return out
+
+
+# ---------------------------------------------------------------------------------------- procedures (τ, labels)
+def _tau(cells, procedure):
+    """(τ_p's description, its estimate or None) on one bench."""
+    items = _items(cells, "F", TWIN + procedure)
+    if len(items) < 2:
+        return {"n": len(items), "tau": None}, None
+    found = _contrast(cells, "F", TWIN + procedure, items)
+    return {"n": len(items), "tau": found["mean"], "se": found["se"], "df": found["df"], "ci95": found["ci95"]}, found
+
+
+def tau(cells, procedure):
+    """τ_p on one bench: the mean over p's twin items of [F − F∖p] (both on L); None without two twin items."""
+    return _tau(cells, procedure)[0]
+
+
+def _statements(tests):
+    """{statement: {(procedure, bench): bool}}: "positive" (lower > 0), "negative" (upper < 0) and "noninferior"
+    (lower > −5 points), each a one-sided p at 2.5 % after Holm over the whole family."""
+    family = sorted(tests)
+    tests_of = {"positive": lambda t: _p_above(t, 0.0), "negative": lambda t: _p_below(t, 0.0),
+                "noninferior": lambda t: _p_above(t, -float(NI_MARGIN))}
+    out = {}
+    for name, p_of in tests_of.items():
+        adjusted = stats_ext.holm([p_of(tests[key]) for key in family]) if family else []
+        out[name] = {key: p <= LEVEL for key, p in zip(family, adjusted)}
+    return out
+
+
+def labels(units, procedures):
+    """{procedure: {"label", "descriptors", "tau", "enable_rate"}} (§8.2, Codex F21). ``procedures``: {id: home
+    bench}. The τ statements are Holm-adjusted over every (procedure, bench) pair with two or more twin items
+    (``_statements``); the primary label is the first holding descriptor in ``PRIORITY``, the others are listed."""
+    taus, tests = {}, {}
+    for p in procedures:
+        taus[p] = {}
+        for bench in units:
+            _clustered(bench, units[bench])
+            taus[p][bench], found = _tau(units[bench], p)
+            if found is not None:
+                tests[(p, bench)] = found
+    statements = _statements(tests)
+    out = {}
+    for p, home in procedures.items():
+        others = [b for b in units if b != home]
+        rates = {b: enable_rate(units[b], p) for b in units}
+        positive = {b for b in units if statements["positive"].get((p, b), False)}
+        negative = {b for b in units if statements["negative"].get((p, b), False)}
+        noninferior = {b for b in units if statements["noninferior"].get((p, b), False)}
+        found = {
+            "harmful_elsewhere": bool(negative & set(others)),
+            "general": bool(positive & set(others)) and all(b in positive | noninferior for b in units
+                                                             if rates[b] > 0),
+            "home_benefit_established": home in positive,
+            "cannot_act_elsewhere": bool(others) and all(rates[b] < float(CANNOT_ACT_FIRED) for b in others),
+        }
+        found["no_measurable_effect"] = not any(found.values())
+        descriptors = [name for name in PRIORITY if found[name]]
+        out[p] = {"label": descriptors[0], "descriptors": descriptors, "tau": taus[p], "enable_rate": rates}
+    return out
+
+
+def format_withholding(units, procedures):
+    """{procedure: {bench: {"n", "violations_with", "violations_without"}}}: J4's format violations of F and of F∖p
+    on p's twin items (an unknown cell's violation is None and not counted)."""
+    out = {}
+    for p in procedures:
+        out[p] = {}
+        for bench, cells in units.items():
+            items = {i for (arm, i, _) in cells if arm == TWIN + p}
+            if not items:
+                continue
+            violations = {arm: sum(bool(v["format"].get("violation")) for (a, i, _), v in cells.items()
+                                   if a == arm and i in items) for arm in ("F", TWIN + p)}
+            out[p][bench] = {"n": len(items), "violations_with": violations["F"],
+                             "violations_without": violations[TWIN + p]}
+    return out
+
+
+# ------------------------------------------------------------------------------------------ the §8.3 arm table
+def _seconds(value):
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
+    return datetime.fromisoformat(value).timestamp()
+
+
+def _share(rows, test):
+    return sum(bool(test(v)) for v in rows) / len(rows) if rows else None
+
+
+def _reply_tokens(value):
+    """A cell's completion tokens for the short answer (registrar decision fixer-2 on §8.3): the mean visible
+    completion tokens of its logical calls, i.e. its reply's count on a one-call cell, so the number of calls (an
+    ALFWorld episode's steps, a ``<calc>`` second call, a repair call, a restarted episode) stays out of it. None -- a
+    cell without usage -- when the cell made no call or one of its calls carries no count."""
+    tokens = value.get("completion_tokens") or []
+    if not tokens or not all(type(t) is int and t >= 0 for t in tokens):
+        return None
+    return Fraction(sum(tokens), len(tokens))
+
+
+def _median(values):
+    ordered = sorted(values)
+    half = len(ordered) // 2
+    return ordered[half] if len(ordered) % 2 else (ordered[half - 1] + ordered[half]) / 2
+
+
+def _reference(first):
+    """One arm's short-answer reference (registrar decision fixer-2): the median completion tokens of its cells with
+    usage in the unit's first window ``first``. Returns ({"window": 0, "cells", "no_usage", "median", "status"}, the
+    median when it defines short answers, else None). Without such a cell ("no_cell_with_usage") or with a zero median
+    ("zero_median": a quarter of 0 marks no cell) the arm has no short-answer share in any window -- no constant and no
+    later window stands in."""
+    measured = [t for t in map(_reply_tokens, first) if t is not None]
+    median = _median(measured) if measured else None
+    status = "no_cell_with_usage" if median is None else "zero_median" if median == 0 else "defined"
+    return ({"window": 0, "cells": len(measured), "no_usage": len(first) - len(measured),
+             "median": None if median is None else float(median), "status": status},
+            median if status == "defined" else None)
+
+
+def _windows(rows, start):
+    """§6.2, §8.3: per 15-minute window of dispatch (from the unit's first dispatch; one unit per bench, §8.1), the
+    cells that sent requests, their answer-tag share (None on a bench without an answer tag -- SpreadsheetBench and
+    ALFWorld formats carry no ``tag_present``, ``judge._format`` -- not a false 0.0; ticket P2-A2-1), their mean
+    visible completion tokens (over calls) and their short-answer share: the share of the window's cells with usage
+    whose completion tokens (``_reply_tokens``) are below a quarter of the arm's reference median (``_reference``),
+    ``no_usage`` counting the cells left out; None without a reference or without a cell with usage. Shared cells sent
+    nothing and are left out. Returns (the reference, the windows)."""
+    found = {}
+    for value in rows:
+        if value["shared_with"] is None and value.get("dispatch_ts") is not None:
+            found.setdefault(int((_seconds(value["dispatch_ts"]) - start) // TIME_WINDOW_SECONDS), []).append(value)
+    reference, median = _reference(found.get(0, []))
+    out = []
+    for window, members in sorted(found.items()):
+        tokens = [t for v in members for t in v.get("completion_tokens") or [] if type(t) is int]
+        measured = [t for t in map(_reply_tokens, members) if t is not None]
+        out.append({"window": window, "cells": len(members),
+                    "answer_tag_share": (_share(members, lambda v: v["format"].get("tag_present"))
+                                         if any("tag_present" in v["format"] for v in members) else None),
+                    "mean_completion_tokens": sum(tokens) / len(tokens) if tokens else None,
+                    "short_answer_share": None if median is None else _share(measured,
+                                                                             lambda t: t < SHORT_ANSWER * median),
+                    "no_usage": len(members) - len(measured)})
+    return reference, out
+
+
+windows = _windows  # the public name of the fixer-2 series (``acceptance.series``; ticket P2-A2-1)
+
+
+def arm_table(cells):
+    """§8.3 per arm of one bench: the accuracies (v2 the main reading, official, official completion, lenient), the
+    unknown counts, the cell and format flags, the procedure faults, the enable rate, the short-answer reference and
+    the 15-minute series (``_windows``)."""
+    stamps = [_seconds(v["dispatch_ts"]) for v in cells.values() if v.get("dispatch_ts") is not None]
+    start = min(stamps) if stamps else 0.0
+    out = {}
+    for arm in sorted({a for (a, _, _) in cells}):
+        rows = [v for (a, _, _), v in cells.items() if a == arm]
+        reference, windows = _windows(rows, start)
+        out[arm] = {
+            "period": PERIOD, "cells": len(rows), "shared": sum(v["shared_with"] is not None for v in rows),
+            "v2": _share(rows, lambda v: v["v2"] == "pass"),
+            "official": _share(rows, lambda v: v.get("official") == "pass"),
+            "official_completion": _share(rows, lambda v: v.get("final") == "pass"),
+            "lenient": _share(rows, lambda v: v.get("lenient") is True),
+            "unknown": dict(sorted(Counter(v["v2"] for v in rows if v["v2"] in UNKNOWN).items())),
+            "flags": dict(sorted(Counter(f for v in rows for f in v.get("flags") or []).items())),
+            "format": dict(sorted(Counter(k for v in rows for k, x in (v.get("format") or {}).items()
+                                          if x is True).items())),
+            "fault_cells": sum(bool(v.get("fault_kinds")) for v in rows),
+            "faults": dict(sorted(sum((Counter(v.get("fault_kinds") or {}) for v in rows), Counter()).items())),
+            "enable_rate": _share(rows, lambda v: v["enabled"]),
+            "short_answer_reference": reference, "windows": windows}
+    return out
+
+
+# ---------------------------------------------------------------------------------------------- the readout
+def readout(units, *, learned, procedures, label, evidence):
+    """The sealed readout record (``fivebench-execskill-v1-readout``) of one chain's unsealed read; ``label``: the
+    unseal's read label (Codex F17)."""
+    return record("readout", evidence, {
+        "evidence_kind": EVIDENCE_KIND, "read_label": label, "learned": list(learned),
+        "similar": similar(learned), "dissimilar": dissimilar(learned),
+        "shared_unanswered": {b: len(unanswered(units[b])) for b in sorted(units, key=BENCHES.index)},
+        "q1_home": q1_home(units, learned), "q2_similar": q2_similar(units, learned, procedures),
+        "q3_noninferiority": q3_noninferiority(units, learned) if [b for b in dissimilar(learned) if b in units]
+        else None,
+        "code_vs_text": code_vs_text(units, learned), "placebo": placebo_contrast(units),
+        "labels": labels(units, procedures), "format_withholding": format_withholding(units, procedures),
+        "arms": {b: arm_table(units[b]) for b in sorted(units, key=BENCHES.index)}})
+
+
+def report(manifest, *, out):
+    """``run_execskill.py report --manifest M --out NEWDIR``: one readout per chain of the manifest's run root that
+    read the test sets (``test-read.json`` status "read"), written once as ``<out>/readout-<chain>.json``; a chain that
+    read nothing (F = C) or was terminated before its read is listed as such, and one that has neither read nor ended
+    is refused. ``evaluation.unseal`` refuses before every chain has ended and the owner's continuation file exists;
+    nothing is written after a refusal. Returns {chain: the readout's record hash, or "not_read"}."""
+    out = safe_path(out)
+    require(not out.exists(), "The readout goes to a new directory")
+    root, run, evidence = safe_path(manifest["root"]), manifest[RECORD_HASH], manifest["evidence"]
+    found, written = {}, {}
+    for chain in sorted(CHAINS):
+        chain_root = root / chain
+        if not (chain_root / "test-read.json").exists():  # terminated before its read
+            require((chain_root / "chain-terminated.json").exists(), "Chain %s has neither read nor ended" % chain)
+            found[chain] = "not_read"
+            continue
+        read = verified(read_json(chain_root / "test-read.json"), "test-read")
+        if read["status"] != "read":
+            found[chain] = "not_read"
+            continue
+        final = load(chain_root / "packages" / (read["package_sha256"] + ".json"))
+        procedures = {p.id: p.origin for p in final.procedures}
+        learned = [b for b in BENCHES if b in procedures.values()]
+        units = [chain_root / "test" / b for b in BENCHES if (chain_root / "test" / b / "unit.json").exists()]
+        opened = evaluation.unseal(root, chain_root, chain, units, run=run, evidence=evidence)
+        value = readout(opened["units"], learned=learned, procedures=procedures, label=opened["label"],
+                        evidence=evidence)
+        written[chain], found[chain] = value, value[RECORD_HASH]
+    out.mkdir(parents=True)
+    for chain, value in written.items():
+        write_json(out / ("readout-%s.json" % chain), value)
+    return found

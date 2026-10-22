@@ -1,0 +1,9 @@
+# P2-A2 progress (PR-C12-1 SpreadsheetBench probe in a step; C7e-1 G_acc on the examiner scope; PR-F2-1 acceptance series)
+
+- 0 START 2026-10-22 13:27: read notes C7e/PR-C12/PR-F2, tickets PR-C12-1/C7e-1/PR-F2-1, registrar decisions 13:4x/13:5x/14:1x, step.py, acceptance.py, budgets.py, units.py.
+- 1 DONE 13:45: baseline before edits: step+acceptance+budgets+units 56 passed (132 s).
+- 2 DONE 13:45: code: units.solver_endpoint(g_acc=) + step._Step.solver(g_acc=) + step._accept examiner context for G_acc (C7e-1); acceptance.runner(examiner=) per-cell context on one pool (run_parallel); step._probe_shortcut wired for SpreadsheetBench + _cells shortcut key (PR-C12-1); acceptance.series in decide (PR-F2-1, readout._windows imported lazily); budgets docstring. Existing tests: acceptance+budgets+units 47 passed; step+shortcut_sb+integration_b3 17 passed.
+- 3 DONE 14:04: step tests: test_pr_c12_1_a_spreadsheetbench_step_reaches_the_shortcut_gate_with_no_workbook_cells and test_c7e_1_the_g_acc_cells_are_charged_to_the_examiners_scope_in_a_redone_block_too (C7e stop factored into _pause). step+acceptance+budgets+units+shortcut_sb+integration_b3: 70 passed (189 s).
+- 4 DONE 14:18: deliberate-breakage checks in /tmp/P2-A2-mut on Linux (deleted, no containers): baseline 7 passed; M1-M7, M9 failed their tests; M8 (series changes the reason) first survived -> test_pr_f2_1_the_series_decides_nothing strengthened (calls without usage vs with), M8 then failed.
+- 5 DONE 14:18: ticket P2-A2-1 (readout answer_tag_share 0.0 by construction on SpreadsheetBench/ALFWorld; optional public aliases). Final run of 13 files (own 4 + shortcut_sb, integration_b3, validity, rounds, integration_b5, outcomes_ext, runcli, cli, manifest): 158 passed, 0 failed (235 s).
+- 6 DONE 14:20: notes/P2-A2.md written (files with lines, citations, deviations, tests, mutation table, ticket, integrator hints). END.

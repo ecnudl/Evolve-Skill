@@ -1,0 +1,165 @@
+T1  MDE from ONE bivariate-normal model of the IUT contrasts S'-S and S'-P_y (one-sided 5 % each, 80 % joint power;
+    J1 also needs a whole-batch mean >= 2 points; A* = A; placebo effect 0). Points, whole-batch convention.
+  spreadsheetbench 60x2    single  10.7 | joint rho 0.3/0.5/0.7  12.3 / 12.1 / 11.8 | joint/single at 0.5 1.131
+  officeqa 50x4            single   8.9 | joint rho 0.3/0.5/0.7  10.2 / 10.0 /  9.8 | joint/single at 0.5 1.131
+  searchqa 1000x1          single   3.0 | joint rho 0.3/0.5/0.7   3.5 /  3.4 /  3.3 | joint/single at 0.5 1.134
+  alfworld 150x1           single   8.5 | joint rho 0.3/0.5/0.7   9.8 /  9.7 /  9.5 | joint/single at 0.5 1.131
+  alfworld 200x1           single   7.4 | joint rho 0.3/0.5/0.7   8.5 /  8.4 /  8.2 | joint/single at 0.5 1.131
+  livemath 100x2 low       single   7.9 | joint rho 0.3/0.5/0.7   9.1 /  9.0 /  8.8 | joint/single at 0.5 1.131
+  livemath 100x2 high      single   8.8 | joint rho 0.3/0.5/0.7  10.1 / 10.0 /  9.8 | joint/single at 0.5 1.131
+  joint/single MDE ratio over the rows above: rho 0.5 1.131-1.134; rho 0.3 1.148-1.151; rho 0.7 1.107-1.110
+  alfworld 150x1 room DEFF (40 rooms, m=3.75, rho_d=0.00) = 1.000 -> joint MDE   9.7
+  alfworld 150x1 room DEFF (40 rooms, m=3.75, rho_d=0.05) = 1.137 -> joint MDE  10.3
+  alfworld 150x1 room DEFF (40 rooms, m=3.75, rho_d=0.10) = 1.275 -> joint MDE  10.9
+  capacity check: 40 rooms x 5 = 200 >= 150 acceptance games; decision minimum |A*| >= 30 items (ALFWorld >= 20 rooms)
+  with A* coverage 0.6 (whole-batch SE x sqrt(0.6)): joint MDE SB  9.4, OQ  7.8, ALF  7.5
+
+T2  Power at a true whole-batch effect of +3/+5/+10 points from the same model (rho 0.5, A* = A, placebo 0).
+    'single' = J1 alone (reference only); 'joint' = J1 and J2, the registered decision.
+  spreadsheetbench 60x2      single +3 0.17 +5 0.32 +10 0.75 | joint +3 0.07 +5 0.17 +10 0.62
+  officeqa 50x4              single +3 0.21 +5 0.40 +10 0.88 | joint +3 0.09 +5 0.24 +10 0.80
+  alfworld 150x1             single +3 0.22 +5 0.42 +10 0.90 | joint +3 0.10 +5 0.26 +10 0.83
+  alfworld 150x1 DEFF 1.275  single +3 0.19 +5 0.36 +10 0.82 | joint +3 0.08 +5 0.21 +10 0.72
+  livemath 100x2 low         single +3 0.24 +5 0.47 +10 0.93 | joint +3 0.11 +5 0.30 +10 0.88
+  livemath 100x2 high        single +3 0.21 +5 0.41 +10 0.88 | joint +3 0.10 +5 0.25 +10 0.80
+  searchqa 1000x1            single +3 0.80 +5 0.99 +10 1.00 | joint +3 0.68 +5 0.99 +10 1.00
+  design-v0 minimum effects (owner #30), joint: SB +7 -> 0.33; LM +5 -> 0.25-0.30
+
+T3  Acceptance probability of a true +5 (J1 and J2) and P(the two-step pilot accepts nothing), same model.
+    Steps independent; 'guards' = an assumed 10 % chance that J3-J7 block an otherwise accepted step [A].
+  primary (rho 0.5, A* = A, placebo 0, no guard loss): SB 0.169  OQ 0.243  ALF 0.261 | P(nothing) default SB->OQ 0.629  recommended SB->ALF 0.614
+  rho 0.3          SB 0.139  OQ 0.210  ALF 0.227 | P(nothing) default 0.680  recommended 0.665
+  rho 0.7          SB 0.203  OQ 0.282  ALF 0.300 | P(nothing) default 0.572  recommended 0.557
+  A* coverage 0.6  SB 0.279  OQ 0.402  ALF 0.430 | P(nothing) default 0.431  recommended 0.411
+  placebo -2       SB 0.229  OQ 0.328  ALF 0.350 | P(nothing) default 0.518  recommended 0.501
+  placebo +2       SB 0.105  OQ 0.145  ALF 0.155 | P(nothing) default 0.765  recommended 0.756
+  guards x0.9      SB 0.152  OQ 0.219  ALF 0.235 | P(nothing) default 0.663  recommended 0.649
+  ALFWorld room DEFF 1.275: 0.205; donor reuse DEFF_y 1.15 on P_y: 0.249; both 0.195
+  range over the grid (rho 0.3/0.5/0.7 x coverage 0.6/1.0 x placebo -2/0/+2 x guards 1/0.9; ALF also DEFF, DEFF_y):
+    acceptance of +5: SB 0.08-0.40  OQ 0.11-0.54  ALF 0.09-0.57
+    P(nothing): default SB->OQ 0.27-0.82  recommended SB->ALF 0.26-0.84
+
+T4  Pilot learning steps, solver tokens (M). 'estimate' = expected workload, low-high (A* 60-100 %, ALF 70-100 %;
+    twins 0.75 per A* cell SB/OQ, 0.5 ALF; band 1-3 probe rounds; 1 self-test pass). 'max' = registered maximum
+    schedule (A* 100 %, 2 twins per A* cell, 3 band rounds, 2 self-test passes), high anchors. P_i on SB/OQ/LM;
+    G_acc = 1 item per A* item, arms S', S, P_y, C; OQ adds the registered duplicate arm S_dup (A* and G_acc).
+  estimate SB step 1  run  0.16- 0.42 | accept  1.23- 4.10 (twins  0.17- 0.62) | examiner  0.65- 1.97 (band  0.08- 0.38, G_acc  0.41- 1.33) | selftest  0.35- 0.67 | step  2.38- 7.17
+  estimate OQ step 2  run  0.50- 1.22 | accept  5.15-16.17 (twins  0.59- 1.90) | examiner  1.46- 4.55 (band  0.20- 1.14, G_acc  0.94- 2.93) | selftest  1.04- 2.07 | step  8.16-24.01
+  estimate ALF step 2 run  4.32- 8.64 | accept 20.32-44.55 (twins  2.36- 5.40) | examiner  1.35- 6.48 (band  1.35- 6.48, G_acc  0.00- 0.00) | selftest  3.86- 6.31 | step 29.84-65.98
+  max      SB step 1  run        0.42 | accept        5.13 (twins        1.64) | examiner        1.97 (band        0.38, G_acc        1.33) | selftest        1.33 | step        8.86
+  max      OQ step 2  run        1.22 | accept       19.34 (twins        5.07) | examiner        4.55 (band        1.14, G_acc        2.93) | selftest        4.14 | step       29.25
+  max      ALF step 2 run        8.64 | accept       60.75 (twins       21.60) | examiner        6.48 (band        6.48, G_acc        0.00) | selftest       12.61 | step       88.48
+  learning side default SB->OQ       estimate  10.5- 31.2 M | maximum schedule  38.1 M
+  learning side recommended SB->ALF  estimate  32.2- 73.1 M | maximum schedule  97.3 M
+  included above: OQ duplicate arm S_dup (registered; A* and G_acc; RD 3.3, 7.2, 14 #22): estimate 0.98-3.17 | max 3.17
+  NOT included (owner #9 option): P_i on ALFWorld acceptance would add estimate 4.72-10.80 | max 10.80
+
+T5  Final test read (1 run per test item; fired share home 60-100 %, similar 30-70 %, other 0-50 %; F, P_F, T_F
+    at x1.25/x1.6 on fired items; twins 0.5-1.0 cells per fired item expected, registered maximum 2). M tokens.
+  default SB->OQ       without twins  11.8- 43.4 | twins alone  0.8- 11.0 | with twins  12.6- 54.4
+      searchqa          similar  1.30- 5.93 (+twins 0.12-1.52)
+      officeqa          home     2.93- 7.91 (+twins 0.34-2.18)
+      livemath          similar  0.43- 2.16 (+twins 0.04-0.56)
+      spreadsheetbench  home     2.32- 6.91 (+twins 0.27-1.91)
+      alfworld          other    4.82-20.50 (+twins 0.00-4.82)
+  default SB->OQ       OPTION trimmed (P_F, T_F only on L + similar; twins only on L): with twins  12.4- 37.9
+  default SB->OQ       MAXIMUM schedule (high fired shares, 2 twins per fired item, high anchors):  65.4
+  recommended SB->ALF  without twins  20.7- 54.1 | twins alone  2.2- 14.6 | with twins  23.0- 68.7
+      searchqa          other    0.61- 4.62 (+twins 0.00-1.09)
+      officeqa          similar  1.92- 5.94 (+twins 0.17-1.53)
+      livemath          other    0.20- 1.69 (+twins 0.00-0.40)
+      spreadsheetbench  home     2.32- 6.91 (+twins 0.27-1.91)
+      alfworld          home    15.68-34.97 (+twins 1.81-9.65)
+  recommended SB->ALF  OPTION trimmed (P_F, T_F only on L + similar; twins only on L): with twins  22.8- 62.7
+  recommended SB->ALF  MAXIMUM schedule (high fired shares, 2 twins per fired item, high anchors):  83.3
+
+T6  Registered solver caps (ledger) from the MAXIMUM schedule: scope cap = 1.5 x maximum-schedule high + one full
+    next reservation R (frozen budget.py:283-314 admits a call only if settled + open + R fits; R = 4 x (request
+    bytes + 512 + B), ledger.py:26-36, branch N B = 4M, request bytes [A] QA/SB 64,000, ALFWorld step 32,000);
+    rounded up to 0.1 M. Test-read cap likewise (>= the 1.3 x estimate start rule). Redo reserve = the largest single
+    acceptance block cap (one redo pre-funded; a second redo needs the owner's recorded cap decision). M tokens.
+  one full reservation R: spreadsheetbench 520,192, officeqa 389,120, alfworld 146,432
+  SB step 1  run   1.2 | examiner(incl. G_acc)  3.5 | selftest  2.6 | accept   8.3 | step sum  15.6   (max high: 0.42/1.97/1.33/5.13)
+  OQ step 2  run   2.3 | examiner(incl. G_acc)  7.3 | selftest  6.6 | accept  29.5 | step sum  45.7   (max high: 1.22/4.55/4.14/19.34)
+  ALF step 2 run  13.2 | examiner(incl. G_acc)  9.9 | selftest 19.1 | accept  91.3 | step sum 133.5   (max high: 8.64/6.48/12.61/60.75)
+  default SB->OQ       steps  61.3 + test read  99.0 (max 65.4; estimate high 54.4, 1.3 x =  70.7) + redo reserve 14.8 = 175.1 -> pilot solver cap   180
+  default SB->OQ       solver estimate learning + test read =  23.1- 85.6 M; maximum schedule 103.5 M
+  recommended SB->ALF  steps 149.1 + test read 126.0 (max 83.3; estimate high 68.7, 1.3 x =  89.3) + redo reserve 22.9 = 298.0 -> pilot solver cap   300
+  recommended SB->ALF  solver estimate learning + test read =  55.2-141.9 M; maximum schedule 180.6 M
+  owner #9 option P_i on ALFWorld (recommended pilot), same rule: ALF accept cap 107.5 (max high 71.55) | ALF step sum 149.7
+      steps 165.3 + test read 126.0 + redo reserve 26.9 = 318.2 -> pilot solver cap   320; maximum schedule 191.4 M
+  previous caps (pre-review, expected workload): SB accept 6.2, OQ accept 20.5, ALF accept 66.9; pilot 135 / 230
+
+T7  Smoke (real items: SearchQA pool tail 280 = 20 S2 + 200 S-N1 + 60 S4; ALFWorld 12 = 6 S2 + 6 S-N1;
+    fixtures OQ/LM/SB 20 each). M tokens; fixtures sized like SearchQA cells (low) or like real items (high).
+  S2 registered (ALF 6 x 1 run x C,X,P)          QA 0.29-0.79 fixtures 0.87-3.75 ALF 0.76-1.13 = 1.92-5.67
+  S1 probes (own ledger root, cap 0.5 M) 0.05-0.29; S-N1 1.05-1.90; S4 0.46-1.22; S3 solver 0 (GLM <= 0.5 M)
+  smoke solver total (S2+S-N1+S4)  3.42- 8.80 M -> cap 1.5 x high + R =   14 M
+  production-configuration receipts (F19: registered body AND registered M, B) = S2 + S-N1 + S4 cells; S1 probe
+    receipts (probe-only M/B: B_probe, or M = B = 64 for S1-d) and control receipts (S1-e, fault drills) are separate;
+    planned production cells (each >= 1 receipt): 1290; S2 card arm C + S-N1 alone: 578 >= 300 required
+
+T8  Probe reservations, slot waits, pre-reset, memory (estimates).
+  S1-b/c/e with B_probe = 32,768, 2 KB request: one reservation 141,120 tokens (sequential)
+  S1-d 8 concurrent with M = B = 64: 8 x 6,304 = 50,432 tokens (< 0.5 M)
+  S1-b at M in {16, 64, 256} with B = 2 x M would halt the ledger on any non-enforced reply > B: hence B_probe
+  slot wait: 10 waiters, 36 releases/h, P(no slot within 3,600 s) ~ 0.023
+  slot wait: 13 waiters, 20 releases/h, P(no slot within 3,600 s) ~ 0.202
+  ALFWorld acceptance round (maximum schedule) ~900 episodes; with 16 workers / 6 slots expected 3,600 s timeouts ~20; with workers = 6 slots: 0
+  ALFWorld zero-call pre-reset at 1 s/game [A]: all 3,514 games 1.0 h; cut slices only (422 games) 7 min
+  ALFWorld zero-call pre-reset at 3 s/game [A]: all 3,514 games 2.9 h; cut slices only (422 games) 21 min
+  memory worst case (sum of container limits) ALFWorld unit: 10.5 GiB of 15 GiB
+  memory worst case (sum of container limits) QA unit (SQ/OQ/LM): 4.5 GiB of 15 GiB
+  memory worst case (sum of container limits) SpreadsheetBench unit (2 live sandboxes + 3 native x 4 GiB limits): 13.5 GiB of 15 GiB
+  SB: admissible only if the S0-measured native peak RSS <= 2 GiB (expected sum <= 7.5 GiB); else native slots 3 -> 2
+
+T9  Size (probability of a one-sided 5 % rejection) under bounded mean-zero nulls, exact enumeration over the
+    i.i.d. per-item difference distribution (no simulation noise). t = paired t-test (decides);
+    sf = exact sign-flip (sensitivity); W = Wilcoxon signed rank, tie-corrected normal approx. (sensitivity).
+  N1 Codex (+0.25 p.8, -1 p.2)
+    n= 30 t 0.123 sf 0.044 W 0.428 | n= 41 t 0.066 sf 0.066 W 0.562 | n= 60 t 0.067 sf 0.067 W 0.694
+    n=100 t 0.080 sf 0.080 W 0.811 | n=150 t 0.059 sf 0.059 W 0.905
+  N2 tie-inflated (0 p.7, +0.25 p.24, -1 p.06)
+    n= 30 t 0.160 sf 0.145 W 0.305 | n= 41 t 0.121 sf 0.103 W 0.330 | n= 60 t 0.111 sf 0.096 W 0.369
+    n=100 t 0.086 sf 0.076 W 0.467 | n=150 t 0.081 sf 0.072 W 0.567
+  N3 two-run (+0.5 p.6, 0 p.1, -1 p.3)
+    n= 30 t 0.065 sf 0.053 W 0.053 | n= 41 t 0.067 sf 0.054 W 0.038 | n= 60 t 0.064 sf 0.049 W 0.030
+    n=100 t 0.059 sf 0.051 W 0.018 | n=150 t 0.058 sf 0.051 W 0.010
+  N0 symmetric reference (-0.5 p.25, 0 p.5, +0.5 p.25)
+    n= 30 t 0.049 sf 0.030 W 0.049 | n= 41 t 0.049 sf 0.033 W 0.049 | n= 60 t 0.050 sf 0.036 W 0.050
+    n=100 t 0.049 sf 0.038 W 0.049 | n=150 t 0.051 sf 0.039 W 0.051
+  Codex's n = 15 example (sign-flip): P(14 or 15 positive) = 0.1671
+  chain-wide P(>= 1 false acceptance), k independent decisions at nominal 5 % each, global null: k=5 0.226 | k=6 0.265 | k=7 0.302 | k=8 0.337 | k=9 0.370
+
+T10 J3/J4 boundary examples. J3: fault items (acceptance-slice items with >= 1 fault of a changed procedure in
+    routing or execution, any arm S'/P_y, any run) / |A| <= 2 %. J4: S' format-violating items <= S's + max(2, ceil(0.02 |A*|)).
+  spreadsheetbench  |A|   60 x 2 runs: J3 passes with <= 1 fault items (2 fail) | J4 margin at |A*| = 30 / 30 / 60: 2 / 2 / 2 items
+  officeqa          |A|   50 x 4 runs: J3 passes with <= 1 fault items (2 fail) | J4 margin at |A*| = 30 / 30 / 50: 2 / 2 / 2 items
+  alfworld          |A|  150 x 1 runs: J3 passes with <= 3 fault items (4 fail) | J4 margin at |A*| = 30 / 75 / 150: 2 / 2 / 3 items
+  livemath          |A|  100 x 2 runs: J3 passes with <= 2 fault items (3 fail) | J4 margin at |A*| = 30 / 50 / 100: 2 / 2 / 2 items
+  searchqa          |A| 1000 x 1 runs: J3 passes with <= 20 fault items (21 fail) | J4 margin at |A*| = 30 / 500 / 1000: 2 / 10 / 20 items
+
+T11 Two formal chains (owner 22:3x): chain G = GLM-5.3 solver via the frozen BigModel route (weak_solver_probe.py:76-77,
+    no ROUTES entry; v3 SOLVER_MAX_TOKENS 65,536, SLOTS 10), chain D = deepseek-v4.1-flash-1017 via elucid (RD 4.1, 8 slots).
+    Method roles GLM-5.3 in both chains. Every registered per-chain cap applies to EACH chain; pilot totals double.
+    The per-cell anchors of RD 9.1 are deepseek measurements; chain G reuses them as a PLACEHOLDER [A] (GLM-5.3 answers
+    with reasoning low under a 65,536-token bound, so its cells are likely dearer); chain G gets its own zero-call cap
+    check after its first run unit (RD 9.3). Items: separate consumption namespaces per chain; both chains see the SAME
+    items (a replication, not independent evidence). M tokens.
+  default SB->OQ       (owner default, taken 22:3x)
+      per chain   learning  10.5- 31.2 | test read  12.6- 54.4 | solver  23.1- 85.6 (maximum 103.5) | solver cap  180
+      two chains  learning  21.1- 62.3 | test read  25.1-108.8 | solver  46.2-171.2 (maximum 207.0) | solver cap  360
+      per-chain cap = steps  61.3 + test read  99.0 + redo reserve 14.8; two chains: steps 122.6 + test reads 198.0 + redo reserves 29.6
+  recommended SB->ALF  (recommendation, not taken)
+      per chain   learning  32.2- 73.1 | test read  23.0- 68.7 | solver  55.2-141.9 (maximum 180.6) | solver cap  300
+      two chains  learning  64.5-146.3 | test read  46.0-137.4 | solver 110.4-283.7 (maximum 361.2) | solver cap  600
+      per-chain cap = steps 149.1 + test read 126.0 + redo reserve 22.9; two chains: steps 298.2 + test reads 252.0 + redo reserves 45.8
+  chain G one full reservation with its frozen bound B = 65,536 on every bench (disclosure; the registered per-chain
+  caps are NOT recomputed, owner rule): spreadsheetbench 520,192, officeqa 520,192, alfworld 392,192
+      SB step 1  caps with R_G for comparison: run  1.2 | examiner  3.5 | selftest  2.6 | accept  8.3  (registered 1.2/3.5/2.6/8.3)
+      OQ step 2  caps with R_G for comparison: run  2.4 | examiner  7.4 | selftest  6.8 | accept 29.6  (registered 2.3/7.3/6.6/29.5)
+  examiner research sub-scope per step and bench: maximum 24 requests x 8 calls x 15,000 = 2.88 M; cap 1.5 x max + one role reservation (0.228) = 4.6 M
+      expected 0.13-2.88 M per step; default pilot per chain (2 steps) 0.26-5.76 M; two chains 0.51-11.52 M
+  GLM-5.3 method roles per chain (v3 anchor 3-8 M [CI F13] + research): 3.3-13.8 M; two chains 6.5-27.5 M; role caps 30 M per chain -> 60 M; per-step ceilings per chain: engineer 1.5 + examiner 2.5 + research 4.6 = 8.6 M, x 2 steps = 17.2 M <= 30 M
+  chain G solver tokens are GLM-5.3 tokens charged to chain G's SOLVER scopes (cap above), never to the role caps;
+  smoke (one, elucid only, RD 10) unchanged: solver 14 M, GLM 2 M, S1 probe root 0.5 M
