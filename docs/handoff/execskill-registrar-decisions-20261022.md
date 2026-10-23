@@ -716,3 +716,63 @@ the 12:54 report proposed v2.
   start before the owner's main-v2 read consent exists: it then waits at its read gate (`read-waiting.json`) and reads
   nothing; the agent relaunches `run` once the owner has written it (`chain.read_consent`). Chain D stays unlaunched
   (the owner's decision of 11:25 is pending).
+
+## Owner decisions 2026-10-23 18:4x: the main-v2 read consent; chain D starts now (route B)
+
+**Decision (chat, verbatim).** "当前开始正在进行什么，我同意读测试集，同时D链也可以直接开跑".
+
+**Read consent.** The owner agrees to the main-v2 test read. The file `/data/execskill-20261023-main-v2/shared/consent.json`
+stays the owner's to write: the one-line command in docs/project-status.md §5 (checked on a scratch path: the file it
+writes passes `evaluation.consent(shared, "main-v2")`, arms F, C, P_F, T_F, twins, stages). The agent does not write it;
+without it chain G waits at its read gate.
+
+**Chain D.** The 02:3x rule launches chain D only after an elucid probe passes and the owner approves. Out-of-ledger
+probes (labels and counts only; scripts in `/data/execskill-20261021-ops/`):
+- elucid, 18:44, `elucid-label-check.py 8` (M=64): 8/8 HTTP 200, all labelled `deepseek-v4.1-flash` -- not the
+  registered `deepseek-v4.1-flash-1017`, so route A's first-call confirmation would fail (as all morning);
+- northgate, 18:45, `northgate-label-check.py 4`: 4/4 HTTP 200, labelled `deepseek-v4-flash`, in route B's registered
+  echo set, about 0.8 s each.
+
+**Ruling.** Chain D starts on route B from its first call, with the registered operator command `switch-route --chain D
+--to B --reason ...` (`routes.switch` accepts an explicit reason while the chain is idle; no code change; the same
+main-v2 manifest): `main2-d-route.sh`, then `main2-run.sh D` (it refuses chain D without the route record). Chain D's
+route B confirms its own first reply (`confirm-route-B.json`). Recorded limitations, as registered: northgate's
+deepseek-v4-flash is not proven identical to elucid's deepseek-v4.1-flash-1017; chain D's block and the route-B pin
+keep the unprobed conservative bound (branch N, longest 256); S-E6 prices chain D at GLM-5.3's per-cell tokens (a
+placeholder). Chain D launches after chain G's first call is confirmed.
+- **19:02 the owner wrote the read consent** (`!` command in this session): `/data/execskill-20261023-main-v2/shared/consent.json`, sha256 prefix f1517dd350c38a74; `evaluation.consent(shared, "main-v2")` valid (F, C, P_F, T_F, twins, stages); not valid for v1 `main`, as intended.
+- **19:07 elucid re-probe** (owner asked whether route A can serve `deepseek-v4.1-flash-1017`): 8/8 HTTP 200, every echoed label `deepseek-v4.1-flash` (log `/data/execskill-20261021-ops/label-check-1910.log`). Route A's registered echo set is {`deepseek-v4.1-flash-1017`} and `client` checks the echoed label on every reply (frozen `model_mismatch`), not only the first call, so route A still cannot run chain D. Options put to the owner: northgate now (default, no code change), wait for elucid's label, or register the alias (code change: new snapshot, re-smoke, new manifest/root for D).
+
+## Owner decision 2026-10-23 19:1x: elucid's echo `deepseek-v4.1-flash` is deepseek-v4.1-flash-1017; chain D runs on route A (snapshot f)
+
+- Owner (chat, verbatim): "我刚刚确认了，这个deepseek-v4.1-flash就是之前的1017，直接开始跑就行". This supersedes the
+  18:4x plan to move chain D to route B (northgate deepseek-v4-flash); `main2-d-route.sh` is not run. Route B stays
+  pinned as the registered fallback.
+- Code (GO commit f, a child of a1e47d8): `client.ELUCID_ALIAS = "deepseek-v4.1-flash"` joins
+  `ELUCID_RESPONSE_MODEL_IDS` (route A's echo set, chain D's first-call echo, the manifest's solver block). The request
+  id stays `deepseek-v4.1-flash-1017` and route A's credential file must still name it; every other echo stays
+  `model_mismatch`; alias replies keep the reasoning check. Receipts record the echo they carried. Applies to every run
+  on snapshot f or later; snapshots b/d/e and their records are unchanged (no v1 run is planned on f).
+- Probe through the changed client, 19:28 (`/data/execskill-20261021-ops/alias-check-1935.log`, out of ledger): 3/4 ok
+  (echo deepseek-v4.1-flash, finish stop, reasoning 0, tagged answer), 1 transport failure after 180 s.
+- Smoke binding (a disclosed deviation, authorized by "直接开始跑就行"): the v2 smoke of record stays the chain-G smoke on
+  snapshot e (it made no elucid call; no S1). The main-v2 manifest pins snapshot f; instead of requiring the main
+  manifest to equal the smoke manifest on code, provenance and clients, `main2f-{go,pins,manifest}.sh` require every
+  other block to be equal and check the exact e -> f delta (`main2f_delta.py`): snapshot lists differ only in
+  client.py and its three test files, git e..f changes exactly those files with e as parent, code maps differ only in
+  client.py, clients differ only at the client.py hash (G, D, route-B pin) and chain D's echo set. The registered
+  route-B test selection runs on f before the commit. Chain D's block keeps the unprobed conservative bound (branch N,
+  longest 256) and S-E6's placeholder pricing.
+- Launch order: smoke e passed or the owner's v2 waiver (S2.format only) -> main2f-go -> main2f-pins ->
+  main2f-manifest -> main-tls.py -> chain G -> G's first-call confirmation -> chain D on route A (`main2f-run.sh D`
+  refuses without `G/confirm.json`) -> D's first-call confirmation (echo in the new set).
+- **19:4x Codex (one round) on the alias launch: NOT ACCEPTABLE, 2 BLOCKER + 1 MAJOR, all in the snapshot-f launch
+  scripts** (the alias handling itself consistent); fixed as recorded in
+  `docs/handoff/execskill-v2-20261023/codex-review-alias.md` (smoke manifest read by e's code; f's own sheet
+  qualification q23-f with a path-only delta; the reviewed patch pinned by its sha256 17370f34…f93ef).
+- **19:4x–21:1x paused at the owner's request** ("先暂停一下，我要下班了，等我回去再继续"); the v2 smoke's last stage (SX)
+  was left to finish. SX passed (rows unit, training, acceptance, consumption, ledger); smoke-result
+  `20a55bec6096d233…` failed on S2.format only.
+- **21:20 the owner wrote the v2 smoke waiver** (`!` command in this session):
+  `/data/execskill-20261021-pre/smoke/shared/owner-smoke-waiver-v2.json`, rows ["S2.format"], file sha256
+  8f176a98…26ae8a2; `run_execskill.py smoke-waiver` reports it valid.

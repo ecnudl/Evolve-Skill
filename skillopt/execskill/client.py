@@ -48,7 +48,8 @@ inherited ``body`` and ``call`` read (:243-257). The inherited ``body`` (:259-26
 envelope. URL and key are read by path from the route's credential file, whose URL must be the route's approved
 endpoint and which, on route A, must also name the registered model (never printed, written or put in an exception);
 requests go through the approved PJLAB gateway only, with ``trust_env=False``; an echoed model id outside the route's
-registered set is the frozen ``model_mismatch`` (:285-288).
+registered set is the frozen ``model_mismatch`` (:285-288); route A's set is the registered id and the echo
+``ELUCID_ALIAS`` the owner confirmed as the same model (2026-10-23 19:1x).
 
 Every receipt carrying a reply of the route's registered model is checked for reasoning (§4.1). The frozen receipt
 drops ``usage.completion_tokens_details`` (:220-224) and keeps only ``reasoning_chars`` (:291-294), so ``_receipt``
@@ -83,8 +84,13 @@ GLM_SOLVER = "glm-5.3"  # chain G (§4.1): the frozen MODELS entry, no route
 ELUCID_MODEL = "deepseek-v4.1-flash-1017"  # chain D and the smoke (§4.1); route A's model
 ELUCID_HOST = "hk.getelucid.com"
 ELUCID_PATH = "/v1/chat/completions"
-# the model id every delivered reply echoed in the 2026-10-21 gateway probes; smoke S1-a checks it before any other row
-ELUCID_RESPONSE_MODEL_IDS = frozenset({ELUCID_MODEL})
+# the model id every delivered reply echoed in the 2026-10-21 gateway probes; smoke S1-a checks it before any other row.
+# Since 2026-10-23 02:32 elucid echoes ``ELUCID_ALIAS`` for the unchanged request id (probes 18:44 and 19:07: 8/8
+# each); the owner confirmed on 2026-10-23 19:1x that it is deepseek-v4.1-flash-1017 itself (registrar "Owner
+# decision 2026-10-23 19:1x"), so it joins the registered echo set from snapshot f on; any other echo stays
+# ``model_mismatch``
+ELUCID_ALIAS = "deepseek-v4.1-flash"
+ELUCID_RESPONSE_MODEL_IDS = frozenset({ELUCID_MODEL, ELUCID_ALIAS})
 # route B (registrar row "deepseek route B", owner 2026-10-22 17:3x): the second deepseek provider of chain D
 NORTHGATE_MODEL = "deepseek-v4-flash"
 NORTHGATE_HOST = "northgate.xiaobei.top"

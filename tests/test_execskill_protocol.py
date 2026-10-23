@@ -127,7 +127,8 @@ def test_sibling_copies_agree_with_the_registration():
     # ticket A2-1: the solver names and settings the client dispatches on
     assert set(protocol.SOLVERS) == set(client.CONFIG_KEYS)
     assert protocol.CHAINS == {"G": client.GLM_SOLVER, "D": client.ELUCID_MODEL}
-    assert client.ELUCID_RESPONSE_MODEL_IDS == frozenset({protocol.SMOKE_SOLVER}) == frozenset({protocol.CHAINS["D"]})
+    assert client.ELUCID_RESPONSE_MODEL_IDS == frozenset({protocol.SMOKE_SOLVER, client.ELUCID_ALIAS}) == frozenset(
+        {protocol.CHAINS["D"], "deepseek-v4.1-flash"})  # owner 2026-10-23 19:1x: the echoed alias
     assert client.REASONING_EFFORT == protocol.REASONING_EFFORT == "none"
     # ticket A4-1 and the policy's own copies
     assert set(registry.NAMESPACES) == set(protocol.CHAINS) | {"smoke"} | set(protocol.V2_NAMESPACES.values())

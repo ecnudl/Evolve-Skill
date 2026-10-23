@@ -23,6 +23,7 @@ from skillopt.coevo5.outcomes import (
 from skillopt.coevo5.protocol import MAX_RESENDS, RESEND_COOLDOWN_SECONDS
 from skillopt.continual_eval import backends
 from skillopt.execskill.client import (
+    ELUCID_ALIAS,
     ELUCID_MODEL,
     ELUCID_RESPONSE_MODEL_IDS,
     GLM_SOLVER,
@@ -187,12 +188,26 @@ def test_the_usage_fields_of_a_receipt(tmp_path, reply, fields):
 
 
 # ------------------------------------------------------------------------- T-CLIENT-4: the echoed model id
-@pytest.mark.parametrize("echo", ["deepseek-v4-flash", "deepseek-flash", "glm-5.3", "deepseek-v4.1-flash"])
+@pytest.mark.parametrize("echo", ["deepseek-v4-flash", "deepseek-flash", "glm-5.3", "deepseek-v4.1-flash-1018",
+                                  "deepseek-v4.1"])
 def test_an_echo_outside_the_registered_set_is_a_model_mismatch(tmp_path, echo):
     receipt = _solver(tmp_path, Reply(text=tagged("4"), model=echo, reasoning="r")).call("sys", "user")
     assert (receipt["ok"], receipt["error_type"], receipt["returned_model"]) == (False, "model_mismatch", echo)
     assert "subtype" not in receipt and "over_nominal" not in receipt and undelivered(receipt)
-    assert ELUCID_RESPONSE_MODEL_IDS == {ELUCID_MODEL}
+    assert ELUCID_RESPONSE_MODEL_IDS == {ELUCID_MODEL, ELUCID_ALIAS} and ELUCID_ALIAS == "deepseek-v4.1-flash"
+
+
+@pytest.mark.parametrize("reasoning", [None, "r"])
+def test_the_owner_confirmed_alias_echo_is_a_reply_of_the_registered_model(tmp_path, reasoning):
+    # owner 2026-10-23 19:1x: the echo deepseek-v4.1-flash is deepseek-v4.1-flash-1017 itself; its replies keep the
+    # reasoning check of every registered reply
+    receipt = _solver(tmp_path, Reply(text=tagged("4"), model=ELUCID_ALIAS, reasoning=reasoning)).call("sys", "user")
+    assert receipt["returned_model"] == ELUCID_ALIAS
+    if reasoning is None:
+        assert receipt["ok"] is True and "error_type" not in receipt and receipt["response"] == tagged("4")
+    else:
+        assert (receipt["ok"], receipt["error_type"], receipt["subtype"]) == (False, "thinking_mismatch",
+                                                                              "reasoning_mismatch")
 
 
 def test_a_non_text_echo_is_a_model_mismatch(tmp_path):

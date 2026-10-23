@@ -135,7 +135,7 @@ def test_a_chain_d_spec_is_the_registered_one(tmp_path):
                                "alfworld": 1_024},
         "read_timeout": {"searchqa": 600, "officeqa": 600, "livemath": 600, "spreadsheetbench": 900, "alfworld": 180},
         "proxy": protocol.GATEWAY, "reasoning_effort": "none", "b_probe": 32_768, "s1d_tokens": 64,
-        "response_model_ids": [ELUCID]}
+        "response_model_ids": sorted(client.ELUCID_RESPONSE_MODEL_IDS)}  # owner 2026-10-23 19:1x: with the alias
     assert default["stages"] == list(smoke.SMOKE_STAGES) and default["probe_root"] == str(tmp_path / "probe")
     assert quick(tmp_path, write=False)["probe_root"] == protocol.PROBE_ROOT  # the registered default
     found = smoke.solver_of(default)
