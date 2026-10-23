@@ -54,6 +54,20 @@ with at most ``MAX_CHANGES`` edits, whatever the number of rounds. Codex review 
 the next is schema-checked (``Context``; #4), the lint names tests by position only (``_lint``; #3), C4 counts the
 table-shape references every round of the step disclosed (``Context.disclosed``; #3), and an oversized proposal
 message leaves out trajectories, then training examples, then analyses (``_fit_train``; #5).
+
+v2.1 (configuration ``main-v2-1``; owner decision 2026-10-24 02:22, "好的，那就按照你的说法来，先修，修好之后继续跑"): in
+main-v2, LiveMath's round 2 adopted a procedure keyed on the meta option after its fix calls echoed the screen's
+matched phrase and the adjudicator's reason, and the next fix reply paraphrased around them. Two train-mode rules,
+taken from the run configuration (``protocol.FIX_ECHO``, ``protocol.META_COUNTERFACTUAL``): a fix call shows a failed
+C4 or C9 without the flagged texts, the matched terms, the static bans' details and the adjudicator's reason
+(``Context.echo`` False, ``_redacted``; the sealed record keeps the full detail), and C4 fails a procedure that behaves
+differently on its in-scope LiveMath trajectories when the meta option's text is replaced by a neutral filler
+(``Context.counterfactual``, ``replay.meta_counterfactual``; the fix call names the differing aspects and
+``COUNTERFACTUAL_RULE``). With echo off, the trajectories the proposal and analyst calls show carry no screen match
+either: a lexicon or meta-option fault's message and the detail of a note field dropped for either reason become null
+(``_unechoed``; Codex review 2026-10-24 #3). The prompts are main-v2's. In every configuration a model-written value
+is type-checked before it is used as a key (``_fix``, ``leak_check``; main-v2's chain G stopped on a mutation written
+as an object).
 """
 from __future__ import annotations
 
@@ -96,6 +110,14 @@ TRAIN = "train"  # v2's learning mode (``protocol.LEARNING``)
 LINT_REASONS = ("test_count", "invalid_test", "test_failed", "vacuous_test", "no_fix_claim")  # v2: advice only
 MAX_LINT = 10
 MAX_DETAIL_CHARS = 300  # v2: a flagged text or a reason in a fix call's detail
+# v2.1: what a fix call says of a counterfactual difference (``_redacted``), in place of any flagged text
+COUNTERFACTUAL_RULE = ("The procedure must behave the same with or without the option about a stronger result: its "
+                       "predicate, notes, bindings and faults on an item may not depend on that option's presence or "
+                       "wording.")
+# v2.1, Codex review 2026-10-24 #3: the note screens' reasons (``notes.screen``) whose matched texts a shown trajectory
+# leaves out when echo is off, and the shell faults they raise (``note_`` + reason)
+SCREEN_REASONS = ("lexicon", "meta_option")
+SCREEN_FAULTS = tuple("note_" + reason for reason in SCREEN_REASONS)
 # v2, Codex review 2026-10-23 #3/#4: the exact fields of what one round carries to the next
 LINT_DETAILS = ("keys", "id", "trajectory_not_in_scope", "hook_or_kind", "property_shape", "step", "value",
                 "nonvacuity", "mutation", "predicate_needs_mutation")  # replay.validate_test's reasons
@@ -349,6 +371,8 @@ class Context:
     reserved: frozenset = frozenset()
     analysed: frozenset = frozenset()
     disclosed: frozenset = frozenset()
+    echo: bool = True  # v2.1 (``protocol.FIX_ECHO``): False -- fix calls show failed C4 and C9 redacted (``_redacted``)
+    counterfactual: bool = False  # v2.1 (``protocol.META_COUNTERFACTUAL``): C4 runs ``replay.meta_counterfactual``
     # the payload's disclosed SpreadsheetBench values and the public workbooks read for their check (``disclosed``)
     sheet: dict = field(default_factory=dict, init=False, repr=False, compare=False)
 
@@ -360,6 +384,9 @@ class Context:
     def __post_init__(self):
         require(self.bench in BENCHES and type(self.k) is int and 0 <= self.k <= 999, "A known bench and step number")
         require(self.mode in ("single", TRAIN), "A known learning mode")
+        require(type(self.echo) is bool and type(self.counterfactual) is bool
+                and (self.mode == TRAIN or (self.echo and not self.counterfactual)),
+                "v2.1's fix-call and counterfactual rules belong to the train mode")
         require(type(self.spent) is int and 0 <= self.spent <= self.calls_cap and (self.mode != TRAIN or not self.spent),
                 "The step's engineer calls so far")
         chain = str(self.label).split("/", 1)[0]
@@ -540,14 +567,31 @@ def shown(ctx):
     return out
 
 
-def _shown_view(kind, trajectory, references):
+def _shown_view(kind, trajectory, references, echo=True):
     view = whitelisted(trajectory)
     for call in view["calls"]:
         call.pop("system")
+    if not echo:
+        view["shell"] = _unechoed(view["shell"])
     entry = {"kind": kind, **view}
     if kind == "failures" and trajectory["task_id"] in references:
         entry["reference"] = references[trajectory["task_id"]]
     return entry
+
+
+def _unechoed(shell):
+    """v2.1 (``Context.echo`` False; Codex review 2026-10-24 #3): a shown trajectory's shell without the texts the note
+    screens matched -- the message of a lexicon or meta-option fault and the detail of a field dropped for either
+    reason become None; every kind, field and reason is kept."""
+    out = dict(shell)
+    if isinstance(shell.get("faults"), list):
+        out["faults"] = [{**f, "message": None} if isinstance(f, dict) and f.get("kind") in SCREEN_FAULTS else f
+                         for f in shell["faults"]]
+    if isinstance(shell.get("notes"), list):
+        out["notes"] = [{**n, "dropped": [{**d, "detail": None} if isinstance(d, dict) and d.get("reason") in
+                                          SCREEN_REASONS else d for d in n["dropped"]]}
+                        if isinstance(n, dict) and isinstance(n.get("dropped"), list) else n for n in shell["notes"]]
+    return out
 
 
 def _listed(procedure, parent):
@@ -562,7 +606,7 @@ def payload(ctx, analyses=None):
     round's ``analyses`` (``analyse``), fitted by ``_fit_train``."""
     user = {"request": "propose", "bench": ctx.bench, "card": ctx.card,
             "package": [_listed(p, ctx.parent) for p in ctx.parent.procedures],
-            "trajectories": [_shown_view(kind, t, ctx.references) for kind, t in shown(ctx)],
+            "trajectories": [_shown_view(kind, t, ctx.references, ctx.echo) for kind, t in shown(ctx)],
             "detectors": ctx.detectors, "previous": ctx.previous}
     if ctx.mode != TRAIN:
         return fit(user, "trajectories", ROLE_INPUT_BYTES)
@@ -618,7 +662,8 @@ def analyse(ctx):
     package = [{"id": p.id, "description": p.description, "hooks": list(p.hooks)} for p in ctx.parent.procedures]
     findings, shown_refs, calls = [], [], []
     for n, start in enumerate(range(0, len(chosen), TRAIN_ANALYST_BATCH), 1):
-        group = [_shown_view("failures", first[i], ctx.references) for i in chosen[start:start + TRAIN_ANALYST_BATCH]]
+        group = [_shown_view("failures", first[i], ctx.references, ctx.echo)
+                 for i in chosen[start:start + TRAIN_ANALYST_BATCH]]
         user = fit({"request": "analyse", "bench": ctx.bench, "card": ctx.card, "package": package,
                     "trajectories": group}, "trajectories", ROLE_INPUT_BYTES)
         seen = [t["task_id"] for t in user["trajectories"]]
@@ -1012,7 +1057,12 @@ def leak_check(change, ctx, outcomes, entries):
                for note in outcome.notes if OPTION_LETTER.search(note["text"])]
     if bans or letters:
         return False, {"output_bans": (bans + letters)[:10]}
-    named = [entries[t.get("trajectory")] for t in procedure.replay_tests if t.get("trajectory") in entries]
+    if ctx.counterfactual:  # v2.1: the same behaviour with the meta option's text replaced by the filler
+        differs = replay.meta_counterfactual(procedure, entries, outcomes, ctx.workers, inputs_dirs=ctx.inputs_dirs)
+        if differs:
+            return False, {"output_bans": differs[:10]}
+    named = [entries[t["trajectory"]] for t in procedure.replay_tests
+             if isinstance(t, dict) and type(t.get("trajectory")) is str and t["trajectory"] in entries]
     cited = "\n".join(public_text(e["request_view"] or [s["view"] for s in e["steps"]]) for e in named)
     corpora = list(ctx.corpora.values())
     # (where, text, its public text, the trajectories whose workbook and report it may quote, the corpora); the header
@@ -1221,7 +1271,8 @@ def _fix(ctx, change, report, *, attempt=None, why=None):
     ``TRAIN_FIXES``) also says why the previous fix reply was not usable (``why``) and reads the reply leniently."""
     entry = dict(change.entry, **({"source": change.source} if change.source is not None else {}))
     failed = [c for c in report["checks"] if not c["passed"]]
-    user = {"request": "fix", "bench": ctx.bench, "change": entry, "failed": failed[-1] if failed else None}
+    last = failed[-1] if failed else None
+    user = {"request": "fix", "bench": ctx.bench, "change": entry, "failed": last if ctx.echo else _redacted(last)}
     if attempt is not None:
         user.update({"attempt": attempt, "attempts": TRAIN_FIXES, **({"previous_reply": why} if why else {})})
     reply, call = _ask(ctx, user, "fix/%d" % change.n if attempt is None else "fix/%d/%d" % (change.n, attempt))
@@ -1234,11 +1285,36 @@ def _fix(ctx, change, report, *, attempt=None, why=None):
     if len(entries) != 1:
         return None, "changes: %d, expected exactly the one change" % len(entries)
     fixed = changes_of(entries, sources, call)[0]
-    key = TARGET_KEYS.get(change.kind)
+    key = TARGET_KEYS.get(change.kind) if type(change.kind) is str else None  # v2.1: a model-written kind
     if fixed.kind != change.kind or (key is not None and fixed.entry.get(key) != change.entry.get(key)):
         return None, "another kind or target than the change to fix"
     fixed.n = change.n
     return fixed, None
+
+
+def _redacted(result):
+    """v2.1 (``Context.echo`` False): a failed check's result as a fix call shows it. C4: the static bans' rules and
+    lines; the output bans' cells, hooks, steps and kinds (a letter ban ``option_letter``) with a counterfactual
+    difference's aspects and ``COUNTERFACTUAL_RULE``; the leakage hits' places, benches and reason codes and the
+    adjudication's outcome -- never a flagged text, a matched term, a ban's detail or the adjudicator's reason. C9:
+    each fault's cell, hook, step and kind. Every other result as recorded."""
+    if result is None or result["passed"] or result["check"] not in ("C4", "C9") or result["detail"] is None:
+        return result
+    detail = result["detail"]
+    if result["check"] == "C9":
+        return {**result, "detail": [{k: f[k] for k in ("cell", "hook", "step", "kind") if k in f} for f in detail]}
+    if "static_bans" in detail:
+        shown = {"static_bans": [{"rule": v["rule"], "line": v["line"]} for v in detail["static_bans"]]}
+    elif "output_bans" in detail:
+        bans = [{**{k: b[k] for k in ("cell", "hook", "step", "aspects") if k in b},
+                 "kind": b.get("kind", "option_letter")} for b in detail["output_bans"]]
+        shown = {"output_bans": bans}
+        if any(b["kind"] == replay.COUNTERFACTUAL for b in bans):
+            shown["rule"] = COUNTERFACTUAL_RULE
+    else:
+        shown = {**{k: v for k, v in detail.items() if k not in ("hits", "adjudicator_reason")},
+                 "hits": [{k: h[k] for k in ("where", "bench", "reasons")} for h in detail["hits"]]}
+    return {**result, "detail": shown}
 
 
 def _combined(parent, survivors, step):

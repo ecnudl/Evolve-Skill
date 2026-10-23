@@ -182,8 +182,9 @@ def test_registered_names_agree_across_the_b1_modules():
     assert set(package.HOOK_PARAMETERS) == set(protocol.HOOKS)  # Procedure validation indexes it by every hook
     assert set(package.SECOND_CALL_HOOKS) <= set(package.NOTE_HOOKS) <= set(protocol.HOOKS)
     assert set(notes.FIELD_TYPES) == set(notes.FIELD_ORDER) == set(protocol.NOTE_HEADERS)  # render indexes headers
-    assert set(protocol.NAMESPACES) == set(protocol.CHAINS) | {budgets.SMOKE} | set(protocol.V2_NAMESPACES.values())
-    assert set(protocol.V2_NAMESPACES) == set(protocol.CHAINS)  # v2 (2026-10-23): each chain's own v2 namespace
+    assert set(protocol.NAMESPACES) == set(protocol.CHAINS) | {budgets.SMOKE} | set(protocol.V2_NAMESPACES.values()) | set(
+        protocol.V21_NAMESPACES.values())
+    assert set(protocol.V2_NAMESPACES) == set(protocol.V21_NAMESPACES) == set(protocol.CHAINS)  # v2, v2.1: their own
     assert set(protocol.SOLVERS) <= set(slots.POOL_SIZES) and protocol.ROLE_MODEL in slots.POOL_SIZES
 
 

@@ -55,6 +55,7 @@ from skillopt.continual_eval.core import require, safe_path, write_json
 from skillopt.validator_pilot.api import digest
 
 from . import VERSION
+from .client import POOL_LIMITS
 from .protocol import (
     BENCHES,
     LIVEMATH_DEFINITION_CHARS,
@@ -198,7 +199,8 @@ class Wikipedia:
         require(proxy is None or (type(proxy) is str and PROXY.fullmatch(proxy) is not None),
                 "A proxy is an explicit http(s) host without credentials")
         options = {"transport": transport} if transport is not None else ({"proxy": proxy} if proxy else {})
-        self.client = httpx.Client(timeout=timeout, trust_env=False, follow_redirects=False,
+        # v2.1 (Codex review 2026-10-24 #1): no connection cap, as the model clients (``client.POOL_LIMITS``)
+        self.client = httpx.Client(timeout=timeout, limits=POOL_LIMITS, trust_env=False, follow_redirects=False,
                                    headers={"User-Agent": USER_AGENT}, **options)
 
     def _get(self, params):

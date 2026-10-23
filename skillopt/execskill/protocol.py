@@ -36,7 +36,8 @@ RECORD_HASH = "record_sha256"  # plan §2: the canonical digest of the record wi
 # §1 evidence labels; ``main_real_run``: the owner's five-bench main experiment (registrar "Owner instructions
 # 2026-10-22 17:0x and 17:3x"), accepted wherever ``pilot_real_run`` is accepted for a real run (``REAL_RUN_EVIDENCE``)
 EVIDENCE = ("engineering_fixture", "smoke", "pilot_real_run", "historical_replay", "main_real_run",
-            "main_v2_real_run")  # v2 (owner decision 2026-10-23 13:3x): the "train then accept" main experiment
+            "main_v2_real_run",  # v2 (owner decision 2026-10-23 13:3x): the "train then accept" main experiment
+            "main_v2_1_real_run")  # v2.1 (owner decision 2026-10-24 02:2x): main-v2 with two engineer rules
 IMPORTABLE = ("fivebench-coevolution-v3-sheet-qualification",)  # §1, owner #7, Codex F15: the one v3 record kind read
 TEXTS_IMPORT = "fivebench-coevolution-v3-texts-import"  # §2.2: the v3 task cards, imported by value (plan §6)
 
@@ -102,13 +103,17 @@ SMOKE_SOLVER = CHAINS["D"]  # §0 (c), §10: the registered default smoke solver
 # registrar addendum 2026-10-23 02:3x ("smoke solver chain"): the smoke specification pins its solver chain -- "D",
 # the registered default (unchanged), or "G": GLM-5.3 through its frozen client with chain G's settings, and no S1
 SMOKE_SOLVER_CHAINS = ("D", "G")
-NAMESPACES = ("G", "D", "smoke", "G-v2", "D-v2")  # §3.4: one consumption namespace per chain, the smoke its own;
+NAMESPACES = ("G", "D", "smoke", "G-v2", "D-v2", "G-v2-1", "D-v2-1")  # §3.4: one consumption namespace per chain,
+# the smoke its own;
 # v2 (owner decision 2026-10-23 13:3x): each chain of the main-v2 configuration consumes in its own namespace
 # (``V2_NAMESPACES``, ``namespace_of``), so it cuts the registered slices from the same fixed order again: its run
 # slices are v1 main's training items (reused for training) and its acceptance slices the ones v1 cut but never
 # registered (v1 main accepted nothing, so no acceptance item was ever dispatched); the pools hold no other supply
 # (OfficeQA 74 = 24 + 50, LiveMath 283 = 119 + 100 + 64, SpreadsheetBench 91 = 31 + 60)
 V2_NAMESPACES = {"G": "G-v2", "D": "D-v2"}
+# v2.1 (owner decision 2026-10-24 02:2x): main-v2-1's chains consume in namespaces of their own again and cut the same
+# slices: main-v2 dispatched no acceptance item either (chain G stopped in step 3's training, chain D in step 1's run)
+V21_NAMESPACES = {"G": "G-v2-1", "D": "D-v2-1"}
 ROLE_MODEL = "glm-5.3"  # §4.2, §4.3, §7.2: every method role of both chains
 # §4.1 chain G: M = B = 65,536 on every bench and a 2,400 s read timeout (the frozen route, coevo5 protocol.py:327,
 # :92), so a chain G receipt is never over nominal.
@@ -845,24 +850,52 @@ PILOTS[MAIN_V2]["solver_cap"] = _round_up(sum(sum(c.values()) for c in MAIN_V2_S
 SX_SLICES = {"run": 100, "accept": 160}
 SMOKE_SX_CAPS = {"solver": 80 * MILLION, "glm": 40 * MILLION}
 SMOKE_WAIVER_V2 = "shared/owner-smoke-waiver-v2.json"  # a v2 smoke's (SX listed) owner waiver; v1's file stays put
+# ------------------------------------------- v2.1 (owner decision 2026-10-24 02:2x: "好的，那就按照你的说法来，先修，修好之后继续跑")
+# main-v2 stopped on 2026-10-23/24: chain D on the httpcore tunnel-pool leak (``client.POOL_LIMITS``, every
+# configuration), chain G on a model-written replay test whose mutation was an object (``replay.validate_test`` now
+# refuses any value of the wrong type, every configuration), and LiveMath's round 2 had adopted a procedure keyed on
+# the meta option after its fix calls echoed the screen's matched phrase and the adjudicator's reason. The run
+# configuration ``main-v2-1`` is ``main-v2`` with two engineer rules: its fix calls never show a flagged text, a
+# matched term, a static ban's detail or the adjudicator's reason -- the sealed records keep them (``FIX_ECHO``,
+# ``engineer._redacted``) -- and C4 replays every procedure on its in-scope LiveMath trajectories whose view holds the
+# meta option with that option's text replaced by ``META_FILLER``: a procedure that behaves differently there --
+# predicate, notes, bindings, repair request or fault kinds, the filler mapped back -- fails C4
+# (``META_COUNTERFACTUAL``, ``replay.meta_counterfactual``). Prompts, slices, caps and every other rule are main-v2's;
+# its run root and consumption namespaces (``V21_NAMESPACES``) are new.
+MAIN_V2_1 = "main-v2-1"
+LEARNING[MAIN_V2_1] = "train"
+FIX_ECHO = {"default": True, "recommended": True, "main": True, MAIN_V2: True, MAIN_V2_1: False}
+META_COUNTERFACTUAL = {"default": False, "recommended": False, "main": False, MAIN_V2: False, MAIN_V2_1: True}
+META_FILLER = "This option's wording is withheld and replaced by this neutral sentence."
+MAIN_V2_1_ROOT = "/data/execskill-20261024-main-v2-1"
+MAIN_V2_1_MANIFEST = "/data/execskill-20261024-main-v2-1-manifest.json"
+PILOTS[MAIN_V2_1] = dict(PILOTS[MAIN_V2])
+STAGE_READ[MAIN_V2_1] = STAGE_READ[MAIN_V2]
+TEST_READ_CELLS[MAIN_V2_1] = dict(TEST_READ_CELLS[MAIN_V2])
+CHAIN_NAMESPACES = {MAIN_V2: V2_NAMESPACES, MAIN_V2_1: V21_NAMESPACES}
 
 
 def namespace_of(setting, chain):
-    """The consumption namespace of ``chain`` in the Setting's run configuration: the chain itself, or its v2
-    namespace in main-v2 (``V2_NAMESPACES``)."""
-    return V2_NAMESPACES[chain] if configuration_of(setting) == MAIN_V2 else chain
+    """The consumption namespace of ``chain`` in the Setting's run configuration: the chain itself, or its own
+    namespace in main-v2 (``V2_NAMESPACES``) and main-v2-1 (``V21_NAMESPACES``)."""
+    found = CHAIN_NAMESPACES.get(configuration_of(setting))
+    return found[chain] if found is not None else chain
 
-CONFIG_STEP_CAPS = {"default": STEP_CAPS, "recommended": STEP_CAPS, "main": MAIN_STEP_CAPS, MAIN_V2: MAIN_V2_STEP_CAPS}
+CONFIG_STEP_CAPS = {"default": STEP_CAPS, "recommended": STEP_CAPS, "main": MAIN_STEP_CAPS, MAIN_V2: MAIN_V2_STEP_CAPS,
+                    MAIN_V2_1: MAIN_V2_STEP_CAPS}
 CONFIG_SCHEDULE_CELLS = {"default": MAX_SCHEDULE_CELLS, "recommended": MAX_SCHEDULE_CELLS, "main": MAIN_SCHEDULE_CELLS,
-                         MAIN_V2: MAIN_V2_SCHEDULE_CELLS}
-CONFIG_ROLE_CAPS = {"default": ROLE_CAPS, "recommended": ROLE_CAPS, "main": MAIN_ROLE_CAPS, MAIN_V2: MAIN_V2_ROLE_CAPS}
-CONFIG_GLM_CAP = {"default": GLM_CAP, "recommended": GLM_CAP, "main": MAIN_GLM_CAP, MAIN_V2: MAIN_V2_GLM_CAP}
+                         MAIN_V2: MAIN_V2_SCHEDULE_CELLS, MAIN_V2_1: MAIN_V2_SCHEDULE_CELLS}
+CONFIG_ROLE_CAPS = {"default": ROLE_CAPS, "recommended": ROLE_CAPS, "main": MAIN_ROLE_CAPS, MAIN_V2: MAIN_V2_ROLE_CAPS,
+                    MAIN_V2_1: MAIN_V2_ROLE_CAPS}
+CONFIG_GLM_CAP = {"default": GLM_CAP, "recommended": GLM_CAP, "main": MAIN_GLM_CAP, MAIN_V2: MAIN_V2_GLM_CAP,
+                  MAIN_V2_1: MAIN_V2_GLM_CAP}
 CONFIG_CAP_FACTOR = {"default": Fraction(3, 2), "recommended": Fraction(3, 2), "main": Fraction(MAIN_CAP_FACTOR),
-                     MAIN_V2: Fraction(MAIN_CAP_FACTOR)}
-COST_CHECK_PAUSES = {"default": True, "recommended": True, "main": False, MAIN_V2: False}
+                     MAIN_V2: Fraction(MAIN_CAP_FACTOR), MAIN_V2_1: Fraction(MAIN_CAP_FACTOR)}
+COST_CHECK_PAUSES = {"default": True, "recommended": True, "main": False, MAIN_V2: False, MAIN_V2_1: False}
 REAL_RUN_EVIDENCE = {"default": "pilot_real_run", "recommended": "pilot_real_run", "main": "main_real_run",
-                     MAIN_V2: "main_v2_real_run"}
-RUN_ROOTS = {"default": PILOT_ROOT, "recommended": PILOT_ROOT, "main": MAIN_ROOT, MAIN_V2: MAIN_V2_ROOT}
+                     MAIN_V2: "main_v2_real_run", MAIN_V2_1: "main_v2_1_real_run"}
+RUN_ROOTS = {"default": PILOT_ROOT, "recommended": PILOT_ROOT, "main": MAIN_ROOT, MAIN_V2: MAIN_V2_ROOT,
+             MAIN_V2_1: MAIN_V2_1_ROOT}
 
 
 def configuration_of(setting):

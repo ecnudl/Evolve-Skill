@@ -25,6 +25,15 @@ note is screened as the shell screens it (``notes.screen``; bindings verbatim on
   channel is what a procedure could touch.
 - ``output_faults`` (C9): the note faults of the lexicon screen and the caps (declared, and the bench's per-request cap
   a single note may never exceed).
+- ``meta_counterfactual`` (C4, v2.1 ``protocol.META_COUNTERFACTUAL``): the procedure on its in-scope LiveMath
+  trajectories whose view holds the meta option, with that option's text replaced by ``protocol.META_FILLER``: any
+  difference from its run on the real views -- predicate, notes, bindings, repair request, ALFWorld steps or fault
+  kinds, the filler mapped back to the option -- is a C4 failure. A procedure that never reads the option, or quotes
+  it verbatim, behaves the same; one keyed on it does not. Steps before LiveMath have no such trajectory (the check is
+  vacuous there); acceptance's options-only probe J7 stays the backstop.
+
+Every value a model wrote (a replay test, its property, its mutation) is type-checked before it is used as a key
+(v2.1: main-v2's chain G stopped on a mutation written as an object, 2026-10-24 00:01).
 
 ALFWorld state contract (registrar-defined; ticket A10-1): a state procedure keeps ``state["facts"]``, a mapping of at
 least one of ``STATE_FACTS`` -- ``reached`` (receptacles reached or opened), ``carrying`` (objects held),
@@ -47,9 +56,9 @@ from skillopt.validator_pilot.api import digest
 from . import notes
 from .donors import public_text, shaped
 from .package import Package
-from .protocol import (BENCHES, MAX_FRAGMENTS, MAX_NOTE_CHARS, MAX_PROPERTY_TEXT, MAX_TESTS, MUTATIONS,
-                       NOT_RECOMMENDED_PREFIX, NOTES_KEY, PROPERTY_KINDS, SANDBOX_TIMEOUTS, STATE_FACTS,
-                       TRACKER_AGREEMENT)
+from .protocol import (BENCHES, LIVEMATH_META_OPTION, MAX_FRAGMENTS, MAX_NOTE_CHARS, MAX_PROPERTY_TEXT, MAX_TESTS,
+                       META_FILLER, MUTATIONS, NOT_RECOMMENDED_PREFIX, NOTES_KEY, PROPERTY_KINDS, SANDBOX_TIMEOUTS,
+                       STATE_FACTS, TRACKER_AGREEMENT)
 from .supply import routing_view as alfworld_routing_view
 
 OBSERVATION_CHARS = 12000  # the shell's event observation (backends.py:756)
@@ -62,6 +71,7 @@ NOTHING = "Nothing happens."
 CRASH_KINDS = ("predicate:not_bool", "output_shape", "state_over_declared_bytes", "undeclared_second_call")
 BINDING_KINDS = ("note_name", "note_duplicate_name", "note_value", "note_not_verbatim")
 META_KINDS = ("note_meta_option",)
+COUNTERFACTUAL = "meta_counterfactual"  # v2.1: C4's output ban of a procedure keyed on the LiveMath meta option
 CHANNEL_MARKERS = ("<answer", "</answer", "<action", "</action", "<calc", "</calc", "```")
 
 
@@ -436,11 +446,12 @@ def validate_test(test, procedure, entries):
         return "keys"
     if type(test["id"]) is not str or TEST_ID.fullmatch(test["id"]) is None:
         return "id"
-    entry = entries.get(test["trajectory"])
+    entry = entries.get(test["trajectory"]) if type(test["trajectory"]) is str else None
     if entry is None:
         return "trajectory_not_in_scope"
     hook, prop = test["hook"], test["property"]
-    if hook not in procedure.hooks or not isinstance(prop, dict) or prop.get("kind") not in PROPERTY_KINDS:
+    if type(hook) is not str or hook not in procedure.hooks or not isinstance(prop, dict) \
+            or type(prop.get("kind")) is not str or prop["kind"] not in PROPERTY_KINDS:
         return "hook_or_kind"
     hooks, keys = PROPERTY_KINDS[prop["kind"]]
     stepped = hook in STEP_HOOKS
@@ -465,7 +476,8 @@ def validate_test(test, procedure, entries):
             or sorted(nonvacuity) != ["mutation", "withheld_expect"] or nonvacuity["withheld_expect"] is not False:
         return "nonvacuity"
     mutation = nonvacuity["mutation"]
-    if mutation is not None and (mutation not in MUTATIONS or entry["bench"] not in MUTATIONS[mutation]):
+    if mutation is not None and (type(mutation) is not str or mutation not in MUTATIONS
+                                 or entry["bench"] not in MUTATIONS[mutation]):
         return "mutation"
     if kind in ("applies_true", "applies_false") and mutation is None:
         return "predicate_needs_mutation"
@@ -625,3 +637,58 @@ def output_faults(outcomes):
 def meta_option_faults(outcomes):
     """C4's static ban on outputs: notes the LiveMath meta-option screen dropped."""
     return _faults(outcomes, META_KINDS)
+
+
+def _texts(value, old, new):
+    """``value`` with ``old`` replaced by ``new`` in every text it holds (mapping keys kept)."""
+    if isinstance(value, str):
+        return value.replace(old, new)
+    if isinstance(value, dict):
+        return {key: _texts(item, old, new) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_texts(item, old, new) for item in value]
+    return value
+
+
+def _holds(value, text):
+    """Whether a text in ``value`` contains ``text``."""
+    if isinstance(value, str):
+        return text in value
+    if isinstance(value, dict):
+        return any(_holds(item, text) for item in value.values())
+    if isinstance(value, list):
+        return any(_holds(item, text) for item in value)
+    return False
+
+
+def _behaviour(outcome, mapped=False):
+    """{aspect: value} of an ``Outcome`` the counterfactual compares; ``mapped``: the counterfactual's, its texts with
+    ``META_FILLER`` mapped back to the meta option."""
+    back = (lambda value: _texts(value, META_FILLER, LIVEMATH_META_OPTION)) if mapped else (lambda value: value)
+    return {"applies": outcome.applies,
+            "notes": [[n["hook"], n["step"], back(n["text"])] for n in outcome.notes],
+            "bindings": back(outcome.bindings), "repair": outcome.repair,
+            "steps": [[back(s["note"]), back(s["discouraged"]), digest(s["state"]), s["after"]] for s in outcome.steps],
+            "faults": [[f["hook"], f["step"], f["kind"]] for f in outcome.faults]}
+
+
+def meta_counterfactual(procedure, entries, outcomes, workers, *, inputs_dirs=None):
+    """C4's meta-option counterfactual (module docstring; v2.1 ``protocol.META_COUNTERFACTUAL``):
+    [{cell, kind: "meta_counterfactual", aspects}] of the in-scope LiveMath trajectories of ``entries`` ({cell:
+    inputs}) whose view holds the meta option (``LIVEMATH_META_OPTION``) on which ``procedure``, replayed in a fresh
+    worker (PYTHONHASHSEED 0) with every occurrence of the option's text replaced by ``META_FILLER``, behaves otherwise
+    than in ``outcomes`` (``zero_crash``'s first-worker outcomes); ``aspects``: the differing ones of ``_behaviour``,
+    in its order. Zero model calls."""
+    present = [entry for cell, entry in entries.items() if entry["bench"] == "livemath" and cell in outcomes
+               and _holds([entry["view"], entry["request_view"]], LIVEMATH_META_OPTION)]
+    if not present:
+        return []
+    replaced = [_texts(entry, LIVEMATH_META_OPTION, META_FILLER) for entry in present]
+    found = replay_many(procedure, replaced, workers, hashseed=0, inputs_dirs=inputs_dirs)
+    out = []
+    for entry in present:
+        real, counter = _behaviour(outcomes[entry["cell"]]), _behaviour(found[entry["cell"]], mapped=True)
+        aspects = [aspect for aspect in real if real[aspect] != counter[aspect]]
+        if aspects:
+            out.append({"cell": entry["cell"], "kind": COUNTERFACTUAL, "aspects": aspects})
+    return out

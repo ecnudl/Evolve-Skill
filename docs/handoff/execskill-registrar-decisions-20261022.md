@@ -776,3 +776,75 @@ placeholder). Chain D launches after chain G's first call is confirmed.
 - **21:20 the owner wrote the v2 smoke waiver** (`!` command in this session):
   `/data/execskill-20261021-pre/smoke/shared/owner-smoke-waiver-v2.json`, rows ["S2.format"], file sha256
   8f176a98…26ae8a2; `run_execskill.py smoke-waiver` reports it valid.
+- **21:14–21:54 launch preconditions on snapshot f** (owner: "好的，跑完直接启动"):
+  - registered route-B selection (`prelaunch.TEST_FILES`) on the dev tree with the default /tmp basetemp: 1,491 passed in
+    31:12 (`/root/ops2-20261022/logs/f/pytest-full-alias.log`; an earlier attempt over the whole `tests/` directory
+    and one with a /data basetemp were stopped and kept as attempt logs);
+  - commit `d44966de4c54…` (parent a1e47d8, dl local, not pushed); `git diff a1e47d8 d44966d -- skillopt scripts tests`
+    sha256 equals the reviewed patch 17370f34…f93ef;
+  - snapshot f `/data/execskill-20261021-source-f` (1,275 files; provenance sha256 58f44db4…); q23-f sheet
+    qualification (record 8fa277f7…; `sheet-runtime-f.json` a8e1628c…), delta vs e paths/hashes/timestamps only;
+  - `main2f-go.sh` all checks done (the first attempt stopped on a helper deleted while `sheet_delta` was rewritten;
+    restored, nothing else changed; log `main2f-go.attempt1.log`); `main2f-pins.sh` (test-read estimate 29,236,449 per
+    chain); `main2f-manifest.sh`: manifest run `67453b36c8d3c524…`, every block equal to the smoke except the
+    registered e -> f deltas;
+  - `main-tls.py`: 21:52 bigmodel and elucid handshake timeouts, 21:53:21 elucid timeout, 21:53:51 all three 200
+    (elucid 5.19 s); launched only after the clean run.
+- **21:54:05 chain G started** (tmux `execskill-main2-G`, `main2f-run.sh G`): first-call confirmation passed (glm-5.3
+  echoed, 36 tokens, 1.5 s). **21:55:51 chain D started on route A** (tmux `execskill-main2-D`): first-call
+  confirmation passed (request deepseek-v4.1-flash-1017, echo deepseek-v4.1-flash, reasoning check passed, 26 tokens,
+  93.0 s).
+
+## main-v2 stopped (2026-10-23 23:09 / 10-24 00:01) and owner decision 2026-10-24 02:22: route B v2.1, both chains from scratch in a new root; delegated read consent
+
+- **main-v2 outcome (run 67453b36…, root `/data/execskill-20261023-main-v2`, kept untouched as an aborted run)**:
+  - chain D (route A, elucid deepseek-v4.1-flash-1017): from 22:10 every solver call failed; httpcore 1.0.9 leaves a
+    proxy tunnel ACTIVE in the pool after a ConnectTimeout during the TLS handshake through the CONNECT proxy, and the
+    default `max_connections=100` filled up (then `PoolTimeout` on every request; the process held no socket; a fresh
+    process reached elucid 3/3). Stopped by the registrar 23:09:35 (SIGTERM, `main2-D-run-1.log` EXIT 143). D/s1 run
+    unit at stop: 237 cells, 157 pass, 44 fail, 36 transport failures (all after 22:10). No D result.
+  - chain G (GLM-5.3): s1 SearchQA `not_run / no_training_gain` (r1 219 items fixed 7 broken 4, r2 300 items fixed 12
+    broken 8; net below max(1, ceil(2 %)) and p_sign 0.27 / 0.25 > 1/4); s2 OfficeQA `not_run / no_training_gain` (no
+    candidate in r1-r2: two `finish_length` engineer replies, then C2/C3); s3 LiveMath r1 no candidate, **r2 adopted
+    `p-livemath-3-1`** (65 routed items, fixed 10, broken 3, net 7 >= 2, p_sign 0.046). The procedure fires only when an
+    option contains "remaining" and "stron"+"ger" (the LiveMath meta option `protocol.LIVEMATH_META_OPTION`, correct
+    on 129/129 training items, D7) and tells the solver to weigh that entry actively; it took this form after the
+    fix call echoed the phrase matched by the `note_meta_option` ban. Registrar's judgement: a shortcut evading the
+    screen, not a learned skill. r3 crashed 00:01:26 (`replay.validate_test`: the engineer wrote the replay-test
+    mutation as `{"strip_digits": true}` -> `TypeError: unhashable type: 'dict'`); unit paused, chain EXIT 3. The test
+    set was not read (no `G/test-read.json`).
+- **Owner decisions 2026-10-24 02:22 CST (chat, verbatim)**:
+  - "好的，那就按照你的说法来，先修，修好之后继续跑" -> v2.1 items (1)-(4) as proposed at 00:30 (no pool limit, type
+    checks on every engineer output field with fuzz tests, fix feedback without echoed screen hits, a counterfactual
+    meta-option check); both chains from scratch in a new root; the main-v2 records stay as an aborted run. Item (5)
+    (explaining the meta option on the LiveMath card, D7) was not chosen: it would change the card and make the
+    v3 / No-Skill / SkillOpt / GEPA baselines incomparable.
+  - "我要去睡觉了没法同意，我给予你权利，你去同意吧" -> the owner delegates the read consent of the new root to the
+    registrar. `main21-consent.sh` writes `/data/execskill-20261024-main-v2-1/shared/consent.json` once: the owner's
+    main-v2 consent (2026-10-23 19:02, file sha256 f1517dd350c38a74600d38d781985923d6db43fc8cdae184fe3556575d5fe042)
+    with `date` 2026-10-24 and a `note` quoting the delegation; validated by `evaluation.consent(..., "main-v2-1")`.
+- **v2.1 (configuration `main-v2-1`; spec `docs/handoff/execskill-v2-20261023/spec-v21.md`)**: every table equal to
+  main-v2 except evidence `main_v2_1_real_run`, root `/data/execskill-20261024-main-v2-1`, manifest
+  `/data/execskill-20261024-main-v2-1-manifest.json`, namespaces `G-v2-1` / `D-v2-1`, `FIX_ECHO` False and
+  `META_COUNTERFACTUAL` True (both only in train mode); in every configuration the HTTP clients have no connection
+  cap (`client.POOL_LIMITS`, keep-alive 20) and engineer output fields are type-checked before use (`validate_test`,
+  `_fix`, the C4 `named` guard). The counterfactual (C4, train mode): each LiveMath trajectory holding the meta option
+  is replayed with its wording replaced by `protocol.META_FILLER`; a difference in applies, notes (mapped back),
+  bindings, repair, steps or faults is an output ban `meta_counterfactual`. Known limits: any partial quote of the
+  option in a note is flagged (conservative); the option cannot be quoted whole in a note (field caps).
+  The SpreadsheetBench family refuses written edits outside the worksheet or with an unstorable character, and
+  with echo off the trajectories shown to the proposal and analyst calls carry no screen match (Codex #2, #3 below).
+- **03:0x Codex (one round) on v2.1: NOT ACCEPTABLE, 4 MAJOR, no BLOCKER; all fixed** as recorded in
+  `docs/handoff/execskill-v2-20261023/codex-review-v21.md`: the research Wikipedia client's pool (#1), the sheet
+  family's bounds (#2), the shown trajectories' screen matches (#3), the snapshot script's patch-hash check before
+  any artifact (#4). No second round (one round per item; a second only if the smoke fails).
+- **03:2x-03:30 zero-call validation on main-v2's real records** (real docker sandbox, no model call; reports
+  `/root/ops2-20261022/logs/v21/validate-cf.json`, `validate-cf2.json`): on the 119 stored LiveMath run trajectories
+  of G/s3 (65 hold the meta option) `p-livemath-3-1` passes C6, applies on exactly the 65, and the counterfactual
+  flags 65/65 (applies + notes) -- v2.1's C4 would fail it; the three SearchQA procedures 0 flagged (they never apply
+  on LiveMath); synthetic controls on the same trajectories: generic hint 0/119, option count 0/119, a note quoting
+  each option's first characters 53 flagged, all meta-present (the registered conservative limit); the four replay
+  tests of the crashing r3 reply -> "mutation", "mutation", "predicate_needs_mutation", valid (no exception).
+- Tests: registered selection (`prelaunch.TEST_FILES`) on the dev tree before the review 1,514 passed, 1 failed
+  (mutation 30's site, moved by v2.1's GLM construction; site updated); after the review fixes targeted 187 passed;
+  the registered selection again from 03:30 (`/root/ops2-20261022/logs/v21/tests-0330.log`).

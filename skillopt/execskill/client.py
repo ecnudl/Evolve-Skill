@@ -172,8 +172,10 @@ def solver_client(model, *, config, transport=None):
         return ROUTE_CLIENTS[route](config["env_path"], proxy=config["proxy"], max_tokens=config["max_tokens"],
                                     read_timeout=config["read_timeout"], transport=transport)
     try:  # the v3 factory's construction (coevo5/manifest.py:110-111) with no route
-        return Client(config["repo"], GLM_SOLVER, proxy=config["proxy"], max_tokens=SOLVER_MAX_TOKENS[GLM_SOLVER],
-                      read_timeout=READ_TIMEOUT_SECONDS, transport=transport)
+        return unpooled(Client(config["repo"], GLM_SOLVER, proxy=config["proxy"],
+                               max_tokens=SOLVER_MAX_TOKENS[GLM_SOLVER], read_timeout=READ_TIMEOUT_SECONDS,
+                               transport=transport),
+                        proxy=config["proxy"], read_timeout=READ_TIMEOUT_SECONDS, transport=transport)
     except (SystemExit, OSError) as refusal:  # the frozen refusals (weak_solver_probe.py:140-147) carry no secret
         raise ConfigurationError("glm-5.3 credentials: %s" % refusal) from None
 
@@ -252,6 +254,33 @@ def _visible(completion, reasoning_tokens):
     return completion - spent if spent <= completion else None
 
 
+# v2.1 (registrar 2026-10-24, every configuration): no connection limit. httpcore 1.0.9 keeps a proxy tunnel whose
+# TLS handshake timed out in its pool as an active connection that is never closed or removed
+# (``TunnelHTTPConnection.handle_request``: CONNECT, then ``start_tls`` raises ConnectTimeout), so with httpx's default
+# of 100 connections the 100th such timeout turned every later request of the client into PoolTimeout while the
+# process held no socket -- main-v2's chain D, 2026-10-23 22:10. Concurrency stays bounded by the slot pools
+# (``protocol.SLOTS``); keep-alive connections stay at httpx's default 20.
+POOL_LIMITS = httpx.Limits(max_connections=None, max_keepalive_connections=20)
+
+
+def http_client(read_timeout, options):
+    """The ``httpx.Client`` of every solver and role client: the frozen client's (weak_solver_probe.py:255-256 --
+    timeouts connect 20 s, write 30 s, pool 30 s, the given read timeout; the environment and redirects ignored) with
+    ``POOL_LIMITS``. ``options``: {"proxy": the gateway} or, in tests, {"transport": a mock transport}."""
+    return httpx.Client(timeout=httpx.Timeout(connect=20, read=read_timeout, write=30, pool=30), limits=POOL_LIMITS,
+                        trust_env=False, follow_redirects=False, **options)
+
+
+def unpooled(frozen, *, proxy, read_timeout, transport=None):
+    """``frozen`` -- a frozen client (weak_solver_probe.Client: chain G's solver and the GLM-5.3 roles) -- with its
+    httpx client rebuilt by ``http_client`` from the frozen constructor's own options (weak_solver_probe.py:254);
+    the frozen request, retries and receipts are unchanged. Returns ``frozen``."""
+    options = {"transport": transport} if transport is not None else ({"proxy": proxy} if proxy else {})
+    frozen.http.close()
+    frozen.http = http_client(read_timeout, options)
+    return frozen
+
+
 class _Guard:
     """A route client's ``httpx.Client`` behind the balance check (module docstring): ``post`` sends nothing once the
     route reported an exhausted balance, and raises ``BalanceExhausted`` for an answer that reports it -- before the
@@ -293,8 +322,7 @@ class RouteClient(Client):
         self.route, self.request_model, self.exhausted = route.id, route.model, None
         self.thinking, self.effort, self.response_model_ids = None, REASONING_EFFORT, route.response_model_ids
         options = {"transport": transport} if transport is not None else {"proxy": proxy}
-        self.http = _Guard(httpx.Client(timeout=httpx.Timeout(connect=20, read=read_timeout, write=30, pool=30),
-                                        trust_env=False, follow_redirects=False, **options), self)
+        self.http = _Guard(http_client(read_timeout, options), self)
         self._transport_errors = (httpx.TransportError,)
 
     def body(self, system, user):

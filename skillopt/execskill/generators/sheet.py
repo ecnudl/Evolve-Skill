@@ -11,8 +11,10 @@ link and indirect functions) are refused (``forbidden_function``).
 Fixed code, in order:
 1. every answer cell of the source's reference workbook must hold a formula: a literal answer cannot follow an edit
    without a reference transformation, so such items are refused (``literal_answer``; [SF R5]);
-2. every edit target is a numeric literal cell, equal in the input and the reference workbook, outside the answer
-   range, not referenced by its own formula (``edit_target_invalid``);
+2. every edit target is a numeric literal cell inside the worksheet (A1:XFD1048576), equal in the input and the
+   reference workbook, outside the answer range, not referenced by its own formula (``edit_target_invalid``); a
+   formula holding a character a worksheet cannot store is ``format`` (both checked before any file is written; v2.1,
+   Codex review 2026-10-24 #2);
 3. semantic truth: the edit formulas are written into a copy of the reference workbook, which the recalculation engine
    recalculates (``Engine.recalc``: in a run ``engines.Recalculation``, the frozen ``sheet_recalc_v7.Recalculator.run``
    of the qualified engine; a fake in tests); the recalculated values of the edited cells become the new literals of
@@ -53,7 +55,8 @@ from dataclasses import dataclass
 from typing import Callable
 
 import openpyxl
-from openpyxl.utils.cell import range_boundaries
+from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
+from openpyxl.utils.cell import column_index_from_string, range_boundaries
 
 from skillopt.continual_eval import spreadsheet_compat
 from skillopt.continual_eval.core import require, safe_path
@@ -68,6 +71,7 @@ MAX_FORMULA_CHARS = 200
 FUNCTION_CALL = re.compile(r"(?<![A-Za-z0-9_.])([A-Za-z][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)*)\s*\(")
 CELL_REFERENCE = re.compile(r"(?<![A-Za-z0-9_])\$?([A-Za-z]{1,3})\$?([1-9][0-9]{0,6})(?![A-Za-z0-9_(])")
 COORDINATE = re.compile(r"[A-Z]{1,3}[1-9][0-9]{0,6}")
+MAX_ROW, MAX_COLUMN = 1048576, 16384  # the worksheet's bounds (openpyxl raises ValueError past the last row)
 FAMILY = Family("spreadsheetbench.formula_edit", "spreadsheetbench", "function", reference="recalc_formula",
                 params={"edits": Param("edits", count=(1, MAX_EDITS))})
 FAMILIES = {FAMILY.name: FAMILY}
@@ -110,6 +114,11 @@ def _edits(entries, researched):
                 or len(entry["formula"]) > MAX_FORMULA_CHARS
                 or ("sheet" in entry and type(entry["sheet"]) is not str)):
             raise Drop("format", "an edit is {cell, formula[, sheet]} with a formula of at most 200 characters")
+        if ILLEGAL_CHARACTERS_RE.search(entry["formula"]):  # v2.1 (Codex review 2026-10-24 #2): openpyxl refuses it
+            raise Drop("format", "a formula holds a character a worksheet cannot store")
+        letters = entry["cell"].rstrip("0123456789")
+        if column_index_from_string(letters) > MAX_COLUMN or int(entry["cell"][len(letters):]) > MAX_ROW:
+            raise Drop("edit_target_invalid", "%s is outside the worksheet" % entry["cell"])
         if FORBIDDEN_FUNCTIONS.search(entry["formula"]):
             raise Drop("forbidden_function", entry["formula"][:60])
         called = functions(entry["formula"])

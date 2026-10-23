@@ -452,9 +452,11 @@ def _clients(m, chain, transport, route=None):
             if bench is None:
                 require(wanted == roles["model"], "Every method role is GLM-5.3")
                 try:
-                    cache[key] = Client(solvers["G"]["env_path"], roles["model"], proxy=solvers["G"]["proxy"],
-                                        max_tokens=roles["max_tokens"], read_timeout=roles["read_timeout"],
-                                        transport=transport)
+                    cache[key] = client.unpooled(  # v2.1: no connection limit (client.POOL_LIMITS)
+                        Client(solvers["G"]["env_path"], roles["model"], proxy=solvers["G"]["proxy"],
+                               max_tokens=roles["max_tokens"], read_timeout=roles["read_timeout"],
+                               transport=transport),
+                        proxy=solvers["G"]["proxy"], read_timeout=roles["read_timeout"], transport=transport)
                 except (SystemExit, OSError) as refusal:  # the frozen refusals carry no secret
                     raise ConfigurationError("glm-5.3 role credentials: %s" % refusal) from None
             else:

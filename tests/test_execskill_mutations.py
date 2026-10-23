@@ -182,11 +182,11 @@ MUTATIONS = {
         "        return self.root / \"consumption\" / (\"smoke\" if chain == \"smoke\" else \"chains\") / (bench + "
         "\".jsonl\")\n",
         [T + "registry.py::test_chains_have_separate_namespaces_and_smoke_items_leave_both_supplies"]),
-    "30-glm-solver-client-adds-a-route": (
-        PE + "client.py", "                      read_timeout=READ_TIMEOUT_SECONDS, transport=transport)\n"
-        "    except (SystemExit, OSError) as refusal:",
-        "                      read_timeout=READ_TIMEOUT_SECONDS, transport=transport, route=\"bigmodel\",\n"
-        "                      route_env=config[\"repo\"])\n    except (SystemExit, OSError) as refusal:",
+    "30-glm-solver-client-adds-a-route": (  # v2.1: the frozen construction inside ``unpooled``
+        PE + "client.py", "                               transport=transport),\n"
+        "                        proxy=config[\"proxy\"], read_timeout=READ_TIMEOUT_SECONDS, transport=transport)\n",
+        "                               transport=transport, route=\"bigmodel\", route_env=config[\"repo\"]),\n"
+        "                        proxy=config[\"proxy\"], read_timeout=READ_TIMEOUT_SECONDS, transport=transport)\n",
         [T + "client.py::test_chain_g_gets_the_frozen_bigmodel_client_built_like_v3"]),
     "31-unseal-skips-the-run-root-scan": (
         PE + "evaluation.py", "    scan = _root_scanned(safe_path(root), chain_root, chain, evidence=evidence)\n",

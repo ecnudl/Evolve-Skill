@@ -27,6 +27,7 @@ from skillopt.execskill.client import (
     ELUCID_MODEL,
     ELUCID_RESPONSE_MODEL_IDS,
     GLM_SOLVER,
+    POOL_LIMITS,
     ElucidClient,
     solver_client,
 )
@@ -248,6 +249,7 @@ def test_the_client_goes_through_the_pjlab_gateway_only_and_ignores_the_environm
     assert type(solver_client(ELUCID_MODEL, config=config)) is ElucidClient
     (kwargs,) = made
     assert (kwargs["proxy"], kwargs["trust_env"], kwargs["follow_redirects"]) == (probe.GATEWAY, False, False)
+    assert kwargs["limits"] is POOL_LIMITS  # v2.1: no connection limit (the httpcore tunnel-pool leak)
     assert "transport" not in kwargs and kwargs["timeout"].read == QA_READ_TIMEOUT
     for proxy in (None, "http://elsewhere.example:3128", probe.GATEWAY + "/"):
         with pytest.raises(ConfigurationError, match="gateway"):
@@ -308,8 +310,10 @@ def test_chain_g_gets_the_frozen_bigmodel_client_built_like_v3(tmp_path, monkeyp
         "bigmodel", "glm-5.3", "enabled", "low", 65536)
     assert client.response_model_ids == {"glm-5.3"}
     assert client.url == "https://%s%s" % (probe.BIGMODEL_HOST, probe.BIGMODEL_PATH)  # no route
-    (kwargs,) = made
-    assert (kwargs["proxy"], kwargs["trust_env"], kwargs["timeout"].read) == (probe.GATEWAY, False, 2400)
+    frozen, kwargs = made  # v2.1: the frozen construction, then its httpx client rebuilt with POOL_LIMITS
+    assert "limits" not in frozen and kwargs["limits"] is POOL_LIMITS and client.http is not None
+    for found in (frozen, kwargs):
+        assert (found["proxy"], found["trust_env"], found["timeout"].read) == (probe.GATEWAY, False, 2400)
 
 
 def test_chain_g_sends_the_frozen_body_and_its_reasoning_is_never_a_mismatch(tmp_path):

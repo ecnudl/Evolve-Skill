@@ -1,0 +1,1273 @@
+diff --git a/skillopt/execskill/client.py b/skillopt/execskill/client.py
+index 139f849..20cf678 100644
+--- a/skillopt/execskill/client.py
++++ b/skillopt/execskill/client.py
+@@ -172,8 +172,10 @@ def solver_client(model, *, config, transport=None):
+         return ROUTE_CLIENTS[route](config["env_path"], proxy=config["proxy"], max_tokens=config["max_tokens"],
+                                     read_timeout=config["read_timeout"], transport=transport)
+     try:  # the v3 factory's construction (coevo5/manifest.py:110-111) with no route
+-        return Client(config["repo"], GLM_SOLVER, proxy=config["proxy"], max_tokens=SOLVER_MAX_TOKENS[GLM_SOLVER],
+-                      read_timeout=READ_TIMEOUT_SECONDS, transport=transport)
++        return unpooled(Client(config["repo"], GLM_SOLVER, proxy=config["proxy"],
++                               max_tokens=SOLVER_MAX_TOKENS[GLM_SOLVER], read_timeout=READ_TIMEOUT_SECONDS,
++                               transport=transport),
++                        proxy=config["proxy"], read_timeout=READ_TIMEOUT_SECONDS, transport=transport)
+     except (SystemExit, OSError) as refusal:  # the frozen refusals (weak_solver_probe.py:140-147) carry no secret
+         raise ConfigurationError("glm-5.3 credentials: %s" % refusal) from None
+ 
+@@ -252,6 +254,33 @@ def _visible(completion, reasoning_tokens):
+     return completion - spent if spent <= completion else None
+ 
+ 
++# v2.1 (registrar 2026-10-24, every configuration): no connection limit. httpcore 1.0.9 keeps a proxy tunnel whose
++# TLS handshake timed out in its pool as an active connection that is never closed or removed
++# (``TunnelHTTPConnection.handle_request``: CONNECT, then ``start_tls`` raises ConnectTimeout), so with httpx's default
++# of 100 connections the 100th such timeout turned every later request of the client into PoolTimeout while the
++# process held no socket -- main-v2's chain D, 2026-10-23 22:10. Concurrency stays bounded by the slot pools
++# (``protocol.SLOTS``); keep-alive connections stay at httpx's default 20.
++POOL_LIMITS = httpx.Limits(max_connections=None, max_keepalive_connections=20)
++
++
++def http_client(read_timeout, options):
++    """The ``httpx.Client`` of every solver and role client: the frozen client's (weak_solver_probe.py:255-256 --
++    timeouts connect 20 s, write 30 s, pool 30 s, the given read timeout; the environment and redirects ignored) with
++    ``POOL_LIMITS``. ``options``: {"proxy": the gateway} or, in tests, {"transport": a mock transport}."""
++    return httpx.Client(timeout=httpx.Timeout(connect=20, read=read_timeout, write=30, pool=30), limits=POOL_LIMITS,
++                        trust_env=False, follow_redirects=False, **options)
++
++
++def unpooled(frozen, *, proxy, read_timeout, transport=None):
++    """``frozen`` -- a frozen client (weak_solver_probe.Client: chain G's solver and the GLM-5.3 roles) -- with its
++    httpx client rebuilt by ``http_client`` from the frozen constructor's own options (weak_solver_probe.py:254);
++    the frozen request, retries and receipts are unchanged. Returns ``frozen``."""
++    options = {"transport": transport} if transport is not None else ({"proxy": proxy} if proxy else {})
++    frozen.http.close()
++    frozen.http = http_client(read_timeout, options)
++    return frozen
++
++
+ class _Guard:
+     """A route client's ``httpx.Client`` behind the balance check (module docstring): ``post`` sends nothing once the
+     route reported an exhausted balance, and raises ``BalanceExhausted`` for an answer that reports it -- before the
+@@ -293,8 +322,7 @@ class RouteClient(Client):
+         self.route, self.request_model, self.exhausted = route.id, route.model, None
+         self.thinking, self.effort, self.response_model_ids = None, REASONING_EFFORT, route.response_model_ids
+         options = {"transport": transport} if transport is not None else {"proxy": proxy}
+-        self.http = _Guard(httpx.Client(timeout=httpx.Timeout(connect=20, read=read_timeout, write=30, pool=30),
+-                                        trust_env=False, follow_redirects=False, **options), self)
++        self.http = _Guard(http_client(read_timeout, options), self)
+         self._transport_errors = (httpx.TransportError,)
+ 
+     def body(self, system, user):
+diff --git a/skillopt/execskill/engineer.py b/skillopt/execskill/engineer.py
+index b124a84..5db8f5f 100644
+--- a/skillopt/execskill/engineer.py
++++ b/skillopt/execskill/engineer.py
+@@ -54,6 +54,20 @@ with at most ``MAX_CHANGES`` edits, whatever the number of rounds. Codex review
+ the next is schema-checked (``Context``; #4), the lint names tests by position only (``_lint``; #3), C4 counts the
+ table-shape references every round of the step disclosed (``Context.disclosed``; #3), and an oversized proposal
+ message leaves out trajectories, then training examples, then analyses (``_fit_train``; #5).
++
++v2.1 (configuration ``main-v2-1``; owner decision 2026-10-24 02:22, "好的，那就按照你的说法来，先修，修好之后继续跑"): in
++main-v2, LiveMath's round 2 adopted a procedure keyed on the meta option after its fix calls echoed the screen's
++matched phrase and the adjudicator's reason, and the next fix reply paraphrased around them. Two train-mode rules,
++taken from the run configuration (``protocol.FIX_ECHO``, ``protocol.META_COUNTERFACTUAL``): a fix call shows a failed
++C4 or C9 without the flagged texts, the matched terms, the static bans' details and the adjudicator's reason
++(``Context.echo`` False, ``_redacted``; the sealed record keeps the full detail), and C4 fails a procedure that behaves
++differently on its in-scope LiveMath trajectories when the meta option's text is replaced by a neutral filler
++(``Context.counterfactual``, ``replay.meta_counterfactual``; the fix call names the differing aspects and
++``COUNTERFACTUAL_RULE``). With echo off, the trajectories the proposal and analyst calls show carry no screen match
++either: a lexicon or meta-option fault's message and the detail of a note field dropped for either reason become null
++(``_unechoed``; Codex review 2026-10-24 #3). The prompts are main-v2's. In every configuration a model-written value
++is type-checked before it is used as a key (``_fix``, ``leak_check``; main-v2's chain G stopped on a mutation written
++as an object).
+ """
+ from __future__ import annotations
+ 
+@@ -96,6 +110,14 @@ TRAIN = "train"  # v2's learning mode (``protocol.LEARNING``)
+ LINT_REASONS = ("test_count", "invalid_test", "test_failed", "vacuous_test", "no_fix_claim")  # v2: advice only
+ MAX_LINT = 10
+ MAX_DETAIL_CHARS = 300  # v2: a flagged text or a reason in a fix call's detail
++# v2.1: what a fix call says of a counterfactual difference (``_redacted``), in place of any flagged text
++COUNTERFACTUAL_RULE = ("The procedure must behave the same with or without the option about a stronger result: its "
++                       "predicate, notes, bindings and faults on an item may not depend on that option's presence or "
++                       "wording.")
++# v2.1, Codex review 2026-10-24 #3: the note screens' reasons (``notes.screen``) whose matched texts a shown trajectory
++# leaves out when echo is off, and the shell faults they raise (``note_`` + reason)
++SCREEN_REASONS = ("lexicon", "meta_option")
++SCREEN_FAULTS = tuple("note_" + reason for reason in SCREEN_REASONS)
+ # v2, Codex review 2026-10-23 #3/#4: the exact fields of what one round carries to the next
+ LINT_DETAILS = ("keys", "id", "trajectory_not_in_scope", "hook_or_kind", "property_shape", "step", "value",
+                 "nonvacuity", "mutation", "predicate_needs_mutation")  # replay.validate_test's reasons
+@@ -349,6 +371,8 @@ class Context:
+     reserved: frozenset = frozenset()
+     analysed: frozenset = frozenset()
+     disclosed: frozenset = frozenset()
++    echo: bool = True  # v2.1 (``protocol.FIX_ECHO``): False -- fix calls show failed C4 and C9 redacted (``_redacted``)
++    counterfactual: bool = False  # v2.1 (``protocol.META_COUNTERFACTUAL``): C4 runs ``replay.meta_counterfactual``
+     # the payload's disclosed SpreadsheetBench values and the public workbooks read for their check (``disclosed``)
+     sheet: dict = field(default_factory=dict, init=False, repr=False, compare=False)
+ 
+@@ -360,6 +384,9 @@ class Context:
+     def __post_init__(self):
+         require(self.bench in BENCHES and type(self.k) is int and 0 <= self.k <= 999, "A known bench and step number")
+         require(self.mode in ("single", TRAIN), "A known learning mode")
++        require(type(self.echo) is bool and type(self.counterfactual) is bool
++                and (self.mode == TRAIN or (self.echo and not self.counterfactual)),
++                "v2.1's fix-call and counterfactual rules belong to the train mode")
+         require(type(self.spent) is int and 0 <= self.spent <= self.calls_cap and (self.mode != TRAIN or not self.spent),
+                 "The step's engineer calls so far")
+         chain = str(self.label).split("/", 1)[0]
+@@ -540,16 +567,33 @@ def shown(ctx):
+     return out
+ 
+ 
+-def _shown_view(kind, trajectory, references):
++def _shown_view(kind, trajectory, references, echo=True):
+     view = whitelisted(trajectory)
+     for call in view["calls"]:
+         call.pop("system")
++    if not echo:
++        view["shell"] = _unechoed(view["shell"])
+     entry = {"kind": kind, **view}
+     if kind == "failures" and trajectory["task_id"] in references:
+         entry["reference"] = references[trajectory["task_id"]]
+     return entry
+ 
+ 
++def _unechoed(shell):
++    """v2.1 (``Context.echo`` False; Codex review 2026-10-24 #3): a shown trajectory's shell without the texts the note
++    screens matched -- the message of a lexicon or meta-option fault and the detail of a field dropped for either
++    reason become None; every kind, field and reason is kept."""
++    out = dict(shell)
++    if isinstance(shell.get("faults"), list):
++        out["faults"] = [{**f, "message": None} if isinstance(f, dict) and f.get("kind") in SCREEN_FAULTS else f
++                         for f in shell["faults"]]
++    if isinstance(shell.get("notes"), list):
++        out["notes"] = [{**n, "dropped": [{**d, "detail": None} if isinstance(d, dict) and d.get("reason") in
++                                          SCREEN_REASONS else d for d in n["dropped"]]}
++                        if isinstance(n, dict) and isinstance(n.get("dropped"), list) else n for n in shell["notes"]]
++    return out
++
++
+ def _listed(procedure, parent):
+     return {"id": procedure.id, "description": procedure.description, "hooks": list(procedure.hooks),
+             "header": procedure.header, "max_note_chars": procedure.max_note_chars,
+@@ -562,7 +606,7 @@ def payload(ctx, analyses=None):
+     round's ``analyses`` (``analyse``), fitted by ``_fit_train``."""
+     user = {"request": "propose", "bench": ctx.bench, "card": ctx.card,
+             "package": [_listed(p, ctx.parent) for p in ctx.parent.procedures],
+-            "trajectories": [_shown_view(kind, t, ctx.references) for kind, t in shown(ctx)],
++            "trajectories": [_shown_view(kind, t, ctx.references, ctx.echo) for kind, t in shown(ctx)],
+             "detectors": ctx.detectors, "previous": ctx.previous}
+     if ctx.mode != TRAIN:
+         return fit(user, "trajectories", ROLE_INPUT_BYTES)
+@@ -618,7 +662,8 @@ def analyse(ctx):
+     package = [{"id": p.id, "description": p.description, "hooks": list(p.hooks)} for p in ctx.parent.procedures]
+     findings, shown_refs, calls = [], [], []
+     for n, start in enumerate(range(0, len(chosen), TRAIN_ANALYST_BATCH), 1):
+-        group = [_shown_view("failures", first[i], ctx.references) for i in chosen[start:start + TRAIN_ANALYST_BATCH]]
++        group = [_shown_view("failures", first[i], ctx.references, ctx.echo)
++                 for i in chosen[start:start + TRAIN_ANALYST_BATCH]]
+         user = fit({"request": "analyse", "bench": ctx.bench, "card": ctx.card, "package": package,
+                     "trajectories": group}, "trajectories", ROLE_INPUT_BYTES)
+         seen = [t["task_id"] for t in user["trajectories"]]
+@@ -1012,7 +1057,12 @@ def leak_check(change, ctx, outcomes, entries):
+                for note in outcome.notes if OPTION_LETTER.search(note["text"])]
+     if bans or letters:
+         return False, {"output_bans": (bans + letters)[:10]}
+-    named = [entries[t.get("trajectory")] for t in procedure.replay_tests if t.get("trajectory") in entries]
++    if ctx.counterfactual:  # v2.1: the same behaviour with the meta option's text replaced by the filler
++        differs = replay.meta_counterfactual(procedure, entries, outcomes, ctx.workers, inputs_dirs=ctx.inputs_dirs)
++        if differs:
++            return False, {"output_bans": differs[:10]}
++    named = [entries[t["trajectory"]] for t in procedure.replay_tests
++             if isinstance(t, dict) and type(t.get("trajectory")) is str and t["trajectory"] in entries]
+     cited = "\n".join(public_text(e["request_view"] or [s["view"] for s in e["steps"]]) for e in named)
+     corpora = list(ctx.corpora.values())
+     # (where, text, its public text, the trajectories whose workbook and report it may quote, the corpora); the header
+@@ -1221,7 +1271,8 @@ def _fix(ctx, change, report, *, attempt=None, why=None):
+     ``TRAIN_FIXES``) also says why the previous fix reply was not usable (``why``) and reads the reply leniently."""
+     entry = dict(change.entry, **({"source": change.source} if change.source is not None else {}))
+     failed = [c for c in report["checks"] if not c["passed"]]
+-    user = {"request": "fix", "bench": ctx.bench, "change": entry, "failed": failed[-1] if failed else None}
++    last = failed[-1] if failed else None
++    user = {"request": "fix", "bench": ctx.bench, "change": entry, "failed": last if ctx.echo else _redacted(last)}
+     if attempt is not None:
+         user.update({"attempt": attempt, "attempts": TRAIN_FIXES, **({"previous_reply": why} if why else {})})
+     reply, call = _ask(ctx, user, "fix/%d" % change.n if attempt is None else "fix/%d/%d" % (change.n, attempt))
+@@ -1234,13 +1285,38 @@ def _fix(ctx, change, report, *, attempt=None, why=None):
+     if len(entries) != 1:
+         return None, "changes: %d, expected exactly the one change" % len(entries)
+     fixed = changes_of(entries, sources, call)[0]
+-    key = TARGET_KEYS.get(change.kind)
++    key = TARGET_KEYS.get(change.kind) if type(change.kind) is str else None  # v2.1: a model-written kind
+     if fixed.kind != change.kind or (key is not None and fixed.entry.get(key) != change.entry.get(key)):
+         return None, "another kind or target than the change to fix"
+     fixed.n = change.n
+     return fixed, None
+ 
+ 
++def _redacted(result):
++    """v2.1 (``Context.echo`` False): a failed check's result as a fix call shows it. C4: the static bans' rules and
++    lines; the output bans' cells, hooks, steps and kinds (a letter ban ``option_letter``) with a counterfactual
++    difference's aspects and ``COUNTERFACTUAL_RULE``; the leakage hits' places, benches and reason codes and the
++    adjudication's outcome -- never a flagged text, a matched term, a ban's detail or the adjudicator's reason. C9:
++    each fault's cell, hook, step and kind. Every other result as recorded."""
++    if result is None or result["passed"] or result["check"] not in ("C4", "C9") or result["detail"] is None:
++        return result
++    detail = result["detail"]
++    if result["check"] == "C9":
++        return {**result, "detail": [{k: f[k] for k in ("cell", "hook", "step", "kind") if k in f} for f in detail]}
++    if "static_bans" in detail:
++        shown = {"static_bans": [{"rule": v["rule"], "line": v["line"]} for v in detail["static_bans"]]}
++    elif "output_bans" in detail:
++        bans = [{**{k: b[k] for k in ("cell", "hook", "step", "aspects") if k in b},
++                 "kind": b.get("kind", "option_letter")} for b in detail["output_bans"]]
++        shown = {"output_bans": bans}
++        if any(b["kind"] == replay.COUNTERFACTUAL for b in bans):
++            shown["rule"] = COUNTERFACTUAL_RULE
++    else:
++        shown = {**{k: v for k, v in detail.items() if k not in ("hits", "adjudicator_reason")},
++                 "hits": [{k: h[k] for k in ("where", "bench", "reasons")} for h in detail["hits"]]}
++    return {**result, "detail": shown}
++
++
+ def _combined(parent, survivors, step):
+     """S' from the surviving changes, dropping from the last any whose combination breaks the package."""
+     survivors = list(survivors)
+diff --git a/skillopt/execskill/generators/sheet.py b/skillopt/execskill/generators/sheet.py
+index 6db84a9..97f357c 100644
+--- a/skillopt/execskill/generators/sheet.py
++++ b/skillopt/execskill/generators/sheet.py
+@@ -11,8 +11,10 @@ link and indirect functions) are refused (``forbidden_function``).
+ Fixed code, in order:
+ 1. every answer cell of the source's reference workbook must hold a formula: a literal answer cannot follow an edit
+    without a reference transformation, so such items are refused (``literal_answer``; [SF R5]);
+-2. every edit target is a numeric literal cell, equal in the input and the reference workbook, outside the answer
+-   range, not referenced by its own formula (``edit_target_invalid``);
++2. every edit target is a numeric literal cell inside the worksheet (A1:XFD1048576), equal in the input and the
++   reference workbook, outside the answer range, not referenced by its own formula (``edit_target_invalid``); a
++   formula holding a character a worksheet cannot store is ``format`` (both checked before any file is written; v2.1,
++   Codex review 2026-10-24 #2);
+ 3. semantic truth: the edit formulas are written into a copy of the reference workbook, which the recalculation engine
+    recalculates (``Engine.recalc``: in a run ``engines.Recalculation``, the frozen ``sheet_recalc_v7.Recalculator.run``
+    of the qualified engine; a fake in tests); the recalculated values of the edited cells become the new literals of
+@@ -53,7 +55,8 @@ from dataclasses import dataclass
+ from typing import Callable
+ 
+ import openpyxl
+-from openpyxl.utils.cell import range_boundaries
++from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
++from openpyxl.utils.cell import column_index_from_string, range_boundaries
+ 
+ from skillopt.continual_eval import spreadsheet_compat
+ from skillopt.continual_eval.core import require, safe_path
+@@ -68,6 +71,7 @@ MAX_FORMULA_CHARS = 200
+ FUNCTION_CALL = re.compile(r"(?<![A-Za-z0-9_.])([A-Za-z][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)*)\s*\(")
+ CELL_REFERENCE = re.compile(r"(?<![A-Za-z0-9_])\$?([A-Za-z]{1,3})\$?([1-9][0-9]{0,6})(?![A-Za-z0-9_(])")
+ COORDINATE = re.compile(r"[A-Z]{1,3}[1-9][0-9]{0,6}")
++MAX_ROW, MAX_COLUMN = 1048576, 16384  # the worksheet's bounds (openpyxl raises ValueError past the last row)
+ FAMILY = Family("spreadsheetbench.formula_edit", "spreadsheetbench", "function", reference="recalc_formula",
+                 params={"edits": Param("edits", count=(1, MAX_EDITS))})
+ FAMILIES = {FAMILY.name: FAMILY}
+@@ -110,6 +114,11 @@ def _edits(entries, researched):
+                 or len(entry["formula"]) > MAX_FORMULA_CHARS
+                 or ("sheet" in entry and type(entry["sheet"]) is not str)):
+             raise Drop("format", "an edit is {cell, formula[, sheet]} with a formula of at most 200 characters")
++        if ILLEGAL_CHARACTERS_RE.search(entry["formula"]):  # v2.1 (Codex review 2026-10-24 #2): openpyxl refuses it
++            raise Drop("format", "a formula holds a character a worksheet cannot store")
++        letters = entry["cell"].rstrip("0123456789")
++        if column_index_from_string(letters) > MAX_COLUMN or int(entry["cell"][len(letters):]) > MAX_ROW:
++            raise Drop("edit_target_invalid", "%s is outside the worksheet" % entry["cell"])
+         if FORBIDDEN_FUNCTIONS.search(entry["formula"]):
+             raise Drop("forbidden_function", entry["formula"][:60])
+         called = functions(entry["formula"])
+diff --git a/skillopt/execskill/manifest.py b/skillopt/execskill/manifest.py
+index 181ffcd..67f5aa3 100644
+--- a/skillopt/execskill/manifest.py
++++ b/skillopt/execskill/manifest.py
+@@ -452,9 +452,11 @@ def _clients(m, chain, transport, route=None):
+             if bench is None:
+                 require(wanted == roles["model"], "Every method role is GLM-5.3")
+                 try:
+-                    cache[key] = Client(solvers["G"]["env_path"], roles["model"], proxy=solvers["G"]["proxy"],
+-                                        max_tokens=roles["max_tokens"], read_timeout=roles["read_timeout"],
+-                                        transport=transport)
++                    cache[key] = client.unpooled(  # v2.1: no connection limit (client.POOL_LIMITS)
++                        Client(solvers["G"]["env_path"], roles["model"], proxy=solvers["G"]["proxy"],
++                               max_tokens=roles["max_tokens"], read_timeout=roles["read_timeout"],
++                               transport=transport),
++                        proxy=solvers["G"]["proxy"], read_timeout=roles["read_timeout"], transport=transport)
+                 except (SystemExit, OSError) as refusal:  # the frozen refusals carry no secret
+                     raise ConfigurationError("glm-5.3 role credentials: %s" % refusal) from None
+             else:
+diff --git a/skillopt/execskill/protocol.py b/skillopt/execskill/protocol.py
+index ec5ebad..b6fb544 100644
+--- a/skillopt/execskill/protocol.py
++++ b/skillopt/execskill/protocol.py
+@@ -36,7 +36,8 @@ RECORD_HASH = "record_sha256"  # plan §2: the canonical digest of the record wi
+ # §1 evidence labels; ``main_real_run``: the owner's five-bench main experiment (registrar "Owner instructions
+ # 2026-10-22 17:0x and 17:3x"), accepted wherever ``pilot_real_run`` is accepted for a real run (``REAL_RUN_EVIDENCE``)
+ EVIDENCE = ("engineering_fixture", "smoke", "pilot_real_run", "historical_replay", "main_real_run",
+-            "main_v2_real_run")  # v2 (owner decision 2026-10-23 13:3x): the "train then accept" main experiment
++            "main_v2_real_run",  # v2 (owner decision 2026-10-23 13:3x): the "train then accept" main experiment
++            "main_v2_1_real_run")  # v2.1 (owner decision 2026-10-24 02:2x): main-v2 with two engineer rules
+ IMPORTABLE = ("fivebench-coevolution-v3-sheet-qualification",)  # §1, owner #7, Codex F15: the one v3 record kind read
+ TEXTS_IMPORT = "fivebench-coevolution-v3-texts-import"  # §2.2: the v3 task cards, imported by value (plan §6)
+ 
+@@ -102,13 +103,17 @@ SMOKE_SOLVER = CHAINS["D"]  # §0 (c), §10: the registered default smoke solver
+ # registrar addendum 2026-10-23 02:3x ("smoke solver chain"): the smoke specification pins its solver chain -- "D",
+ # the registered default (unchanged), or "G": GLM-5.3 through its frozen client with chain G's settings, and no S1
+ SMOKE_SOLVER_CHAINS = ("D", "G")
+-NAMESPACES = ("G", "D", "smoke", "G-v2", "D-v2")  # §3.4: one consumption namespace per chain, the smoke its own;
++NAMESPACES = ("G", "D", "smoke", "G-v2", "D-v2", "G-v2-1", "D-v2-1")  # §3.4: one consumption namespace per chain,
++# the smoke its own;
+ # v2 (owner decision 2026-10-23 13:3x): each chain of the main-v2 configuration consumes in its own namespace
+ # (``V2_NAMESPACES``, ``namespace_of``), so it cuts the registered slices from the same fixed order again: its run
+ # slices are v1 main's training items (reused for training) and its acceptance slices the ones v1 cut but never
+ # registered (v1 main accepted nothing, so no acceptance item was ever dispatched); the pools hold no other supply
+ # (OfficeQA 74 = 24 + 50, LiveMath 283 = 119 + 100 + 64, SpreadsheetBench 91 = 31 + 60)
+ V2_NAMESPACES = {"G": "G-v2", "D": "D-v2"}
++# v2.1 (owner decision 2026-10-24 02:2x): main-v2-1's chains consume in namespaces of their own again and cut the same
++# slices: main-v2 dispatched no acceptance item either (chain G stopped in step 3's training, chain D in step 1's run)
++V21_NAMESPACES = {"G": "G-v2-1", "D": "D-v2-1"}
+ ROLE_MODEL = "glm-5.3"  # §4.2, §4.3, §7.2: every method role of both chains
+ # §4.1 chain G: M = B = 65,536 on every bench and a 2,400 s read timeout (the frozen route, coevo5 protocol.py:327,
+ # :92), so a chain G receipt is never over nominal.
+@@ -845,24 +850,52 @@ PILOTS[MAIN_V2]["solver_cap"] = _round_up(sum(sum(c.values()) for c in MAIN_V2_S
+ SX_SLICES = {"run": 100, "accept": 160}
+ SMOKE_SX_CAPS = {"solver": 80 * MILLION, "glm": 40 * MILLION}
+ SMOKE_WAIVER_V2 = "shared/owner-smoke-waiver-v2.json"  # a v2 smoke's (SX listed) owner waiver; v1's file stays put
++# ------------------------------------------- v2.1 (owner decision 2026-10-24 02:2x: "好的，那就按照你的说法来，先修，修好之后继续跑")
++# main-v2 stopped on 2026-10-23/24: chain D on the httpcore tunnel-pool leak (``client.POOL_LIMITS``, every
++# configuration), chain G on a model-written replay test whose mutation was an object (``replay.validate_test`` now
++# refuses any value of the wrong type, every configuration), and LiveMath's round 2 had adopted a procedure keyed on
++# the meta option after its fix calls echoed the screen's matched phrase and the adjudicator's reason. The run
++# configuration ``main-v2-1`` is ``main-v2`` with two engineer rules: its fix calls never show a flagged text, a
++# matched term, a static ban's detail or the adjudicator's reason -- the sealed records keep them (``FIX_ECHO``,
++# ``engineer._redacted``) -- and C4 replays every procedure on its in-scope LiveMath trajectories whose view holds the
++# meta option with that option's text replaced by ``META_FILLER``: a procedure that behaves differently there --
++# predicate, notes, bindings, repair request or fault kinds, the filler mapped back -- fails C4
++# (``META_COUNTERFACTUAL``, ``replay.meta_counterfactual``). Prompts, slices, caps and every other rule are main-v2's;
++# its run root and consumption namespaces (``V21_NAMESPACES``) are new.
++MAIN_V2_1 = "main-v2-1"
++LEARNING[MAIN_V2_1] = "train"
++FIX_ECHO = {"default": True, "recommended": True, "main": True, MAIN_V2: True, MAIN_V2_1: False}
++META_COUNTERFACTUAL = {"default": False, "recommended": False, "main": False, MAIN_V2: False, MAIN_V2_1: True}
++META_FILLER = "This option's wording is withheld and replaced by this neutral sentence."
++MAIN_V2_1_ROOT = "/data/execskill-20261024-main-v2-1"
++MAIN_V2_1_MANIFEST = "/data/execskill-20261024-main-v2-1-manifest.json"
++PILOTS[MAIN_V2_1] = dict(PILOTS[MAIN_V2])
++STAGE_READ[MAIN_V2_1] = STAGE_READ[MAIN_V2]
++TEST_READ_CELLS[MAIN_V2_1] = dict(TEST_READ_CELLS[MAIN_V2])
++CHAIN_NAMESPACES = {MAIN_V2: V2_NAMESPACES, MAIN_V2_1: V21_NAMESPACES}
+ 
+ 
+ def namespace_of(setting, chain):
+-    """The consumption namespace of ``chain`` in the Setting's run configuration: the chain itself, or its v2
+-    namespace in main-v2 (``V2_NAMESPACES``)."""
+-    return V2_NAMESPACES[chain] if configuration_of(setting) == MAIN_V2 else chain
++    """The consumption namespace of ``chain`` in the Setting's run configuration: the chain itself, or its own
++    namespace in main-v2 (``V2_NAMESPACES``) and main-v2-1 (``V21_NAMESPACES``)."""
++    found = CHAIN_NAMESPACES.get(configuration_of(setting))
++    return found[chain] if found is not None else chain
+ 
+-CONFIG_STEP_CAPS = {"default": STEP_CAPS, "recommended": STEP_CAPS, "main": MAIN_STEP_CAPS, MAIN_V2: MAIN_V2_STEP_CAPS}
++CONFIG_STEP_CAPS = {"default": STEP_CAPS, "recommended": STEP_CAPS, "main": MAIN_STEP_CAPS, MAIN_V2: MAIN_V2_STEP_CAPS,
++                    MAIN_V2_1: MAIN_V2_STEP_CAPS}
+ CONFIG_SCHEDULE_CELLS = {"default": MAX_SCHEDULE_CELLS, "recommended": MAX_SCHEDULE_CELLS, "main": MAIN_SCHEDULE_CELLS,
+-                         MAIN_V2: MAIN_V2_SCHEDULE_CELLS}
+-CONFIG_ROLE_CAPS = {"default": ROLE_CAPS, "recommended": ROLE_CAPS, "main": MAIN_ROLE_CAPS, MAIN_V2: MAIN_V2_ROLE_CAPS}
+-CONFIG_GLM_CAP = {"default": GLM_CAP, "recommended": GLM_CAP, "main": MAIN_GLM_CAP, MAIN_V2: MAIN_V2_GLM_CAP}
++                         MAIN_V2: MAIN_V2_SCHEDULE_CELLS, MAIN_V2_1: MAIN_V2_SCHEDULE_CELLS}
++CONFIG_ROLE_CAPS = {"default": ROLE_CAPS, "recommended": ROLE_CAPS, "main": MAIN_ROLE_CAPS, MAIN_V2: MAIN_V2_ROLE_CAPS,
++                    MAIN_V2_1: MAIN_V2_ROLE_CAPS}
++CONFIG_GLM_CAP = {"default": GLM_CAP, "recommended": GLM_CAP, "main": MAIN_GLM_CAP, MAIN_V2: MAIN_V2_GLM_CAP,
++                  MAIN_V2_1: MAIN_V2_GLM_CAP}
+ CONFIG_CAP_FACTOR = {"default": Fraction(3, 2), "recommended": Fraction(3, 2), "main": Fraction(MAIN_CAP_FACTOR),
+-                     MAIN_V2: Fraction(MAIN_CAP_FACTOR)}
+-COST_CHECK_PAUSES = {"default": True, "recommended": True, "main": False, MAIN_V2: False}
++                     MAIN_V2: Fraction(MAIN_CAP_FACTOR), MAIN_V2_1: Fraction(MAIN_CAP_FACTOR)}
++COST_CHECK_PAUSES = {"default": True, "recommended": True, "main": False, MAIN_V2: False, MAIN_V2_1: False}
+ REAL_RUN_EVIDENCE = {"default": "pilot_real_run", "recommended": "pilot_real_run", "main": "main_real_run",
+-                     MAIN_V2: "main_v2_real_run"}
+-RUN_ROOTS = {"default": PILOT_ROOT, "recommended": PILOT_ROOT, "main": MAIN_ROOT, MAIN_V2: MAIN_V2_ROOT}
++                     MAIN_V2: "main_v2_real_run", MAIN_V2_1: "main_v2_1_real_run"}
++RUN_ROOTS = {"default": PILOT_ROOT, "recommended": PILOT_ROOT, "main": MAIN_ROOT, MAIN_V2: MAIN_V2_ROOT,
++             MAIN_V2_1: MAIN_V2_1_ROOT}
+ 
+ 
+ def configuration_of(setting):
+diff --git a/skillopt/execskill/replay.py b/skillopt/execskill/replay.py
+index 08e6048..2707bd4 100644
+--- a/skillopt/execskill/replay.py
++++ b/skillopt/execskill/replay.py
+@@ -25,6 +25,15 @@ note is screened as the shell screens it (``notes.screen``; bindings verbatim on
+   channel is what a procedure could touch.
+ - ``output_faults`` (C9): the note faults of the lexicon screen and the caps (declared, and the bench's per-request cap
+   a single note may never exceed).
++- ``meta_counterfactual`` (C4, v2.1 ``protocol.META_COUNTERFACTUAL``): the procedure on its in-scope LiveMath
++  trajectories whose view holds the meta option, with that option's text replaced by ``protocol.META_FILLER``: any
++  difference from its run on the real views -- predicate, notes, bindings, repair request, ALFWorld steps or fault
++  kinds, the filler mapped back to the option -- is a C4 failure. A procedure that never reads the option, or quotes
++  it verbatim, behaves the same; one keyed on it does not. Steps before LiveMath have no such trajectory (the check is
++  vacuous there); acceptance's options-only probe J7 stays the backstop.
++
++Every value a model wrote (a replay test, its property, its mutation) is type-checked before it is used as a key
++(v2.1: main-v2's chain G stopped on a mutation written as an object, 2026-10-24 00:01).
+ 
+ ALFWorld state contract (registrar-defined; ticket A10-1): a state procedure keeps ``state["facts"]``, a mapping of at
+ least one of ``STATE_FACTS`` -- ``reached`` (receptacles reached or opened), ``carrying`` (objects held),
+@@ -47,9 +56,9 @@ from skillopt.validator_pilot.api import digest
+ from . import notes
+ from .donors import public_text, shaped
+ from .package import Package
+-from .protocol import (BENCHES, MAX_FRAGMENTS, MAX_NOTE_CHARS, MAX_PROPERTY_TEXT, MAX_TESTS, MUTATIONS,
+-                       NOT_RECOMMENDED_PREFIX, NOTES_KEY, PROPERTY_KINDS, SANDBOX_TIMEOUTS, STATE_FACTS,
+-                       TRACKER_AGREEMENT)
++from .protocol import (BENCHES, LIVEMATH_META_OPTION, MAX_FRAGMENTS, MAX_NOTE_CHARS, MAX_PROPERTY_TEXT, MAX_TESTS,
++                       META_FILLER, MUTATIONS, NOT_RECOMMENDED_PREFIX, NOTES_KEY, PROPERTY_KINDS, SANDBOX_TIMEOUTS,
++                       STATE_FACTS, TRACKER_AGREEMENT)
+ from .supply import routing_view as alfworld_routing_view
+ 
+ OBSERVATION_CHARS = 12000  # the shell's event observation (backends.py:756)
+@@ -62,6 +71,7 @@ NOTHING = "Nothing happens."
+ CRASH_KINDS = ("predicate:not_bool", "output_shape", "state_over_declared_bytes", "undeclared_second_call")
+ BINDING_KINDS = ("note_name", "note_duplicate_name", "note_value", "note_not_verbatim")
+ META_KINDS = ("note_meta_option",)
++COUNTERFACTUAL = "meta_counterfactual"  # v2.1: C4's output ban of a procedure keyed on the LiveMath meta option
+ CHANNEL_MARKERS = ("<answer", "</answer", "<action", "</action", "<calc", "</calc", "```")
+ 
+ 
+@@ -436,11 +446,12 @@ def validate_test(test, procedure, entries):
+         return "keys"
+     if type(test["id"]) is not str or TEST_ID.fullmatch(test["id"]) is None:
+         return "id"
+-    entry = entries.get(test["trajectory"])
++    entry = entries.get(test["trajectory"]) if type(test["trajectory"]) is str else None
+     if entry is None:
+         return "trajectory_not_in_scope"
+     hook, prop = test["hook"], test["property"]
+-    if hook not in procedure.hooks or not isinstance(prop, dict) or prop.get("kind") not in PROPERTY_KINDS:
++    if type(hook) is not str or hook not in procedure.hooks or not isinstance(prop, dict) \
++            or type(prop.get("kind")) is not str or prop["kind"] not in PROPERTY_KINDS:
+         return "hook_or_kind"
+     hooks, keys = PROPERTY_KINDS[prop["kind"]]
+     stepped = hook in STEP_HOOKS
+@@ -465,7 +476,8 @@ def validate_test(test, procedure, entries):
+             or sorted(nonvacuity) != ["mutation", "withheld_expect"] or nonvacuity["withheld_expect"] is not False:
+         return "nonvacuity"
+     mutation = nonvacuity["mutation"]
+-    if mutation is not None and (mutation not in MUTATIONS or entry["bench"] not in MUTATIONS[mutation]):
++    if mutation is not None and (type(mutation) is not str or mutation not in MUTATIONS
++                                 or entry["bench"] not in MUTATIONS[mutation]):
+         return "mutation"
+     if kind in ("applies_true", "applies_false") and mutation is None:
+         return "predicate_needs_mutation"
+@@ -625,3 +637,58 @@ def output_faults(outcomes):
+ def meta_option_faults(outcomes):
+     """C4's static ban on outputs: notes the LiveMath meta-option screen dropped."""
+     return _faults(outcomes, META_KINDS)
++
++
++def _texts(value, old, new):
++    """``value`` with ``old`` replaced by ``new`` in every text it holds (mapping keys kept)."""
++    if isinstance(value, str):
++        return value.replace(old, new)
++    if isinstance(value, dict):
++        return {key: _texts(item, old, new) for key, item in value.items()}
++    if isinstance(value, list):
++        return [_texts(item, old, new) for item in value]
++    return value
++
++
++def _holds(value, text):
++    """Whether a text in ``value`` contains ``text``."""
++    if isinstance(value, str):
++        return text in value
++    if isinstance(value, dict):
++        return any(_holds(item, text) for item in value.values())
++    if isinstance(value, list):
++        return any(_holds(item, text) for item in value)
++    return False
++
++
++def _behaviour(outcome, mapped=False):
++    """{aspect: value} of an ``Outcome`` the counterfactual compares; ``mapped``: the counterfactual's, its texts with
++    ``META_FILLER`` mapped back to the meta option."""
++    back = (lambda value: _texts(value, META_FILLER, LIVEMATH_META_OPTION)) if mapped else (lambda value: value)
++    return {"applies": outcome.applies,
++            "notes": [[n["hook"], n["step"], back(n["text"])] for n in outcome.notes],
++            "bindings": back(outcome.bindings), "repair": outcome.repair,
++            "steps": [[back(s["note"]), back(s["discouraged"]), digest(s["state"]), s["after"]] for s in outcome.steps],
++            "faults": [[f["hook"], f["step"], f["kind"]] for f in outcome.faults]}
++
++
++def meta_counterfactual(procedure, entries, outcomes, workers, *, inputs_dirs=None):
++    """C4's meta-option counterfactual (module docstring; v2.1 ``protocol.META_COUNTERFACTUAL``):
++    [{cell, kind: "meta_counterfactual", aspects}] of the in-scope LiveMath trajectories of ``entries`` ({cell:
++    inputs}) whose view holds the meta option (``LIVEMATH_META_OPTION``) on which ``procedure``, replayed in a fresh
++    worker (PYTHONHASHSEED 0) with every occurrence of the option's text replaced by ``META_FILLER``, behaves otherwise
++    than in ``outcomes`` (``zero_crash``'s first-worker outcomes); ``aspects``: the differing ones of ``_behaviour``,
++    in its order. Zero model calls."""
++    present = [entry for cell, entry in entries.items() if entry["bench"] == "livemath" and cell in outcomes
++               and _holds([entry["view"], entry["request_view"]], LIVEMATH_META_OPTION)]
++    if not present:
++        return []
++    replaced = [_texts(entry, LIVEMATH_META_OPTION, META_FILLER) for entry in present]
++    found = replay_many(procedure, replaced, workers, hashseed=0, inputs_dirs=inputs_dirs)
++    out = []
++    for entry in present:
++        real, counter = _behaviour(outcomes[entry["cell"]]), _behaviour(found[entry["cell"]], mapped=True)
++        aspects = [aspect for aspect in real if real[aspect] != counter[aspect]]
++        if aspects:
++            out.append({"cell": entry["cell"], "kind": COUNTERFACTUAL, "aspects": aspects})
++    return out
+diff --git a/skillopt/execskill/research.py b/skillopt/execskill/research.py
+index 66c0fc4..a37b909 100644
+--- a/skillopt/execskill/research.py
++++ b/skillopt/execskill/research.py
+@@ -55,6 +55,7 @@ from skillopt.continual_eval.core import require, safe_path, write_json
+ from skillopt.validator_pilot.api import digest
+ 
+ from . import VERSION
++from .client import POOL_LIMITS
+ from .protocol import (
+     BENCHES,
+     LIVEMATH_DEFINITION_CHARS,
+@@ -198,7 +199,8 @@ class Wikipedia:
+         require(proxy is None or (type(proxy) is str and PROXY.fullmatch(proxy) is not None),
+                 "A proxy is an explicit http(s) host without credentials")
+         options = {"transport": transport} if transport is not None else ({"proxy": proxy} if proxy else {})
+-        self.client = httpx.Client(timeout=timeout, trust_env=False, follow_redirects=False,
++        # v2.1 (Codex review 2026-10-24 #1): no connection cap, as the model clients (``client.POOL_LIMITS``)
++        self.client = httpx.Client(timeout=timeout, limits=POOL_LIMITS, trust_env=False, follow_redirects=False,
+                                    headers={"User-Agent": USER_AGENT}, **options)
+ 
+     def _get(self, params):
+diff --git a/skillopt/execskill/routes.py b/skillopt/execskill/routes.py
+index dfaff13..5fca828 100644
+--- a/skillopt/execskill/routes.py
++++ b/skillopt/execskill/routes.py
+@@ -206,7 +206,7 @@ def check_pins(clients, *, configuration=None):
+     runs, each block equal to ``pin`` re-derived from its own env path and the chain's solver block. A ``main``
+     manifest must pin route B of chain D (registrar row "deepseek route B"). Raises ValueError."""
+     pinned = clients.get("routes")
+-    if configuration in (protocol.MAIN, protocol.MAIN_V2):  # main-v2: the main run's chains, v2's learning
++    if configuration in (protocol.MAIN, protocol.MAIN_V2, protocol.MAIN_V2_1):  # main-v2(-1): main's chains
+         require(isinstance(pinned, dict) and isinstance(pinned.get("D"), dict) and client.ROUTE_B in pinned["D"],
+                 "A main manifest pins chain D's route B (clients.routes.D.B = routes.pin(...); registrar row "
+                 "\"deepseek route B\")")
+diff --git a/skillopt/execskill/step.py b/skillopt/execskill/step.py
+index 932dfd2..fd0b9a4 100644
+--- a/skillopt/execskill/step.py
++++ b/skillopt/execskill/step.py
+@@ -145,7 +145,7 @@ from .protocol import (BAND_ROUNDS, BENCHES, CELL_ANCHORS, CHAINS, EARLIER_SET_M
+                        MDE_POINTS, CONFIG_CAP_FACTOR, CONFIGURATIONS, NOTES_KEY, RECORD_HASH, ROLE_MAX_TOKENS,
+                        ROLE_MODEL, S4_SLICES, SEED, SX_SLICES, TOPUP_ROUNDS, TRAIN_ADOPT_SHARE, TRAIN_ALPHA,
+                        TRAIN_EXAMPLES, TRAIN_FORMAT_MARGIN, TRAIN_PATIENCE, TRAIN_ROUNDS, TRAIN_TEXT_CHARS,
+-                       configuration_of, learning_of, namespace_of, order_of,
++                       configuration_of, learning_of, namespace_of, order_of, FIX_ECHO, META_COUNTERFACTUAL,
+                        SELFTEST_ALPHA, SELFTEST_FAULT_MAX, SELFTEST_FORMAT_MARGIN, SELFTEST_PASSES, SLICES,
+                        SMOKE_SOLVER, generator_seed, ledger_bound, record, round_tag, verified)
+ from .registry import HELD, run_identity
+@@ -1179,7 +1179,9 @@ def _engineer_train(st, cut, r, incumbent, *, done, fed, history, training, lint
+                                    previous=_previous(st), mode=TRAIN, round=r, base=st.parent, current=current,
+                                    evaluated=evaluated, history=list(history), training=training, lint=list(lint),
+                                    reserved=frozenset(reserved), analysed=frozenset(analysed),
+-                                   disclosed=frozenset(disclosed))
++                                   disclosed=frozenset(disclosed),
++                                   echo=FIX_ECHO[configuration_of(st.setting)],  # v2.1: main-v2-1 redacts
++                                   counterfactual=META_COUNTERFACTUAL[configuration_of(st.setting)])
+             candidate, sealed = engineer.run_train(ctx)
+         if candidate is not None:
+             save(st.chain_root, candidate)
+diff --git a/tests/test_execskill_client.py b/tests/test_execskill_client.py
+index 2d5c13f..116a272 100644
+--- a/tests/test_execskill_client.py
++++ b/tests/test_execskill_client.py
+@@ -27,6 +27,7 @@ from skillopt.execskill.client import (
+     ELUCID_MODEL,
+     ELUCID_RESPONSE_MODEL_IDS,
+     GLM_SOLVER,
++    POOL_LIMITS,
+     ElucidClient,
+     solver_client,
+ )
+@@ -248,6 +249,7 @@ def test_the_client_goes_through_the_pjlab_gateway_only_and_ignores_the_environm
+     assert type(solver_client(ELUCID_MODEL, config=config)) is ElucidClient
+     (kwargs,) = made
+     assert (kwargs["proxy"], kwargs["trust_env"], kwargs["follow_redirects"]) == (probe.GATEWAY, False, False)
++    assert kwargs["limits"] is POOL_LIMITS  # v2.1: no connection limit (the httpcore tunnel-pool leak)
+     assert "transport" not in kwargs and kwargs["timeout"].read == QA_READ_TIMEOUT
+     for proxy in (None, "http://elsewhere.example:3128", probe.GATEWAY + "/"):
+         with pytest.raises(ConfigurationError, match="gateway"):
+@@ -308,8 +310,10 @@ def test_chain_g_gets_the_frozen_bigmodel_client_built_like_v3(tmp_path, monkeyp
+         "bigmodel", "glm-5.3", "enabled", "low", 65536)
+     assert client.response_model_ids == {"glm-5.3"}
+     assert client.url == "https://%s%s" % (probe.BIGMODEL_HOST, probe.BIGMODEL_PATH)  # no route
+-    (kwargs,) = made
+-    assert (kwargs["proxy"], kwargs["trust_env"], kwargs["timeout"].read) == (probe.GATEWAY, False, 2400)
++    frozen, kwargs = made  # v2.1: the frozen construction, then its httpx client rebuilt with POOL_LIMITS
++    assert "limits" not in frozen and kwargs["limits"] is POOL_LIMITS and client.http is not None
++    for found in (frozen, kwargs):
++        assert (found["proxy"], found["trust_env"], found["timeout"].read) == (probe.GATEWAY, False, 2400)
+ 
+ 
+ def test_chain_g_sends_the_frozen_body_and_its_reasoning_is_never_a_mismatch(tmp_path):
+diff --git a/tests/test_execskill_integration_b1.py b/tests/test_execskill_integration_b1.py
+index 8793c08..76b06cf 100644
+--- a/tests/test_execskill_integration_b1.py
++++ b/tests/test_execskill_integration_b1.py
+@@ -182,8 +182,9 @@ def test_registered_names_agree_across_the_b1_modules():
+     assert set(package.HOOK_PARAMETERS) == set(protocol.HOOKS)  # Procedure validation indexes it by every hook
+     assert set(package.SECOND_CALL_HOOKS) <= set(package.NOTE_HOOKS) <= set(protocol.HOOKS)
+     assert set(notes.FIELD_TYPES) == set(notes.FIELD_ORDER) == set(protocol.NOTE_HEADERS)  # render indexes headers
+-    assert set(protocol.NAMESPACES) == set(protocol.CHAINS) | {budgets.SMOKE} | set(protocol.V2_NAMESPACES.values())
+-    assert set(protocol.V2_NAMESPACES) == set(protocol.CHAINS)  # v2 (2026-10-23): each chain's own v2 namespace
++    assert set(protocol.NAMESPACES) == set(protocol.CHAINS) | {budgets.SMOKE} | set(protocol.V2_NAMESPACES.values()) | set(
++        protocol.V21_NAMESPACES.values())
++    assert set(protocol.V2_NAMESPACES) == set(protocol.V21_NAMESPACES) == set(protocol.CHAINS)  # v2, v2.1: their own
+     assert set(protocol.SOLVERS) <= set(slots.POOL_SIZES) and protocol.ROLE_MODEL in slots.POOL_SIZES
+ 
+ 
+diff --git a/tests/test_execskill_mutations.py b/tests/test_execskill_mutations.py
+index 984ac77..d546e5b 100644
+--- a/tests/test_execskill_mutations.py
++++ b/tests/test_execskill_mutations.py
+@@ -182,11 +182,11 @@ MUTATIONS = {
+         "        return self.root / \"consumption\" / (\"smoke\" if chain == \"smoke\" else \"chains\") / (bench + "
+         "\".jsonl\")\n",
+         [T + "registry.py::test_chains_have_separate_namespaces_and_smoke_items_leave_both_supplies"]),
+-    "30-glm-solver-client-adds-a-route": (
+-        PE + "client.py", "                      read_timeout=READ_TIMEOUT_SECONDS, transport=transport)\n"
+-        "    except (SystemExit, OSError) as refusal:",
+-        "                      read_timeout=READ_TIMEOUT_SECONDS, transport=transport, route=\"bigmodel\",\n"
+-        "                      route_env=config[\"repo\"])\n    except (SystemExit, OSError) as refusal:",
++    "30-glm-solver-client-adds-a-route": (  # v2.1: the frozen construction inside ``unpooled``
++        PE + "client.py", "                               transport=transport),\n"
++        "                        proxy=config[\"proxy\"], read_timeout=READ_TIMEOUT_SECONDS, transport=transport)\n",
++        "                               transport=transport, route=\"bigmodel\", route_env=config[\"repo\"]),\n"
++        "                        proxy=config[\"proxy\"], read_timeout=READ_TIMEOUT_SECONDS, transport=transport)\n",
+         [T + "client.py::test_chain_g_gets_the_frozen_bigmodel_client_built_like_v3"]),
+     "31-unseal-skips-the-run-root-scan": (
+         PE + "evaluation.py", "    scan = _root_scanned(safe_path(root), chain_root, chain, evidence=evidence)\n",
+diff --git a/tests/test_execskill_protocol.py b/tests/test_execskill_protocol.py
+index a347342..cdb2bc2 100644
+--- a/tests/test_execskill_protocol.py
++++ b/tests/test_execskill_protocol.py
+@@ -131,7 +131,8 @@ def test_sibling_copies_agree_with_the_registration():
+         {protocol.CHAINS["D"], "deepseek-v4.1-flash"})  # owner 2026-10-23 19:1x: the echoed alias
+     assert client.REASONING_EFFORT == protocol.REASONING_EFFORT == "none"
+     # ticket A4-1 and the policy's own copies
+-    assert set(registry.NAMESPACES) == set(protocol.CHAINS) | {"smoke"} | set(protocol.V2_NAMESPACES.values())
++    assert set(registry.NAMESPACES) == set(protocol.CHAINS) | {"smoke"} | set(protocol.V2_NAMESPACES.values()) | set(
++        protocol.V21_NAMESPACES.values())  # v2.1 (owner decision 2026-10-24 02:22)
+     assert registry.HISTORY_ROOT == protocol.HISTORY_ROOT == "/data/execskill-history"
+     assert set(registry.EVIDENCE) == set(protocol.EVIDENCE)
+     assert exclusion.EXCLUSION_RUNS == protocol.EXCLUSION_RUNS
+@@ -399,8 +400,9 @@ def test_main_is_the_five_bench_configuration_with_its_root_label_and_rules():
+     assert protocol.MAIN_ROOT == "/data/execskill-20261022-main" == protocol.RUN_ROOTS["main"]
+     assert "main_real_run" in protocol.EVIDENCE and protocol.REAL_RUN_EVIDENCE == {
+         "default": "pilot_real_run", "recommended": "pilot_real_run", "main": "main_real_run",
+-        "main-v2": "main_v2_real_run"}  # v2 (owner decision 2026-10-23 13:3x)
+-    assert protocol.COST_CHECK_PAUSES == {"default": True, "recommended": True, "main": False, "main-v2": False}
++        "main-v2": "main_v2_real_run", "main-v2-1": "main_v2_1_real_run"}  # v2 (2026-10-23 13:3x), v2.1 (10-24)
++    assert protocol.COST_CHECK_PAUSES == {"default": True, "recommended": True, "main": False, "main-v2": False,
++                                          "main-v2-1": False}
+     assert protocol.CONFIG_CAP_FACTOR["main"] == 3 and protocol.CONFIG_CAP_FACTOR["default"] == Fraction(3, 2)
+     assert {bench: protocol.fired_share(bench, "main") for bench in protocol.BENCHES} == {
+         bench: 1 for bench in protocol.BENCHES}  # all five home
+diff --git a/tests/test_execskill_v21.py b/tests/test_execskill_v21.py
+new file mode 100644
+index 0000000..f75177e
+--- /dev/null
++++ b/tests/test_execskill_v21.py
+@@ -0,0 +1,586 @@
++"""v2.1 (owner decision 2026-10-24 02:22, "好的，那就按照你的说法来，先修，修好之后继续跑"): the run configuration
++``main-v2-1`` -- main-v2 whose fix calls never show a flagged text, a matched term or the adjudicator's reason, and
++whose C4 fails a procedure that behaves differently when the LiveMath meta option's text is replaced by a neutral
++filler -- the unlimited connection pools of every solver and role client (the httpcore tunnel-pool leak that stopped
++main-v2's chain D) and the type guards on model-written values (the replay test whose mutation was an object, which
++stopped main-v2's chain G); with the Codex review's fixes (2026-10-24): the research Wikipedia client without a cap,
++the sheet family's edits inside the worksheet, the shown trajectories without the screens' matched texts. Offline: the
++engineer, analysts and leakage adjudicator are FakeGLM behind the real ``Roles``; every procedure runs in the real
++worker through FakeDocker; the pool tests talk to a local proxy that never completes a TLS handshake; every procedure,
++trajectory and workbook is a synthetic fixture."""
++from __future__ import annotations
++
++import json
++import random
++import socket
++import sys
++import threading
++from types import SimpleNamespace
++
++import httpx
++import pytest
++
++from scripts import weak_solver_probe as probe
++from skillopt.coevo5.leakage import Corpus
++from skillopt.execskill import (budgets, client, engineer, manifest, notes, policy, protocol, replay, research, routes,
++                                smoke, step)
++from skillopt.execskill.generators import sheet
++from skillopt.execskill.package import FIXTURE, empty
++from skillopt.execskill.protocol import verified
++from tests.execskill_fakes import engineer_reply, fake_config, glm_roles
++from tests.test_execskill_engineer import COMPOSER, WORDS
++from tests.test_execskill_replay import (LEXICON, META, NOTE, QA, fake, fixture, qa_items, qa_trajectories,  # noqa: F401
++                                         source, test_case, trajectory, workers)
++from tests.test_execskill_routes import route_b_config
++from skillopt.execskill.trajectories import whitelisted
++from tests.test_execskill_generators import FakeEngine, _functions as sheet_functions, _sheet_item
++from tests.test_execskill_generators import _generate as generated_items
++from tests.test_execskill_v2 import coded, reply_of, train_context
++
++SHA = "0" * 64
++V2, V21 = protocol.MAIN_V2, protocol.MAIN_V2_1
++
++
++def configured(name):
++    return SimpleNamespace(extra={"configuration": name})
++
++
++# ------------------------------------------------------------------------------------------- the configuration
++def test_main_v2_1_is_main_v2_with_its_own_root_namespaces_and_two_engineer_rules():
++    assert V21 == "main-v2-1" and protocol.KIND.fullmatch(V21) and V21 in protocol.CONFIGURATIONS
++    assert protocol.LEARNING[V21] == "train" and protocol.STAGE_READ[V21] is True
++    for table in (protocol.PILOTS, protocol.TEST_READ_CELLS, protocol.CONFIG_STEP_CAPS, protocol.CONFIG_SCHEDULE_CELLS,
++                  protocol.CONFIG_ROLE_CAPS, protocol.CONFIG_GLM_CAP, protocol.CONFIG_CAP_FACTOR,
++                  protocol.COST_CHECK_PAUSES):
++        assert table[V21] == table[V2]
++    assert all(budgets.chain_caps(chain, V21) == budgets.chain_caps(chain, V2) for chain in protocol.CHAINS)
++    assert manifest.prompt_sha(V21) == manifest.prompt_sha(V2) and "v2" in manifest.prompt_sha(V21)
++    assert smoke.max_role_calls(V21) == smoke.max_role_calls(V2)
++    assert smoke.engineer_request_floor(V21) == smoke.engineer_request_floor(V2)
++    assert protocol.read_arms_of(V21) == protocol.read_arms_of(V2) and protocol.estimate_arms(V21) == 8
++    assert protocol.REAL_RUN_EVIDENCE[V21] == "main_v2_1_real_run" and "main_v2_1_real_run" in protocol.EVIDENCE
++    assert protocol.RUN_ROOTS[V21] == protocol.MAIN_V2_1_ROOT == "/data/execskill-20261024-main-v2-1"
++    assert protocol.MAIN_V2_1_MANIFEST == "/data/execskill-20261024-main-v2-1-manifest.json"
++    assert protocol.MAIN_V2_1_ROOT not in (protocol.MAIN_ROOT, protocol.MAIN_V2_ROOT)
++    assert [protocol.namespace_of(configured(V21), c) for c in ("G", "D")] == ["G-v2-1", "D-v2-1"]
++    assert [protocol.namespace_of(configured(V2), c) for c in ("G", "D")] == ["G-v2", "D-v2"]
++    assert [protocol.namespace_of(configured("main"), c) for c in ("G", "D")] == ["G", "D"]
++    assert set(protocol.V21_NAMESPACES.values()) <= set(protocol.NAMESPACES)
++    assert set(protocol.FIX_ECHO) == set(protocol.META_COUNTERFACTUAL) == set(protocol.CONFIGURATIONS)
++    assert {name for name, echo in protocol.FIX_ECHO.items() if not echo} == {V21}
++    assert {name for name, on in protocol.META_COUNTERFACTUAL.items() if on} == {V21}
++    with pytest.raises(ValueError, match="route B"):
++        routes.check_pins({}, configuration=V21)  # main's chains: chain D pins its route B
++    filler = protocol.META_FILLER
++    assert not policy.meta_option_hits(filler) and not notes.lexicon_hits(filler, bench="livemath")
++    assert not engineer.OPTION_LETTER.search(filler) and filler not in protocol.LIVEMATH_META_OPTION
++
++
++def test_only_the_train_mode_takes_the_v2_1_rules(tmp_path, workers):
++    for rules in ({"echo": False}, {"counterfactual": True}):
++        with pytest.raises(ValueError, match="train mode"):
++            engineer.Context(bench="searchqa", k=1, step="s1", evidence=FIXTURE, parent=empty(step="s0",
++                             evidence=FIXTURE), trajectories=qa_trajectories(), corpora={}, workers=workers,
++                             roles=None, label="D/s1-searchqa/engineer", **rules)
++    with pytest.raises(ValueError, match="train mode"):
++        train_context(tmp_path, workers, [], echo=0)
++
++
++# ------------------------------------------------------------------------------- unlimited connection pools
++class StallingProxy:
++    """A local HTTP proxy that answers every CONNECT with 200 and then never speaks, so every TLS handshake through it
++    times out -- as the PJLAB gateway's tunnels to elucid did on 2026-10-23 before chain D's pool ran out."""
++
++    def __init__(self):
++        self.server = socket.create_server(("127.0.0.1", 0))
++        self.url = "http://127.0.0.1:%d" % self.server.getsockname()[1]
++        self.held = []
++        threading.Thread(target=self._serve, daemon=True).start()
++
++    def _serve(self):
++        while True:
++            try:
++                conn, _ = self.server.accept()
++            except OSError:
++                return
++            self.held.append(conn)
++            try:
++                conn.settimeout(5)
++                data = b""
++                while b"\r\n\r\n" not in data:
++                    chunk = conn.recv(4096)
++                    if not chunk:
++                        break
++                    data += chunk
++                conn.sendall(b"HTTP/1.1 200 Connection established\r\n\r\n")
++            except OSError:
++                pass
++
++    def close(self):
++        self.server.close()
++        for conn in self.held:
++            conn.close()
++
++
++@pytest.fixture
++def stalling():
++    proxy = StallingProxy()
++    yield proxy
++    proxy.close()
++
++
++def outcomes_of(http, n):
++    """The exception names of ``n`` requests through the client (the per-request timeout keeps the test short)."""
++    out = []
++    for _ in range(n):
++        try:
++            http.post("https://gateway.invalid/v1/chat/completions", json={}, timeout=httpx.Timeout(0.3))
++            out.append("ok")
++        except httpx.HTTPError as error:
++            out.append(type(error).__name__)
++    return out
++
++
++def pools(http):
++    """The connection pools of an httpx client: its default transport's and its mounted (proxy) transports'."""
++    return [t._pool for t in [http._transport, *http._mounts.values()] if t is not None and hasattr(t, "_pool")]
++
++
++def test_the_installed_httpcore_keeps_every_timed_out_tunnel_in_its_pool(stalling):
++    """The mechanism (control): a pool of two is exhausted by two TLS handshake timeouts through the proxy."""
++    with httpx.Client(proxy=stalling.url, limits=httpx.Limits(max_connections=2), trust_env=False) as http:
++        assert outcomes_of(http, 3) == ["ConnectTimeout", "ConnectTimeout", "PoolTimeout"]
++
++
++def test_the_shared_http_client_has_no_connection_limit_so_timeouts_never_exhaust_it(stalling):
++    with client.http_client(5, {"proxy": stalling.url}) as http:
++        assert pools(http) and all(pool._max_connections == sys.maxsize for pool in pools(http))  # httpcore: None
++        assert outcomes_of(http, 6) == ["ConnectTimeout"] * 6
++        assert (http._trust_env, http.follow_redirects, http.timeout.connect, http.timeout.read) == (
++            False, False, 20, 5)
++
++
++def test_every_solver_and_role_client_is_built_without_a_connection_limit(tmp_path):
++    glm = client.solver_client(client.GLM_SOLVER, config=fake_config(tmp_path, client.GLM_SOLVER))
++    elucid = client.solver_client(client.ELUCID_MODEL, config=fake_config(tmp_path, client.ELUCID_MODEL))
++    northgate = client.solver_client(client.ELUCID_MODEL, config=route_b_config(tmp_path))
++    repo = fake_config(tmp_path, client.GLM_SOLVER)["repo"]
++    m = {"root": str(tmp_path), "clients": {
++        "solver": {"G": {"model": client.GLM_SOLVER, "env_path": repo, "proxy": probe.GATEWAY}},
++        "roles": {"model": protocol.ROLE_MODEL, "max_tokens": protocol.ROLE_MAX_TOKENS, "read_timeout": 600}}}
++    role = manifest._clients(m, "G", None)(protocol.ROLE_MODEL, None)
++    assert type(glm) is probe.Client and type(role) is probe.Client  # the frozen class, its httpx client rebuilt
++    assert (type(elucid), type(northgate)) == (client.ElucidClient, client.NorthgateClient)
++    for built, read in ((glm, 2400), (elucid, fake_config(tmp_path, client.ELUCID_MODEL)["read_timeout"]),
++                        (northgate, route_b_config(tmp_path)["read_timeout"]), (role, 600)):
++        http = built.http
++        found = pools(http)
++        assert found and all(pool._max_connections == sys.maxsize and pool._max_keepalive_connections == 20
++                             for pool in found)
++        assert (http._trust_env, http.follow_redirects, http.timeout.read) == (False, False, read)
++        assert len(http._mounts) == 1  # the gateway proxy, as the frozen constructor mounts it
++
++
++# --------------------------------------------------------------------------- model-written values: type guards
++ZOO = (None, True, False, 0, 7, -1, 2.5, "", "x", "strip_digits", "applies", "before_call", "c-q1", [], ["strip_digits"],
++       [[]], {}, {"strip_digits": True}, {"kind": "applies_true"}, [{"a": None}])
++PATHS = (("id",), ("trajectory",), ("hook",), ("claims_fix",), ("property",), ("property", "kind"),
++         ("property", "value"), ("property", "step"), ("nonvacuity",), ("nonvacuity", "mutation"),
++         ("nonvacuity", "withheld_expect"))
++GOOD_TEST = test_case("c-q1", "before_call", {"kind": "note_contains", "value": "17"}, mutation="strip_digits")
++CRASHED = {**GOOD_TEST, "nonvacuity": {"withheld_expect": False, "mutation": {"strip_digits": True}}}  # G/s3, r3
++
++
++def _set(value, path, item):
++    """``value`` (a JSON copy) with ``item`` at ``path``; None when a parent on the path is no longer an object."""
++    target = value
++    for key in path[:-1]:
++        target = target.get(key) if isinstance(target, dict) else None
++    if not isinstance(target, dict):
++        return None
++    target[path[-1]] = item
++    return value
++
++
++def anything(rng, depth=0):
++    """A random JSON value of the shapes a model may write."""
++    roll = rng.randrange(7 if depth < 3 else 4)
++    if roll == 0:
++        return rng.choice([None, True, False])
++    if roll == 1:
++        return rng.choice([0, 1, -1, 2.5, 4000, 10 ** 9])
++    if roll in (2, 3):
++        return rng.choice(ZOO[7:13] + ("new", "revision", "deletion", "narrowing", "searchqa", "fx-old", "x" * 700))
++    if roll == 4:
++        return [anything(rng, depth + 1) for _ in range(rng.randrange(4))]
++    keys = replay.TEST_KEYS + ("kind", "value", "mutation", "withheld_expect", "description", "hooks", "id", "benches")
++    return {rng.choice(keys): anything(rng, depth + 1) for _ in range(rng.randrange(4))}
++
++
++def test_validate_test_answers_every_written_value_with_a_registered_reason():
++    procedure = fixture("fx-note", source(NOTE), ("applies", "before_call"))
++    entries = {t["cell"]: replay.inputs_of(t) for t in qa_trajectories()}
++    assert replay.validate_test(GOOD_TEST, procedure, entries) is None
++    assert replay.validate_test(CRASHED, procedure, entries) == "mutation"  # main-v2's TypeError, 2026-10-24 00:01
++    for path in PATHS:
++        for item in ZOO:
++            test = _set(json.loads(json.dumps(GOOD_TEST)), path, item)
++            found = replay.validate_test(test, procedure, entries)
++            assert found is None or found in engineer.LINT_DETAILS, (path, item, found)
++    rng = random.Random(20261024)
++    for _ in range(3000):
++        test = json.loads(json.dumps(GOOD_TEST)) if rng.random() < 0.8 else anything(rng)
++        for _ in range(rng.randrange(1, 4)):
++            test = _set(test, rng.choice(PATHS), anything(rng)) or test if isinstance(test, dict) else test
++        found = replay.validate_test(test, procedure, entries)
++        assert found is None or found in engineer.LINT_DETAILS
++
++
++def test_random_change_entries_end_in_a_registered_refusal_and_never_raise():
++    rng = random.Random(1024)
++    parent = empty(step="s0", evidence=FIXTURE)
++    skeletons = (lambda: {"kind": "new", "description": "Lists numbers.", "hooks": ["applies", "before_call"],
++                          "max_note_chars": 1000, "replay_tests": [json.loads(json.dumps(GOOD_TEST))]},
++                 lambda: {"kind": "revision", "revises": "fx-old", "description": "Lists numbers.",
++                          "hooks": ["applies", "before_call"], "max_note_chars": 1000},
++                 lambda: {"kind": "deletion", "id": "fx-old"},
++                 lambda: {"kind": "narrowing", "id": "fx-old", "benches": ["searchqa"]})
++    paths = (("kind",), ("id",), ("revises",), ("benches",), ("description",), ("hooks",), ("header",),
++             ("max_note_chars",), ("replay_tests",), ("excluded_benches",), ("source",))
++    seen = set()
++    for _ in range(2000):
++        entry = rng.choice(skeletons)()
++        for _ in range(rng.randrange(1, 4)):
++            entry[rng.choice(paths)[0]] = anything(rng)
++        coded_ = isinstance(entry.get("kind"), str) and entry["kind"] in engineer.CODED
++        reply = engineer_reply({"changes": [entry]}, [source(NOTE)] if coded_ else [])
++        try:
++            entries, sources = engineer.parse(reply, lenient=True)
++        except engineer.Unparseable as error:
++            seen.add("unparseable:%s" % str(error).split(":")[0])
++            continue
++        for change in engineer.changes_of(entries, sources, SHA):
++            problem = engineer._structure(change, parent, set(), train=True)
++            assert problem is None or type(problem) is str
++            seen.add(problem)
++            if problem:
++                json.dumps(engineer._structure_detail(change, problem))
++            sealed = {"candidate_sha256": None, "engineer": {"dropped": [], "changes": [
++                {**change.to_json(), "attempts": [{"failed": "C1"}], "survived": False,
++                 "summary": engineer._summary(change)}]}}
++            line = step._line(1, sealed, None)
++            assert engineer._history_line(line, 2) and line["proposals"][0]["kind"] in engineer.EDIT_KINDS + (None,)
++    assert {"kind", "keys", "types", "target_not_in_parent"} <= seen
++
++
++@pytest.mark.parametrize("kind", [{"x": 1}, ["new"], None, 3])
++def test_a_fix_call_on_a_change_of_any_written_kind_never_raises(tmp_path, workers, kind):
++    fixed = reply_of(coded("Lists the numbers of the question.", NOTE))
++    ctx, glm = train_context(tmp_path, workers, answering(fixed, fixes=[fixed]))
++    change = engineer.Change(1, kind, {"kind": kind, "description": "x"}, None, SHA)
++    report = engineer.check(change, ctx)
++    assert report["failed"] == "C1" and report["checks"][0]["detail"]["problem"] == "kind"
++    assert engineer._fix(ctx, change, report, attempt=1) == (None, "another kind or target than the change to fix")
++
++
++def test_main_v2s_crashing_replay_test_is_an_invalid_test_in_the_lint(tmp_path, workers):
++    proposal = reply_of(coded("Lists the numbers of the question.", NOTE, replay_tests=[CRASHED]))
++    ctx, glm = train_context(tmp_path, workers, answering(proposal))
++    package, sealed = engineer.run_train(ctx)
++    sealed = verified(sealed, "engineer")
++    assert sealed["changes"][0]["survived"] and package is not None
++    (lint,) = sealed["lint"]
++    assert {"reason": "invalid_test", "test": 1, "detail": "mutation"} in lint["problems"]
++
++
++# ------------------------------------------------------------------------------------- fix calls without echo
++FINDING = {"pattern": "The solver overlooks part of the item.", "items": ["q1", "m1"], "helper": "List the parts."}
++REASON = "It names Ludwig Beethoven, the expected answer."
++
++
++def answering(proposal, fixes=(), verdict="no"):
++    """The analysts name one finding; the engineer proposes ``proposal`` and answers fix calls from ``fixes``; the
++    leakage adjudicator answers ``verdict`` with ``REASON``."""
++    fixes = list(fixes)
++
++    def answer(system, payload):
++        if system == engineer.ANALYST_SYSTEM:
++            return engineer_reply({"findings": [FINDING]}, [])
++        if system == engineer.ENGINEER_SYSTEM_V2:
++            return fixes.pop(0) if payload["request"] == "fix" else proposal
++        return {"verdict": verdict, "reason": REASON}
++
++    return answer
++
++
++def fix_calls(glm):
++    return [payload for system, payload in glm.seen if system == engineer.ENGINEER_SYSTEM_V2
++            and payload["request"] == "fix"]
++
++
++@pytest.mark.parametrize("echo", [True, False])
++def test_a_fix_call_shows_a_failed_c9_with_or_without_the_matched_term(tmp_path, workers, echo):
++    lexicon = reply_of(coded("Tells the solver how to reply.", LEXICON))
++    ctx, glm = train_context(tmp_path, workers, answering(lexicon, fixes=[reply_of(coded("Counts words.", WORDS))]),
++                             echo=echo)
++    package, sealed = engineer.run_train(ctx)
++    change = verified(sealed, "engineer")["changes"][0]
++    assert change["attempts"][0]["failed"] == "C9" and change["survived"]
++    recorded = change["attempts"][0]["checks"][-1]["detail"]
++    assert all("detail" in fault for fault in recorded)  # the sealed record keeps the matched term
++    (shown,) = fix_calls(glm)
++    assert shown["failed"]["check"] == "C9"
++    if echo:
++        assert shown["failed"]["detail"] == recorded
++    else:
++        assert shown["failed"]["detail"] == [{k: f[k] for k in ("cell", "hook", "step", "kind")} for f in recorded]
++
++
++@pytest.mark.parametrize("echo", [True, False])
++def test_a_fix_call_shows_a_failed_leakage_check_with_or_without_texts_and_reason(tmp_path, workers, echo):
++    composer = reply_of(coded("Names the composer of a sonata.", COMPOSER))
++    ctx, glm = train_context(tmp_path, workers, answering(composer, fixes=[reply_of(coded("Counts words.", WORDS))],
++                                                          verdict="yes"), echo=echo)
++    package, sealed = engineer.run_train(ctx)
++    change = verified(sealed, "engineer")["changes"][0]
++    recorded = change["attempts"][0]["checks"][-1]
++    assert recorded["check"] == "C4" and not recorded["passed"] and recorded["detail"]["adjudicator_reason"] == REASON
++    assert all("text" in hit for hit in recorded["detail"]["hits"]) and change["survived"]
++    (shown,) = fix_calls(glm)
++    detail = shown["failed"]["detail"]
++    if echo:
++        assert detail == recorded["detail"]
++    else:
++        assert "adjudicator_reason" not in detail and not any("text" in hit for hit in detail["hits"])
++        assert detail["hits"] == [{k: h[k] for k in ("where", "bench", "reasons")} for h in recorded["detail"]["hits"]]
++        assert "Beethoven" not in json.dumps(shown["failed"]) and detail["kept"] is False
++
++
++def test_a_fix_call_shows_a_static_ban_by_its_rule_and_line_only(tmp_path, workers):
++    meta = reply_of(coded("Points at the meta option.", META))
++    ctx, glm = train_context(tmp_path, workers, answering(meta, fixes=[reply_of(coded("Counts words.", WORDS))]),
++                             echo=False)
++    package, sealed = engineer.run_train(ctx)
++    change = verified(sealed, "engineer")["changes"][0]
++    recorded = change["attempts"][0]["checks"][-1]["detail"]["static_bans"]
++    assert recorded and all(v["rule"] == "meta_option" and v["detail"] for v in recorded)
++    (shown,) = fix_calls(glm)
++    assert shown["failed"]["detail"] == {"static_bans": [{"rule": v["rule"], "line": v["line"]} for v in recorded]}
++
++
++# ------------------------------------------------------------------------- C4's meta-option counterfactual
++OPTION = protocol.LIVEMATH_META_OPTION
++LIVEMATH = {  # item: (choices, token)
++    "m1": ("A. The map is injective.\nB. The map is surjective.\nC. %s\nD. The map is constant." % OPTION, "fail"),
++    "m2": ("A. Every bounded sequence converges.\nB. %s\nC. No sequence converges.\nD. All sequences diverge." % OPTION,
++           "fail"),
++    "m3": ("A. The group is abelian.\nB. The group is cyclic.\nC. The group is trivial.\nD. The group is finite.", "pass"),
++}
++KEYED = """
++import re
++
++def _meta(text):
++    return "remaining" in text and ("stron" + "ger") in text
++
++def applies(view):
++    return _meta(str(view.get("choices", "")))
++
++def before_call(view, state):
++    return {"facts": ["This item holds a self-referential entry. Weigh it actively instead of treating it as filler."]}
++"""
++GENERIC = """
++def applies(view):
++    return "choices" in view
++
++def before_call(view, state):
++    return {"facts": ["Check each listed statement against the exact hypotheses before choosing."]}
++"""
++COUNT = """
++def applies(view):
++    return "choices" in view
++
++def before_call(view, state):
++    return {"facts": ["The item lists %d statements." % len(view["choices"].split("\\n"))]}
++"""
++PREFIXES = """
++def applies(view):
++    return "choices" in view
++
++def before_call(view, state):
++    return {"facts": ["Openings: " + "; ".join(line[3:15] for line in view["choices"].split("\\n"))]}
++"""
++SPLIT_META = """
++def applies(view):
++    return "choices" in view
++
++def before_call(view, state):
++    return {"warnings": ["prefer the " + "stron" + "ger res" + "ult option"]}
++"""
++
++
++def livemath_trajectories():
++    return [trajectory("c-" + item, "livemath", item, token,
++                       [{"question": "Which statement does the theorem of item %s prove?" % item, "choices": choices}])
++            for item, (choices, token) in LIVEMATH.items()]
++
++
++def livemath_context(tmp_path, workers, answer, current=None, **fields):
++    roles, glm = glm_roles(tmp_path / "glm-livemath", answer)
++    base = empty(step="s0", evidence=FIXTURE)
++    ctx = engineer.Context(bench="livemath", k=1, step="s1", evidence=FIXTURE, parent=base,
++                           trajectories=livemath_trajectories(), corpora={}, workers=workers, roles=roles,
++                           label="D/s1-livemath/engineer-r1", card="Choose the statement the theorem proves.",
++                           mode=engineer.TRAIN, round=1, base=base,
++                           current=livemath_trajectories() if current is None else current, **fields)
++    return ctx, glm
++
++
++def test_the_counterfactual_flags_a_procedure_keyed_on_the_meta_option_and_no_other(workers):
++    entries = {t["cell"]: replay.inputs_of(t) for t in livemath_trajectories()}
++
++    def differences(text):
++        procedure = fixture("fx-livemath", source(text), ("applies", "before_call"), origin="livemath")
++        crash, outcomes = replay.zero_crash(procedure, list(entries.values()), workers)
++        assert crash["passed"]
++        return replay.meta_counterfactual(procedure, entries, outcomes, workers)
++
++    assert differences(KEYED) == [{"cell": "c-m1", "kind": "meta_counterfactual", "aspects": ["applies", "notes"]},
++                                  {"cell": "c-m2", "kind": "meta_counterfactual", "aspects": ["applies", "notes"]}]
++    assert differences(GENERIC) == differences(COUNT) == []
++    # the registered limit: a note that carries part of the option's text (here: its first words) differs as well;
++    # only a whole verbatim quote maps back, which no LiveMath note field can hold unscreened (a table cell holds 40)
++    assert [d["aspects"] for d in differences(PREFIXES)] == [["notes"], ["notes"]]
++    quoted = [{"hook": "before_call", "step": None, "text": "Quoted: " + OPTION, "public": ""}]
++    real = replay.Outcome("c-m1", "livemath", applies=True, notes=quoted)
++    counter = replay.Outcome("c-m1", "livemath", applies=True, notes=[
++        {**quoted[0], "text": "Quoted: " + protocol.META_FILLER}])
++    assert replay._behaviour(real) == replay._behaviour(counter, mapped=True) != replay._behaviour(counter)
++    assert replay.meta_counterfactual(fixture("fx-livemath", source(KEYED), ("applies", "before_call")),
++                                      {c: e for c, e in entries.items() if c == "c-m3"}, {}, workers) == []
++
++
++@pytest.mark.parametrize("counterfactual", [False, True])
++def test_c4_fails_a_keyed_procedure_only_with_the_counterfactual(tmp_path, workers, counterfactual):
++    ctx, glm = livemath_context(tmp_path, workers, answering(""), counterfactual=counterfactual)
++    (change,) = engineer.changes_of(*engineer.parse(reply_of(coded("Weighs a self-referential entry.", KEYED)),
++                                                    lenient=True), SHA)
++    report = engineer.check(change, ctx)
++    if counterfactual:
++        assert report["failed"] == "C4" and report["checks"][-1]["detail"] == {"output_bans": [
++            {"cell": "c-m1", "kind": "meta_counterfactual", "aspects": ["applies", "notes"]},
++            {"cell": "c-m2", "kind": "meta_counterfactual", "aspects": ["applies", "notes"]}]}
++    else:  # main-v2: nothing stops it before acceptance's J7
++        assert report["passed"]
++
++
++def test_a_training_round_of_main_v2_1_redacts_the_counterfactual_and_takes_the_fix(tmp_path, workers):
++    keyed = reply_of(coded("Weighs a self-referential entry.", KEYED))
++    ctx, glm = livemath_context(tmp_path, workers, answering(keyed, fixes=[reply_of(coded("Checks hypotheses.",
++                                                                                          GENERIC))]),
++                                echo=False, counterfactual=True)
++    package, sealed = engineer.run_train(ctx)
++    change = verified(sealed, "engineer")["changes"][0]
++    assert [a["failed"] for a in change["attempts"]] == ["C4", None] and change["survived"]
++    (shown,) = fix_calls(glm)
++    assert shown["failed"]["detail"] == {"rule": engineer.COUNTERFACTUAL_RULE, "output_bans": [
++        {"cell": "c-m1", "kind": "meta_counterfactual", "aspects": ["applies", "notes"]},
++        {"cell": "c-m2", "kind": "meta_counterfactual", "aspects": ["applies", "notes"]}]}
++    assert package is not None and package.procedures[0].description == "Checks hypotheses."
++
++
++@pytest.mark.parametrize("echo", [True, False])
++def test_a_screened_meta_option_note_reaches_the_fix_call_without_its_matched_phrase(tmp_path, workers, echo):
++    split = reply_of(coded("Points the solver at an option.", SPLIT_META))
++    ctx, glm = livemath_context(tmp_path, workers, answering(split, fixes=[reply_of(coded("Checks hypotheses.",
++                                                                                          GENERIC))]),
++                                echo=echo, counterfactual=True)
++    package, sealed = engineer.run_train(ctx)
++    change = verified(sealed, "engineer")["changes"][0]
++    recorded = change["attempts"][0]["checks"][-1]["detail"]["output_bans"]
++    assert {b["kind"] for b in recorded} == {"note_meta_option"} and all(b["detail"] for b in recorded)
++    (shown,) = fix_calls(glm)
++    if echo:
++        assert shown["failed"]["detail"] == {"output_bans": recorded}
++    else:
++        assert shown["failed"]["detail"] == {"output_bans": [
++            {"cell": b["cell"], "hook": b["hook"], "step": b["step"], "kind": "note_meta_option"} for b in recorded]}
++        assert "stronger" not in json.dumps(shown["failed"])
++
++
++# ----------------------------------------------------------------------------- Codex review 2026-10-24 (#1-#3)
++def test_the_research_wikipedia_client_has_no_connection_limit_either(stalling):
++    """#1: the chain's Wikipedia client goes through the same gateway, so its pool had the same leak."""
++    wikipedia = research.Wikipedia(proxy=stalling.url, timeout=0.3)
++    http = wikipedia.client
++    assert pools(http) and all(pool._max_connections == sys.maxsize and pool._max_keepalive_connections == 20
++                               for pool in pools(http))
++    found = []
++    for _ in range(4):
++        with pytest.raises(research.FetchError) as error:
++            wikipedia._get({"action": "query"})
++        found.append(str(error.value))
++    assert found == ["transport:ConnectTimeout"] * 4
++    assert (http._trust_env, http.follow_redirects, http.headers["User-Agent"]) == (False, False, research.USER_AGENT)
++
++
++@pytest.mark.parametrize("edit, reason", [({"cell": "A1048577", "formula": "=SUM(A1)"}, "edit_target_invalid"),
++                                          ({"cell": "XFE1", "formula": "=SUM(A1)"}, "edit_target_invalid"),
++                                          ({"cell": "A3", "formula": "=SUM(A1)\x01"}, "format")])
++def test_a_written_edit_outside_the_worksheet_or_unstorable_is_a_registered_drop(tmp_path, edit, reason):
++    """#2: the first edit raised openpyxl's ValueError and the third its IllegalCharacterError past the family's
++    validation, which ``generate`` does not catch; each is now a registered drop before any file is written."""
++    fake = FakeEngine()
++    made = generated_items(sheet.FAMILY, [{"edits": [edit]}], sheet_functions(), engine=fake.engine(),
++                           source_items=[_sheet_item(tmp_path / "items")], out_dir=tmp_path / "generated")
++    assert made["items"] == [] and made["dropped"] == {reason: 1} and fake.log == []
++    assert not (tmp_path / "generated").exists() or list((tmp_path / "generated").iterdir()) == []
++
++
++HIT = "one of the remaining"
++
++
++def screened(t):
++    """``t`` resealed with a shell that recorded two screen hits -- the faults and the dropped fields, as the solver
++    shell writes them -- beside a crash and a field over its cap."""
++    shell = dict(t["shell"], faults=[
++        {"procedure": "p-old", "hook": "before_call", "kind": "note_meta_option", "exc_type": None, "message": HIT},
++        {"procedure": "p-old", "hook": "before_call", "kind": "note_lexicon", "exc_type": None, "message": "answer is"},
++        {"procedure": "p-new", "hook": "before_call", "kind": "exception", "exc_type": "KeyError", "message": "'x'"}],
++        notes=[{"id": "p-old", "hook": "before_call", "fields": {}, "rendered_chars": 0, "dropped": [
++            {"field": "warnings", "reason": "meta_option", "detail": HIT},
++            {"field": "facts", "reason": "lexicon", "detail": "answer is"},
++            {"field": "candidates", "reason": "cap", "detail": ""}]}])
++    fields = {k: v for k, v in t.items() if k not in ("version", "evidence", protocol.RECORD_HASH)}
++    return protocol.record("trajectory", t["evidence"], dict(fields, shell=shell))
++
++
++def test_with_echo_off_a_shown_trajectory_keeps_the_screens_kinds_and_leaves_out_their_matches():
++    """#3: the message of a screen fault and the detail of a screened field are the matched texts."""
++    t = screened(livemath_trajectories()[0])
++    on, off = engineer._shown_view("failures", t, {}), engineer._shown_view("failures", t, {}, False)
++    assert on["shell"] == whitelisted(t)["shell"]  # echo on (every configuration but main-v2-1): unchanged
++    assert [f["message"] for f in off["shell"]["faults"]] == [None, None, "'x'"]
++    assert [f["kind"] for f in off["shell"]["faults"]] == [f["kind"] for f in on["shell"]["faults"]]
++    assert [d["detail"] for d in off["shell"]["notes"][0]["dropped"]] == [None, None, ""]
++    assert [d["reason"] for d in off["shell"]["notes"][0]["dropped"]] == ["meta_option", "lexicon", "cap"]
++    assert {k: v for k, v in off.items() if k != "shell"} == {k: v for k, v in on.items() if k != "shell"}
++    assert HIT not in json.dumps(off["shell"]) and "answer is" not in json.dumps(off["shell"])
++
++
++@pytest.mark.parametrize("echo", [True, False])
++def test_the_proposal_and_analyst_calls_show_the_screens_matches_only_with_echo(tmp_path, workers, echo):
++    """#3 end to end: a training round's analyst and proposal calls over trajectories with screen hits."""
++    ctx, glm = livemath_context(tmp_path, workers, answering(reply_of(coded("Checks hypotheses.", GENERIC))),
++                                current=[screened(t) for t in livemath_trajectories()], echo=echo,
++                                counterfactual=not echo)
++    engineer.run_train(ctx)
++    shown = [(payload["request"], t) for system, payload in glm.seen
++             if system in (engineer.ANALYST_SYSTEM, engineer.ENGINEER_SYSTEM_V2)
++             and payload.get("request") in ("analyse", "propose") for t in payload["trajectories"]]
++    assert {request for request, _ in shown} == {"analyse", "propose"}
++    messages = {f["message"] for _, t in shown for f in t["shell"]["faults"]}
++    details = {d["detail"] for _, t in shown for n in t["shell"]["notes"] for d in n["dropped"]}
++    if echo:
++        assert messages == {HIT, "answer is", "'x'"} and details == {HIT, "answer is", ""}
++    else:
++        assert messages == {None, "'x'"} and details == {None, ""}

@@ -145,7 +145,7 @@ from .protocol import (BAND_ROUNDS, BENCHES, CELL_ANCHORS, CHAINS, EARLIER_SET_M
                        MDE_POINTS, CONFIG_CAP_FACTOR, CONFIGURATIONS, NOTES_KEY, RECORD_HASH, ROLE_MAX_TOKENS,
                        ROLE_MODEL, S4_SLICES, SEED, SX_SLICES, TOPUP_ROUNDS, TRAIN_ADOPT_SHARE, TRAIN_ALPHA,
                        TRAIN_EXAMPLES, TRAIN_FORMAT_MARGIN, TRAIN_PATIENCE, TRAIN_ROUNDS, TRAIN_TEXT_CHARS,
-                       configuration_of, learning_of, namespace_of, order_of,
+                       configuration_of, learning_of, namespace_of, order_of, FIX_ECHO, META_COUNTERFACTUAL,
                        SELFTEST_ALPHA, SELFTEST_FAULT_MAX, SELFTEST_FORMAT_MARGIN, SELFTEST_PASSES, SLICES,
                        SMOKE_SOLVER, generator_seed, ledger_bound, record, round_tag, verified)
 from .registry import HELD, run_identity
@@ -1179,7 +1179,9 @@ def _engineer_train(st, cut, r, incumbent, *, done, fed, history, training, lint
                                    previous=_previous(st), mode=TRAIN, round=r, base=st.parent, current=current,
                                    evaluated=evaluated, history=list(history), training=training, lint=list(lint),
                                    reserved=frozenset(reserved), analysed=frozenset(analysed),
-                                   disclosed=frozenset(disclosed))
+                                   disclosed=frozenset(disclosed),
+                                   echo=FIX_ECHO[configuration_of(st.setting)],  # v2.1: main-v2-1 redacts
+                                   counterfactual=META_COUNTERFACTUAL[configuration_of(st.setting)])
             candidate, sealed = engineer.run_train(ctx)
         if candidate is not None:
             save(st.chain_root, candidate)
