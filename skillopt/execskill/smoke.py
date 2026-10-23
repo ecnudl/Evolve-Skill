@@ -114,7 +114,9 @@ from .registry import Registry
 from .sandbox import client as sandbox
 
 SPEC, RESULT, STAGES_DIR = "smoke.json", "smoke-result.json", "stages"
-STAGES = ("S0", "S1", "S2", "SN1", "SE6", "S3", "S4")
+STAGES = ("S0", "S1", "S2", "SN1", "SE6", "S3", "S4", "SX")  # SX: v2's example (owner decision 2026-10-23 13:3x)
+V1_STAGES = tuple(stage for stage in STAGES if stage != "SX")  # Codex review 2026-10-23 #2: a spec that does not
+# list SX serializes, defaults and sums up exactly as before v2
 SMOKE_STAGES = ("S0", "S1", "S2", "S3", "SE6")  # registrar addendum 2026-10-22 13:0x (owner): the stages that gate
 # registrar addendum 2026-10-23 02:3x ("smoke solver chain"): a chain-G smoke has no S1 -- chain D's elucid probe stays
 # chain D's launch precondition -- and gates on every other registered smoke stage
@@ -131,6 +133,7 @@ S1_ROWS = ("a", "b", "c", "d", "e", "f")
 REHEARSAL_EVIDENCE = "engineering_fixture"
 S3_ROWS = ("engineer", "detector", "generator_research", "leakage", "describer", "glm_cap")  # smoke_roles.ran_rows
 S4_ROWS = ("unit", "consumption", "sealing", "redo")
+SX_ROWS = ("unit", "training", "acceptance", "consumption", "ledger")  # v2's example (``sx_judged``)
 ARMS = ("C", "X", "P")  # §10 S2: card, fixture package, its placebo (plus twin cells)
 COMPARED = ("X", "P")
 PRODUCTION_STAGES = ("S2", "SN1", "S4")
@@ -147,6 +150,7 @@ PLAN = {  # §10: items x runs x arms per stage (ALFWorld trimmed to 6 games x 1
     "SN1": {"searchqa": {"items": 200, "runs": 1, "arms": ["C", "C_dup"]},
             "alfworld": {"items": 6, "runs": 1, "arms": ["C", "C_dup"]}},
     "S4": {"searchqa": {"run": protocol.S4_SLICES["run"], "accept": protocol.S4_SLICES["accept"]}},
+    "SX": {"searchqa": {"run": protocol.SX_SLICES["run"], "accept": protocol.SX_SLICES["accept"]}},
 }
 
 # ------------------------------------------------------------------------------- the S0 sandbox self-test (§2.6)
@@ -187,7 +191,8 @@ def make(root, *, items, selftest, control_cells=(), noise_anchor=None, stages=N
     registrar addendum 13:4x); ``noise_anchor``: {bench: the registered per-item SD of a same-text paired difference}
     for S-N1, required when S-N1 is one of ``stages``, else optional (None: recorded null with the reason
     ``TRIMMED``); ``stages``: the stages ``summary`` passes on, recorded in the spec (default ``SMOKE_STAGES``, plus
-    S-N1 and/or S4 if listed); ``write`` False: a dry run that writes nothing; ``probe_root``: the S1 probe's own
+    S-N1 and/or S4 if listed; v2: SX, the example of the train-then-accept step, whose smoke ledger then has the
+    example caps ``budgets.smoke_caps(example=True)``); ``write`` False: a dry run that writes nothing; ``probe_root``: the S1 probe's own
     ledger root, apart from the smoke root (default ``protocol.PROBE_ROOT``; a rehearsal names its own, registrar
     addendum 15:0x), where ``run_probe`` writes and S2 reads the probe's receipts; ``solver_chain`` (registrar addendum
     2026-10-23 02:3x, ``protocol.SMOKE_SOLVER_CHAINS``): "D", the registered default, whose specification is
@@ -237,7 +242,8 @@ def make(root, *, items, selftest, control_cells=(), noise_anchor=None, stages=N
         "model": model, "M": {b: protocol.solver_tokens(model, b) for b in protocol.BENCHES},
         "read_timeout": {b: protocol.read_timeout(model, b) for b in protocol.BENCHES}, "proxy": protocol.GATEWAY,
         **elucid_only, "response_model_ids": sorted(FIRST_CALL_ECHO[solver_chain])},
-        "caps": {"smoke": budgets.smoke_caps(), "probe": budgets.probe_caps()}, "items": bound, "plan": PLAN,
+        "caps": {"smoke": budgets.smoke_caps(example="SX" in stages), "probe": budgets.probe_caps()}, "items": bound,
+        "plan": plan_of(stages),
         "format": {"floor": _fraction(protocol.SMOKE_FORMAT_FLOOR), "margin": _fraction(protocol.SMOKE_FORMAT_MARGIN)},
         "min_production_receipts": protocol.MIN_PRODUCTION_RECEIPTS, "control_cells": sorted(control_cells),
         "stages": list(stages), "noise_anchor": noise_anchor,
@@ -250,6 +256,11 @@ def make(root, *, items, selftest, control_cells=(), noise_anchor=None, stages=N
         root.mkdir(parents=True, exist_ok=True)
         write_json(root / SPEC, spec)
     return spec
+
+
+def plan_of(stages):
+    """The spec's plan: ``PLAN``, without SX's entry unless ``stages`` lists SX (Codex review 2026-10-23 #2)."""
+    return {stage: plan for stage, plan in PLAN.items() if stage != "SX" or "SX" in stages}
 
 
 def load(path):
@@ -273,7 +284,7 @@ def solver_of(spec):
 
 def _has_s1(spec):
     """S1 is a stage of this smoke (every chain D smoke; never a chain-G one, registrar addendum 2026-10-23 02:3x)."""
-    return "S1" in spec.get("stages", STAGES)
+    return "S1" in spec.get("stages", V1_STAGES)
 
 
 def require_s1(spec):
@@ -502,8 +513,9 @@ def s4_ministep(ran):
 def summary(spec):
     """``smoke-result.json`` (zero calls): pass/fail per stage and per registered row of every recorded stage. The
     smoke passes when every stage of the spec's ``stages`` (``SMOKE_STAGES`` by default; a spec without the list: all
-    of ``STAGES``) is recorded and passed, else it fails; any fail means no pilot (§10 exit). A stage outside the list
-    is ``not_required`` until it is recorded and never gates (registrar addendum 13:0x: S-N1 and S4 may still run).
+    of ``V1_STAGES``) is recorded and passed, else it fails; any fail means no pilot (§10 exit). A stage outside the
+    list is ``not_required`` until it is recorded and never gates (registrar addendum 13:0x: S-N1 and S4 may still
+    run); SX is reported only by a spec that lists it (Codex review 2026-10-23 #2).
     Written once, when every listed stage is recorded; from then on the written result is returned. Its evidence is
     ``REHEARSAL_EVIDENCE`` when any recorded stage is a rehearsal's (registrar addendum 15:0x), else "smoke"."""
     root = safe_path(spec["root"])
@@ -511,9 +523,10 @@ def summary(spec):
         value = protocol.verified(read_json(root / RESULT), "smoke-result")
         require(value["spec"] == spec[protocol.RECORD_HASH], "The result of another smoke")
         return value
-    required = tuple(spec.get("stages", STAGES))
+    required = tuple(spec.get("stages", V1_STAGES))
+    reported = V1_STAGES + (("SX",) if "SX" in required else ())
     found, rows = {}, {}
-    for stage in STAGES:
+    for stage in reported:
         path = root / STAGES_DIR / (stage + ".json")
         value = protocol.verified(read_json(path), "smoke-stage") if path.exists() else None
         require(value is None or value["spec"] == spec[protocol.RECORD_HASH], "A stage of another smoke")
@@ -522,7 +535,7 @@ def summary(spec):
         else:
             found[stage] = "pass" if value["result"]["passed"] else "fail"
             rows[stage] = {row: "pass" if ok else "fail" for row, ok in sorted(value["result"]["rows"].items())}
-    result = protocol.record("smoke-result", _evidence_of(spec, STAGES), {  # a rehearsal's stage: a fixture result
+    result = protocol.record("smoke-result", _evidence_of(spec, reported), {  # a rehearsal's stage: a fixture result
         "spec": spec[protocol.RECORD_HASH], "stages": found, "required": list(required), "rows": rows,
         "passed": all(found[stage] == "pass" for stage in required)})
     if all(found[stage] != "missing" for stage in required):  # a smoke still running is reported, not sealed
@@ -542,7 +555,8 @@ def _waiver_pairs(pairs):
 def waiver(root, result):
     """Registrar addendum 2026-10-23 05:3x (zero calls, writes nothing): the owner's smoke waiver of ``result``, the
     sealed ``smoke-result`` of the smoke at ``root``: ``<root>/shared/owner-smoke-waiver.json``
-    (``protocol.SMOKE_WAIVER``), which only the owner writes. None when the file is absent; else -- fail closed, any
+    (``protocol.SMOKE_WAIVER``; for a smoke that requires v2's example SX ``protocol.SMOKE_WAIVER_V2``,
+    ``waiver_name``), which only the owner writes. None when the file is absent; else -- fail closed, any
     violation raises -- {"sha256": the sha256 of the file's bytes, "rows": the waived rows}. The file holds exactly
     ``decision`` ("waive"), ``smoke_result`` (``result``'s record hash), ``rows`` (a sorted, unique, non-empty list
     of "STAGE.row" within ``protocol.WAIVABLE_SMOKE_ROWS`` and exactly the failing rows of the result's required
@@ -550,13 +564,14 @@ def waiver(root, result):
     rows only, and S-E6 is required and passed. A waiver beside a passed result is refused (a passed smoke needs
     none). The whole waiver path is checked before anything is read (Codex G2, registrar G2b): a symlink in it or in
     its parents, dangling or not, is refused, never read and never taken as absent; the waiver is a regular file."""
-    path = safe_path(safe_path(root) / protocol.SMOKE_WAIVER)  # G2b: no symlink in the waiver path or its parents
+    result = protocol.verified(result, "smoke-result")
+    name = waiver_name(result)
+    path = safe_path(safe_path(root) / name)  # G2b: no symlink in the waiver path or its parents
     if not os.path.lexists(path):
         return None
     require(path.is_file(), "The owner's smoke waiver is a regular file")
-    result = protocol.verified(result, "smoke-result")
     require(result["passed"] is not True, "A passed smoke needs no waiver: %s beside a passed smoke-result is refused"
-            % protocol.SMOKE_WAIVER)
+            % name)
     raw = path.read_bytes()
     value = json.loads(raw.decode("utf-8"), object_pairs_hook=_waiver_pairs)
     require(isinstance(value, dict) and set(value) == WAIVER_KEYS,
@@ -585,6 +600,13 @@ def waiver(root, result):
     require(all(any(row.partition(".")[0] == stage for row in rows) for stage in required if stages[stage] == "fail"),
             "Every failing required stage of a waived smoke fails on a waived row")
     return {"sha256": hashlib.sha256(raw).hexdigest(), "rows": list(rows)}
+
+
+def waiver_name(result):
+    """The owner's waiver file of a smoke result: ``protocol.SMOKE_WAIVER``; for a smoke that requires v2's example SX
+    ``protocol.SMOKE_WAIVER_V2`` (a v2 smoke reuses the registered smoke root, where the earlier smoke's waiver
+    stays)."""
+    return protocol.SMOKE_WAIVER_V2 if "SX" in result["required"] else protocol.SMOKE_WAIVER
 
 
 # ------------------------------------------------------------------------------- S0: the sandbox self-test
@@ -852,7 +874,7 @@ class _DrilledWorker(sandbox.Worker):
 
 
 # --------------------------------------------------------------------------- the stage runs: S2 and S-N1 (§10)
-BUILT_STAGES = ("S2", "SN1", "SE6", "S3", "S4")  # run_stage (S3: smoke_roles.run, notes/C7d.md; ticket C7d-1)
+BUILT_STAGES = ("S2", "SN1", "SE6", "S3", "S4", "SX")  # run_stage (S3: smoke_roles.run, notes/C7d.md; ticket C7d-1)
 UNITS_DIR = "units"  # <root>/units/<stage>/<set>: one copied unit per stage and item set
 CONFIRM_ARM = "C_confirm"  # the single production cell whose confirmed reply precedes any concurrency (plan §10 step 4)
 DUP_ARM = "C_dup"  # S-N1: the second, identical card arm
@@ -1137,14 +1159,15 @@ def _probe_entries(spec):
 
 
 @contextlib.contextmanager
-def _backends(spec, m, manifest_path, *, fake, env_path, roles_repo):
+def _backends(spec, m, manifest_path, *, fake, env_path, roles_repo, answer=None):
     """(Setting, docker) of the smoke from the verified manifest (``manifest.setting_of(m, "smoke")``: the smoke
     solver's block, ``solver_of``). Real: the smoke solver's credential -- chain D's elucid credential file; in a
     chain-G smoke (registrar addendum 2026-10-23 02:3x) the GLM credential repository, the manifest's chain G
     ``env_path``, so ``env_path`` and ``roles_repo`` name the same repository -- and the roles' credential repository
     must be named explicitly and be the manifest's (so nothing is sent by accident), the code map and image are
-    verified. ``fake`` (plan §7): FakeDocker, the scripted gateway of the smoke solver's model, FakeAlfEnv and
-    FakeNative from ``tests/`` (imported only here), zero network."""
+    verified. ``fake`` (plan §7): FakeDocker, the scripted gateway of the smoke solver's model (``answer``, default
+    ``_rehearsal_reply``; SX's: ``_sx_rehearsal``), FakeAlfEnv and FakeNative from ``tests/`` (imported only here), zero
+    network."""
     solvers, ours = m["clients"]["solver"], solver_of(spec)
     if not fake:
         named = "" if ours.chain == "D" else " (a chain-G smoke: chain G's credential repository as both)"
@@ -1162,7 +1185,7 @@ def _backends(spec, m, manifest_path, *, fake, env_path, roles_repo):
 
     root = safe_path(spec["root"])
     docker = fake_docker.FakeDocker(root / "rehearsal-docker")
-    provider = fakes.FakeProvider(ours.model, _rehearsal_reply)
+    provider = fakes.FakeProvider(ours.model, answer or _rehearsal_reply)
     native = fake_env.FakeNative()
     saved = backends._new_alfworld, backends._native, precheck.precheck
     backends._new_alfworld = lambda public, runtime: fake_env.FakeAlfEnv(
@@ -1209,15 +1232,24 @@ def run_stage(spec, manifest_path, stage, *, fake=False, env_path=None, roles_re
     if fake:
         rehearsal_roots(spec)  # registrar addendum 15:0x: a rehearsal never records into the registered smoke root
     evidence = REHEARSAL_EVIDENCE if fake else manifest.SMOKE_EVIDENCE
+    if stage == "SX":  # v2's example: listed by the spec, after S-E6 (whose ledger ratio it must not move)
+        require("SX" in spec["stages"] and (safe_path(spec["root"]) / STAGES_DIR / "SE6.json").exists()
+                and protocol.LEARNING[m["configuration"]] == "train",
+                "SX runs in a smoke that lists it, after S-E6, on a manifest of a train configuration (main-v2)")
     if stage == "SE6":  # zero calls: a rehearsal's when it reads a rehearsal's S2 or S3
         found = evidence if fake else _evidence_of(spec, SE6_STAGES)
         return record(spec, stage, se6_projection(spec, m), evidence=found)
     if stage == "S3":  # the method roles, on their own backends (notes/C7d.md)
         from . import smoke_roles
         return smoke_roles.run(spec, m, manifest_path, fake=fake, env_path=env_path, roles_repo=roles_repo)
-    with _backends(spec, m, manifest_path, fake=fake, env_path=env_path, roles_repo=roles_repo) as (setting, docker):
+    rehearsal = _sx_rehearsal() if fake and stage == "SX" else None
+    with _backends(spec, m, manifest_path, fake=fake, env_path=env_path, roles_repo=roles_repo,
+                   answer=rehearsal.script if rehearsal else None) as (setting, docker):
         if stage == "S4":
             return _s4(spec, m, setting, evidence=evidence)
+        if stage == "SX":
+            return _sx(spec, m, setting, evidence=evidence,
+                       transport=rehearsal.wikipedia.transport if rehearsal else None)
         results, confirm = [], True
         try:
             for name in [n for n in ITEM_SETS if n in PLAN[stage]]:
@@ -1268,6 +1300,33 @@ MAX_ROLE_CALLS = {
     "examiner_research": protocol.MAX_RESEARCH_REQUESTS * protocol.RESEARCH_MAX_CALLS,  # 24 requests x 8 calls
 }
 CARD, PROCEDURE = "card", "procedure"  # a cell with no procedure enabled is a card cell (§9.1: x1 / x1.25-1.6)
+
+
+def max_role_calls(configuration=protocol.PILOT):
+    """The maximum calls per step and bench of each method role in a run configuration: ``MAX_ROLE_CALLS``; in a
+    train configuration (main-v2, owner decision 2026-10-23 13:3x) ``TRAIN_ROUNDS`` engineer units of
+    ``TRAIN_ENGINEER_CALLS`` calls and ``TRAIN_ANALYST_CALLS`` analyst calls each, at most one leakage judge call per
+    check -- per unit its ``MAX_CHANGES``
+    first checks and one after each fix call, all calls but one proposal being fix calls --, the same describer calls,
+    and the examiner's v1 calls plus ``TOPUP_ROUNDS`` top-up writes of ``GENERATOR_CALLS`` after each of its
+    ``BAND_ROUNDS`` builds."""
+    if protocol.LEARNING[configuration] != "train":
+        return dict(MAX_ROLE_CALLS)
+    return {"engineer": protocol.TRAIN_ROUNDS * (protocol.TRAIN_ENGINEER_CALLS + protocol.TRAIN_ANALYST_CALLS),
+            "leakage": protocol.TRAIN_ROUNDS * (protocol.MAX_CHANGES + protocol.TRAIN_ENGINEER_CALLS - 1),
+            "describer": DESCRIBER_CALLS,
+            "examiner": MAX_ROLE_CALLS["examiner"]
+            + protocol.GENERATOR_CALLS * protocol.BAND_ROUNDS * protocol.TOPUP_ROUNDS,
+            "examiner_research": MAX_ROLE_CALLS["examiner_research"]}
+
+
+def engineer_request_floor(configuration=protocol.PILOT):
+    """``ENGINEER_REQUEST_FLOOR`` with the configuration's engineer prompt (v2: the longer of ``ENGINEER_SYSTEM_V2``
+    and the analysts' ``ANALYST_SYSTEM``, both engineer-role calls)."""
+    if protocol.LEARNING[configuration] != "train":
+        return protocol.ROLE_INPUT_BYTES + len(engineer.ENGINEER_SYSTEM.encode())
+    return protocol.ROLE_INPUT_BYTES + max(len(engineer.ENGINEER_SYSTEM_V2.encode()),
+                                           len(engineer.ANALYST_SYSTEM.encode()))
 
 
 def _cell_records(root, stage):
@@ -1435,7 +1494,7 @@ def se6_projection(spec, m):
     return {"rows": rows, "scopes": cost["rows"], "inputs": scopes, "ratio": ratio, "ratio_ok": cost["ratio_ok"],
             "ledger": {"settled": scope["settled"], "actual": actual,
                        "stages": [stage for stage, cells in charged.items() if cells]}, "per_arm": found["per_arm"],
-            "glm": {"scopes": glm, "measured": measured, "max_calls": dict(MAX_ROLE_CALLS),
+            "glm": {"scopes": glm, "measured": measured, "max_calls": max_role_calls(configuration),
                     "request_bytes_floor": protocol.ROLE_INPUT_BYTES,
                     "ratio": "1: a role call's charge is the ledger's settlement",
                     "s3": {key: spent.get(key) for key in ("spent", "total", "by_role", "sends", "cap", "within_cap")},
@@ -1495,14 +1554,14 @@ def glm_projection(measured, pilot=protocol.PILOT):
     measured request (``assumed``). Returns {scope: {"settled", "reservation", "needed", "cap", "fits"} (+ "roles",
     "assumed")}; a scope fits when needed <= cap."""
     require(measured and all(entry["calls"] > 0 for entry in measured.values()), "S3 measured role calls")
-    plan, roles = protocol.PILOTS[pilot], tuple(budgets.ROLES)
-    require(set(MAX_ROLE_CALLS) == set(roles) and set(measured) <= set(roles), "The registered method roles")
+    plan, roles, calls = protocol.PILOTS[pilot], tuple(budgets.ROLES), max_role_calls(pilot)
+    require(set(calls) == set(roles) and set(measured) <= set(roles), "The registered method roles")
     dearest = max(entry["per_call"] for entry in measured.values())
     widest = max(entry["request_bytes"] for entry in measured.values())
     per_call = {role: measured[role]["per_call"] if role in measured else dearest for role in roles}
     size = {role: max(measured[role]["request_bytes"] if role in measured else widest, protocol.ROLE_INPUT_BYTES)
             for role in roles}  # registrar addendum 14:4x: never below a full role input
-    size["engineer"] = max(size["engineer"], ENGINEER_REQUEST_FLOOR)  # R7c: with the engineer's system prompt
+    size["engineer"] = max(size["engineer"], engineer_request_floor(pilot))  # R7c: with the engineer's system prompt
     assumed = sorted(set(roles) - set(measured))
     out = {}
     for chain in sorted(protocol.CHAINS):
@@ -1512,7 +1571,7 @@ def glm_projection(measured, pilot=protocol.PILOT):
             for role in roles:
                 charged.setdefault(budgets.glm_scopes(chain, role, bench, k)[-1], []).append(role)
             for name, members in sorted(charged.items()):
-                settled = sum(per_call[role] * MAX_ROLE_CALLS[role] for role in members)
+                settled = sum(per_call[role] * calls[role] for role in members)
                 reserve = reservation(max(size[role] for role in members), protocol.ROLE_MAX_TOKENS)
                 out[name] = {**_glm_fit(settled, reserve, caps[name]), "roles": members,
                              "assumed": [role for role in members if role in assumed]}
@@ -1599,6 +1658,118 @@ def _s4(spec, m, setting, *, evidence=manifest.SMOKE_EVIDENCE):
 
 def _one(path, name):
     return protocol.verified(read_json(path), name) if path.exists() else None
+
+
+# ------------------------------------------------------------------- SX: v2's example (owner decision 2026-10-23)
+SX_DIR = "SX"  # <root>/units/SX: the example's chain root (step.run_step, chain "smoke"); its registry DRILL_HISTORY
+
+
+def _sx_items(setting):
+    """SX's 260 SearchQA smoke items: those after S2's 20, which S-N1 and S4 would take (``protocol.SX_SLICES``: run
+    100, acceptance 160; neither stage runs in a v2 smoke, and S3's own run unit keeps its own registry)."""
+    start, n = protocol.SMOKE_REAL_ITEMS["searchqa"]["S2"], protocol.SX_SLICES["run"] + protocol.SX_SLICES["accept"]
+    items = list(setting.pools["searchqa"])
+    require(len(items) >= start + n, "The SearchQA smoke items hold SX's %d" % n)
+    return items[start:start + n]
+
+
+def _sx_rehearsal():
+    """SX's zero-network rehearsal (``smoke-run --stage SX --fake``): ``tests/execskill_fakes_sx.py``'s scripted
+    method roles of the example step beside the smoke solver's scripted replies (``_rehearsal_reply``), and
+    FakeWikipedia for the research sources (imported only here; the rehearsal's fakes live with the tests)."""
+    from tests import execskill_fakes_sx as fakes
+    return fakes.SXRehearsal(_rehearsal_reply)
+
+
+def _sx(spec, m, setting, *, evidence=manifest.SMOKE_EVIDENCE, transport=None):
+    """v2's example SX (owner decision 2026-10-23 13:3x: "最好真正的跑通了一个示例再开始正式实验"): the confirmation
+    cell, then the whole v2 step (``step.run_step`` with chain "smoke" and ``step.SmokeStep(train=True)``: run,
+    diagnose, generate, the training rounds, the self-test, accept and freeze) on its 260 SearchQA smoke items with
+    the smoke solver and the real GLM-5.3 roles, on the smoke ledger, its consumption in the smoke namespace of its own
+    registry ``<root>/units/SX/history``. A pause returns the stopped report; the stage is judged by ``sx_judged``.
+    ``transport``: the research sources' Wikipedia transport (a rehearsal's fake; None: the registered gateway)."""
+    chain_root = safe_path(spec["root"]) / UNITS_DIR / SX_DIR
+    items = _sx_items(setting)
+    registry = Registry(chain_root / DRILL_HISTORY, evidence=setting.evidence)
+    services = replace(manifest.services_of(m, budgets.SMOKE, setting=setting, transport=transport),
+                       registry=registry)
+    parent = empty(step="smoke/s0", evidence=setting.evidence)
+    example = step.SmokeStep(items=tuple(items), candidate=None, model=solver_of(spec).model, train=True)
+    step_root = chain_root / ("s1-" + step.SMOKE_BENCH)
+    try:
+        if not (step_root / "run" / "unit.json").exists():
+            _confirm(spec, setting, "SX", step.SMOKE_BENCH, items[0])
+        found = step.run_step(setting, budgets.SMOKE, step.SMOKE_BENCH, 1, parent, services=services,
+                              chain_root=chain_root, smoke=example)
+    except Pause as pause:
+        return {"stage": "SX", "complete": False, "stopped": pause.kind, "reason": pause.reason, "unit": pause.cell}
+    return record(spec, "SX", sx_judged(chain_root, found.record, registry, items, setting.budget.snapshot()),
+                  evidence=evidence)
+
+
+def sx_judged(chain_root, value, registry, items, snapshot):
+    """SX's rows from the example step's records: ``unit`` -- run, diagnose, generate, engineer-r1, selftest, accept
+    and freeze complete and every completed unit named in the sealed step record; ``training`` -- at least one
+    ``train-r<r>`` unit evaluated items (its cells > 0); ``acceptance`` -- the accept unit decided accept or reject on
+    its sealed round, and the decision is made again from the sealed record and the cells read back by its block ->
+    attempt map (``acceptance.round_cells``, ``acceptance.reproduce``); ``consumption`` -- in the example's registry
+    every run item decided by the run unit, every dispatched acceptance item decided by the accept unit, every other
+    acceptance item released, each registered once; ``ledger`` -- the smoke ledger's solver and GLM scopes hold no
+    open reservation and stay within their caps (``snapshot``). An acceptance on the last evaluated candidate because
+    no round adopted is recorded as ``exercise``."""
+    step_root = safe_path(chain_root) / ("s1-" + step.SMOKE_BENCH)
+    records = {name: _one(step_root / name / "unit.json", "unit") for name in step.UNITS_V2}
+    ran = {name: rec for name, rec in records.items() if rec is not None}
+    needed = ("run", "diagnose", "generate", "engineer-r1", "selftest", "accept", "freeze")
+    unit_ok = all(records[name] for name in needed) and value["units"] == {
+        name: rec[protocol.RECORD_HASH] for name, rec in ran.items()}
+    trains = {name: rec["result"] for name, rec in ran.items() if name.startswith("train-r")}
+    accept_root = step_root / "accept"
+    sealed = _one(accept_root / "sealed.json", "acceptance-sealed")
+    last = accept_root / records["accept"]["attempt"] if records["accept"] else None
+    decision = _one(last / "decision" / "decision.json", "decision") if last else None
+    decided = decision is not None and decision["decision"] in ("accept", "reject")
+    try:
+        cells = acceptance.round_cells(accept_root, sealed, decision) if sealed and decided else []
+    except (OSError, ValueError):
+        cells = None
+    accepted_ok = (decided and cells is not None and decision["sealed"]["record"] == sealed[protocol.RECORD_HASH]
+                   and value["decision_sha256"] == decision[protocol.RECORD_HASH]
+                   and acceptance.reproduce(cells, sealed, decision))
+    cut = protocol.SX_SLICES["run"]
+    run_ids, accept_ids = [i["task_id"] for i in items[:cut]], [i["task_id"] for i in items[cut:]]
+    sent = set(acceptance.dispatched(sealed)) if sealed and decided else set()
+    entries = registry.entries(budgets.SMOKE, step.SMOKE_BENCH)
+
+    def state(item, wanted, unit):
+        line = entries.get(item)
+        return line is not None and line["state"] == wanted and line["unit"] == unit
+
+    path = registry.path(budgets.SMOKE, step.SMOKE_BENCH)
+    lines = [json.loads(text) for text in path.read_text(encoding="utf-8").splitlines()] if path.exists() else []
+    registered = {}
+    for line in lines:
+        if line["state"] == "registered":
+            registered[line["item_id"]] = registered.get(line["item_id"], 0) + 1
+    consumption = (all(state(i, "decided", "smoke/s1-searchqa/run") for i in run_ids)
+                   and all(state(i, "decided" if i in sent else "routed_not_dispatched", "smoke/s1-searchqa/accept")
+                           for i in accept_ids)
+                   and registered == {i: 1 for i in run_ids + accept_ids})
+    scopes = {name: snapshot.get(name) or {} for name in (budgets.SMOKE + ":solver", budgets.SMOKE + ":glm")}
+    ledger = all(entry.get("open") == 0 and entry.get("settled", 0) <= entry.get("cap", -1)
+                 for entry in scopes.values())
+    training = value.get("training") or {}
+    rows = {"unit": unit_ok, "training": any(result["cells"] > 0 for result in trains.values()),
+            "acceptance": bool(accepted_ok), "consumption": consumption, "ledger": ledger}
+    return {"rows": rows, "passed": all(rows.values()), "decision": decision and decision["decision"],
+            "reason": decision and decision["reason"], "step_reason": value["reason"],
+            "exercise": training.get("exercise", False), "rounds": training.get("rounds", []),
+            "adopted": training.get("adopted", 0),
+            "train_cells": sum(result["cells"] for result in trains.values()),
+            "astar": len(sealed["plan"]["astar"]) if sealed else None, "cells": len(cells or []),
+            "tokens": sum(_usage(c) for c in cells or []),
+            "ledger": {name: {key: entry.get(key) for key in ("settled", "open", "cap")} for name, entry in
+                       scopes.items()}, "step_sha256": value[protocol.RECORD_HASH]}
 
 
 def s4_judged(chain_root, value, registry, items):

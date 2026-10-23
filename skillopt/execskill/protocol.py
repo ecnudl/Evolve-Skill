@@ -35,7 +35,8 @@ KIND = re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*")
 RECORD_HASH = "record_sha256"  # plan §2: the canonical digest of the record without this field
 # §1 evidence labels; ``main_real_run``: the owner's five-bench main experiment (registrar "Owner instructions
 # 2026-10-22 17:0x and 17:3x"), accepted wherever ``pilot_real_run`` is accepted for a real run (``REAL_RUN_EVIDENCE``)
-EVIDENCE = ("engineering_fixture", "smoke", "pilot_real_run", "historical_replay", "main_real_run")
+EVIDENCE = ("engineering_fixture", "smoke", "pilot_real_run", "historical_replay", "main_real_run",
+            "main_v2_real_run")  # v2 (owner decision 2026-10-23 13:3x): the "train then accept" main experiment
 IMPORTABLE = ("fivebench-coevolution-v3-sheet-qualification",)  # §1, owner #7, Codex F15: the one v3 record kind read
 TEXTS_IMPORT = "fivebench-coevolution-v3-texts-import"  # §2.2: the v3 task cards, imported by value (plan §6)
 
@@ -101,7 +102,13 @@ SMOKE_SOLVER = CHAINS["D"]  # §0 (c), §10: the registered default smoke solver
 # registrar addendum 2026-10-23 02:3x ("smoke solver chain"): the smoke specification pins its solver chain -- "D",
 # the registered default (unchanged), or "G": GLM-5.3 through its frozen client with chain G's settings, and no S1
 SMOKE_SOLVER_CHAINS = ("D", "G")
-NAMESPACES = ("G", "D", "smoke")  # §3.4: one consumption namespace per chain, the smoke its own
+NAMESPACES = ("G", "D", "smoke", "G-v2", "D-v2")  # §3.4: one consumption namespace per chain, the smoke its own;
+# v2 (owner decision 2026-10-23 13:3x): each chain of the main-v2 configuration consumes in its own namespace
+# (``V2_NAMESPACES``, ``namespace_of``), so it cuts the registered slices from the same fixed order again: its run
+# slices are v1 main's training items (reused for training) and its acceptance slices the ones v1 cut but never
+# registered (v1 main accepted nothing, so no acceptance item was ever dispatched); the pools hold no other supply
+# (OfficeQA 74 = 24 + 50, LiveMath 283 = 119 + 100 + 64, SpreadsheetBench 91 = 31 + 60)
+V2_NAMESPACES = {"G": "G-v2", "D": "D-v2"}
 ROLE_MODEL = "glm-5.3"  # §4.2, §4.3, §7.2: every method role of both chains
 # §4.1 chain G: M = B = 65,536 on every bench and a 2,400 s read timeout (the frozen route, coevo5 protocol.py:327,
 # :92), so a chain G receipt is never over nominal.
@@ -575,8 +582,9 @@ def _exact(value, name):
 
 
 def read_estimate_terms(per_cell, ratio, pilot=PILOT):
-    """The per-bench terms of ``estimate_test_read``, exact: {bench: ratio x n_b x (card_b + 4 x f_b x proc_b)} as
-    Fractions, from the same inputs with the same refusals. A read gate re-applied after some read units completed
+    """The per-bench terms of ``estimate_test_read``, exact: {bench: ratio x n_b x (card_b + a x f_b x proc_b)} as
+    Fractions, a = ``estimate_arms(pilot)`` (4; with main-v2's stage arms 8), from the same inputs with the same
+    refusals. A read gate re-applied after some read units completed
     prices only the units still to run, by their terms (registrar addendum 2026-10-22 15:3x, ticket P2C-2;
     ``chain.read_budget``). Named without a ``test_`` prefix, so pytest never collects it."""
     require(pilot in PILOTS and isinstance(per_cell, dict) and set(per_cell) == set(BENCHES)
@@ -587,7 +595,7 @@ def read_estimate_terms(per_cell, ratio, pilot=PILOT):
         card = _exact(entry.get("card"), "%s card cell" % bench)
         assumed = entry.get("procedure_assumed") is True or entry.get("procedure") is None
         proc = card * PROCEDURE_ARM_FACTOR[1] if assumed else _exact(entry["procedure"], "%s procedure cell" % bench)
-        terms[bench] = TEST_READ_CELLS[pilot][bench][0] * (card + TEST_READ_ESTIMATE_ARMS * fired_share(bench, pilot)
+        terms[bench] = TEST_READ_CELLS[pilot][bench][0] * (card + estimate_arms(pilot) * fired_share(bench, pilot)
                                                            * proc)
     ratio = _exact(ratio, "ratio")
     return {bench: ratio * term for bench, term in terms.items()}
@@ -595,7 +603,8 @@ def read_estimate_terms(per_cell, ratio, pilot=PILOT):
 
 def estimate_test_read(per_cell, ratio, pilot=PILOT):
     """Registrar addendum 2026-10-22 14:10, row 8 (§9.3; pilot-runbook §3.4): the S-E6-corrected high estimate of the
-    one test read in ledger tokens, ceil(ratio x sum_b n_b x (card_b + 4 x f_b x proc_b)) over the five benches: n_b the
+    one test read in ledger tokens, ceil(ratio x sum_b n_b x (card_b + a x f_b x proc_b)) over the five benches (a =
+    ``estimate_arms(pilot)``: 4, with main-v2's stage arms 8): n_b the
     bench's test items (``TEST_READ_CELLS``), card_b and proc_b S-E6's measured tokens per card and per procedure cell
     (``per_cell`` = S-E6's ``result.per_cell`` {bench: {"card", "procedure", "procedure_assumed"}}; a procedure cell
     S-E6 did not measure -- ``procedure_assumed`` true or no ``procedure`` -- is 1.6 x the card cell,
@@ -694,8 +703,9 @@ MIN_PRODUCTION_RECEIPTS = 300  # Codex F19: registered body and registered M and
 
 # ---------------------------------------------------------------------------------------------- places (§1, §10)
 BUILD_TREE = "/data/execskill-dev"
-SNAPSHOT_ROOT = "/data/execskill-20261021-source-d"  # registrar addendum 10/23 05:3x: snapshot d, the chain-G re-smoke
-# (research User-Agent, owner smoke waiver); snapshot c (/data/execskill-20261021-source-c, the chain-G smoke of
+SNAPSHOT_ROOT = "/data/execskill-20261021-source-e"  # v2 (owner decision 2026-10-23 13:3x): snapshot e, the smoke
+# with v2's example SX; snapshot d (/data/execskill-20261021-source-d, registrar addendum 10/23 05:3x: the chain-G
+# re-smoke with the research User-Agent and the owner smoke waiver, and the v1 main) stays untouched; snapshot c (/data/execskill-20261021-source-c, the chain-G smoke of
 # addendum 10/23 02:3x) and snapshot b (/data/execskill-20261021-source-b, after the S0 supply-row fix of 10/22 22:1x)
 # stay untouched as the chain-G and elucid smoke attempts' records, snapshot a (/data/execskill-20261021-source) as
 # the failed S0 attempt's
@@ -720,14 +730,139 @@ INTERPRETER = "/root/continual-alf-prep-20260928/env/bin/python"  # run with -B 
 # need (§9.3 1.5; main 3, which ``step.cost_projection`` divides by), whether chain G's cost check after its first run
 # unit pauses (§9.3; main: it records its factor and never pauses -- the read gate still applies the factor,
 # ``chain.read_budget``), the evidence label of a real run and the run root.
-CONFIG_STEP_CAPS = {"default": STEP_CAPS, "recommended": STEP_CAPS, "main": MAIN_STEP_CAPS}
-CONFIG_SCHEDULE_CELLS = {"default": MAX_SCHEDULE_CELLS, "recommended": MAX_SCHEDULE_CELLS, "main": MAIN_SCHEDULE_CELLS}
-CONFIG_ROLE_CAPS = {"default": ROLE_CAPS, "recommended": ROLE_CAPS, "main": MAIN_ROLE_CAPS}
-CONFIG_GLM_CAP = {"default": GLM_CAP, "recommended": GLM_CAP, "main": MAIN_GLM_CAP}
-CONFIG_CAP_FACTOR = {"default": Fraction(3, 2), "recommended": Fraction(3, 2), "main": Fraction(MAIN_CAP_FACTOR)}
-COST_CHECK_PAUSES = {"default": True, "recommended": True, "main": False}
-REAL_RUN_EVIDENCE = {"default": "pilot_real_run", "recommended": "pilot_real_run", "main": "main_real_run"}
-RUN_ROOTS = {"default": PILOT_ROOT, "recommended": PILOT_ROOT, "main": MAIN_ROOT}
+# ------------------------------------------- v2 "train then accept" (owner decision 2026-10-23 13:3x; spec-v2.md)
+# The owner, after chain G's v1 main ended all five steps ``no_surviving_change``: "好的，那就按照你的建议来修改". The
+# run configuration ``main-v2`` is ``main`` with the learning mode ``train``: per step a training loop of at most
+# TRAIN_ROUNDS rounds replaces the v1 engineer / engineer-2 / selftest-2 path -- the engineer revises the incumbent
+# package from the previous round's training evaluation (which training items each changed procedure fixed or broke,
+# with its notes), up to TRAIN_FIXES fix calls per failing change, C7 replay tests advisory, the description cut to
+# MAX_DESCRIPTION_CHARS; each candidate is evaluated paired against the incumbent on the run-slice items whose routing
+# differs (and on G_self), fresh, and adopted when it fixes more training items than it breaks by at least
+# max(1, ceil(TRAIN_ADOPT_SHARE x evaluated)). The last incumbent, if it differs from the parent, takes the v1
+# self-test and the unchanged acceptance. Training cells are self-training: they are charged to the step's
+# ``...:selftest`` scope, whose main-v2 cap adds their maximum schedule.
+MAIN_V2 = "main-v2"
+LEARNING = {"default": "single", "recommended": "single", "main": "single", MAIN_V2: "train"}
+TRAIN_ROUNDS = 6
+TRAIN_PATIENCE = 2  # consecutive rounds without an adopted candidate end the loop
+TRAIN_FIXES = 3  # fix calls per failing change (v1: one)
+TRAIN_ENGINEER_CALLS = 10  # engineer calls per engineer-r<r> unit
+TRAIN_ADOPT_SHARE = Fraction(1, 50)
+TRAIN_ALPHA = Fraction(1, 4)  # and fixed vs broken items: the one-sided exact sign test p <= 1/4
+TRAIN_FORMAT_MARGIN = (2, Fraction(1, 50))  # S' format-violating cells above S's by more than max(2, 2 %) block
+TRAIN_EXAMPLES = 3  # fixed and broken examples per changed procedure in the feedback
+TRAIN_TEXT_CHARS = {"question": 400, "note": 700, "answer": 240}  # feedback excerpts (references whole)
+GENERATING = ("officeqa", "livemath", "spreadsheetbench")  # benches with registered generator families (§7.2)
+TOPUP_ROUNDS = 2  # v2: further generator calls while G_self holds fewer than BAND_PROBE_ITEMS items (before the band)
+# v2, SkillOpt's multi-round feedback (owner suggestion 2026-10-23 15:1x, "可以参考一下skillopt那种多轮反馈的"): before
+# each round's proposal the engineer role analyses the incumbent's failed run-slice items in groups, as SkillOpt's
+# minibatch reflection does (skillopt/gradient/reflect.py): TRAIN_ANALYST_BATCH items per call, at most
+# TRAIN_ANALYST_CALLS calls per engineer-r unit, items no earlier round of the step analysed first, each reply at most
+# TRAIN_FINDINGS findings with texts of at most TRAIN_FINDING_CHARS characters; and the history shows every earlier
+# proposal's kind, target, description excerpt (TRAIN_PROPOSAL_CHARS) and fate, as SkillOpt's step buffer does.
+TRAIN_ANALYST_BATCH = 6
+TRAIN_ANALYST_CALLS = 4
+TRAIN_FINDINGS = 3
+TRAIN_FINDING_CHARS = 300
+TRAIN_PROPOSAL_CHARS = 200
+ANALYST_TAG = "execskill-v2:analyst"  # + ":<unit label>": the seeded order of the failed cells the analysts see
+# the training cells of one step at the maximum schedule: every round, both arms, every run-slice cell and G_self
+TRAIN_CELLS = {bench: TRAIN_ROUNDS * 2 * (SLICES[bench]["run"][0] * SLICES[bench]["run"][1]
+                                          + (G_SELF_MAX if bench in GENERATING else 0)) for bench in BENCHES}
+
+
+def _round_up(value, step):
+    return int(math.ceil(Fraction(value) / step) * step)
+
+
+MAIN_V2_SCHEDULE_CELLS = {bench: {kind: dict(rows) for kind, rows in kinds.items()}
+                          for bench, kinds in MAIN_SCHEDULE_CELLS.items()}
+for _bench in BENCHES:  # the training cells are procedure cells of the step's own bench in its self-test row
+    _card, _proc = MAIN_V2_SCHEDULE_CELLS[_bench]["selftest"].get(_bench, (0, 0))
+    MAIN_V2_SCHEDULE_CELLS[_bench]["selftest"][_bench] = (_card, _proc + TRAIN_CELLS[_bench])
+# the self-test cap grows by MAIN_CAP_FACTOR x the training cells at the bench's high procedure anchor, to 0.1M
+MAIN_V2_STEP_CAPS = {bench: {**caps, "selftest": caps["selftest"] + _round_up(
+    MAIN_CAP_FACTOR * TRAIN_CELLS[bench] * CELL_ANCHORS[bench][1] * PROCEDURE_ARM_FACTOR[1], 100_000)}
+    for bench, caps in MAIN_STEP_CAPS.items()}
+# engineer 20M per step (TRAIN_ROUNDS engineer units of at most TRAIN_ENGINEER_CALLS calls, the leakage adjudications
+# and the describer), examiner 10M (the TOPUP_ROUNDS further generator calls); GLM = 3 x the five steps' role ceilings
+MAIN_V2_ROLE_CAPS = {"engineer": 20 * MILLION, "examiner": 10 * MILLION, "examiner_research": 9_200_000}
+MAIN_V2_GLM_CAP = MAIN_CAP_FACTOR * len(BENCHES) * sum(MAIN_V2_ROLE_CAPS.values())
+MAIN_V2_ROOT = "/data/execskill-20261023-main-v2"
+MAIN_V2_MANIFEST = "/data/execskill-20261023-main-v2-manifest.json"
+PILOTS[MAIN_V2] = {"order": BENCHES, "redo_reserve": PILOTS["main"]["redo_reserve"]}
+# v2 stage reads (owner decision 2026-10-23 16:0x: "我说的主实验是指在五个bench上逐个进化，并且每个进化之后都在所有的五个bench
+# 上评测的意思"): the test read of a stage-read configuration -- still one read per chain, at its end, one unit per bench
+# -- also runs the package every step passed on, on all five test sets: one stage arm "S<k>" per package that step k
+# passed on, that holds a procedure, is not F and was not passed on by an earlier step, in the same seeded interleaved
+# order as F, C, P_F, T_F and the twins. Row k of the stage table (k = 0 .. the order's length) reads C where the
+# package after step k holds no procedure, F where it is F, else the stage arm of the first step that passed it on.
+# A stage cell sends nothing where its enabled procedures -- ids and byte-identical procedures, in order -- are those
+# of a cell the unit runs (none: C's; F's; an earlier stage arm's): the solver request is then the same, so the rows
+# differ only on the items whose enabled procedures differ (``evaluation.stage_plan``).
+STAGE_READ = {"default": False, "recommended": False, "main": False, MAIN_V2: True}
+STAGE_ARM = "S"  # + the step position k: "S1" .. "S4" (step 5's package is F)
+STAGES = "stages"  # the name the owner's read consent gives the stage arms (``read_arms_of``)
+
+
+def stage_arms_max(configuration):
+    """The most stage arms a read of ``configuration`` runs: one per step before the last (whose package is F)."""
+    require(configuration in STAGE_READ, "Unknown run configuration")
+    return len(CONFIGURATIONS[configuration]["order"]) - 1 if STAGE_READ[configuration] else 0
+
+
+def read_arms_of(configuration):
+    """The arms the owner's read consent names for ``configuration`` (``multi_arm_arms``): ``TEST_ARMS``, with
+    ``STAGES`` in a stage-read configuration. Named without a ``test_`` prefix, so pytest never collects it."""
+    require(configuration in STAGE_READ, "Unknown run configuration")
+    return TEST_ARMS + ((STAGES,) if STAGE_READ[configuration] else ())
+
+
+def estimate_arms(pilot):
+    """The procedure arms per fired test item the read estimate prices (``read_estimate_terms``):
+    ``TEST_READ_ESTIMATE_ARMS`` plus every stage arm (``stage_arms_max``) at a full procedure cell, though a stage cell
+    sends nothing where its procedures are another cell's."""
+    return TEST_READ_ESTIMATE_ARMS + stage_arms_max(pilot)
+
+
+# main-v2's read cells: main's (every bench home, f = 1) plus the stage arms' procedure cells on every test item; its
+# test-read cap by main's rule (3 x (the maximum read at the high anchors + 5 read units x MAIN_RESERVATIONS x the
+# dearest full reservation, calc T6's 4 x (64,000 + 512 + 65,536) = 520,192), rounded up to 1M) and its solver cap
+# (the twenty step caps + the test read + the redo reserve, rounded up to 5M)
+TEST_READ_CELLS[MAIN_V2] = {bench: (n, proc + stage_arms_max(MAIN_V2) * n)
+                            for bench, (n, proc) in TEST_READ_CELLS["main"].items()}
+READ_RESERVATION = 520_192
+MAIN_V2_READ_TOKENS = sum(CELL_ANCHORS[b][1] * (card + PROCEDURE_ARM_FACTOR[1] * proc)
+                          for b, (card, proc) in TEST_READ_CELLS[MAIN_V2].items())
+PILOTS[MAIN_V2]["test_read_cap"] = _round_up(MAIN_CAP_FACTOR * (MAIN_V2_READ_TOKENS + len(BENCHES) * MAIN_RESERVATIONS
+                                                                * READ_RESERVATION), MILLION)
+PILOTS[MAIN_V2]["solver_cap"] = _round_up(sum(sum(c.values()) for c in MAIN_V2_STEP_CAPS.values())
+                                          + PILOTS[MAIN_V2]["test_read_cap"] + PILOTS[MAIN_V2]["redo_reserve"],
+                                          5 * MILLION)
+# The smoke's example stage SX (owner 2026-10-23 13:3x: "最好真正的跑通了一个示例再开始正式实验"): the v2 step of SearchQA
+# with real GLM-5.3 roles on the smoke's own SearchQA items that its trimmed stages leave unused (S-N1's 200 and S4's
+# 60, after S2's 20): run 100, acceptance 160. It runs after S-E6, on raised smoke caps (``SMOKE_SX_CAPS``).
+SX_SLICES = {"run": 100, "accept": 160}
+SMOKE_SX_CAPS = {"solver": 80 * MILLION, "glm": 40 * MILLION}
+SMOKE_WAIVER_V2 = "shared/owner-smoke-waiver-v2.json"  # a v2 smoke's (SX listed) owner waiver; v1's file stays put
+
+
+def namespace_of(setting, chain):
+    """The consumption namespace of ``chain`` in the Setting's run configuration: the chain itself, or its v2
+    namespace in main-v2 (``V2_NAMESPACES``)."""
+    return V2_NAMESPACES[chain] if configuration_of(setting) == MAIN_V2 else chain
+
+CONFIG_STEP_CAPS = {"default": STEP_CAPS, "recommended": STEP_CAPS, "main": MAIN_STEP_CAPS, MAIN_V2: MAIN_V2_STEP_CAPS}
+CONFIG_SCHEDULE_CELLS = {"default": MAX_SCHEDULE_CELLS, "recommended": MAX_SCHEDULE_CELLS, "main": MAIN_SCHEDULE_CELLS,
+                         MAIN_V2: MAIN_V2_SCHEDULE_CELLS}
+CONFIG_ROLE_CAPS = {"default": ROLE_CAPS, "recommended": ROLE_CAPS, "main": MAIN_ROLE_CAPS, MAIN_V2: MAIN_V2_ROLE_CAPS}
+CONFIG_GLM_CAP = {"default": GLM_CAP, "recommended": GLM_CAP, "main": MAIN_GLM_CAP, MAIN_V2: MAIN_V2_GLM_CAP}
+CONFIG_CAP_FACTOR = {"default": Fraction(3, 2), "recommended": Fraction(3, 2), "main": Fraction(MAIN_CAP_FACTOR),
+                     MAIN_V2: Fraction(MAIN_CAP_FACTOR)}
+COST_CHECK_PAUSES = {"default": True, "recommended": True, "main": False, MAIN_V2: False}
+REAL_RUN_EVIDENCE = {"default": "pilot_real_run", "recommended": "pilot_real_run", "main": "main_real_run",
+                     MAIN_V2: "main_v2_real_run"}
+RUN_ROOTS = {"default": PILOT_ROOT, "recommended": PILOT_ROOT, "main": MAIN_ROOT, MAIN_V2: MAIN_V2_ROOT}
 
 
 def configuration_of(setting):
@@ -736,6 +871,11 @@ def configuration_of(setting):
     found = (getattr(setting, "extra", None) or {}).get("configuration", PILOT)
     require(found in CONFIGURATIONS, "Unknown run configuration: %r" % (found,))
     return found
+
+
+def learning_of(setting):
+    """The learning mode of the Setting's run configuration (``LEARNING``): "single" (v1) or "train" (v2)."""
+    return LEARNING[configuration_of(setting)]
 
 
 def order_of(setting):

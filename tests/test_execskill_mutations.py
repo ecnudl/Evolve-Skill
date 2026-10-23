@@ -371,14 +371,14 @@ MUTATIONS = {
         "        spent = 0\n",
         [T + "step.py::test_a_step_ending_before_the_acceptance_consumes_no_acceptance_item[blocked_twice]"]),
     "75-engineer-ignores-the-steps-earlier-calls": (
-        PE + "engineer.py", "    if ctx.spent + ctx.roles.count(prefix) >= ENGINEER_CALLS:\n",
-        "    if ctx.roles.count(prefix) >= ENGINEER_CALLS:\n",
+        PE + "engineer.py", "    if ctx.spent + ctx.roles.count(prefix) >= ctx.calls_cap:\n",
+        "    if ctx.roles.count(prefix) >= ctx.calls_cap:\n",
         [T + "engineer.py::test_r7a_engineer_calls_are_counted_per_step_across_both_engineer_units"]),
     "76-engineer-context-takes-any-earlier-count": (
-        PE + "engineer.py", "0 <= self.spent <= ENGINEER_CALLS,", "0 <= self.spent,",
+        PE + "engineer.py", "0 <= self.spent <= self.calls_cap and", "0 <= self.spent and",
         [T + "engineer.py::test_r7a_engineer_calls_are_counted_per_step_across_both_engineer_units"]),
     "77-engineer-glm-floor-without-its-system-prompt": (
-        PE + "smoke.py", "    size[\"engineer\"] = max(size[\"engineer\"], ENGINEER_REQUEST_FLOOR)", "    pass",
+        PE + "smoke.py", "    size[\"engineer\"] = max(size[\"engineer\"], engineer_request_floor(pilot))", "    pass",
         [T + "smoke.py::test_glm_projection_prices_every_glm_scope_at_the_registered_maximum_role_calls"]),
     # 78-80: Codex 2026-10-22 review findings 1 (SpreadsheetBench test routing and placebo-length replay mount the
     # item's public workbook) and 3 (the test qualification's reference artifacts go on every exit). V.
@@ -597,7 +597,7 @@ MUTATIONS = {
     "125-waiver-beside-a-passed-smoke-accepted": (
         PE + "smoke.py",
         '    require(result["passed"] is not True, "A passed smoke needs no waiver: %s beside a passed smoke-result '
-        'is refused"\n            % protocol.SMOKE_WAIVER)\n', "",
+        'is refused"\n            % name)\n', "",
         [T + "smoke_waiver.py::test_a_waiver_beside_a_passed_smoke_is_refused"]),
     "126-waiver-takes-another-smoke-result": (
         PE + "smoke.py",
@@ -640,8 +640,8 @@ MUTATIONS = {
         [T + "smoke_waiver.py::test_the_waiver_must_name_this_smoke_result"]),
     "136-waiver-path-may-be-a-symlink": (  # Codex G2 (MAJOR), registrar G2b
         PE + "smoke.py",
-        "    path = safe_path(safe_path(root) / protocol.SMOKE_WAIVER)  # G2b: no symlink in the waiver path or its "
-        "parents\n", "    path = safe_path(root) / protocol.SMOKE_WAIVER\n",
+        "    path = safe_path(safe_path(root) / name)  # G2b: no symlink in the waiver path or its "
+        "parents\n", "    path = safe_path(root) / name\n",
         [T + "smoke_waiver.py::test_a_symlink_to_a_valid_draft_elsewhere_is_refused",
          T + "smoke_waiver.py::test_a_symlinked_shared_directory_is_refused"]),
 }

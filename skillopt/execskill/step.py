@@ -84,6 +84,27 @@ solver's model and bound B (``SmokeStep.model``: chain D's, or glm-5.3 in a chai
 whose one purpose is ``smoke``, and the registered fault switch (``SmokeStep.drill``) gives the acceptance cells of
 the accept unit's first attempt their workers.
 
+v2 (configuration ``main-v2``, learning mode "train": ``protocol.learning_of``; owner decision 2026-10-23 13:3x,
+spec-v2): after run, diagnose and generate the engineer works over training rounds instead of engineer / engineer-2 /
+selftest-2 (``_trained``). Round r (at most ``TRAIN_ROUNDS``) is the unit ``engineer-r<r>`` (``engineer.run_train``:
+proposals against the incumbent T_{r-1}, T_0 = S, with the incumbent's latest trajectories, the earlier rounds, the
+last evaluation and its lint; the candidate re-expressed against S, ``engineer.rebase``) and, when it made a
+candidate, the unit ``train-r<r>`` (``_train_eval``): the zero-call routing of every run-slice item and admitted
+G_self item under T_{r-1} and the candidate, then both packages on the items they route differently (run items with
+the registered runs, generated items once), one seeded order, charged to the step's ``...:selftest`` scope; the
+candidate is adopted by ``train_verdict`` (guards: own faults and predicate faults of the changed procedures <= 2 %,
+format-violating cells not above the incumbent's by more than max(2, 2 %); gain: more items fixed than broken, a net
+gain of at least max(1, 2 % of the evaluated items) and the one-sided sign test p <= ``TRAIN_ALPHA``). The loop stops
+after ``TRAIN_PATIENCE`` rounds in a row without adoption (a round without a candidate counts). A final package
+without an edit against S ends the step ``no_training_gain``; else it takes v1's self-test once (a block ends the step
+``selftest_blocked``) and v1's acceptance and freeze unchanged. The examiner's v2 policy and generator prompts ask for
+more material and a short G_self gets up to ``TOPUP_ROUNDS`` top-up calls after each build (``_topup``). main-v2
+consumes in its own namespaces (``protocol.V2_NAMESPACES``, ``_Step.namespace``): its slices are cut as v1's from the
+same supply, so its run slices are v1's (training items, reused) and its acceptance slices v1's never registered ones.
+The smoke's v2 example SX is the same step on SearchQA smoke items (``SmokeStep.train``, ``protocol.SX_SLICES``); if
+no round adopts there, the last evaluated candidate takes the self-test and acceptance so that they run end to end,
+recorded as ``exercise``.
+
 While a sub-step runs, the step's Setting and worker factories are that unit's (``units.for_unit``; registrar decision
 on safety review 3, ticket C5-1): every sandbox container of the unit carries its tag, and the unit is drained
 (``units.drainer``) before it is marked complete or paused. At the end of each unit attempt its role calls (reply
@@ -119,10 +140,12 @@ from . import (acceptance, budgets, describer, detectors, donors, engineer, exam
                research, rounds, router, solver, supply, trajectories, units)
 from .cells import Arm, Pause, TrainingStore, cell_id, run_cells
 from .chain import EXIT_AWAITING, EXIT_COMPLETE, EXIT_PAUSED, cap_check, check_pins, confirmation, heavy
-from .package import Package, edits, empty, load, save, with_describer
+from .package import EDIT_KINDS, Package, edits, empty, load, save, with_describer
 from .protocol import (BAND_ROUNDS, BENCHES, CELL_ANCHORS, CHAINS, EARLIER_SET_MAX, ENTRY_READING_SHARE, G_SELF_MAX,
-                       MDE_POINTS, CONFIG_CAP_FACTOR, CONFIGURATIONS, RECORD_HASH, ROLE_MAX_TOKENS, ROLE_MODEL,
-                       S4_SLICES, SEED, configuration_of, order_of,
+                       MDE_POINTS, CONFIG_CAP_FACTOR, CONFIGURATIONS, NOTES_KEY, RECORD_HASH, ROLE_MAX_TOKENS,
+                       ROLE_MODEL, S4_SLICES, SEED, SX_SLICES, TOPUP_ROUNDS, TRAIN_ADOPT_SHARE, TRAIN_ALPHA,
+                       TRAIN_EXAMPLES, TRAIN_FORMAT_MARGIN, TRAIN_PATIENCE, TRAIN_ROUNDS, TRAIN_TEXT_CHARS,
+                       configuration_of, learning_of, namespace_of, order_of,
                        SELFTEST_ALPHA, SELFTEST_FAULT_MAX, SELFTEST_FORMAT_MARGIN, SELFTEST_PASSES, SLICES,
                        SMOKE_SOLVER, generator_seed, ledger_bound, record, round_tag, verified)
 from .registry import HELD, run_identity
@@ -145,6 +168,14 @@ SMOKE_UNITS = ("run", "accept", "freeze")  # §10 S4: run 20, accept 40 (A*, twi
 ROLE_CALLS = "role-calls.jsonl"  # registrar addendum 2026-10-22 15:5x R5: <unit>/role-calls.jsonl
 FINDING_COUNTS = "finding-counts-%s.json"  # Codex finding #10: a build's finding-keyed counter, in its attempt
 ADJUDICATOR = "leak_adjudicate"  # the leakage adjudicator's role name (coevo5 ``leakage.adjudicate``)
+TRAIN = engineer.TRAIN  # v2's learning mode (module docstring)
+UNITS_V2 = ("run", "diagnose", "generate",
+            *("%s-r%d" % (kind, r) for r in range(1, TRAIN_ROUNDS + 1) for kind in ("engineer", "train")),
+            "selftest", "accept", "freeze")
+QUESTION_FIELDS = {"searchqa": "question", "officeqa": "question", "livemath": "question",
+                   "spreadsheetbench": "instruction", "alfworld": "task_text"}  # v2 feedback: the item's question
+FEEDBACK_TAG = "execskill-v2:feedback"  # the seeded order of a round's examples
+EXERCISE = "exercise_last_candidate"  # SX only: no round adopted; the last evaluated candidate takes the acceptance
 
 
 @dataclass(frozen=True)
@@ -176,12 +207,16 @@ class SmokeStep:
     ``candidate``: the registered candidate S' (the registrar's fixture package X of S2, an engineering fixture);
     ``drill``: the registered fault switch (``smoke.FaultSwitch``) whose ``worker(**options)`` gives the acceptance
     cells of the accept unit's first attempt their workers, or None; ``model``: the smoke solver's model
-    (``smoke.solver_of``: chain D's by default, glm-5.3 in a chain-G smoke, registrar addendum 2026-10-23 02:3x)."""
+    (``smoke.solver_of``: chain D's by default, glm-5.3 in a chain-G smoke, registrar addendum 2026-10-23 02:3x).
+    ``train`` (v2, module docstring): the smoke's example SX -- run, diagnose, generate, the training rounds, the
+    self-test, accept and freeze on its 260 SearchQA smoke items (run the first ``SX_SLICES["run"]``, acceptance the
+    next ``SX_SLICES["accept"]``), no candidate given and no drill."""
 
     items: tuple
     candidate: Package
     drill: object = None
     model: str = SMOKE_SOLVER
+    train: bool = False  # v2's example SX: the whole v2 step, ``protocol.SX_SLICES``; ``candidate`` None
 
 
 @dataclass(frozen=True)
@@ -216,6 +251,27 @@ class _Step:
     @property
     def evidence(self):
         return self.setting.evidence
+
+    @property
+    def learning(self):
+        """The step's learning mode: its run configuration's (``protocol.learning_of``); the smoke's S4 "single", its
+        v2 example SX "train"."""
+        if self.smoke is None:
+            return learning_of(self.setting)
+        return TRAIN if self.smoke.train else "single"
+
+    @property
+    def namespace(self):
+        """The consumption namespace of the step's items (registry.py, §3.4): the chain's own -- main-v2's
+        ``protocol.V2_NAMESPACES`` (``namespace_of``) -- or the smoke's."""
+        return self.chain if self.smoke is not None else namespace_of(self.setting, self.chain)
+
+    @property
+    def units(self):
+        """The step's sub-step units: v1's, the S4 mini-step's or v2's (``UNITS_V2``)."""
+        if self.learning == TRAIN:
+            return UNITS_V2
+        return UNITS if self.smoke is None else SMOKE_UNITS
 
     def label(self, unit):
         return "%s/%s" % (self.name, unit)
@@ -277,7 +333,7 @@ class _Step:
         finding #5). ``settle(attempt, result)``: the unit's consumption settlement, run by ``units.run_unit`` after the
         attempt's completion evidence is persisted and again by a commit attempt after a recovery (idempotent; Codex
         finding #8)."""
-        require(name in (UNITS if self.smoke is None else SMOKE_UNITS), "Unknown sub-step unit")
+        require(name in self.units, "Unknown sub-step unit")
         self.verify()
         label = self.label(name)
         identity = {"unit": label, "chain": self.chain, "k": self.k, "bench": self.bench,
@@ -425,16 +481,17 @@ def _slices(st):
         require(value["chain"] == st.chain and value["k"] == st.k and value["bench"] == st.bench,
                 "The slices of another step")
         return {name: _items_of(st, ids) for name, ids in value["slices"].items()}
-    if st.smoke is not None:  # §10 S4: the mini-step's own cut of its 60 smoke items
-        items, run = list(st.smoke.items), S4_SLICES["run"]
-        require(len(items) == run + S4_SLICES["accept"], "The S4 mini-step runs on its %d smoke items"
-                % (run + S4_SLICES["accept"]))
+    if st.smoke is not None:  # §10 S4: the mini-step's own cut of its 60 smoke items (v2's SX: of its 260)
+        sizes = SX_SLICES if st.smoke.train else S4_SLICES
+        items, run = list(st.smoke.items), sizes["run"]
+        require(len(items) == run + sizes["accept"], "The smoke step runs on its %d smoke items"
+                % (run + sizes["accept"]))
         cut = {"run": items[:run], "accept": items[run:]}
     else:
         # Codex finding #7 (§3.1-§3.4): a unit is its label and its run root; the same labels under another run root
         # are other units, whose held items never enter a slice
-        registry, own, here = st.services.registry, {st.label(name) for name in UNITS}, run_identity(st.setting.root)
-        held = {i for i, line in registry.entries(st.chain, st.bench).items() if line["state"] in HELD
+        registry, own, here = st.services.registry, {st.label(name) for name in st.units}, run_identity(st.setting.root)
+        held = {i for i, line in registry.entries(st.namespace, st.bench).items() if line["state"] in HELD
                 and not (line["unit"] in own and line["run_root"] == here)} | set(registry.consumed("smoke", st.bench))
         cut = _cut(st, held)
     require(cut.get("run") and cut.get("accept"), "The bench's supply holds a run and an acceptance slice")
@@ -578,21 +635,21 @@ def _run(st, cut):
     def work(attempt):
         n, endpoint = units.attempt_number(attempt), st.solver("run", attempt)  # refused before anything is held
         registry = st.services.registry
-        registry.register(st.chain, bench, items, unit=name, purpose=st.purpose("run"), run_root=str(st.setting.root),
-                          attempt=n)
+        registry.register(st.namespace, bench, items, unit=name, purpose=st.purpose("run"),
+                          run_root=str(st.setting.root), attempt=n)
         share = _firing_share(st, items, _item_workers(st, {i["task_id"]: i["public"] for i in items}))
         arms, schedule = {"S": Arm("parent", st.parent)}, {"S": [(key, runs) for key in sorted(tasks)]}
         if share >= ENTRY_READING_SHARE:
             arms["C"] = Arm("card", st.card())
             schedule["C"] = [(key, 1) for key in sorted(tasks)]
-        registry.dispatch(st.chain, bench, items, unit=name, attempt=n)
+        registry.dispatch(st.namespace, bench, items, unit=name, attempt=n)
         cells = rounds.run_round(st.setting, attempt, endpoint, name, arms, schedule, tasks, tag="run")
         rounds.guard(cells, list(arms), name)
         return {"items": len(items), "runs": runs, "cells": sum(len(found) for found in cells.values()),
                 "firing_share": float(share), "entry_reading": _entry_reading(cells) if "C" in arms else None}
 
     def settle(attempt, result):  # Codex finding #8: after the completion evidence; again, idempotent, on a recovery
-        st.services.registry.decide(st.chain, bench, items, unit=name, attempt=units.attempt_number(attempt))
+        st.services.registry.decide(st.namespace, bench, items, unit=name, attempt=units.attempt_number(attempt))
 
     result = st.unit("run", work, settle=settle)
     if st.chain == "G" and st.k == 1:  # the attempt that completed the unit: its spend and its cells (15:5x R6 (e))
@@ -730,8 +787,8 @@ def _generate(st, cut):
         last = previous[-1] if previous else None
         payload = examiner.policy_payload(st.bench, previous=last and last["policy"],
                                           outcomes=last and last["outcomes"])
-        roles = st.roles("examiner")
-        policy, policy_record = examiner.policy_revise(roles, payload, label=name, evidence=st.evidence)
+        roles, train = st.roles("examiner"), st.learning == TRAIN
+        policy, policy_record = examiner.policy_revise(roles, payload, label=name, evidence=st.evidence, train=train)
         researcher = research.Researcher(st.roles("examiner_research"), st.services.sources,
                                          Corpus(st.bench, cut["run"]), bench=st.bench, label=name + "/research")
         sent = examiner.research_requests(policy, researcher)
@@ -744,8 +801,12 @@ def _generate(st, cut):
         endpoint = st.solver("examiner", attempt)
         specs, written = examiner.generator_write(roles, examiner.generator_payload(st.bench, halves["g_self"],
                                                                                   sources=shown),
-                                                  label=name, evidence=st.evidence)
+                                                  label=name, evidence=st.evidence, train=train)
         built, probes, fresh = _build(st, specs, halves["g_self"], "G_self", sources, attempt, 0), [], True
+        topups = []
+        if train:  # v2: a short set gets up to TOPUP_ROUNDS top-up calls (``_topup``)
+            built, specs, made = _topup(st, roles, built, specs, halves, shown, sources, attempt, name)
+            topups += made
         for n in range(1, BAND_ROUNDS + 1):
             if not examiner.sufficient(built):  # §7.2, Codex finding #9: 30 qualified probe items, else no paid probe
                 break
@@ -755,8 +816,12 @@ def _generate(st, cut):
                 break
             adjusted = examiner.generator_payload(st.bench, halves["g_self"], sources=shown, band=band)
             specs, written = examiner.generator_write(roles, adjusted, label="%s/band-%d" % (name, n),
-                                                      evidence=st.evidence)
+                                                      evidence=st.evidence, train=train)
             built, fresh = _build(st, specs, halves["g_self"], "G_self", sources, attempt, built.next_number), True
+            if train:
+                built, specs, made = _topup(st, roles, built, specs, halves, shown, sources, attempt,
+                                            "%s/band-%d" % (name, n))
+                topups += made
         enough = examiner.sufficient(built)  # an insufficient final set is recorded as such, never probed or admitted
         gated = examiner.gates(built, {"band": probes if enough and not fresh else [],
                                        "shortcut": _probe_shortcut(st, attempt, endpoint, built) if enough else None},
@@ -767,9 +832,29 @@ def _generate(st, cut):
                 "research": [finding for _, finding in sent], "split": halves, "specs_record": written,
                 "outcomes": examiner.outcome_counts([gated], research=sent, generator_records=[frozen]),
                 "generator": frozen, "gates": gated, "g_self": kept, "numbered": built.next_number,
-                "derived": built.derived}
+                "derived": built.derived, **({"learning": TRAIN, "topups": topups} if train else {})}
 
     return st.unit("generate", work)
+
+
+def _topup(st, roles, built, specs, halves, shown, sources, attempt, label):
+    """v2: up to ``TOPUP_ROUNDS`` further generator calls (``GENERATOR_SYSTEM_V2`` with ``examiner.topup``'s hint)
+    while the set ``built`` holds fewer items than its band probe needs (``examiner.sufficient``); each call's specs
+    are built on -- numbered from the set's next number, the per-finding counter continued (``_build``) -- and joined
+    to the set (``examiner.joined``). Returns (the set, its specs renumbered, the calls' sealed records)."""
+    made = []
+    for n in range(1, TOPUP_ROUNDS + 1):
+        if examiner.sufficient(built):
+            break
+        payload = examiner.generator_payload(st.bench, halves["g_self"], sources=shown, topup=examiner.topup(built, n))
+        more, written = examiner.generator_write(roles, payload, label="%s/topup-%d" % (label, n),
+                                                 evidence=st.evidence, train=True)
+        made.append(written)
+        if more:
+            built = examiner.joined(built, _build(st, more, halves["g_self"], "G_self", sources, attempt,
+                                                  built.next_number))
+            specs = [{**spec, "n": i} for i, spec in enumerate(list(specs) + list(more), 1)]
+    return built, specs, made
 
 
 # --------------------------------------------------------------------------------------------- 5.4 engineer
@@ -819,13 +904,14 @@ def _sheet_reference(private):
         return None
 
 
-def _references(st, cut, parents):
-    """§4.2: the reference answers of this bench's run-slice items the parent failed, never on ALFWorld; a frozen
-    answer shape only: an answer text or SearchQA's answer list, and on SpreadsheetBench the answer-position cell
-    values of the item's answer workbook (``_sheet_reference``; registrar addendum 2026-10-22 15:5x R1)."""
+def _references(st, cut, parents, also=()):
+    """§4.2: the reference answers of this bench's run-slice items the parent failed (v2: and of the items ``also``,
+    whose references earlier training rounds disclosed), never on ALFWorld; a frozen answer shape only: an answer text
+    or SearchQA's answer list, and on SpreadsheetBench the answer-position cell values of the item's answer workbook
+    (``_sheet_reference``; registrar addendum 2026-10-22 15:5x R1)."""
     if st.bench == "alfworld":
         return {}
-    failed = {t["task_id"] for t in parents if t["token"] == "fail"}
+    failed = {t["task_id"] for t in parents if t["token"] == "fail"} | set(also)
     out = {}
     for item in cut["run"]:
         key = rounds.key(st.bench, item["task_id"])
@@ -1031,6 +1117,350 @@ def _candidate(st, cut, generated):
     return candidate, None
 
 
+# ------------------------------------------------------------------------------------- v2: the training rounds
+def _unit_trajectories(st, name):
+    return trajectories.load_run(units.unit_path(st.chain_root, st.k, st.bench, name))
+
+
+def _run_keys(st, cut):
+    return {rounds.key(st.bench, item["task_id"]) for item in cut["run"]}
+
+
+def _current(st, done):
+    """v2: the incumbent's latest cells of the run-slice items: the run unit's parent cells, replaced item by item by
+    the S' cells of each adopting training round and the S cells of each other one (each the incumbent of its time), in
+    round order (``done``: [(train unit, adopted)])."""
+    by_item = {}
+    for trajectory in _run_trajectories(st, parent_only=True):
+        by_item.setdefault(trajectory["task_id"], []).append(trajectory)
+    for name, adopted in done:
+        fresh = {}
+        for trajectory in _unit_trajectories(st, name):
+            if trajectory["task_id"] in by_item and trajectory["arm"] == ("S'" if adopted else "S"):
+                fresh.setdefault(trajectory["task_id"], []).append(trajectory)
+        by_item.update(fresh)
+    return [trajectory for item in sorted(by_item) for trajectory in by_item[item]]
+
+
+def _evaluated(st, cut, fed):
+    """v2: the run-slice cells (both arms) of the training unit ``fed`` whose feedback the engineer is shown."""
+    if fed is None:
+        return []
+    keys = _run_keys(st, cut)
+    return [trajectory for trajectory in _unit_trajectories(st, fed) if trajectory["task_id"] in keys]
+
+
+def _distinct(found):
+    """The trajectories once per cell, in order."""
+    return list({trajectory["cell"]: trajectory for trajectory in found}.values())
+
+
+def _engineer_train(st, cut, r, incumbent, *, done, fed, history, training, lint, reserved, analysed, disclosed):
+    """v2's unit ``engineer-r<r>`` (``engineer.run_train``): the engineer on the incumbent with the round's inputs; the
+    candidate (re-expressed against S) is saved with the chain's packages."""
+    unit = "engineer-r%d" % r
+    name = st.label(unit)
+
+    def work(attempt):
+        stored = []
+        for k, bench, _ in _earlier(st, "run"):
+            stored += _run_trajectories(st, k, bench)
+        own = _run_trajectories(st)
+        stored += own
+        parents = [t for t in own if t["arm_kind"] == "parent"]
+        current, evaluated = _current(st, done), _evaluated(st, cut, fed)
+        with _inputs_dirs(st, _distinct(stored + current + evaluated), cut) as inputs:
+            ctx = engineer.Context(bench=st.bench, k=st.k, step=st.name, evidence=st.evidence, parent=incumbent,
+                                   trajectories=stored, corpora=_corpora(st, cut), workers=st.services.workers,
+                                   roles=st.roles("engineer"), label=name, card=st.setting.cards.get(st.bench, ""),
+                                   references=_references(st, cut, parents + current + evaluated, also=disclosed),
+                                   inputs_dirs=inputs,
+                                   detectors=detectors.counts(detectors.diagnosis(parents, bench=st.bench)),
+                                   previous=_previous(st), mode=TRAIN, round=r, base=st.parent, current=current,
+                                   evaluated=evaluated, history=list(history), training=training, lint=list(lint),
+                                   reserved=frozenset(reserved), analysed=frozenset(analysed),
+                                   disclosed=frozenset(disclosed))
+            candidate, sealed = engineer.run_train(ctx)
+        if candidate is not None:
+            save(st.chain_root, candidate)
+        return {"engineer": sealed, "candidate_sha256": candidate.sha256 if candidate is not None else None,
+                "learning": TRAIN, "round": r}
+
+    return st.unit(unit, work)
+
+
+def _routes(st, package, entries, publics):
+    """v2: {key: ``router.RouteLog``} of ``package`` on ``entries`` [(key, routing view)], zero calls: no worker when
+    no procedure of the package runs on the bench; on SpreadsheetBench one worker per item with its workbook mounted
+    (``_item_workers``, ``publics`` by key); else one worker holding the package for every item (a predicate is a pure
+    function of the view: C6 replayed every procedure in two orders and hash seeds)."""
+    if not package.for_bench(st.bench):
+        return {key: router.route(package, st.bench, view, None) for key, view in entries}
+    if st.bench == "spreadsheetbench" or st.services.item_workers is not None:
+        factory, out = _item_workers(st, publics), {}
+        for key, view in entries:
+            with factory(package, key) as worker:
+                out[key] = router.route(package, st.bench, view, worker)
+        return out
+    with st.services.workers(package, kind="cell", inputs_dir=None) as worker:
+        return {key: router.route(package, st.bench, view, worker) for key, view in entries}
+
+
+def _token_share(found):
+    return Fraction(sum(_token(cell) == "pass" for cell in found), len(found))
+
+
+def train_verdict(cells, items, generated, changed, *, predicate_faults, routed):
+    """v2: the adoption rule of one training round from its cell records (module docstring). ``cells``: {(arm, item):
+    [cell records]} of arms S' (the candidate) and S (the incumbent); ``items`` / ``generated``: the run-slice and
+    G_self items evaluated (those routed differently); ``changed``: the ids of the procedures the candidate adds or
+    revises against the incumbent; ``predicate_faults``: their predicate faults in the routing pass of ``routed``
+    items. Per item the pass share of each arm; fixed (S' above S), broken (S' below S), net (the sum of S' - S).
+    Adopted iff every guard holds -- S' cells with a fault of a changed procedure or an ``unknown_fault`` <= 2 %, the
+    predicate faults <= 2 % of the routed items, S' format-violating cells above S's by at most max(2, 2 % of its
+    cells) -- and every gain criterion: fixed > broken, net >= max(1, ceil(2 % of the evaluated items)) and the
+    one-sided exact sign test of fixed against broken p <= ``TRAIN_ALPHA``."""
+    evaluated = list(items) + list(generated)
+    diff = {i: _token_share(cells[("S'", i)]) - _token_share(cells[("S", i)]) for i in evaluated}
+    fixed = sorted(i for i in evaluated if diff[i] > 0)
+    broken = sorted(i for i in evaluated if diff[i] < 0)
+    net = sum(diff.values(), Fraction(0))
+    candidate = [c for (arm, _), found in sorted(cells.items()) if arm == "S'" for c in found]
+
+    def own_fault(cell):
+        return _token(cell) == "unknown_fault" or any(f.get("procedure") in changed for f in cell.get("faults") or [])
+
+    def violating(arm):
+        return sum(1 for (name, _), found in cells.items() if name == arm for cell in found
+                   if ((cell.get("judge") or {}).get("format") or {}).get("violation"))
+
+    own, formats = sum(1 for c in candidate if own_fault(c)), {"S": violating("S"), "S'": violating("S'")}
+    margin = max(TRAIN_FORMAT_MARGIN[0], math.ceil(TRAIN_FORMAT_MARGIN[1] * len(candidate)))
+    need = max(1, math.ceil(TRAIN_ADOPT_SHARE * len(evaluated)))
+    p = _one_sided_sign(len(fixed), len(broken))
+    guards = {"own_faults": own <= SELFTEST_FAULT_MAX * len(candidate),
+              "predicate_faults": predicate_faults <= SELFTEST_FAULT_MAX * routed,
+              "format": formats["S'"] - formats["S"] <= margin}
+    gain = {"fixed_over_broken": len(fixed) > len(broken), "net": net >= need, "sign": p <= TRAIN_ALPHA}
+    adopted = bool(evaluated) and all(guards.values()) and all(gain.values())
+    reason = None
+    if not adopted:
+        failed = ["guard:" + k for k, ok in guards.items() if not ok] + ["gain:" + k for k, ok in gain.items() if not ok]
+        reason = failed[0] if evaluated else "no_item_routes_differently"
+    return {"adopted": adopted, "reason": reason, "items": len(items), "generated": len(generated),
+            "fixed": fixed, "broken": broken, "net": "%d/%d" % (net.numerator, net.denominator), "need": need,
+            "p_sign": p, "guards": guards, "gain": gain, "own_fault_cells": own, "candidate_cells": len(candidate),
+            "predicate_faults": predicate_faults, "routed": routed, "format_cells": formats, "format_margin": margin}
+
+
+def _attempt_trajectories(attempt):
+    """{cell: trajectory} of the cells an attempt ran (``<attempt>/trajectories``)."""
+    directory = safe_path(attempt) / trajectories.TRAJECTORIES
+    return {t["cell"]: t for t in (verified(read_json(path), "trajectory") for path in sorted(directory.glob("*.json")))}
+
+
+def _notes_text(trajectory):
+    """The procedure notes the solver saw: the first request's (QA, SpreadsheetBench), every step's distinct ones
+    (ALFWorld)."""
+    if trajectory["bench"] == "alfworld":
+        return "\n".join(dict.fromkeys(step["notes"] for step in trajectory.get("alfworld_steps") or ()
+                                       if step.get("notes")))
+    if not trajectory["calls"]:
+        return ""
+    return str(json.loads(trajectory["calls"][0]["user"]).get(NOTES_KEY) or "")
+
+
+def _last_reply(trajectory):
+    """The solver's final reply (QA, SpreadsheetBench), or ALFWorld's outcome and step count."""
+    if trajectory["bench"] == "alfworld":
+        steps = len(trajectory.get("alfworld_steps") or ())
+        return "%s after %d steps" % ("won" if trajectory["token"] == "pass" else "not won", steps)
+    replies = [reply for reply in trajectory["replies"] if type(reply) is str]
+    return replies[-1] if replies else ""
+
+
+def _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells, made):
+    """v2: the engineer's view of one training round (module docstring): the totals and, per procedure the candidate
+    adds, removes or narrows against the incumbent, the evaluated run-slice items it is enabled on (the candidate's
+    routing; the incumbent's for a removed or narrowed one) with how many it fixed and broke and up to
+    ``TRAIN_EXAMPLES`` fixed and broken examples each (seeded order): the question, the notes the solver saw with the
+    candidate, the last replies with the incumbent ("current") and with the candidate, both pass shares and -- for an
+    item a cell of the round failed, never on ALFWorld -- its reference (``_references``). Generated items are counted
+    only. ``made``: the round's {cell: trajectory}."""
+    by_key = {rounds.key(st.bench, item["task_id"]): item for item in cut["run"]}
+    fixed, broken = set(verdict["fixed"]) & set(by_key), set(verdict["broken"]) & set(by_key)
+    evaluated = [key for key in by_key if (("S", key) in cells)]
+    references = _references(st, cut, [made[c["cell"]["id"]] for key in evaluated for arm in ("S", "S'")
+                                       for c in cells[(arm, key)] if c["cell"]["id"] in made])
+    before, after = set(incumbent.order), set(candidate.order)
+    entries = [(pid, "added", "candidate") for pid in candidate.order if pid not in before]
+    entries += [(pid, "removed", "incumbent") for pid in incumbent.order if pid not in after]
+    entries += [(pid, "narrowed", "incumbent") for pid in incumbent.order if pid in after
+                and set(candidate.narrowed.get(pid, ())) - set(incumbent.narrowed.get(pid, ()))]
+
+    def example(key, outcome):
+        current = [made[c["cell"]["id"]] for c in cells[("S", key)] if c["cell"]["id"] in made]
+        new = [made[c["cell"]["id"]] for c in cells[("S'", key)] if c["cell"]["id"] in made]
+        if not current or not new:  # a cell that stored no trajectory gives no example
+            return None
+        view = solver.routing_view(st.bench, by_key[key]["public"], runtime=st.runtime())
+        question = view.get(QUESTION_FIELDS[st.bench]) or donors.public_text(view)
+        entry = {"task_id": key, "cell": new[-1]["cell"], "outcome": outcome,
+                 "question": str(question)[:TRAIN_TEXT_CHARS["question"]],
+                 "notes": _notes_text(new[-1])[:TRAIN_TEXT_CHARS["note"]],
+                 "current_reply": _last_reply(current[-1])[:TRAIN_TEXT_CHARS["answer"]],
+                 "candidate_reply": _last_reply(new[-1])[:TRAIN_TEXT_CHARS["answer"]],
+                 "current_pass": "%d/%d" % (sum(t["token"] == "pass" for t in current), len(current)),
+                 "candidate_pass": "%d/%d" % (sum(t["token"] == "pass" for t in new), len(new))}
+        if key in references:
+            entry["reference"] = references[key]
+        return entry
+
+    procedures = []
+    for pid, change, side in entries:
+        on = [key for key in evaluated if pid in routed[key][side]]
+        tag = "%s:%s:%s" % (FEEDBACK_TAG, st.label(unit), pid)
+        shown = []
+        for outcome, members in (("fixed", fixed), ("broken", broken)):
+            chosen = ranked([{"task_id": key} for key in on if key in members], SEED, tag + ":" + outcome)
+            found = (example(entry["task_id"], outcome) for entry in chosen)
+            shown += [entry for entry in found if entry is not None][:TRAIN_EXAMPLES]
+        procedures.append({"id": pid, "change": change, "enabled_items": len(on),
+                           "fixed": sum(key in fixed for key in on), "broken": sum(key in broken for key in on),
+                           "examples": shown})
+    generated = [i for i in verdict["fixed"] + verdict["broken"] if i not in by_key]
+    return {"adopted": verdict["adopted"], "reason": verdict["reason"], "items": verdict["items"],
+            "fixed": len(fixed), "broken": len(broken), "net": verdict["net"], "need": verdict["need"],
+            "p_sign": verdict["p_sign"], "guards": verdict["guards"],
+            "generated": {"items": verdict["generated"], "fixed": sum(i in set(verdict["fixed"]) for i in generated),
+                          "broken": sum(i in set(verdict["broken"]) for i in generated)},
+            "procedures": procedures}
+
+
+def _train_eval(st, cut, r, incumbent, candidate, generated):
+    """v2's unit ``train-r<r>`` (module docstring): the routing pass, both packages on the items they route
+    differently (run items with the registered runs, the admitted G_self items once), ``train_verdict`` and the
+    feedback. Returns the unit's result."""
+    unit = "train-r%d" % r
+    name = st.label(unit)
+    runs = SLICES[st.bench]["run"][1]
+    admitted = bool(generated and generated.get("generator") and generated["generator"]["status"] == "admitted")
+    g_self = list(generated.get("g_self") or [])[:G_SELF_MAX] if admitted else []
+
+    def work(attempt):
+        items = {rounds.key(st.bench, item["task_id"]): item for item in cut["run"]}
+        made = {g["id"]: g for g in g_self}
+        publics = {**{key: item["public"] for key, item in items.items()},
+                   **{key: g["public"] for key, g in made.items()}}
+        views = [(key, solver.routing_view(st.bench, public, runtime=st.runtime())) for key, public in publics.items()]
+        before, after = _routes(st, incumbent, views, publics), _routes(st, candidate, views, publics)
+        changed = {pid for pid in candidate.order if pid not in set(incumbent.order)}
+        routed = {key: {"incumbent": list(before[key].enabled), "candidate": list(after[key].enabled)}
+                  for key, _ in views}
+        differs = [key for key, _ in views if before[key].enabled != after[key].enabled]
+        faults = sum(1 for key, _ in views for f in after[key].faults if f.get("procedure") in changed)
+        jobs = []
+        for key in differs:
+            source = items.get(key)
+            task = ({"benchmark": st.bench, "public": source["public"], "private": source["private"]}
+                    if source is not None else _task(made[key]))
+            for arm, kind, package in (("S'", "candidate", candidate), ("S", "parent", incumbent)):
+                jobs += [(arm, Arm(kind, package), key, run, task) for run in range(runs if source else 1)]
+        found = _cells(st, attempt, st.solver("selftest", attempt), name, jobs, tag="train") if jobs else []
+        cells = {}
+        for cell in found:
+            cells.setdefault((cell["cell"]["arm"], cell["cell"]["task_id"]), []).append(cell)
+        rounds.guard(cells, ["S", "S'"], name)
+        verdict = train_verdict(cells, [k for k in differs if k in items], [k for k in differs if k in made],
+                                changed, predicate_faults=faults, routed=len(views))
+        feedback = _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells,
+                             _attempt_trajectories(attempt))
+        return {"learning": TRAIN, "round": r, "incumbent_sha256": incumbent.sha256,
+                "candidate_sha256": candidate.sha256, "routed": len(views), "differs": len(differs),
+                "cells": len(found), "adopted": verdict["adopted"], "verdict": verdict, "feedback": feedback}
+
+    return st.unit(unit, work)
+
+
+def _line(r, engineered, evaluated):
+    """v2: one round of the history the engineer sees: counts and flags, and per proposed change (SkillOpt's step
+    buffer, owner suggestion 2026-10-23 15:1x) its kind (a registered edit kind, else None), registrar id, target,
+    description excerpt -- only for a change whose final version passed the leakage check C4, i.e. survived or stopped
+    at C7, C8 or C9 (Codex review 2026-10-23 #3) -- and fate: the check that stopped it, ``dropped_in_combination``
+    (``engineer._combined_train``), or the round's verdict."""
+    line = {"round": r, "candidate": engineered["candidate_sha256"] is not None, "adopted": False, "items": 0,
+            "generated": 0, "fixed": 0, "broken": 0, "net": "0/1", "p_sign": None, "reason": "no_candidate"}
+    if evaluated is not None:
+        verdict = evaluated["verdict"]
+        line.update({"adopted": verdict["adopted"], "items": verdict["items"], "generated": verdict["generated"],
+                     "fixed": len(verdict["fixed"]), "broken": len(verdict["broken"]), "net": verdict["net"],
+                     "p_sign": verdict["p_sign"], "reason": verdict["reason"]})
+    sealed, proposals = engineered["engineer"], []
+    for change in sealed["changes"]:
+        stopped = change["attempts"][-1]["failed"] if not change["survived"] else None
+        if stopped is not None:
+            fate = "check_failed:" + stopped
+        elif change["n"] in sealed["dropped"]:
+            fate = "dropped_in_combination"
+        else:
+            fate = "adopted" if line["adopted"] else "not_adopted:" + line["reason"]
+        leak_checked = stopped is None or stopped in ("C7", "C8", "C9")
+        proposals.append({"kind": change["kind"] if change["kind"] in EDIT_KINDS else None, "id": change["id"],
+                          "target": change["target"], "description": change["summary"] if leak_checked else "",
+                          "fate": fate})
+    line["proposals"] = proposals
+    return line
+
+
+def _train(st, cut, generated):
+    """v2's training rounds (module docstring) -> ``(T_final, the rounds' records, the last evaluated candidate or
+    None)``. Completed round units are read back, so a restarted step passes through finished rounds without a call."""
+    incumbent, done, fed, history, training, lint, reserved = st.parent, [], None, [], None, [], frozenset()
+    out, last, misses, analysed, disclosed = [], None, 0, frozenset(), frozenset()
+    for r in range(1, TRAIN_ROUNDS + 1):
+        engineered = _engineer_train(st, cut, r, incumbent, done=done, fed=fed, history=history, training=training,
+                                     lint=lint, reserved=reserved, analysed=analysed, disclosed=disclosed)
+        sealed = engineered["engineer"]
+        reserved = reserved | {c["id"] for c in sealed["changes"] if c.get("id")}
+        analysed = analysed | set(sealed["analysis"]["items"])
+        disclosed = disclosed | set(sealed["disclosed"])  # Codex review 2026-10-23 #3: read back on a restart too
+        lint, evaluated = list(sealed["lint"]), None
+        if engineered["candidate_sha256"] is not None:
+            candidate = _package(st, engineered["candidate_sha256"])
+            evaluated = _train_eval(st, cut, r, incumbent, candidate, generated)
+            done.append(("train-r%d" % r, evaluated["adopted"]))
+            fed, training = "train-r%d" % r, evaluated["feedback"]
+            if evaluated["cells"]:
+                last = candidate
+            if evaluated["adopted"]:
+                incumbent = candidate
+        line = _line(r, engineered, evaluated)
+        history.append(line)
+        out.append({**line, "candidate_sha256": engineered["candidate_sha256"], "incumbent_sha256": incumbent.sha256})
+        misses = 0 if line["adopted"] else misses + 1
+        if misses >= TRAIN_PATIENCE:
+            break
+    return incumbent, out, last
+
+
+def _trained(st, cut, generated):
+    """v2 (module docstring): the training rounds, then one self-test of the final package -> ``(S' or None, the
+    not-run outcome or None, the training record)``. No edit against S: ``no_training_gain`` (SX only: the last
+    evaluated candidate takes the self-test and acceptance, recorded as ``exercise``); a block: ``selftest_blocked``."""
+    final, rounds_done, last = _train(st, cut, generated)
+    training = {"rounds": rounds_done, "final_sha256": final.sha256, "adopted": sum(r["adopted"] for r in rounds_done),
+                "exercise": False}
+    if edits(st.parent, final):
+        candidate = final
+    elif st.smoke is not None and last is not None:
+        candidate, training["exercise"] = last, EXERCISE
+    else:
+        return last, _release("no_training_gain"), training
+    if _selftest(st, "selftest", candidate, generated)["blocked"]:
+        return candidate, _release("selftest_blocked"), training
+    return candidate, None, training
+
+
 # ------------------------------------------------------------------------------------------------ 5.6 accept
 def _blocks(st, items):
     """{item: block}: the bench's registered acceptance blocks as consecutive parts of the slice order (§3.3, §6.2;
@@ -1098,10 +1528,10 @@ def _accept(st, cut, candidate, generated):
         endpoint = st.solver("accept", attempt) if n > 1 else first
         examining = st.solver("examiner", attempt, g_acc=True)
         registry = st.services.registry
-        registry.register(st.chain, st.bench, accept, unit=name, purpose=st.purpose("accept"),
+        registry.register(st.namespace, st.bench, accept, unit=name, purpose=st.purpose("accept"),
                           run_root=str(st.setting.root), attempt=n)
         if probe:
-            registry.register(st.chain, st.bench, probe, unit=name, purpose="accept_probe",
+            registry.register(st.namespace, st.bench, probe, unit=name, purpose="accept_probe",
                               run_root=str(st.setting.root), attempt=n)
         donors_ = _run_trajectories(st, parent_only=True)
         acc = _g_acc(st, generated, attempt)
@@ -1118,8 +1548,8 @@ def _accept(st, cut, candidate, generated):
                             and generated["generator"]["status"] == "admitted")
             generate = None if acc is None else (
                 lambda astar: examiner.g_acc(acc, list(astar), bench=st.bench, generator=_generator_id(st)))
-            sealed = acceptance.prepare(
-                root, chain=st.chain, bench=st.bench, step=st.name, unit=name, candidate=candidate, parent=st.parent,
+            sealed = acceptance.prepare(  # the sealed "chain" is the namespace dispatch and settle register in
+                root, chain=st.namespace, bench=st.bench, step=st.name, unit=name, candidate=candidate, parent=st.parent,
                 views=views, blocks=_blocks(st, accept), workers=workers, trajectories=donors_,
                 rooms={i["task_id"]: i["room"] for i in accept} if st.bench == "alfworld" else None,
                 generate=generate, dup=admitted and st.k > 1, probe=[item["task_id"] for item in probe],
@@ -1217,9 +1647,11 @@ def run_step(setting, chain, bench, k, parent, *, services, chain_root=None, smo
                 "A chain, a bench, a step position and the parent package")
     else:
         require(isinstance(smoke, SmokeStep) and chain == budgets.SMOKE and bench == SMOKE_BENCH and k == 1
-                and isinstance(parent, Package) and not parent.procedures and isinstance(smoke.candidate, Package)
-                and smoke.candidate.parent_sha256 == parent.sha256 and smoke.model in CHAINS.values(),
-                "The S4 mini-step: the smoke's SearchQA step 1 from the empty parent with its candidate")
+                and isinstance(parent, Package) and not parent.procedures and smoke.model in CHAINS.values()
+                and (smoke.candidate is None and smoke.drill is None if smoke.train else
+                     isinstance(smoke.candidate, Package) and smoke.candidate.parent_sha256 == parent.sha256),
+                "The S4 mini-step: the smoke's SearchQA step 1 from the empty parent with its candidate (the v2 "
+                "example SX: without one)")
     st = _Step(setting, services, chain, bench, k, parent, safe_path(chain_root or Path(setting.root) / chain), smoke)
     final = st.root / STEP_FILE
     if final.exists():
@@ -1229,10 +1661,14 @@ def run_step(setting, chain, bench, k, parent, *, services, chain_root=None, smo
                           else parent, value)
     cut = _slices(st)
     _run(st, cut)
-    if smoke is None:
+    training = None
+    if smoke is None or smoke.train:
         _diagnose(st, cut)
         generated = _generate(st, cut)
-        candidate, outcome = _candidate(st, cut, generated)
+        if st.learning == TRAIN:  # v2: the training rounds (module docstring)
+            candidate, outcome, training = _trained(st, cut, generated)
+        else:
+            candidate, outcome = _candidate(st, cut, generated)
     else:  # §10 S4: no generation on SearchQA (§7.2); the candidate is given, kept with the chain's packages
         generated, candidate, outcome = None, smoke.candidate, None
         save(st.chain_root, candidate)
@@ -1247,9 +1683,9 @@ def run_step(setting, chain, bench, k, parent, *, services, chain_root=None, smo
         "package_sha256": package.sha256, "decision": outcome["decision"], "reason": outcome["reason"],
         "decision_sha256": outcome["decision_sha256"], "fault_items": outcome["fault_items"],
         "violating_items": outcome["violating_items"],
-        "units": {name: _unit_hash(st, name) for name in UNITS if (units.unit_path(
+        "units": {name: _unit_hash(st, name) for name in st.units if (units.unit_path(
             st.chain_root, k, bench, name) / "unit.json").exists()},
-        "evidence_kind": "selection"})
+        "evidence_kind": "selection", **({"learning": TRAIN, "training": training} if st.learning == TRAIN else {})})
     write_json(final, value)
     return StepRecord(package, verified(read_json(final), "step"))
 

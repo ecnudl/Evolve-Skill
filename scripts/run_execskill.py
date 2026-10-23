@@ -36,20 +36,23 @@ Before the pilot (zero calls unless stated):
                                                     the equivalence row on the imported cards (--texts) and the pinned
                                                     runtimes (v3's, SpreadsheetBench --sheet-runtime; Codex #13)
   smoke-make --root P/smoke --items SET=FILE ... --selftest F [--control-cells F] [--noise-anchor F] [--dry-run]
-             [--probe-root R] [--solver-chain D|G]  the sealed smoke specification (§10, trimmed by the registrar's
+             [--probe-root R] [--solver-chain D|G] [--example]
+                                                    the sealed smoke specification (§10, trimmed by the registrar's
                                                     addendum 13:0x: stages S0, S1, S2, S3, SE6; control cells default
                                                     [], no noise anchor without S-N1; the probe root P/probe unless a
                                                     rehearsal names its own, 15:0x); --solver-chain G (registrar
                                                     addendum 2026-10-23 02:3x): GLM-5.3 is the smoke solver -- stages
                                                     S0, S2, S3, SE6, no S1, no probe root, no control cells (D, the
-                                                    default, is unchanged)
+                                                    default, is unchanged); --example (v2, owner decision
+                                                    2026-10-23 13:3x): the stages plus SX, the example of the
+                                                    train-then-accept step, with the example caps
   probe --spec S --env-path F [--probe-root R] [--fake]
                                                     S1 on the spec's probe ledger root (paid: <= 60 calls; counts
                                                     only); --fake: the zero-call rehearsal, no credential (15:0x); a
                                                     chain-G smoke has no S1 and is refused
   smoke --spec S --stage S0|S1 --input F            judge S0's or S1's measured inputs and record it once (S2, S3 and
                                                     S-E6 only through smoke-run, registrar addendum 15:0x)
-  smoke-run --spec S --manifest M --stage S2|SN1|S3|S4|SE6 [--fake] [--env-path F] [--roles-repo D]
+  smoke-run --spec S --manifest M --stage S2|SN1|S3|S4|SE6|SX [--fake] [--env-path F] [--roles-repo D]
                                                     dispatch one paid smoke stage (smoke.run_stage; recorded once);
                                                     exit 0 passed, 3 failed or stopped (a stopped unit is printed);
                                                     --fake names no credential (ticket C7d-3); a chain-G smoke names
@@ -348,11 +351,14 @@ def verify_kind(path, kind):
 def smoke_make(args):
     items = dict(entry.split("=", 1) for entry in args.items)
     require(len(items) == len(args.items), "One file per item set")
+    stages = None
+    if args.example:  # v2: the registered stages of the solver chain's smoke plus SX
+        stages = (smoke.G_SMOKE_STAGES if args.solver_chain == "G" else smoke.SMOKE_STAGES) + ("SX",)
     spec = smoke.make(args.root, items=items,
                       control_cells=read_json(args.control_cells) if args.control_cells else [],
                       noise_anchor=read_json(args.noise_anchor) if args.noise_anchor else None,
                       selftest=args.selftest, write=not args.dry_run, probe_root=args.probe_root,
-                      solver_chain=args.solver_chain)
+                      solver_chain=args.solver_chain, stages=stages)
     _print({"smoke": str(Path(args.root) / smoke.SPEC), "spec": spec[protocol.RECORD_HASH],
             "written": not args.dry_run, "items": {k: v["count"] for k, v in spec["items"].items()},
             "stages": spec["stages"], "control_cells": len(spec["control_cells"]),
@@ -543,7 +549,8 @@ def smoke_summary(args):
 
 def smoke_waiver(args):
     """Registrar addendum 2026-10-23 05:3x (zero calls, writes nothing): the owner's smoke waiver
-    (``protocol.SMOKE_WAIVER``, which only the owner writes) beside the sealed ``smoke-result.json`` of the smoke at
+    (``protocol.SMOKE_WAIVER``, or ``protocol.SMOKE_WAIVER_V2`` for a smoke that requires v2's example SX
+    (``smoke.waiver_name``); only the owner writes it) beside the sealed ``smoke-result.json`` of the smoke at
     ``--spec``, checked by ``smoke.waiver``: prints {"waiver": "absent"} or {"waiver": "valid", "rows", "sha256"};
     an invalid waiver, or one beside a passed result, is refused with the reason (nonzero exit)."""
     spec = smoke.load(args.spec)
@@ -828,7 +835,7 @@ def parser():
     command = sub.add_parser("smoke-run")
     command.add_argument("--spec", required=True)
     command.add_argument("--manifest", required=True)
-    command.add_argument("--stage", required=True, choices=("S2", "SN1", "S3", "S4", "SE6"))
+    command.add_argument("--stage", required=True, choices=("S2", "SN1", "S3", "S4", "SE6", "SX"))
     command.add_argument("--fake", action="store_true")
     command.add_argument("--env-path")  # real stages: protocol.ELUCID_ENV when omitted; --fake: none (C7d-3)
     command.add_argument("--roles-repo")
@@ -837,6 +844,7 @@ def parser():
     command.add_argument("--root", default=protocol.SMOKE_ROOT)
     command.add_argument("--probe-root")  # default protocol.PROBE_ROOT (smoke.make); a rehearsal names its own (15:0x)
     command.add_argument("--solver-chain", default="D", choices=protocol.SMOKE_SOLVER_CHAINS)  # addendum 10/23 02:3x
+    command.add_argument("--example", action="store_true")  # v2: SX (owner decision 2026-10-23 13:3x)
     command.add_argument("--items", action="append", required=True)
     command.add_argument("--control-cells")  # optional, default [] (registrar addendum 13:4x)
     command.add_argument("--noise-anchor")  # not required without S-N1 (registrar addendum 13:4x)

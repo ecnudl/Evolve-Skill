@@ -70,7 +70,7 @@ from .package import Package
 from .protocol import BENCHES, EVIDENCE, record, verified
 
 __all__ = ("ARM_KINDS", "Arm", "Calls", "Context", "Pause", "Replay", "TrainingStore", "cell_id", "run_cell",
-           "run_cells", "run_parallel", "share_cell")
+           "run_cells", "run_parallel", "share_cell", "share_same")
 
 LIMITS = {REEXECUTE: MAX_REEXECUTIONS, RESCORE: MAX_RESCORES, RESTART: MAX_EPISODE_RESTARTS}  # cells.py:44
 ARM_KINDS = ("candidate", "parent", "card", "placebo_y", "placebo_i", "dup", "text")
@@ -480,6 +480,54 @@ def share_cell(context, cell, task, arm, source, route, *, store):
         "cell": cell, **{name: cell[name] for name in ROUND_KEYS if name in cell},
         "package_sha256": arm.package.sha256, "arm_kind": arm.kind, "enabled": [],
         "withheld": sorted(arm.withhold), "restored": sorted(arm.restore),
+        "attempts": [], "remedies": {}, "spent": [], "sends": [], "refused": False, "logical_calls": [],
+        "deciding_receipt": source["deciding_receipt"], "worst_delivery": source["worst_delivery"],
+        "faults": faults, "fault_kinds": dict(sorted(Counter(str(f.get("kind")) for f in faults).items())),
+        "final": source["final"], "official": source["official"], "judge": source["judge"],
+        "shared_with": source["cell"]["id"], "sandbox": _sandbox([]), "dispatch_ts": now, "finish_ts": now,
+        "solver_route": source.get("solver_route"), "stop": None}
+    return store.save(record("cell", context.evidence, fields), None)
+
+
+def share_same(context, cell, task, arm, source, route, source_route, source_package, *, store):
+    """v2 stage reads (``protocol.STAGE_READ``; ``evaluation.stage_plan``): a stage arm whose package enables on the
+    item exactly the procedures -- the same ids, in the same order, byte-identical (``Procedure.sha256``) -- that the
+    cell ``source`` of another plain package arm of the unit ran with (F's, or an earlier stage arm's) sends the same
+    solver request, so its cell is ``source``, linked by ``shared_with``. ``route``: the stage package's sealed route
+    on the item; ``source_route``: the source package's (``source_package``), on the same routing view; the source
+    cell itself ran with that route's procedures (its ``enabled``) and recorded no fault (a faulted hook drops its
+    notes without changing ``enabled``, so the request a fault-free run sends differs: Codex stage review #1). Nothing
+    runs and nothing is sent; the route's predicate faults are the cell's. Returns the stored record."""
+    _check_cell(cell)
+    require(isinstance(arm, Arm) and isinstance(source_package, Package), "A cell runs one Arm of a package")
+    require(arm.kind == "candidate" and not (arm.withhold or arm.restore) and arm.placebo is None and arm.text is None,
+            "Only a plain package arm shares another arm's cell")
+    source, route, source_route = verified(source, "cell"), verified(route, "route"), verified(source_route, "route")
+    require(source["stop"] is None and source["final"] is not None and source["shared_with"] is None,
+            "Share a completed cell that ran")
+    require(not source["faults"], "Share a cell that ran without a fault (Codex stage review #1)")
+    require(all(source["cell"][name] == cell[name] for name in ("unit", "benchmark", "task_id", "run")),
+            "Share a cell of the same unit, item and run")
+    require(source["arm_kind"] == "candidate" and not source["withheld"] and not source["restored"]
+            and source["package_sha256"] == source_package.sha256 == source_route["package_sha256"],
+            "The source cell ran its plain package arm")
+    bench = cell["benchmark"]
+    view = digest(solver.routing_view(bench, task["public"], runtime=context.runtime[bench]))
+    require(route["package_sha256"] == arm.package.sha256 and route["bench"] == source_route["bench"] == bench
+            and route["routing_view_sha256"] == source_route["routing_view_sha256"] == view,
+            "Both routes were made on this item's routing view")
+    enabled = list(route["enabled"])
+    require(enabled and enabled == list(source_route["enabled"]) == list(source["enabled"] or []),
+            "The stage arm enables exactly the procedures the source cell ran with")
+    require(all(arm.package.get(pid).sha256 == source_package.get(pid).sha256 for pid in enabled),
+            "The shared procedures are byte-identical")
+    store.claim(cell["id"])
+    now = context.clock()
+    faults = [{**fault, "step": "route"} for fault in route["faults"]]
+    fields = {
+        "cell": cell, **{name: cell[name] for name in ROUND_KEYS if name in cell},
+        "package_sha256": arm.package.sha256, "arm_kind": arm.kind, "enabled": enabled,
+        "withheld": [], "restored": [],
         "attempts": [], "remedies": {}, "spent": [], "sends": [], "refused": False, "logical_calls": [],
         "deciding_receipt": source["deciding_receipt"], "worst_delivery": source["worst_delivery"],
         "faults": faults, "fault_kinds": dict(sorted(Counter(str(f.get("kind")) for f in faults).items())),

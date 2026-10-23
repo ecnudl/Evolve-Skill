@@ -55,7 +55,7 @@ from skillopt.continual_eval.core import require, safe_path
 
 from .errors import ConfigurationError
 from .protocol import (BENCHES, CHAINS, CONFIG_GLM_CAP, CONFIG_ROLE_CAPS, CONFIG_STEP_CAPS, FIRST_CALL_CAP, LEDGER,
-                       MAX_REDOS, PILOT, PILOTS, PROBE_CAP, ROLE_CAPS, SMOKE_CAPS)
+                       MAX_REDOS, PILOT, PILOTS, PROBE_CAP, ROLE_CAPS, SMOKE_CAPS, SMOKE_SX_CAPS)
 
 ROOT = OVERALL
 SMOKE = "smoke"  # the smoke's namespace and scope prefix (registry.NAMESPACES)
@@ -179,10 +179,11 @@ def caps(pilot=PILOT):
     return out
 
 
-def smoke_caps():
-    """The smoke ledger's caps (§9.3; calc T7): solver 14M, GLM 2M."""
-    return {ROOT: SMOKE_CAPS["solver"] + SMOKE_CAPS["glm"], SMOKE + ":solver": SMOKE_CAPS["solver"],
-            SMOKE + ":glm": SMOKE_CAPS["glm"]}
+def smoke_caps(example=False):
+    """The smoke ledger's caps (§9.3; calc T7): solver 14M, GLM 2M; with ``example`` (a v2 smoke that lists the
+    example stage SX, ``protocol.SX_SLICES``) solver 80M, GLM 40M (``protocol.SMOKE_SX_CAPS``)."""
+    caps = SMOKE_SX_CAPS if example else SMOKE_CAPS
+    return {ROOT: caps["solver"] + caps["glm"], SMOKE + ":solver": caps["solver"], SMOKE + ":glm": caps["glm"]}
 
 
 def probe_caps():

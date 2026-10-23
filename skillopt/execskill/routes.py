@@ -206,7 +206,7 @@ def check_pins(clients, *, configuration=None):
     runs, each block equal to ``pin`` re-derived from its own env path and the chain's solver block. A ``main``
     manifest must pin route B of chain D (registrar row "deepseek route B"). Raises ValueError."""
     pinned = clients.get("routes")
-    if configuration == protocol.MAIN:
+    if configuration in (protocol.MAIN, protocol.MAIN_V2):  # main-v2: the main run's chains, v2's learning
         require(isinstance(pinned, dict) and isinstance(pinned.get("D"), dict) and client.ROUTE_B in pinned["D"],
                 "A main manifest pins chain D's route B (clients.routes.D.B = routes.pin(...); registrar row "
                 "\"deepseek route B\")")

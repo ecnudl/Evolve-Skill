@@ -38,6 +38,22 @@ changes (dropping, from the last, any whose combination breaks the package caps)
 is one sealed ``fivebench-execskill-v1-engineer`` record. At most ``ENGINEER_CALLS`` engineer calls per step: one
 count shared by the step's engineer units within an attempt, so ``engineer-2`` gets the calls its first unit left
 (``Context.spent``; a redo attempt restarts its own count; registrar addendum 2026-10-22, R7 decision 16:1x, R7a).
+
+v2 (configuration ``main-v2``, learning mode "train"; owner decision 2026-10-23 13:3x; ``run_train``): the engineer
+works over training rounds. In round r it sees the incumbent T_{r-1} (``Context.parent``; T_0 is the step's parent S,
+``Context.base``), the incumbent's latest trajectories of the run-slice items (``Context.current``), the earlier
+rounds (``history``), the last round's training evaluation (``training``: per changed procedure on how many items it
+fired and which training items it fixed or broke, with examples) and the last candidate's advisory replay-test
+report (``lint``), under the pinned ``ENGINEER_SYSTEM_V2``. The checks are v1's except that the description and the
+header are cut to their caps before C3 (recorded as ``truncated``), C7 keeps only the registrar's own checks fatal
+(``replay.registrar_checks``) while the engineer's replay tests (0-8) are advice, a change beyond the step's edit
+budget fails C3 without a fix call, every other failing change gets up to ``TRAIN_FIXES`` fix calls with the measured
+detail of its failure, and a unit makes at most ``TRAIN_ENGINEER_CALLS`` calls. The surviving changes are applied to
+T_{r-1} and the result is re-expressed against S (``rebase``), so the step's final candidate is one candidate of S
+with at most ``MAX_CHANGES`` edits, whatever the number of rounds. Codex review 2026-10-23: what a round carries to
+the next is schema-checked (``Context``; #4), the lint names tests by position only (``_lint``; #3), C4 counts the
+table-shape references every round of the step disclosed (``Context.disclosed``; #3), and an oversized proposal
+message leaves out trajectories, then training examples, then analyses (``_fit_train``; #5).
 """
 from __future__ import annotations
 
@@ -46,7 +62,7 @@ import json
 import re
 import unicodedata
 import zipfile
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 from pathlib import Path
@@ -55,22 +71,50 @@ from xml.etree import ElementTree as ET
 from skillopt.coevo5 import leakage
 from skillopt.coevo5.data import ranked
 from skillopt.coevo5.protocol import LEAK_MIN_SIGNIFICANT_DIGITS, LEAK_MIN_SINGLE_WORD
-from skillopt.coevo5.roles import fit
+from skillopt.coevo5.roles import Invalid, fit, message_bytes, parse as parse_reply
 from skillopt.continual_eval.core import require
 from skillopt.validator_pilot.api import digest
 
 from . import policy, replay
 from .donors import public_text
 from .errors import PackageInvalid
-from .package import EDIT_KINDS, FIXTURE, Procedure, with_
-from .protocol import (BENCHES, ENGINEER_CALLS, ENGINEER_SHOWN, HOOKS, MAX_CHANGES, QA, ROLE_INPUT_BYTES, SEED,
-                       SHOWN_TAG, record, verified)
+from .package import EDIT_KINDS, FIXTURE, Package, Procedure, edits, validate, with_
+from .protocol import (ANALYST_TAG, BENCHES, ENGINEER_CALLS, ENGINEER_SHOWN, HOOKS, MAX_CHANGES, MAX_DESCRIPTION_CHARS,
+                       MAX_TESTS,
+                       MAX_HEADER_CHARS, MAX_PACKAGE_BYTES, MAX_PROCEDURE_BYTES, QA, ROLE_INPUT_BYTES, SEED, SHOWN_TAG,
+                       TRAIN_ANALYST_BATCH, TRAIN_ANALYST_CALLS, TRAIN_ENGINEER_CALLS, TRAIN_FINDING_CHARS,
+                       TRAIN_EXAMPLES, TRAIN_FINDINGS, TRAIN_FIXES, TRAIN_PROPOSAL_CHARS, TRAIN_ROUNDS,
+                       TRAIN_TEXT_CHARS, record, verified)
 from .trajectories import HIDDEN, whitelisted
 
 ROLE = "engineer"
 STATIC_BANS = ("meta_option", "bulletin_literal", "receptacle_literal")
 BLOCK = re.compile(r"```([A-Za-z]*)[ \t]*\n(.*?)\n[ \t]*```", re.S)
 RUN_UNIT = re.compile(r"(?P<chain>[^/]+)/s(?P<k>\d+)-(?P<bench>[a-z]+)/run")  # a run unit's label
+TRAIN_UNIT = re.compile(r"(?P<chain>[^/]+)/s(?P<k>\d+)-(?P<bench>[a-z]+)/train-r(?P<r>\d+)")  # a v2 training unit
+TRAIN = "train"  # v2's learning mode (``protocol.LEARNING``)
+LINT_REASONS = ("test_count", "invalid_test", "test_failed", "vacuous_test", "no_fix_claim")  # v2: advice only
+MAX_LINT = 10
+MAX_DETAIL_CHARS = 300  # v2: a flagged text or a reason in a fix call's detail
+# v2, Codex review 2026-10-23 #3/#4: the exact fields of what one round carries to the next
+LINT_DETAILS = ("keys", "id", "trajectory_not_in_scope", "hook_or_kind", "property_shape", "step", "value",
+                "nonvacuity", "mutation", "predicate_needs_mutation")  # replay.validate_test's reasons
+LINT_FIELDS = frozenset({"id", "tests", "problems"})
+LINT_TEST_FIELDS = frozenset({"test", "holds", "withheld", "mutated", "nonvacuous"})
+HISTORY_FIELDS = frozenset({"round", "candidate", "adopted", "items", "generated", "fixed", "broken", "net", "p_sign",
+                            "reason", "proposals"})
+PROPOSAL_FIELDS = frozenset({"kind", "id", "target", "description", "fate"})
+TRAINING_FIELDS = frozenset({"adopted", "reason", "items", "fixed", "broken", "net", "need", "p_sign", "guards",
+                             "generated", "procedures"})
+GUARD_FIELDS = frozenset({"own_faults", "predicate_faults", "format"})
+FEEDBACK_FIELDS = frozenset({"id", "change", "enabled_items", "fixed", "broken", "examples"})
+EXAMPLE_FIELDS = frozenset({"task_id", "cell", "outcome", "question", "notes", "current_reply", "candidate_reply",
+                            "current_pass", "candidate_pass"})  # and "reference" where ``step._feedback`` shows one
+EXAMPLE_TEXTS = (("question", "question"), ("notes", "note"), ("current_reply", "answer"),
+                 ("candidate_reply", "answer"))
+FRACTION = re.compile(r"-?\d+/\d+")
+MAX_REASON_CHARS = 64  # a verdict's reason, a proposal's fate
+MAX_ID_CHARS = 64
 PREVIOUS_FIELDS = frozenset({"decision", "faults", "format"})  # §4.2: accepted / not accepted + fault, format counts
 OPTION_LETTER = re.compile(r"\b(?i:option|choice)\s*\(?[A-E]\)?(?![A-Za-z])|^\s*(?:-\s*)?\(?[A-E]\)?[.)]?\s*$", re.M)
 CODED = ("new", "revision")
@@ -161,6 +205,65 @@ order of the changes. A change is {"kind": "new", "description" (<= 600 characte
 "benches": the benches it stops running on}. {"changes": []} proposes nothing. When the user message has "request": \
 "fix", it names one change and the check it failed: reply in the same format with exactly that change, corrected."""
 ENGINEER_PROMPT_SHA256 = digest(ENGINEER_SYSTEM)
+# v2 (owner decision 2026-10-23 13:3x): v1's text up to its replay-test paragraph, then the training rounds, the edit
+# budget, advisory replay tests and the reply format with optional tests and cut description and header
+TRAIN_TAIL = """\
+Replay tests (0 to 8 per new or revised procedure; optional) show on the stored trajectories that the procedure does \
+what it claims: {"id", "trajectory": the "cell" of a trajectory shown to you, "hook", "property", "claims_fix": true \
+or false, "nonvacuity": {"withheld_expect": false, "mutation": null or a mutation}}. Properties: {"kind": \
+"applies_true"} or "applies_false"; {"kind": "note_contains", "value": text}; {"kind": "note_matches", "value": \
+[text fragments in order]}; {"kind": "discourage_contains" or "discourage_excludes", "value": command}; {"kind": \
+"binding_equals", "name", "value"}; {"kind": "repair_requested", "value": true or false}; {"kind": "state_equals", \
+"key", "value"}; properties of alf_before_step and alf_after_step also give "step" (the step index). Mutations: \
+strip_digits (any bench), drop_exception_message or program_ok (SpreadsheetBench), nothing_happens (ALFWorld). The \
+registrar runs them and reports their problems to you as "lint" in the next round; they never block a change. The \
+registrar's own checks do block: a passed SpreadsheetBench item must not request a repair, the last action of a won \
+ALFWorld game must not be discouraged, an ALFWorld state procedure's facts must agree with the reference tracker, \
+and bindings must quote the task verbatim.
+
+Training rounds. This step improves the package over up to 6 rounds on training items: this bench's run batch (the \
+trajectories you see) and, when the examiner made them, generated items of this bench. In each round you propose at \
+most 3 changes to the current package. The registrar checks them, builds the candidate and runs the solver, several \
+times with each package, on every training item where the candidate enables a different set of procedures than the \
+current package. The candidate replaces the current package only when it fixes more items than it breaks (a net gain \
+of at least one item and of 2% of the items evaluated, one-sided sign test p <= 1/4), with faults of the changed \
+procedures in at most 2% of its cells and without more format violations. "round" is this round's number; \
+"history" lists the earlier rounds; "training" is the last round's evaluation: per changed procedure on how many \
+items it fired, which items it fixed and which it broke, with examples (the question, the notes the solver saw, the \
+solver's final replies with the current package and with the candidate, the reference answer); "trajectories" are \
+the current package's latest trajectories. Use this evidence: keep what fixes items, repair, narrow or delete what \
+breaks them, and try a different idea after a rejected round. A procedure that fires on no item cannot help.
+
+Edit budget. Whatever the number of rounds, the step's final package may differ from the step's starting package by \
+at most 3 edits; a new procedure, a revision, a deletion or a narrowing of a starting procedure each count one. \
+"edits" lists the edits used so far and the procedures this step created; revising, narrowing or deleting a \
+procedure this step created uses no further edit. A change beyond the budget is dropped.
+
+Reply with one ```json block {"changes": [...]} and then one ```python block per new or revised procedure, in the \
+order of the changes; never put code into the JSON. A change is {"kind": "new", "description" (at most 600 \
+characters, for people; a longer one is cut), "hooks", "header" (at most 200 characters, shown above the notes; cut \
+likewise), "max_note_chars" (1-4000 when a hook writes notes, else 0), "requests_second_call", "state_bytes", \
+optionally "replay_tests" and "excluded_benches"}; {"kind": "revision", "revises": the procedure's id, and the fields \
+of "new"}; {"kind": "deletion", "id"}; or {"kind": "narrowing", "id", "benches": the benches it stops running on}. \
+{"changes": []} proposes nothing. When the user message has "request": "fix", it names one change, the check it \
+failed and the measured detail: reply in the same format with exactly that change, corrected (the same kind and \
+target, its code in a ```python block)."""
+ENGINEER_SYSTEM_V2 = ENGINEER_SYSTEM[:ENGINEER_SYSTEM.index("Replay tests (1 to 8")] + TRAIN_TAIL
+ENGINEER_PROMPT_V2_SHA256 = digest(ENGINEER_SYSTEM_V2)
+# v2's analysts (owner suggestion 2026-10-23 15:1x; SkillOpt's minibatch reflection): engineer-role calls before each
+# round's proposal, on groups of the incumbent's failed run-slice items, whose findings the proposal call is shown
+ANALYST_SYSTEM = """\
+You analyse failures of a solver model for an engineer who maintains a package of helper programs ("procedures"). The \
+shell runs each procedure's hooks in a sandbox without network, files or clock and shows the solver the typed notes \
+they return: facts, tables, candidates, warnings and named numbers quoted from the task -- information only, never \
+instructions about the reply's form. You see the bench's task card, the current procedures and a group of the \
+solver's failed trajectories (on QA and table benches each with its reference answer). Find at most 3 failure \
+patterns a procedure could address: what went wrong, on which of the shown items, and what a program could compute, \
+look up or check in the item's own text (the question, its context or choices, the workbook, the observations) that \
+would have helped the solver. Never quote or restate a reference answer and never suggest rules about the reply's \
+form. Reply with one ```json block {"findings": [{"pattern": text of at most 300 characters, "items": [task_id of \
+shown trajectories], "helper": text of at most 300 characters}]}; {"findings": []} when no pattern fits."""
+ANALYST_PROMPT_SHA256 = digest(ANALYST_SYSTEM)
 
 
 class Unparseable(ValueError):
@@ -179,11 +282,13 @@ class Change:
     procedure: Procedure | None = None
     target: str | None = None
     benches: tuple = ()
+    truncated: dict = field(default_factory=dict)  # v2: {field: its length} of a description or header cut to its cap
 
     def to_json(self):
         return {"n": self.n, "kind": self.kind, "target": self.target, "benches": list(self.benches),
                 "id": self.procedure.id if self.procedure else None,
-                "procedure_sha256": self.procedure.sha256 if self.procedure else None, "engineer_call": self.call}
+                "procedure_sha256": self.procedure.sha256 if self.procedure else None, "engineer_call": self.call,
+                **({"truncated": dict(self.truncated)} if self.truncated else {})}
 
 
 @dataclass
@@ -202,7 +307,21 @@ class Context:
     a run unit (``<chain>/s<k>-<bench>/run``) of this chain (the label's first part) at this step or before -- never an
     acceptance or test cell; references only on QA and table benches, only for this bench's run-slice failures, in a
     frozen answer shape (text, list of texts, or answer positions to scalars) -- never an expert plan or a game path;
-    detectors and previous as counts only."""
+    detectors and previous as counts only.
+
+    v2 (``mode`` "train", module docstring): ``round`` (1..``TRAIN_ROUNDS``); ``base``: the step's parent S, against
+    which the edit budget counts, ``parent`` being the incumbent T_{r-1} (S itself or one candidate of S);
+    ``current``: the incumbent's latest cells of the run-slice items and ``evaluated``: the last training unit's cells
+    of run-slice items, both this step's sealed trajectories of its run unit or of an earlier ``train-r<n>`` unit of
+    this round's step; ``history``: per earlier round counts and flags only; ``training``: the last round's evaluation
+    (its examples name this step's run-slice items and known cells, a reference only as ``references`` gives it,
+    never on ALFWorld); ``lint``: the last candidate's advisory replay-test reports; ``reserved``: the procedure ids
+    earlier rounds of the step used; ``analysed``: the run-slice items earlier rounds' analysts saw (``analyse``);
+    ``disclosed``: the run-slice items whose table-shape reference an earlier round of the step disclosed (C4 counts
+    them in every later round; Codex review 2026-10-23 #3). References may then name any run-slice item a shown or
+    evaluated cell failed, and every disclosed item. The history, the training feedback and the lint have exactly the
+    fields ``step._line``, ``step._feedback`` and ``_lint`` write (#4). ``spent`` is 0 in the train mode:
+    each ``engineer-r<r>`` unit has its own ``TRAIN_ENGINEER_CALLS`` and ``TRAIN_ANALYST_CALLS``."""
     bench: str
     k: int
     step: str
@@ -219,18 +338,42 @@ class Context:
     detectors: dict = field(default_factory=dict)
     previous: dict | None = None
     spent: int = 0
+    mode: str = "single"
+    round: int = 0
+    base: object = None
+    current: list = field(default_factory=list)
+    evaluated: list = field(default_factory=list)
+    history: list = field(default_factory=list)
+    training: dict | None = None
+    lint: list = field(default_factory=list)
+    reserved: frozenset = frozenset()
+    analysed: frozenset = frozenset()
+    disclosed: frozenset = frozenset()
     # the payload's disclosed SpreadsheetBench values and the public workbooks read for their check (``disclosed``)
     sheet: dict = field(default_factory=dict, init=False, repr=False, compare=False)
 
+    @property
+    def calls_cap(self):
+        """The engineer calls of one step (v1, ``ENGINEER_CALLS``) or of one ``engineer-r<r>`` unit (v2)."""
+        return TRAIN_ENGINEER_CALLS if self.mode == TRAIN else ENGINEER_CALLS
+
     def __post_init__(self):
         require(self.bench in BENCHES and type(self.k) is int and 0 <= self.k <= 999, "A known bench and step number")
-        require(type(self.spent) is int and 0 <= self.spent <= ENGINEER_CALLS, "The step's engineer calls so far")
+        require(self.mode in ("single", TRAIN), "A known learning mode")
+        require(type(self.spent) is int and 0 <= self.spent <= self.calls_cap and (self.mode != TRAIN or not self.spent),
+                "The step's engineer calls so far")
         chain = str(self.label).split("/", 1)[0]
         for trajectory in self.trajectories:
             found = RUN_UNIT.fullmatch(str(verified(trajectory, "trajectory")["unit"]))
             require(found is not None and found["chain"] == chain and found["bench"] == trajectory["bench"]
                     and int(found["k"]) <= self.k, "The engineer sees run-slice trajectories of its own chain only")
         failures = {t["task_id"] for t in self.trajectories if t["bench"] == self.bench and t["token"] == "fail"}
+        if self.mode == TRAIN:
+            failures |= self._training_inputs(chain)
+        else:
+            require(self.round == 0 and self.base is None and not self.current and not self.evaluated
+                    and not self.history and self.training is None and not self.lint and not self.reserved
+                    and not self.analysed and not self.disclosed, "Training inputs only in the train mode")
         require(self.bench != "alfworld" or not self.references, "No reference reaches the engineer on ALFWorld")
         require(set(self.references) <= failures and all(_answer_shape(v) for v in self.references.values()),
                 "References only for this bench's run-slice failures, in a frozen answer shape")
@@ -240,6 +383,127 @@ class Context:
             and self.previous["decision"] in ("accepted", "not_accepted") and _counts(self.previous["faults"])
             and _counts(self.previous["format"])),
             "The previous step is shown as accepted / not accepted with fault and format counts only")
+
+    def _training_inputs(self, chain):
+        """The train mode's own inputs (class docstring); returns the run-slice items a current or evaluated cell
+        failed."""
+        require(type(self.round) is int and 1 <= self.round <= TRAIN_ROUNDS and isinstance(self.base, Package),
+                "A training round of the step's parent")
+        require(self.parent.sha256 == self.base.sha256 or self.parent.parent_sha256 == self.base.sha256,
+                "The incumbent is the step's parent or one candidate of it")
+        if self.parent.sha256 != self.base.sha256:
+            validate(self.parent, self.base)
+        own = {t["task_id"] for t in self.trajectories if t["bench"] == self.bench
+               and int(RUN_UNIT.fullmatch(t["unit"])["k"]) == self.k}
+        for trajectory in list(self.current) + list(self.evaluated):
+            unit = str(verified(trajectory, "trajectory")["unit"])
+            run, train = RUN_UNIT.fullmatch(unit), TRAIN_UNIT.fullmatch(unit)
+            found = run or train
+            require(found is not None and found["chain"] == chain and found["bench"] == self.bench
+                    and int(found["k"]) == self.k and (train is None or int(train["r"]) < self.round)
+                    and trajectory["bench"] == self.bench and trajectory["task_id"] in own,
+                    "Training trajectories are this step's run-slice cells of its run unit or an earlier training "
+                    "unit")
+        require(isinstance(self.history, list) and all(_history_line(entry, self.round) for entry in self.history),
+                "The history holds counts and flags only")
+        require(isinstance(self.lint, list) and all(_lint_entry(entry) for entry in self.lint),
+                "Lint entries are reports")
+        require(isinstance(self.reserved, frozenset) and all(type(i) is str for i in self.reserved),
+                "Reserved procedure ids")
+        require(isinstance(self.analysed, frozenset) and self.analysed <= own, "Analysed items are run-slice items")
+        require(isinstance(self.disclosed, frozenset) and self.disclosed <= own
+                and (self.bench != "alfworld" or not self.disclosed), "Disclosed items are run-slice items")
+        require(all(isinstance(self.references.get(i), dict) for i in self.disclosed),
+                "Disclosed items keep their table-shape references")
+        evaluated = {t["cell"]: t for t in self.evaluated}
+        require(self.training is None or _training_ok(self.training, self.references, own, evaluated, self.bench),
+                "The training feedback shows this step's run-slice items with their own references only")
+        return {t["task_id"] for t in list(self.current) + list(self.evaluated) if t["token"] == "fail"} | self.disclosed
+
+
+def _text(value, limit, *, empty=True):
+    return type(value) is str and len(value) <= limit and (empty or bool(value.strip()))
+
+
+def _count(value):
+    return type(value) is int and value >= 0
+
+
+def _verdict_fields(entry):
+    """The verdict's counts and flags a history line and the training feedback share: the net as "p/q", the sign
+    test's p, the reason."""
+    return (all(_count(entry[k]) for k in ("items", "fixed", "broken")) and type(entry["adopted"]) is bool
+            and type(entry["net"]) is str and FRACTION.fullmatch(entry["net"]) is not None
+            and (entry["p_sign"] is None or (type(entry["p_sign"]) in (int, float) and 0 <= entry["p_sign"] <= 1))
+            and (entry["reason"] is None or _text(entry["reason"], MAX_REASON_CHARS)))
+
+
+def _history_line(entry, before):
+    """v2 (Codex review 2026-10-23 #4): a line of an earlier round exactly as ``step._line`` writes it -- counts,
+    flags, the net, p and reason -- with its ``proposals`` (the step buffer): kind, registrar id, target, a description
+    excerpt and the fate."""
+    if not (isinstance(entry, dict) and set(entry) == HISTORY_FIELDS and type(entry["round"]) is int
+            and 1 <= entry["round"] < before and type(entry["candidate"]) is bool and _count(entry["generated"])
+            and _verdict_fields(entry) and isinstance(entry["proposals"], list)):
+        return False
+    return all(isinstance(p, dict) and set(p) == PROPOSAL_FIELDS and (p["kind"] is None or p["kind"] in EDIT_KINDS)
+               and all(p[k] is None or _text(p[k], MAX_ID_CHARS) for k in ("id", "target"))
+               and _text(p["description"], TRAIN_PROPOSAL_CHARS) and _text(p["fate"], MAX_REASON_CHARS, empty=False)
+               for p in entry["proposals"])
+
+
+def _lint_entry(entry):
+    """v2 (Codex review 2026-10-23 #3, #4): an advisory replay-test report exactly as ``_lint`` writes it."""
+    if not (isinstance(entry, dict) and set(entry) == LINT_FIELDS and _text(entry["id"], MAX_ID_CHARS, empty=False)
+            and isinstance(entry["tests"], list) and len(entry["tests"]) <= MAX_TESTS
+            and isinstance(entry["problems"], list) and len(entry["problems"]) <= MAX_LINT):
+        return False
+    tests_ok = all(isinstance(t, dict) and set(t) == LINT_TEST_FIELDS and type(t["test"]) is int
+                   and 1 <= t["test"] <= MAX_TESTS and all(type(t[k]) is bool for k in ("holds", "withheld", "nonvacuous"))
+                   and (t["mutated"] is None or type(t["mutated"]) is bool) for t in entry["tests"])
+    return tests_ok and all(
+        isinstance(p, dict) and p.get("reason") in LINT_REASONS and set(p) <= {"reason", "test", "detail"}
+        and (p.get("test") is None or (type(p["test"]) is int and p["test"] >= 1))
+        and (p.get("detail") is None or p["detail"] in LINT_DETAILS
+             or (p["reason"] == "test_count" and _count(p["detail"])))
+        for p in entry["problems"])
+
+
+def _training_ok(training, references, own, evaluated, bench):
+    """v2 (Codex review 2026-10-23 #4): the last round's feedback exactly as ``step._feedback`` writes it; each
+    example names one of this step's run-slice items (``own``) and that item's candidate-arm cell of the last training
+    unit (``evaluated``: {cell: trajectory}), its texts within ``TRAIN_TEXT_CHARS``, and a reference only off ALFWorld
+    and only the item's own (``Context.references``)."""
+    if not (isinstance(training, dict) and set(training) == TRAINING_FIELDS and _verdict_fields(training)
+            and training["p_sign"] is not None and type(training["need"]) is int and training["need"] >= 1
+            and isinstance(training["guards"], dict) and set(training["guards"]) == GUARD_FIELDS
+            and all(type(v) is bool for v in training["guards"].values())
+            and isinstance(training["generated"], dict) and set(training["generated"]) == {"items", "fixed", "broken"}
+            and all(_count(v) for v in training["generated"].values()) and isinstance(training["procedures"], list)):
+        return False
+    for entry in training["procedures"]:
+        if not (isinstance(entry, dict) and set(entry) == FEEDBACK_FIELDS and _text(entry["id"], MAX_ID_CHARS, empty=False)
+                and entry["change"] in ("added", "removed", "narrowed")
+                and all(_count(entry[k]) for k in ("enabled_items", "fixed", "broken"))
+                and isinstance(entry["examples"], list) and len(entry["examples"]) <= 2 * TRAIN_EXAMPLES):
+            return False
+        if not all(_example_ok(example, references, own, evaluated, bench) for example in entry["examples"]):
+            return False
+    return True
+
+
+def _example_ok(example, references, own, evaluated, bench):
+    if not (isinstance(example, dict) and EXAMPLE_FIELDS <= set(example) <= EXAMPLE_FIELDS | {"reference"}
+            and type(example["task_id"]) is str and type(example["cell"]) is str):
+        return False
+    cell = evaluated.get(example["cell"])
+    return (example["task_id"] in own and cell is not None and cell["task_id"] == example["task_id"]
+            and cell.get("arm_kind") == "candidate" and example["outcome"] in ("fixed", "broken")
+            and all(_text(example[k], TRAIN_TEXT_CHARS[cap]) for k, cap in EXAMPLE_TEXTS)
+            and all(type(example[k]) is str and FRACTION.fullmatch(example[k]) is not None
+                    for k in ("current_pass", "candidate_pass"))
+            and ("reference" not in example or (bench != "alfworld"
+                                                and example["reference"] == references.get(example["task_id"]))))
 
 
 def _answer_shape(value):
@@ -264,12 +528,14 @@ def _counts(value):
 # ------------------------------------------------------------------------------------------------- the payload
 def shown(ctx):
     """The trajectories shown to the engineer: at most ``ENGINEER_SHOWN`` failures and successes of the parent's cells
-    on the bench, in the seeded order (``data.ranked``, ``SHOWN_TAG`` + the unit label)."""
+    on the bench, in the seeded order (``data.ranked``, ``SHOWN_TAG`` + the unit label); in the train mode of the
+    incumbent's latest cells (``Context.current``)."""
     tag = "%s:%s" % (SHOWN_TAG, ctx.label)
+    pool = ctx.current if ctx.mode == TRAIN else [t for t in ctx.trajectories if t.get("arm_kind") == "parent"]
     out = []
     for kind, token in (("failures", "fail"), ("successes", "pass")):
-        found = [{"task_id": t["cell"], "trajectory": t} for t in ctx.trajectories
-                 if t["bench"] == ctx.bench and t.get("arm_kind") == "parent" and t.get("token") == token]
+        found = [{"task_id": t["cell"], "trajectory": t} for t in pool
+                 if t["bench"] == ctx.bench and t.get("token") == token]
         out += [(kind, entry["trajectory"]) for entry in ranked(found, SEED, tag)[:ENGINEER_SHOWN[kind]]]
     return out
 
@@ -291,30 +557,134 @@ def _listed(procedure, parent):
             "excluded_benches": list(parent.excluded(procedure.id)), "source": procedure.source}
 
 
-def payload(ctx):
-    """The user message of the proposal call (fitted: the last trajectories are left out first)."""
+def payload(ctx, analyses=None):
+    """The user message of the proposal call (fitted: the last trajectories are left out first); v2: with the
+    round's ``analyses`` (``analyse``), fitted by ``_fit_train``."""
     user = {"request": "propose", "bench": ctx.bench, "card": ctx.card,
             "package": [_listed(p, ctx.parent) for p in ctx.parent.procedures],
             "trajectories": [_shown_view(kind, t, ctx.references) for kind, t in shown(ctx)],
             "detectors": ctx.detectors, "previous": ctx.previous}
-    return fit(user, "trajectories", ROLE_INPUT_BYTES)
+    if ctx.mode != TRAIN:
+        return fit(user, "trajectories", ROLE_INPUT_BYTES)
+    # v2: the round, the earlier rounds, the last evaluation and lint, the edit budget
+    user.update({"round": ctx.round, "rounds": TRAIN_ROUNDS, "history": ctx.history, "training": ctx.training,
+                 "lint": ctx.lint, "edits": budget(ctx), "analyses": list(analyses or [])})
+    return _fit_train(user)
+
+
+def _fit_train(user):
+    """v2 (Codex review 2026-10-23 #5): the proposal message within ``ROLE_INPUT_BYTES``, leaving out -- each from
+    the last, deterministically -- the trajectories (``fit``), then the training feedback's examples (the last
+    procedure's last example first), then the analyses; ``trajectories_omitted``, ``examples_omitted`` and
+    ``analyses_omitted`` count them. The context's feedback is never changed (a copy is cut). ValueError (the unit
+    pauses, as ``fit``) only when the other fields alone exceed the bound."""
+    user["examples_omitted"] = user["analyses_omitted"] = 0
+    try:
+        return fit(user, "trajectories", ROLE_INPUT_BYTES)
+    except ValueError:  # every trajectory is left out; the feedback, then the analyses, go next
+        pass
+    if user["training"] is not None:
+        user["training"] = {**user["training"], "procedures": [
+            {**entry, "examples": list(entry["examples"])} for entry in user["training"]["procedures"]]}
+        for entry in reversed(user["training"]["procedures"]):
+            while entry["examples"] and message_bytes(user) > ROLE_INPUT_BYTES:
+                entry["examples"].pop()
+                user["examples_omitted"] += 1
+    while user["analyses"] and message_bytes(user) > ROLE_INPUT_BYTES:
+        user["analyses"].pop()
+        user["analyses_omitted"] += 1
+    if message_bytes(user) > ROLE_INPUT_BYTES:
+        raise ValueError("A role input exceeds its bound with no example left")
+    return user
+
+
+def analyse(ctx):
+    """v2's analysts (owner suggestion 2026-10-23 15:1x; SkillOpt's minibatch reflection, skillopt/gradient/reflect.py):
+    the incumbent's failed run-slice items of the bench -- one failed current cell each, in the seeded order
+    (``ANALYST_TAG`` + the unit label), items no earlier round analysed (``Context.analysed``) first -- in groups of
+    ``TRAIN_ANALYST_BATCH``, at most ``TRAIN_ANALYST_CALLS`` engineer-role calls under ``ANALYST_SYSTEM``, each shown
+    the card, the incumbent's procedures (id, description, hooks) and its group as the proposal call shows a failure
+    (with its reference). -> ``(findings, [(cell, table-shape reference)] shown, the record)``: a reply's findings that
+    name shown items, texts cut to ``TRAIN_FINDING_CHARS``, at most ``TRAIN_FINDINGS`` per reply; an unusable reply
+    adds none and is recorded with its reason."""
+    tag = "%s:%s" % (ANALYST_TAG, ctx.label)
+    failed = [{"task_id": t["cell"], "trajectory": t} for t in ctx.current
+              if t["bench"] == ctx.bench and t.get("token") == "fail"]
+    first = {}
+    for entry in ranked(failed, SEED, tag):
+        first.setdefault(entry["trajectory"]["task_id"], entry["trajectory"])
+    order = [i for i in first if i not in ctx.analysed] + [i for i in first if i in ctx.analysed]
+    chosen = order[:TRAIN_ANALYST_BATCH * TRAIN_ANALYST_CALLS]
+    package = [{"id": p.id, "description": p.description, "hooks": list(p.hooks)} for p in ctx.parent.procedures]
+    findings, shown_refs, calls = [], [], []
+    for n, start in enumerate(range(0, len(chosen), TRAIN_ANALYST_BATCH), 1):
+        group = [_shown_view("failures", first[i], ctx.references) for i in chosen[start:start + TRAIN_ANALYST_BATCH]]
+        user = fit({"request": "analyse", "bench": ctx.bench, "card": ctx.card, "package": package,
+                    "trajectories": group}, "trajectories", ROLE_INPUT_BYTES)
+        seen = [t["task_id"] for t in user["trajectories"]]
+        shown_refs += [(t["cell"], t["reference"]) for t in user["trajectories"] if isinstance(t.get("reference"), dict)]
+        reply = ctx.roles.plain(ROLE, ANALYST_SYSTEM, json.dumps(user, ensure_ascii=False, sort_keys=True),
+                                label="analyst/%s/%d" % (ctx.label, n))
+        found, reason = _findings(reply, seen)
+        findings += found
+        calls.append({"call": ctx.roles.calls[-1]["request_sha256"], "items": seen, "findings": len(found),
+                      "reason": reason})
+    return findings, shown_refs, {"items": [i for c in calls for i in c["items"]], "calls": calls,
+                                  "failed_items": len(first)}
+
+
+def _findings(reply, items):
+    """An analyst reply's usable findings (``analyse``) and why it gave none, or None."""
+    if type(reply) is not str:
+        return [], "no_reply"
+    blocks = [body for lang, body in BLOCK.findall(reply) if lang.lower() in ("json", "")]
+    try:
+        value = json.loads(blocks[0] if blocks else reply.strip())
+    except ValueError:
+        return [], "not_json"
+    entries = value.get("findings") if isinstance(value, dict) else None
+    if not isinstance(entries, list):
+        return [], "no_findings_list"
+    out = []
+    for entry in entries:
+        if not isinstance(entry, dict) or type(entry.get("pattern")) is not str or not entry["pattern"].strip():
+            continue
+        named = [i for i in entry.get("items") or [] if type(i) is str and i in items] \
+            if isinstance(entry.get("items"), list) else []
+        helper = entry.get("helper") if type(entry.get("helper")) is str else ""
+        out.append({"pattern": entry["pattern"][:TRAIN_FINDING_CHARS], "items": list(dict.fromkeys(named)),
+                    "helper": helper[:TRAIN_FINDING_CHARS]})
+        if len(out) == TRAIN_FINDINGS:
+            break
+    return out, None if out or not entries else "no_usable_finding"
+
+
+def budget(ctx):
+    """v2: the edits the incumbent already makes against the step's parent S (``MAX_CHANGES`` per step) and the
+    procedures this step created."""
+    made = edits(ctx.base, ctx.parent) if ctx.parent.sha256 != ctx.base.sha256 else []
+    return {"max": MAX_CHANGES, "used": len(made), "edits": [{"kind": e.kind, "id": e.id} for e in made],
+            "step_procedures": [p.id for p in ctx.parent.procedures if p.id not in ctx.base.order]}
 
 
 def _ask(ctx, user, purpose):
     """``(reply or None, request sha256)`` of one engineer call; (None, None) once the step's calls are spent: this
-    unit's and, for ``engineer-2``, those of the step's first engineer unit (``ctx.spent``; R7a)."""
+    unit's and, for ``engineer-2``, those of the step's first engineer unit (``ctx.spent``; R7a); in the train mode
+    the unit's own ``TRAIN_ENGINEER_CALLS`` under ``ENGINEER_SYSTEM_V2``."""
     prefix = "engineer/%s/" % ctx.label
-    if ctx.spent + ctx.roles.count(prefix) >= ENGINEER_CALLS:
+    if ctx.spent + ctx.roles.count(prefix) >= ctx.calls_cap:
         return None, None
-    reply = ctx.roles.plain(ROLE, ENGINEER_SYSTEM, json.dumps(user, ensure_ascii=False, sort_keys=True),
+    system = ENGINEER_SYSTEM_V2 if ctx.mode == TRAIN else ENGINEER_SYSTEM
+    reply = ctx.roles.plain(ROLE, system, json.dumps(user, ensure_ascii=False, sort_keys=True),
                             label=prefix + purpose)
     return reply, ctx.roles.calls[-1]["request_sha256"]
 
 
 # ------------------------------------------------------------------------------------------------------ parsing
-def parse(reply):
+def parse(reply, *, lenient=False):
     """``(changes, sources)``: the manifest's change entries and the python blocks, one per new or revised change in
-    order. Raises ``Unparseable``."""
+    order. Raises ``Unparseable``. ``lenient`` (v2): a "source" text in a coded entry (the fix request shows the change
+    so) is taken out of the entry, and used as its code when the reply has no python block."""
     if type(reply) is not str:
         raise Unparseable("no_reply")
     blocks = BLOCK.findall(reply)
@@ -329,6 +699,12 @@ def parse(reply):
     changes = manifest.get("changes") if isinstance(manifest, dict) and set(manifest) == {"changes"} else None
     if type(changes) is not list or len(changes) > MAX_CHANGES or not all(isinstance(c, dict) for c in changes):
         raise Unparseable("manifest_shape")
+    if lenient:
+        inline = [c.get("source") for c in changes if c.get("kind") in CODED]
+        for c in changes:
+            c.pop("source", None)
+        if not sources and inline and all(type(s) is str and s.strip() for s in inline):
+            sources = inline
     if len(sources) != sum(1 for c in changes if c.get("kind") in CODED):
         raise Unparseable("code_blocks")
     return changes, sources
@@ -348,14 +724,20 @@ def _result(check, passed, detail=None):
     return {"check": check, "passed": bool(passed), "detail": detail}
 
 
-def _structure(change, parent, taken):
+def _keys(kind, train=False):
+    """(required, allowed) keys of a coded entry; v2's replay tests are optional."""
+    revises = ("revises",) if kind == "revision" else ()
+    return ({"kind", "description", "hooks", *(() if train else ("replay_tests",)), *revises},
+            {"kind", *PROCEDURE_KEYS, *revises})
+
+
+def _structure(change, parent, taken, *, train=False):
     """C1: None when the entry is well formed for its kind, else why not."""
     entry, kind = change.entry, change.kind
     if kind not in EDIT_KINDS:
         return "kind"
     if kind in CODED:
-        allowed = {"kind", *PROCEDURE_KEYS, *(("revises",) if kind == "revision" else ())}
-        required = {"kind", "description", "hooks", "replay_tests", *(("revises",) if kind == "revision" else ())}
+        required, allowed = _keys(kind, train)
         if not required <= set(entry) <= allowed:
             return "keys"
         if not all(type(entry[k]) is t for k, t in PROCEDURE_KEYS.items() if k in entry):
@@ -382,6 +764,14 @@ def _new_id(ctx, n):
     """The registrar's id of the n-th coded change: ``p-<bench>-<k>-<n>`` (``fx-`` for engineering fixtures), the next
     free one."""
     prefix = "fx" if ctx.evidence == FIXTURE else "p"
+    if ctx.mode == TRAIN:  # v2: unique across the step's rounds (``reserved``) and the unit; a fixed change keeps its id
+        ids = ctx.sheet.setdefault("ids", {})
+        if n not in ids:
+            taken, m = set(ctx.parent.order) | ctx.reserved | set(ids.values()), 1
+            while "%s-%s-%d-%d" % (prefix, ctx.bench, ctx.k, m) in taken:
+                m += 1
+            ids[n] = "%s-%s-%d-%d" % (prefix, ctx.bench, ctx.k, m)
+        return ids[n]
     while "%s-%s-%d-%d" % (prefix, ctx.bench, ctx.k, n) in ctx.parent.order:
         n += 1
     return "%s-%s-%d-%d" % (prefix, ctx.bench, ctx.k, n)
@@ -393,6 +783,12 @@ def _build(change, ctx):
     if change.kind in CODED:
         old = parent.get(entry["revises"]) if change.kind == "revision" else None
         values = {**OPTIONAL, **{k: v for k, v in entry.items() if k in PROCEDURE_KEYS}}
+        if ctx.mode == TRAIN:  # v2: optional replay tests; a description or header cut to its cap, recorded
+            values.setdefault("replay_tests", [])
+            for name, cap in (("description", MAX_DESCRIPTION_CHARS), ("header", MAX_HEADER_CHARS)):
+                if len(values[name]) > cap:
+                    change.truncated[name] = len(values[name])
+                    values[name] = values[name][:cap]
         change.procedure = Procedure(
             id=_new_id(ctx, change.n), origin=ctx.bench, description=values["description"],
             hooks=tuple(h for h in HOOKS if h in values["hooks"]), source=change.source, evidence=ctx.evidence,
@@ -560,8 +956,12 @@ def _workbook(ctx, cell):
 
 def _shown_references(user):
     """[(cell, reference)] of the table-shape references a proposal payload carries: SpreadsheetBench's answer-cell
-    values of the shown failures it kept after fitting (registrar addendum 2026-10-22 15:5x R1)."""
-    return [(t["cell"], t["reference"]) for t in user["trajectories"] if isinstance(t.get("reference"), dict)]
+    values of the shown failures it kept after fitting (registrar addendum 2026-10-22 15:5x R1) and, in v2, of the
+    training feedback's examples."""
+    found = [(t["cell"], t["reference"]) for t in user["trajectories"] if isinstance(t.get("reference"), dict)]
+    for entry in (user.get("training") or {}).get("procedures", []):
+        found += [(e["cell"], e["reference"]) for e in entry.get("examples", []) if isinstance(e.get("reference"), dict)]
+    return found
 
 
 def disclosed(ctx):
@@ -573,7 +973,7 @@ def disclosed(ctx):
         shown = ctx.sheet.get("shown")
         if shown is None:
             shown = ctx.sheet["shown"] = _shown_references(payload(ctx))
-        by_cell, out = {t["cell"]: t for t in ctx.trajectories}, {}
+        by_cell, out = {t["cell"]: t for t in list(ctx.trajectories) + list(ctx.current) + list(ctx.evaluated)}, {}
         for cell, reference in shown:
             own = None
             for value in reference.values():
@@ -649,14 +1049,33 @@ def leak_check(change, ctx, outcomes, entries):
                               colliding=colliding[:3] or None, values=shown or None)
     detail = {"hits": [{k: h[k] for k in ("where", "bench", "reasons")} for h in hits[:10]], "adjudicated": True,
               "kept": kept, "sheet_values": len(shown)}
+    if ctx.mode == TRAIN:  # v2: the fix call's detail -- the flagged texts and the adjudicator's reason
+        for hit, entry in zip(hits[:10], detail["hits"]):
+            entry["text"] = hit["text"][:MAX_DETAIL_CHARS]
+        detail["adjudicator_reason"] = _last_reason(ctx.roles)
     return kept, detail
 
 
+def _last_reason(roles):
+    """v2: the leakage adjudicator's reason in the last role call's reply (at most ``MAX_DETAIL_CHARS``), else None."""
+    calls = getattr(roles, "calls", None) or []
+    if not calls or not isinstance(calls[-1], dict) or calls[-1].get("role") != "leak_adjudicate":
+        return None
+    receipts = [s["receipt"] for s in calls[-1].get("sends") or () if isinstance(s.get("receipt"), dict)]
+    reply = receipts[-1].get("response") if receipts else None
+    try:
+        reason = parse_reply(reply).get("reason") if type(reply) is str else None
+    except Invalid:
+        return None
+    return reason[:MAX_DETAIL_CHARS] if type(reason) is str else None
+
+
 def _scope(ctx, candidate_package, procedure):
-    """{cell: inputs} of the stored run trajectories on the procedure's benches."""
+    """{cell: inputs} of the stored run trajectories on the procedure's benches (v2: and of the incumbent's current
+    cells, which the shown trajectories and so the replay tests name)."""
     excluded = set(candidate_package.excluded(procedure.id))
     out = {}
-    for trajectory in ctx.trajectories:
+    for trajectory in list(ctx.trajectories) + (list(ctx.current) if ctx.mode == TRAIN else []):
         if trajectory["bench"] not in excluded:
             entry = replay.inputs_of(trajectory)
             if entry is not None:
@@ -668,6 +1087,7 @@ def check(change, ctx, taken=()):
     """The fixed checks of one change (module docstring): ``{"n", "kind", "checks": [...], "passed", "failed"}``
     with the results in executed order, stopping at the first failure."""
     report = {"n": change.n, "kind": change.kind, "checks": [], "passed": False, "failed": None}
+    train = ctx.mode == TRAIN
 
     def done(check_id, passed, detail=None):
         report["checks"].append(_result(check_id, passed, detail))
@@ -675,8 +1095,8 @@ def check(change, ctx, taken=()):
             report["failed"] = check_id
         return passed
 
-    problem = _structure(change, ctx.parent, taken)
-    if not done("C1", problem is None, problem):
+    problem = _structure(change, ctx.parent, taken, train=train)
+    if not done("C1", problem is None, _structure_detail(change, problem) if train and problem else problem):
         return report
     if change.kind in CODED:
         violations = [v.to_json() for v in policy.check(change.source)]
@@ -687,9 +1107,16 @@ def check(change, ctx, taken=()):
     try:
         single = _build(change, ctx)
     except PackageInvalid as error:
-        done("C3", False, str(error)[:300])
+        done("C3", False, _size_detail(change, error) if train else str(error)[:300])
         return report
-    done("C3", True)
+    if train:  # v2: the step's edit budget against S (``rebase``); a change beyond it gets no fix call
+        try:
+            rebase(single, ctx.base, ctx.parent, step=ctx.step)
+        except PackageInvalid as error:
+            report["unfixable"] = True
+            done("C3", False, {"edit_budget": str(error)[:MAX_DETAIL_CHARS], **budget(ctx)})
+            return report
+    done("C3", True, {"truncated": dict(change.truncated)} if change.truncated else None)
     if change.kind not in CODED:
         report["passed"] = True
         return report
@@ -705,7 +1132,13 @@ def check(change, ctx, taken=()):
         return report
     if not done("C4", *leak_check(change, ctx, outcomes, entries)):
         return report
-    tests = replay.run_tests(procedure, entries, outcomes, ctx.workers, inputs_dirs=ctx.inputs_dirs)
+    if train:  # v2: the registrar's own checks block; the engineer's replay tests are advice (``lint``)
+        tests = replay.registrar_checks(procedure, entries, outcomes)
+        if procedure.replay_tests:
+            advice = replay.run_tests(procedure, entries, outcomes, ctx.workers, inputs_dirs=ctx.inputs_dirs)
+            report["lint"] = _lint(procedure, advice, entries)
+    else:
+        tests = replay.run_tests(procedure, entries, outcomes, ctx.workers, inputs_dirs=ctx.inputs_dirs)
     if not done("C7", tests["passed"], tests):
         return report
     guard = replay.format_guard(outcomes)
@@ -718,26 +1151,94 @@ def check(change, ctx, taken=()):
     return report
 
 
+def _lint(procedure, advice, entries):
+    """v2 (Codex review 2026-10-23 #3): the advisory replay-test report the next round sees -- the tests by position
+    (1-based) with their flags, the problems of ``LINT_REASONS`` by reason, position and a registered detail (an
+    invalid test's ``replay.validate_test`` reason, the test count) -- never a test's id or property, which no check
+    reads for leakage."""
+    tests = list(procedure.replay_tests)
+    invalid = iter([n for n, test in enumerate(tests, 1) if replay.validate_test(test, procedure, entries)])
+    position = {}
+    for n, test in enumerate(tests, 1):
+        if isinstance(test, dict) and type(test.get("id")) is str:
+            position.setdefault(test["id"], n)
+    problems = []
+    for problem in advice["problems"]:
+        reason, entry = problem["reason"], {"reason": problem["reason"]}
+        if reason not in LINT_REASONS:
+            continue
+        if reason == "invalid_test":
+            entry.update(test=next(invalid, None), detail=problem["detail"] if problem["detail"] in LINT_DETAILS else None)
+        elif reason in ("test_failed", "vacuous_test"):
+            entry["test"] = position.get(problem["test"]) if type(problem["test"]) is str else None
+        elif reason == "test_count":
+            entry["detail"] = problem["detail"] if _count(problem["detail"]) else None
+        problems.append(entry)
+    return {"id": procedure.id, "problems": problems[:MAX_LINT], "tests": [
+        {"test": n, "holds": bool(result["holds"]), "withheld": bool(result["withheld"]),
+         "mutated": None if result["mutated"] is None else bool(result["mutated"]),
+         "nonvacuous": bool(result["nonvacuous"])} for n, result in enumerate(advice["tests"], 1)]}
+
+
+def _structure_detail(change, problem):
+    """v2: C1's reason with what it measured, for the fix call."""
+    detail, given = {"problem": problem}, sorted(str(k) for k in change.entry)
+    if change.kind in CODED and problem in ("keys", "types"):
+        required, allowed = _keys(change.kind, True)
+        detail.update({"required": sorted(required), "allowed": sorted(allowed), "given": given,
+                       "types": {k: t.__name__ for k, t in PROCEDURE_KEYS.items()}})
+    elif problem == "keys":
+        detail.update({"allowed": sorted({"kind", "id", *(("benches",) if change.kind == "narrowing" else ())}),
+                       "given": given})
+    return detail
+
+
+def _size_detail(change, error):
+    """v2: C3's error with the measured sizes against their caps, for the fix call."""
+    detail, entry = {"error": str(error)[:MAX_DETAIL_CHARS]}, change.entry
+    if change.kind in CODED:
+        tests = entry.get("replay_tests")
+        detail["measured"] = {"description_chars": len(str(entry.get("description", ""))),
+                              "header_chars": len(str(entry.get("header", ""))),
+                              "source_bytes": len((change.source or "").encode("utf-8")),
+                              "max_note_chars": entry.get("max_note_chars", 0),
+                              "replay_tests": len(tests) if isinstance(tests, list) else None}
+        detail["caps"] = {"description_chars": MAX_DESCRIPTION_CHARS, "header_chars": MAX_HEADER_CHARS,
+                          "source_bytes": MAX_PROCEDURE_BYTES, "package_source_bytes": MAX_PACKAGE_BYTES,
+                          "max_note_chars": "1-4000 when a hook writes notes, else 0"}
+    return detail
+
+
 # ------------------------------------------------------------------------------------------------------ the step
 def fix(ctx, change, report):
     """The engineer's one fix of ``change`` after its first failure: the corrected ``Change``, or None when the reply
     holds no single change of the same kind and target."""
+    return _fix(ctx, change, report)[0]
+
+
+def _fix(ctx, change, report, *, attempt=None, why=None):
+    """``(the corrected Change or None, why not)`` of one fix call. v2 (``attempt``: the change's n-th fix call of
+    ``TRAIN_FIXES``) also says why the previous fix reply was not usable (``why``) and reads the reply leniently."""
     entry = dict(change.entry, **({"source": change.source} if change.source is not None else {}))
     failed = [c for c in report["checks"] if not c["passed"]]
     user = {"request": "fix", "bench": ctx.bench, "change": entry, "failed": failed[-1] if failed else None}
-    reply, call = _ask(ctx, user, "fix/%d" % change.n)
+    if attempt is not None:
+        user.update({"attempt": attempt, "attempts": TRAIN_FIXES, **({"previous_reply": why} if why else {})})
+    reply, call = _ask(ctx, user, "fix/%d" % change.n if attempt is None else "fix/%d/%d" % (change.n, attempt))
+    if reply is None and call is None:
+        return None, "no_calls_left"
     try:
-        entries, sources = parse(reply)
-    except Unparseable:
-        return None
+        entries, sources = parse(reply, lenient=attempt is not None)
+    except Unparseable as error:
+        return None, "unparseable: %s" % error
     if len(entries) != 1:
-        return None
+        return None, "changes: %d, expected exactly the one change" % len(entries)
     fixed = changes_of(entries, sources, call)[0]
     key = TARGET_KEYS.get(change.kind)
     if fixed.kind != change.kind or (key is not None and fixed.entry.get(key) != change.entry.get(key)):
-        return None
+        return None, "another kind or target than the change to fix"
     fixed.n = change.n
-    return fixed
+    return fixed, None
 
 
 def _combined(parent, survivors, step):
@@ -789,3 +1290,122 @@ def run(ctx):
         "procedures": [p.to_json() for p in package.procedures] if package else [],
         "calls": ctx.roles.count("engineer/%s/" % ctx.label), "earlier_calls": ctx.spent})
     return package, sealed
+
+
+# --------------------------------------------------------------------------------------------- v2: a training round
+def rebase(package, base, incumbent, *, step):
+    """v2: ``package`` -- a candidate built from the round's ``incumbent`` (``candidate``), the incumbent being the
+    step's parent ``base`` S or one candidate of it -- re-expressed as one candidate of S: the same procedures, order,
+    scopes and describer entries; its parent S; a procedure this round wrote that revises one an earlier round of the
+    step wrote is re-linked to S (it revises what that one revises, else it is new); the procedures of S it no longer
+    holds are retired. Raises ``PackageInvalid`` when it differs from S by more than ``MAX_CHANGES`` edits
+    (``package.validate``)."""
+    own, earlier, procedures = set(base.order), set(incumbent.order), []
+    for procedure in package.procedures:
+        revises = procedure.lineage["revises"]
+        if procedure.id in own or procedure.id in earlier or revises is None or revises in own:
+            procedures.append(procedure)
+            continue
+        was = incumbent.get(revises).lineage  # an earlier round's procedure, already relative to S
+        procedures.append(replace(procedure, lineage={"parent": was["parent"], "revises": was["revises"],
+                                                      "engineer_call": procedure.lineage["engineer_call"]}))
+    kept = {p.id for p in procedures}
+    rebased = Package(tuple(procedures), step, package.evidence, base.sha256,
+                      tuple(base.retired) + tuple(p.sha256 for p in base.procedures if p.id not in kept),
+                      package.narrowed, package.describer)
+    validate(rebased, base)
+    return rebased
+
+
+def _combined_train(ctx, survivors):
+    """v2: the round's candidate -- the surviving changes applied to the incumbent, ``rebase``d on S -- dropping from
+    the last any whose combination breaks the package or the step's edit budget."""
+    survivors = list(survivors)
+    while survivors:
+        try:
+            return rebase(candidate(ctx.parent, survivors, step=ctx.step), ctx.base, ctx.parent,
+                          step=ctx.step), survivors
+        except PackageInvalid:
+            survivors.pop()
+    return None, []
+
+
+def run_train(ctx):
+    """v2's engineer unit of one training round (module docstring): ``(the round's candidate -- one candidate of the
+    step's parent S -- or None, the sealed engineer record)``. As ``run`` with up to ``TRAIN_FIXES`` fix calls per
+    failing change (none for a change beyond the edit budget) and the record's v2 fields: ``mode``, ``round``,
+    ``base_sha256``, ``budget`` (before the round), ``lint`` (the advisory replay-test reports of the final versions),
+    each change's ``fix_calls`` and ``fix_replies`` (why a fix reply was not usable; None for a usable one) and the
+    surviving changes the budget dropped (``dropped``)."""
+    require(ctx.mode == TRAIN, "The engineer unit of a training round")
+    findings, analysed_refs, analysis = analyse(ctx)
+    user, proposals, changes = payload(ctx, findings), [], []
+    # C4 checks exactly the references this (fitted) payload discloses (#2), those the analysts saw, whose findings it
+    # shows, and those earlier rounds of the step disclosed (Codex review 2026-10-23 #3)
+    ctx.sheet["shown"] = _shown_references(user) + analysed_refs + _earlier_references(ctx)
+    ctx.sheet.pop("disclosed", None)
+    for purpose in ("propose", "repropose"):
+        reply, call = _ask(ctx, user, purpose)
+        try:
+            entries, sources = parse(reply, lenient=True)
+        except Unparseable as error:
+            proposals.append({"call": call, "parsed": False, "reason": str(error)})
+            user = {**user, "unparseable": str(error)}  # the second call says why the first reply was not read
+            continue
+        proposals.append({"call": call, "parsed": True, "changes": len(entries)})
+        changes = changes_of(entries, sources, call)
+        break
+    survivors, outcomes, taken, lint = [], [], set(), []
+    for change in changes:
+        attempts, final, replies = [check(change, ctx, taken)], change, []
+        while not attempts[-1]["passed"] and not attempts[-1].get("unfixable") and len(replies) < TRAIN_FIXES:
+            fixed, why = _fix(ctx, final, attempts[-1], attempt=len(replies) + 1, why=replies[-1] if replies else None)
+            replies.append(why)
+            if why == "no_calls_left":
+                break
+            if fixed is not None:
+                final = fixed
+                attempts.append(check(fixed, ctx, taken))
+        survived = attempts[-1]["passed"]
+        if survived:
+            survivors.append(final)
+            taken.add(final.target)
+        if attempts[-1].get("lint"):
+            lint.append(attempts[-1]["lint"])
+        outcomes.append({**final.to_json(), "attempts": attempts, "survived": survived, "fix_calls": len(replies),
+                         "fix_replies": replies, "summary": _summary(final)})
+    package, kept = _combined_train(ctx, survivors)
+    sealed = record("engineer", ctx.evidence, {
+        "bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
+        "prompt_sha256": ENGINEER_PROMPT_V2_SHA256, "proposals": proposals, "changes": outcomes,
+        "kept": [c.n for c in kept], "dropped": [c.n for c in survivors[len(kept):]],
+        "candidate_sha256": package.sha256 if package else None,
+        "procedures": [p.to_json() for p in package.procedures] if package else [],
+        "calls": ctx.roles.count("engineer/%s/" % ctx.label), "earlier_calls": ctx.spent, "mode": TRAIN,
+        "round": ctx.round, "base_sha256": ctx.base.sha256, "budget": budget(ctx), "lint": lint,
+        "analysis": analysis, "analyst_prompt_sha256": ANALYST_PROMPT_SHA256, "disclosed": _disclosed_items(ctx)})
+    return package, sealed
+
+
+def _earlier_references(ctx):
+    """v2 (Codex review 2026-10-23 #3): [(cell, reference)] of the table-shape references earlier rounds of the step
+    disclosed (``Context.disclosed``), each at a cell of its item in the step's run unit (whose public text and
+    workbook ``disclosed`` reads)."""
+    cells = {}
+    for trajectory in ctx.trajectories:
+        if trajectory["bench"] == ctx.bench and int(RUN_UNIT.fullmatch(trajectory["unit"])["k"]) == ctx.k:
+            cells.setdefault(trajectory["task_id"], trajectory["cell"])
+    return [(cells[item], ctx.references[item]) for item in sorted(ctx.disclosed)]
+
+
+def _disclosed_items(ctx):
+    """v2: the run-slice items whose table-shape reference C4 counted in this round -- this round's and the earlier
+    rounds' (``Context.disclosed`` of the next round)."""
+    tasks = {t["cell"]: t["task_id"] for t in list(ctx.trajectories) + list(ctx.current) + list(ctx.evaluated)}
+    return sorted({tasks[cell] for cell, _ in ctx.sheet.get("shown") or ()})
+
+
+def _summary(change):
+    """v2's step buffer: the change's description, at most ``TRAIN_PROPOSAL_CHARS`` characters ("" without one)."""
+    description = change.entry.get("description") if isinstance(change.entry, dict) else None
+    return description[:TRAIN_PROPOSAL_CHARS] if type(description) is str else ""

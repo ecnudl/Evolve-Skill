@@ -588,6 +588,22 @@ def run_tests(procedure, entries, outcomes, workers, *, inputs_dirs=None):
             "tracker_agreement": agreement}
 
 
+def registrar_checks(procedure, entries, outcomes):
+    """v2's fatal part of C7 (owner decision 2026-10-23 13:3x, spec-v2): the registrar's own checks of ``run_tests``
+    without the engineer's replay tests, which v2 runs as advice only -- the negative tests (``negative_tests``), the
+    reference tracker's agreement of an ALFWorld state procedure and the bindings that are not verbatim. The same
+    report shape: {"check": "C7", "passed", "problems", "tracker_agreement"}."""
+    problems = [{"reason": "negative_test", **n} for n in negative_tests(entries, outcomes)]
+    agreement = None
+    if "alf_after_step" in procedure.hooks:
+        agree, total = reference_tracker_agreement(entries, outcomes)
+        agreement = [agree, total]
+        if not total or Fraction(agree, total) < TRACKER_AGREEMENT:
+            problems.append({"reason": "reference_tracker", "detail": agreement})
+    problems += [{"reason": "bindings_not_verbatim", **f} for f in _faults(outcomes, BINDING_KINDS)][:10]
+    return {"check": "C7", "passed": not problems, "problems": problems, "tracker_agreement": agreement}
+
+
 # ------------------------------------------------------------------------------------------------ C8, C9, C4 faults
 def format_guard(outcomes):
     """C8: [{cell, hook, step, marker}] of the shown notes carrying an answer-channel marker."""

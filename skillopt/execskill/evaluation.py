@@ -75,7 +75,17 @@ context (evaluation.py:262-305). What changes:
   chain's records -- F the final package, C the empty card package, P_F F shammed from the sealed donor corpora of the
   rounds that accepted its procedures (``placebo_arm``), T_F the frozen descriptions of the chain's freeze units
   (``frozen_texts``) -- with the unit's tag on every container and the unit drained before ``unit.json`` (ticket
-  C5-1).
+  C5-1);
+- v2 stage reads (``protocol.STAGE_READ``, main-v2; owner decision 2026-10-23 16:0x): the unit also runs the stage
+  arms "S<k>", the packages earlier steps passed on (``stage_rows``, from the chain's sealed step records), in the
+  same seeded interleaved order; each is routed on every item with zero calls (``stage_plan``) and a stage cell sends
+  nothing where its enabled procedures are those a cell of the unit runs with -- none (C's cell, ``share_cell``), F's
+  or an earlier stage arm's (``cells.share_same``: the same request); where the source cell did not run with the
+  planned procedures, or recorded a fault, the stage cell runs after the blocks (``fallback``); F's routing of an item
+  is reused only where none of the stage package's procedures faulted in it (Codex stage review #1, #2). The unit
+  record of every stage read names the rows of the stage table (``stages``; rows of C and F alone run no stage arm)
+  and counts the stage cells sent and shared; the consent names the stage arms (``consent``, checked in the unit
+  before its attempt opens: Codex stage review #3, #4).
 """
 from __future__ import annotations
 
@@ -108,14 +118,15 @@ from skillopt.continual_eval.core import read_json, require, safe_path, write_js
 from skillopt.validator_pilot.api import digest
 
 from . import budgets, describer, donors, placebo, qualify, router, solver, units
-from .cells import Arm, Pause, cell_id, run_cells, share_cell
+from .cells import Arm, Pause, cell_id, run_cells, share_cell, share_same
 from .chain import EXIT_AWAITING, EXIT_COMPLETE, EXIT_PAUSED, unit_root as read_root
 from .errors import CleanupUnconfirmed, stop_kind
 from .manifest import setting_of
 from .package import Package, empty, load
-from .protocol import (BENCHES, CANARIES, CHAINS, CONSENT_FIELDS, FORMAL_ADDENDUM, FORMAL_ADDENDUM_DOCUMENT,
-                       INFRA_UNKNOWN_MAX, OFFICEQA_TEST_BLOCKS, ORDER, OWNER_CONTINUATION, RECORD_HASH, TEST_ARMS,
-                       TEST_RUNS, discourage_tag, ledger_bound, order_of, record, round_tag, verified)
+from .protocol import (BENCHES, CANARIES, CHAINS, CONFIGURATIONS, CONSENT_FIELDS, FORMAL_ADDENDUM,
+                       FORMAL_ADDENDUM_DOCUMENT, INFRA_UNKNOWN_MAX, OFFICEQA_TEST_BLOCKS, ORDER, OWNER_CONTINUATION,
+                       RECORD_HASH, STAGE_ARM, STAGE_READ, TEST_RUNS, configuration_of, discourage_tag, ledger_bound,
+                       order_of, read_arms_of, record, round_tag, verified)
 from .sandbox import client as sandbox
 from .rounds import _order
 from .supply import routing_view as alfworld_routing_view
@@ -124,12 +135,14 @@ from .supply import task_folder
 __all__ = ("ARMS", "EvaluationStore", "LABELS", "alfworld_reset", "attempts", "canary", "canary_scan", "consent",
            "continuation", "continuation_check", "donor_corpora", "evaluate", "frozen_texts", "load_canaries",
            "make_read_canaries", "monitor", "mounting", "placebo_arm", "public_inputs", "read_label", "release_check",
-           "root_scan", "run_unit_spec", "scan_workers", "seal_addendum", "sealed_cell", "select_canaries", "test_plan",
-           "test_tasks", "training_duplicates", "twin_unit", "unit_scan", "unseal")
+           "root_scan", "run_unit_spec", "scan_workers", "seal_addendum", "sealed_cell", "select_canaries",
+           "stage_plan", "stage_rows", "test_plan", "test_tasks", "training_duplicates", "twin_unit", "unit_scan",
+           "unseal")
 
 ARMS = ("F", "C", "P_F", "T_F")  # the arms the caller builds; the twins F\p are the plan's (§8.1)
 ARM_KINDS = {"F": "candidate", "C": "card", "P_F": "placebo_y", "T_F": "text"}
 TWIN = "withhold:"
+STAGE_LABEL = re.compile(r"%s([1-9][0-9]*)" % STAGE_ARM)  # a stage arm "S<k>" (protocol.STAGE_ARM)
 SHEET_QUALIFICATION = "spreadsheetbench-qualification"
 # Codex finding #3 of 2026-10-22 (§8.1/F16; registrar fixer-1): what a test-side qualification attempt keeps -- the
 # sealed record, its status, the owner's recovery decision, the score records (statuses, reasons, hashes; never a
@@ -176,16 +189,23 @@ LABELS = {"continue_on_time": ("interim_read_addendum_before_unseal", "confirmat
 
 
 # ---------------------------------------------------------------------------------------------- consent (§8.1)
-def consent(shared):
-    """The owner's recorded consent to the multi-arm test read (``shared/consent.json``; exact key set)."""
+def consent(shared, configuration=None):
+    """The owner's recorded consent to the multi-arm test read (``shared/consent.json``; exact key set):
+    ``multi_arm_arms`` names exactly the read arms of a run configuration (``protocol.read_arms_of``: ``TEST_ARMS``,
+    with "stages" in a stage-read configuration); with ``configuration``, exactly that configuration's -- the chain's
+    read gate (``chain.read_consent``) and the read unit (``run_unit_spec``) check it so, and a stage read never runs
+    under a consent that does not name its stage arms."""
     path = safe_path(shared) / "consent.json"
     require(path.exists(), "No recorded owner consent to evaluate on the test sets")
     value = read_json(path)
+    allowed = [read_arms_of(configuration)] if configuration is not None else sorted(
+        {read_arms_of(name) for name in CONFIGURATIONS})
+    arms = value.get("multi_arm_arms") if isinstance(value, dict) else None
     require(isinstance(value, dict) and set(value) == CONSENT_FIELDS and value["by"] == "owner"
             and value["test_evaluation"] is True and type(value["sheet_test_qualification"]) is bool
-            and isinstance(value["multi_arm_arms"], list) and len(value["multi_arm_arms"]) == len(TEST_ARMS)
-            and set(value["multi_arm_arms"]) == set(TEST_ARMS) and isinstance(value["date"], str)
-            and isinstance(value["note"], str) and value["note"].strip(),
+            and isinstance(arms, list) and all(type(arm) is str for arm in arms)
+            and any(len(arms) == len(found) and set(arms) == set(found) for found in allowed)
+            and isinstance(value["date"], str) and isinstance(value["note"], str) and value["note"].strip(),
             "No recorded owner consent to the multi-arm test read")
     return value
 
@@ -439,6 +459,107 @@ def test_plan(tasks, final, *, bench, unit, runtime, workers, reset=None):
                "not_withheld": {i: skipped[i] for i in sorted(skipped)}}
     return {"tasks": tasks, "routes": routes, "zero": zero, "twins": summary["twins"],
             "not_withheld": summary["not_withheld"], "sha256": digest(summary)}
+
+
+def stage_rows(chain_root, chain, order, final, start):
+    """v2 stage reads (``protocol.STAGE_READ``; zero calls): ``{"rows", "packages"}`` of chain ``chain`` whose steps
+    ran in ``order``: rows[k] (k = 0 .. len(order)) the label of the arm that reads the package after step k -- "C"
+    where it holds no procedure (k = 0 always), "F" where it is ``final``, else "S<j>", j the first step that passed it
+    on -- and packages {"S<j>": that package}. Each step's sealed ``step.json`` names the package it passed on (the
+    chain's empty start ``start``, or one of its saved packages); the last is ``final``."""
+    chain_root = safe_path(chain_root)
+    rows, packages, first, sha = ["C"], {}, {}, None
+    for k, bench in enumerate(order, 1):
+        path = chain_root / ("s%d-%s" % (k, bench)) / "step.json"
+        require(path.exists(), "Every step of the chain has finished before its read")
+        step = verified(read_json(path), "step")
+        require(step["chain"] == chain and step["k"] == k and step["bench"] == bench, "The record of step %d" % k)
+        sha = step["package_sha256"]
+        package = final if sha == final.sha256 else start if sha == start.sha256 else load(
+            chain_root / "packages" / (sha + ".json"))
+        require(package.sha256 == sha, "The package step %d passed on" % k)
+        if not package.procedures:
+            rows.append("C")
+        elif sha == final.sha256:
+            rows.append("F")
+        else:
+            label = first.setdefault(sha, "%s%d" % (STAGE_ARM, k))
+            packages[label] = package
+            rows.append(label)
+    require(sha == final.sha256, "The last step passed on the final package")
+    return {"rows": rows, "packages": packages}
+
+
+def _signature(package, route):
+    """The procedures a route enables, in order, as their hashes (byte-identical procedures send the same request)."""
+    return tuple(package.get(pid).sha256 for pid in route.enabled)
+
+
+def _derived(package, final, route):
+    """The route of ``package`` on an item as the per-procedure entries of F's ``route`` there, when every procedure of
+    ``package`` that may run on the bench is one of F's (the same id, byte-identical) and none of them faulted in F's
+    routing of the item; else None. A predicate runs in a namespace of its own (sandbox worker.py), so its result
+    depends only on its procedure and the routing view; a fault (a timeout, say) is no such result, so that item is
+    routed in the stage package's own worker (Codex stage review #2)."""
+    entries, own = route.per_procedure, {p.id: p.sha256 for p in final.for_bench(route.bench)}
+    procedures = package.for_bench(route.bench)
+    if not all(own.get(p.id) == p.sha256 for p in procedures) or any(entries[p.id]["fault"] is not None
+                                                                     for p in procedures):
+        return None
+    ids = {p.id for p in procedures}
+    return router.RouteLog(route.bench, package.sha256, route.routing_view_sha256,
+                           {p.id: dict(entries[p.id]) for p in procedures},
+                           tuple(dict(f) for f in route.faults if f.get("procedure") in ids), package.evidence)
+
+
+def stage_plan(plan, final, packages, *, bench, runtime, workers):
+    """v2 stage reads (zero calls): {"routes": {label: {item: RouteLog}}, "sources": {label: {item: source}},
+    "derived": {label: the number of items whose route was taken from F's}, "sha256"} of the stage arms ``packages``
+    ({"S<k>": package}) on the items of the read's plan ``plan`` (``test_plan``: its tasks' routing views and F's
+    routes). A stage package whose procedures for the bench are all F's takes its route on an item from F's there
+    (``_derived``: no worker starts) unless one of them faulted in F's routing of the item; every other item is routed
+    in a worker of its own (``router.route``; ``workers`` as in ``test_plan``, mounting a SpreadsheetBench item's public
+    workbook). An item's source, the stage arms in step order: "C" where the stage package enables nothing (the card
+    arm's cell), "F" where it enables F's procedures (``_signature``), an earlier stage arm where it enables the
+    procedures of that arm's running cell, else None (its cell runs)."""
+    require(all(STAGE_LABEL.fullmatch(label) for label in packages), "Stage arms are S<k>")
+    labels = sorted(packages, key=lambda label: int(label[len(STAGE_ARM):]))
+    tasks = {t["task_id"]: t for t in plan["tasks"]}
+    workers = mounting(workers, public_inputs(bench, tasks))
+    routes, derived = {}, {}
+    for label in labels:
+        package = packages[label]
+        found = {item: _derived(package, final, plan["routes"][item]) for item in sorted(tasks)}
+        derived[label] = sum(route is not None for route in found.values())
+        for item in sorted(tasks):
+            if found[item] is not None:
+                continue
+            view = solver.routing_view(bench, tasks[item]["public"], runtime=runtime)
+            if package.for_bench(bench):
+                with workers(package, item) as worker:
+                    found[item] = router.route(package, bench, view, worker)
+            else:
+                found[item] = router.route(package, bench, view, None)
+        routes[label] = found
+    sources = {label: {} for label in labels}
+    for item in sorted(tasks):
+        own = _signature(final, plan["routes"][item])
+        running = {}
+        for label in labels:
+            signature = _signature(packages[label], routes[label][item])
+            if not signature:
+                sources[label][item] = "C"
+            elif signature == own:
+                sources[label][item] = "F"
+            elif signature in running:
+                sources[label][item] = running[signature]
+            else:
+                sources[label][item] = None
+                running[signature] = label
+    summary = {label: {"package_sha256": packages[label].sha256, "derived": derived[label],
+                       "routes": {i: routes[label][i].sha256 for i in sorted(tasks)},
+                       "sources": dict(sorted(sources[label].items()))} for label in labels}
+    return {"routes": routes, "sources": sources, "derived": derived, "sha256": digest(summary)}
 
 
 # -------------------------------------------------------------------------------------- hash-only persistence
@@ -1019,14 +1140,16 @@ def _arm(arms, label, cell, task):
 
 
 def evaluate(unit_root, *, run, shared, pinned, chain, bench, arms, context, workers, route_workers, canaries,
-             panel=data.test_panel, reset=None, drain=None):
+             panel=data.test_panel, reset=None, drain=None, stages=None, run_configuration=None):
     """One test-read unit of chain ``chain`` on ``bench`` (module docstring). ``arms``: {"F", "C", "P_F", "T_F"} ->
     an ``Arm``, or a function ``(cell, task)`` giving the cell's Arm (P_F's per-item sham content); F's package is the
     final package, C's the card arm's empty package; ``context``: a ``cells.Context`` for the next attempt directory;
     ``route_workers``: ``test_plan``'s worker factory (on SpreadsheetBench called with ``inputs_dir=``: Codex finding
     #1); ``canaries``: the registered canaries (``load_canaries``); ``reset``: ALFWorld's routing-view reset (default
     ``alfworld_reset`` on the frozen runtime); ``drain``: the unit drain (``units.drainer``, ticket C5-1), run once the
-    attempt has ended, before ``unit.json``. Returns the unit record; raises ``Pause`` (written to the attempt's
+    attempt has ended, before ``unit.json``; ``stages``: a stage read's ``stage_rows`` (None: no stage arm), only with
+    ``run_configuration``, a stage-read run configuration whose exact consent (``consent``) is checked before an
+    attempt opens or a panel is read (Codex stage review #4). Returns the unit record; raises ``Pause`` (written to the attempt's
     status) when the read must stop."""
     unit = "%s/test/%s" % (chain, bench)
     try:
@@ -1039,7 +1162,8 @@ def evaluate(unit_root, *, run, shared, pinned, chain, bench, arms, context, wor
                     try:
                         found = _evaluate(unit_root, unit, run=run, shared=shared, pinned=pinned, chain=chain,
                                           bench=bench, arms=arms, context=context, workers=workers,
-                                          route_workers=route_workers, canaries=canaries, panel=panel, reset=reset)
+                                          route_workers=route_workers, canaries=canaries, panel=panel, reset=reset,
+                                          stages=stages, run_configuration=run_configuration)
                     finally:
                         _drained(drain, context, unit)
                 except BaseException:  # noqa: B036 -- recorded in full while still contained
@@ -1095,17 +1219,57 @@ def _scanned(unit_root, shared, canaries):
     return {"artifacts_scanned": files, "hits": hits}
 
 
+def _linked(context, linked, sources, plan, staged, final, packages, *, store):
+    """The stage cells ``stage_plan`` linked to a source ((job, source) pairs): "C" shares the card arm's cell
+    (``share_cell``), "F" or an earlier stage arm the cell that ran there (``cells.share_same``) -- when that cell ran
+    with exactly the planned procedures and recorded no fault (Codex stage review #1); otherwise the job is returned,
+    to run."""
+    fallback = []
+    for (cell, task, arm), source in linked:
+        item, run_index, label = cell["task_id"], cell["run"], cell["arm"]
+        route = staged["routes"][label][item]
+        found = sources[(source, item, run_index)]
+        if source == "C":
+            share_cell(context, cell, task, arm, found, route.to_json(), store=store)
+            continue
+        source_route = plan["routes"][item] if source == "F" else staged["routes"][source][item]
+        if list(found.get("enabled") or []) != list(route.enabled) or found.get("faults"):
+            fallback.append((cell, task, arm))
+            continue
+        share_same(context, cell, task, arm, found, route.to_json(), source_route.to_json(),
+                   final if source == "F" else packages[source], store=store)
+    return fallback
+
+
+def _stage_arms(stages, final):
+    """A stage read's rows and packages, checked (``stage_rows``): row 0 C, every row C, F or a stage arm of the
+    packages, each stage package used, holding a procedure and neither F nor another stage package."""
+    rows, packages = stages["rows"], stages["packages"]
+    require(isinstance(rows, list) and rows and rows[0] == "C" and isinstance(packages, dict)
+            and all(STAGE_LABEL.fullmatch(label) and isinstance(p, Package) for label, p in packages.items())
+            and set(rows) <= {"C", "F", *packages} and set(packages) <= set(rows)
+            and all(p.procedures and p.sha256 != final.sha256 for p in packages.values())
+            and len({p.sha256 for p in packages.values()}) == len(packages), "The stage arms of the read")
+    return rows, packages
+
+
 def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, context, workers, route_workers, canaries,
-              panel, reset):
+              panel, reset, stages=None, run_configuration=None):
     require(not (unit_root / "unit.json").exists(), "This unit is complete")
     require(set(arms) == set(ARMS), "The read's arms are F, C, P_F and T_F (§8.1)")
     final, card = arms["F"].package, arms["C"].package
     require(final.sha256 != card.sha256, "F = C: nothing was accepted, the read is not made (§8.1)")
     require(not card.for_bench(bench), "The card arm runs no procedure")
+    rows, packages = _stage_arms(stages, final) if stages is not None else (None, {})
+    if stages is not None:  # Codex stage review #4: the stage arms are read only under their exact consent
+        require(run_configuration in CONFIGURATIONS and STAGE_READ[run_configuration],
+                "A stage read belongs to a stage-read configuration")
+        consent(shared, run_configuration)
     evidence = context.evidence
     config = configuration(context, bench)
     identity = {"run": run, "unit": unit, "chain": chain, "bench": bench, "config": config,
-                "packages": {"F": final.sha256, "C": card.sha256}}
+                "packages": {"F": final.sha256, "C": card.sha256,
+                             **{label: p.sha256 for label, p in sorted(packages.items())}}}
     attempt = context.attempt
     require(attempt == _next_attempt(unit_root) and not attempt.exists(),
             "A unit attempt runs in the next attempt directory; after a pause, only with the owner's recorded decision")
@@ -1127,21 +1291,31 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
                            native=context.native, workers=workers, evidence=evidence, panel=panel)
         plan = test_plan(tasks, final, bench=bench, unit=unit, runtime=context.runtime[bench], workers=route_workers,
                          reset=reset)
+        staged = stage_plan(plan, final, packages, bench=bench, runtime=context.runtime[bench],
+                            workers=route_workers) if packages else None
         by_id = {t["task_id"]: {"public": t["public"], "private": t["private"]} for t in plan["tasks"]}
         rooms = {i: task_folder(by_id[i]["public"]["game_file"])[0] for i in by_id} if bench == "alfworld" else {}
         blocks = _blocks(sorted(by_id), bench, unit)
         zero = set(plan["zero"])
-        jobs, shares = [], []
+        jobs, shares, linked = [], [], []
         for item in sorted(by_id):
             for run_index in range(TEST_RUNS):
                 labels = ["C"] + ([] if item in zero else ["F", "P_F", "T_F"])
                 labels += [TWIN + p for p in plan["twins"].get(item, [])]
-                for label in labels + (["F", "P_F", "T_F"] if item in zero else []):
+                for label in labels + (["F", "P_F", "T_F"] if item in zero else []) + sorted(
+                        packages, key=lambda found: int(found[len(STAGE_ARM):])):
                     cell = {"id": cell_id(unit, label, item, run_index), "unit": unit, "arm": label,
                             "benchmark": bench, "task_id": item, "run": run_index, "block": blocks[item],
                             **({"room": rooms[item]} if rooms else {})}
                     if label.startswith(TWIN):
                         jobs.append((cell, by_id[item], Arm(label, final, withhold={label[len(TWIN):]})))
+                    elif label in packages:  # a stage arm: it runs, or shares the cell of its source
+                        source = staged["sources"][label][item]
+                        job = (cell, by_id[item], Arm("candidate", packages[label]))
+                        if source is None:
+                            jobs.append(job)
+                        else:
+                            linked.append((job, source))
                     else:
                         (shares if item in zero and label != "C" else jobs).append(
                             (cell, by_id[item], _arm(arms, label, cell, by_id[item])))
@@ -1150,11 +1324,14 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
             members = [job for job in jobs if job[0]["block"] == block]
             members = [members[i] for i in _order(list(range(len(members))), round_tag(unit) + ":test:" + block)]
             ran = run_cells(context, members, workers=workers, store=store)
-            sources.update({(c["task_id"], c["run"]): found for (c, _, _), found in zip(members, ran)
-                            if c["arm"] == "C"})
+            sources.update({(c["arm"], c["task_id"], c["run"]): found for (c, _, _), found in zip(members, ran)})
         for cell, task, arm in shares:
-            share_cell(context, cell, task, arm, sources[(cell["task_id"], cell["run"])],
+            share_cell(context, cell, task, arm, sources[("C", cell["task_id"], cell["run"])],
                        plan["routes"][cell["task_id"]].to_json(), store=store)
+        fallback = _linked(context, linked, sources, plan, staged, final, packages, store=store)
+        if fallback:  # the source cell did not run with the planned procedures: the stage cell runs, after the blocks
+            fallback = [fallback[i] for i in _order(list(range(len(fallback))), round_tag(unit) + ":test:fallback")]
+            run_cells(context, fallback, workers=workers, store=store)
         deleted = _closed(store, evidence)
     except Pause as pause:
         _closed(store, evidence)
@@ -1186,7 +1363,13 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
         **identity, "status": "complete", "attempt": attempt.name, "counts": counts, "plan_sha256": plan["sha256"],
         "structural_zero": len(zero), "twins": sum(len(v) for v in plan["twins"].values()),
         "rooms": len(set(rooms.values())) if rooms else None, "cells": sorted(c["cell"]["id"] for c in sealed),
-        "transient_deleted_sha256": deleted["manifest_sha256"], "canary_scan_sha256": scan["record_sha256"]})
+        "transient_deleted_sha256": deleted["manifest_sha256"], "canary_scan_sha256": scan["record_sha256"],
+        **({"stages": {"rows": rows, "plan_sha256": staged["sha256"] if staged else None,
+                       "derived": staged["derived"] if staged else {},
+                       "sources": {label: dict(sorted(Counter("sent" if source is None else source for source in
+                                                              staged["sources"][label].values()).items()))
+                                   for label in sorted(packages)},
+                       "fallback": len(fallback)}} if rows is not None else {})})
 
 
 # ----------------------------------------------------------------------------- the child entry (ticket A13-1)
@@ -1259,7 +1442,8 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
     unit's own Setting (``units.for_unit``: its tag on every container, ALFWorld's 6 workers), the solver endpoint on
     ``<chain>:test`` with the ledger bound B, the arms (module docstring), the run root's merged canaries -- the test
     read's second record made first when no unit has made it yet (``make_read_canaries`` with the manifest's
-    ``data.pools`` pins, registrar decisions C3-1 (b), PR-C31-3 (1a)) -- and the unit drain.
+    ``data.pools`` pins, registrar decisions C3-1 (b), PR-C31-3 (1a)) -- and the unit drain; in a stage-read
+    configuration (``protocol.STAGE_READ``) also the stage arms (``stage_rows``) under a consent naming them.
     Returns ``chain.EXIT_COMPLETE``, ``EXIT_AWAITING`` (a paused attempt awaits the owner's recorded decision) or
     ``EXIT_PAUSED``. ``docker`` / ``transport`` / ``panel`` / ``reset``: fakes in tests."""
     found = read_json(spec)
@@ -1268,7 +1452,8 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
     chain, bench = found["chain"], found["bench"]
     require(chain in CHAINS and bench in BENCHES, "A read unit of a chain and a bench")
     setting = setting_of(manifest, chain, docker=docker, transport=transport)
-    consent(setting.shared)
+    configuration = configuration_of(setting)
+    consent(setting.shared, configuration)  # a stage read's consent names its stage arms
     unit_root = read_root(setting, chain, bench)
     require(safe_path(found["unit_root"]) == unit_root, "The read unit's registered directory")
     attempt = _next_attempt(unit_root)
@@ -1277,8 +1462,12 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
     if attempt is None:
         return EXIT_AWAITING
     chain_root = safe_path(setting.root) / chain
-    final = load(chain_root / "packages" / (found["package_sha256"] + ".json"))
+    start = empty(step="%s/s0" % chain, evidence=setting.evidence)  # chain.run's start, which is never saved
+    # a stage read whose later steps deleted every procedure reads with F the empty start (``chain.run``)
+    final = start if STAGE_READ[configuration] and found["package_sha256"] == start.sha256 else load(
+        chain_root / "packages" / (found["package_sha256"] + ".json"))
     require(final.sha256 == found["package_sha256"], "The final package of the chain")
+    stages = stage_rows(chain_root, chain, order_of(setting), final, start) if STAGE_READ[configuration] else None
     unit = "%s/test/%s" % (chain, bench)
     own = units.for_unit(setting, chain, bench, unit)
     model = CHAINS[chain]
@@ -1299,7 +1488,7 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
         evaluate(unit_root, run=setting.run, shared=setting.shared, pinned=pinned, chain=chain, bench=bench, arms=arms,
                  context=units.cell_context(own, attempt, endpoint), workers=own.workers, route_workers=route_workers,
                  canaries=load_canaries(setting.root, read=True), panel=panel, reset=reset,
-                 drain=units.drainer(setting, chain, unit))
+                 drain=units.drainer(setting, chain, unit), stages=stages, run_configuration=configuration)
     except Pause as pause:
         return EXIT_AWAITING if pause.kind == "awaiting_owner_decision" else EXIT_PAUSED
     return EXIT_COMPLETE
@@ -1543,9 +1732,9 @@ def _root_scanned(root, chain_root, chain, *, evidence):
 
 def unseal(root, chain_root, chain, unit_roots, *, run, evidence, clock=_now):
     """{"label", "later_reads", "units": {bench: {(arm, task_id, run): {"token", "v2", "official", "final",
-    "lenient", "kind", "shared_with", "answered", "enabled", "block", "room", "format", "flags", "carrier", "fault_kinds",
-    "worst_delivery", "dispatch_ts", "finish_ts", "completion_tokens", "solver_route"}}}} of the chain's completed read
-    units of
+    "lenient", "kind", "shared_with", "shared_arm", "answered", "enabled", "block", "room", "format", "flags",
+    "carrier", "fault_kinds", "worst_delivery", "dispatch_ts", "finish_ts", "completion_tokens", "solver_route"}}}} --
+    and in a stage read "stages": {bench: the rows of its stage table} -- of the chain's completed read units of
     ``run`` -- once EVERY chain of the run root is complete or terminated (no chain's scores are seen while another
     chain still decides; isolation review 12), the owner's continuation file exists (Codex F17) and the whole run root
     passed the canary scan (``_root_scanned``, registrar decision C3-1 (b): a hit pauses for the owner, before any
@@ -1557,17 +1746,18 @@ def unseal(root, chain_root, chain, unit_roots, *, run, evidence, clock=_now):
             "Test scores stay sealed until every chain of the run root is complete or terminated")
     continuation(root)
     scan = _root_scanned(safe_path(root), chain_root, chain, evidence=evidence)
-    units = {}
+    units, stages = {}, {}
     for unit_root in unit_roots:
         unit_root = safe_path(unit_root)
         own = verified(read_json(unit_root / "unit.json"), "evaluation")
         require(chain_root in unit_root.parents and own["chain"] == chain and own["run"] == run,
                 "A unit of another chain or run")
-        cells = {}
+        cells, arm_of = {}, {}
         for cell in own["cells"]:
             value = verified(read_json(unit_root / own["attempt"] / "cells" / (cell + ".json")), "evaluation-cell")
             key = (value["cell"]["arm"], value["cell"]["task_id"], value["cell"]["run"])
             require(key not in cells, "One cell per arm, item and run")
+            arm_of[value["cell"]["id"]] = value["cell"]["arm"]
             judged = value["judge"]
             cells[key] = {"token": value["final"]["token"], "v2": judged["v2"], "official": judged["official"],
                           "final": judged["final"], "lenient": judged["lenient"], "kind": value["final"]["kind"],
@@ -1579,6 +1769,11 @@ def unseal(root, chain_root, chain, unit_roots, *, run, evidence, clock=_now):
                           "dispatch_ts": value["dispatch_ts"], "finish_ts": value["finish_ts"],
                           "completion_tokens": [c["completion_tokens"] for c in value["calls"]],
                           "solver_route": value.get("solver_route")}
+        for value in cells.values():  # the arm whose cell a shared cell reads: C's, or in a stage read F's or S<j>'s
+            value["shared_arm"] = None if value["shared_with"] is None else arm_of[value["shared_with"]]
         units[own["bench"]] = cells
+        if "stages" in own:
+            stages[own["bench"]] = list(own["stages"]["rows"])
     marker = _marker(root, chain_root, evidence=evidence, clock=clock, scan=scan)
-    return {"label": marker["label"], "later_reads": marker["later_reads"], "units": units}
+    return {"label": marker["label"], "later_reads": marker["later_reads"], "units": units,
+            **({"stages": stages} if stages else {})}

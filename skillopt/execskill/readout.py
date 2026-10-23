@@ -37,6 +37,12 @@ The bootstrap interval is reported beside it. Every reading is fixed before the 
   short-answer share (registrar decision fixer-2, 2026-10-22: a cell whose completion tokens are below a quarter of
   the median of the same bench and arm in the unit's first window, ``_reference``); F − P_F is described per bench.
 
+- ``stage_table`` (v2 stage reads, main-v2; owner decision 2026-10-23 16:0x): per bench and row k of the stage table
+  -- the package after step k, row 0 the card arm -- the row's arm (C, a stage arm S<j> or F), its accuracy on L and on
+  H over the masked items, and the paired contrasts row − C and row − row k−1 (each arm on its §6.3 side; a run on
+  which both arms read the same cell -- a stage cell shares C's, F's or an earlier stage arm's -- adds 0), description
+  only.
+
 The test read is independent GENERALIZATION evidence; acceptance decisions are SELECTION evidence (Codex F2).
 
 ``report(manifest, out=)`` (ticket A13-1, A12-1 item 5) is the command line's readout: per chain that has read, once
@@ -46,6 +52,7 @@ are unsealed and the readout written once into the new directory ``out``, with t
 """
 from __future__ import annotations
 
+import re
 from collections import Counter
 from datetime import datetime
 from fractions import Fraction
@@ -53,14 +60,15 @@ from fractions import Fraction
 from skillopt.continual_eval.core import read_json, require, safe_path, write_json
 
 from . import evaluation, stats_ext
-from .package import load
+from .package import empty, load
 from .protocol import (ALPHA, BENCHES, CANNOT_ACT_FIRED, CHAINS, NI_MARGIN, NI_MIN_FIRED, RECORD_HASH, SIMILAR_PAIRS,
-                       TIME_WINDOW_SECONDS, record, verified)
+                       STAGE_ARM, TIME_WINDOW_SECONDS, record, verified)
 
 __all__ = ("arm_table", "code_vs_text", "differences", "format_withholding", "labels", "placebo_contrast", "q1_home",
-           "q2_similar", "q3_noninferiority", "readout", "report", "side", "tau", "unanswered")
+           "q2_similar", "q3_noninferiority", "readout", "report", "side", "stage_table", "tau", "unanswered")
 
 TWIN = "withhold:"
+STAGE_LABEL = re.compile(r"%s[1-9][0-9]*" % STAGE_ARM)  # a stage arm "S<k>" of a v2 stage read
 UNKNOWN = ("unknown", "unknown_artifact", "unknown_fault")
 UNANSWERED = ("unknown",)  # §6.3 (acceptance.UNANSWERED): a cell that got no reply
 LEVEL = 0.025  # one side of a two-sided 95 % interval
@@ -74,8 +82,8 @@ SHORT_ANSWER = Fraction(1, 4)
 
 # ------------------------------------------------------------------------------------------- cells and contrasts
 def side(arm):
-    """§6.3: F and its twins are read on L, every other arm on H."""
-    return "L" if arm == "F" or arm.startswith(TWIN) else "H"
+    """§6.3: F, its twins and the stage arms (packages with procedures, as F) are read on L, every other arm on H."""
+    return "L" if arm == "F" or arm.startswith(TWIN) or STAGE_LABEL.fullmatch(arm) else "H"
 
 
 def _runs(cells, arm, item):
@@ -83,8 +91,12 @@ def _runs(cells, arm, item):
 
 
 def _source(cells, arm, item, run):
-    """The cell an arm reads on (item, run): "C" when it is the card arm's own or shares it (§8.1), else the arm."""
-    return "C" if arm == "C" or cells[(arm, item, run)]["shared_with"] is not None else arm
+    """The cell an arm reads on (item, run): its own, else the cell it shares -- the card arm's (§8.1), or in a stage
+    read F's or an earlier stage arm's (``shared_arm``; a read without it shares only C's)."""
+    value = cells[(arm, item, run)]
+    if arm == "C" or value["shared_with"] is None:
+        return arm
+    return value.get("shared_arm") or "C"
 
 
 def _score(token, on):
@@ -505,20 +517,56 @@ def arm_table(cells):
     return out
 
 
+# ------------------------------------------------------------------------------------------ v2 stage table
+def _accuracy(cells, arm, items, on):
+    """The arm's mean score on side ``on`` over ``items`` (each item's mean over its runs)."""
+    values = [sum(Fraction(_score(cells[(arm, i, r)]["v2"], on)) for r in _runs(cells, arm, i)) / len(_runs(cells, arm, i))
+              for i in items]
+    return float(sum(values) / len(values)) if values else None
+
+
+def stage_table(units, rows):
+    """v2 stage reads (owner decision 2026-10-23 16:0x): {bench: [row k: {"k", "arm", "n", "accuracy": {"L", "H"},
+    "minus_card", "minus_previous"}]} -- ``rows`` the arm of each row (row 0 C; ``evaluation.stage_rows``), the items
+    those arms all have cells on with the §6.3 mask removed, the paired contrasts on each arm's §6.3 side (a run on
+    which both arms read the same cell adds 0; "minus_previous" absent where the row reads the previous row's arm).
+    Description only: no test, no correction, no decision."""
+    require(isinstance(rows, list) and rows and rows[0] == "C", "The stage table's rows start with the card arm")
+    out = {}
+    for bench in sorted(units, key=BENCHES.index):
+        cells = units[bench]
+        _clustered(bench, cells)
+        items = _items(cells, *sorted(set(rows)))
+        entries = []
+        for k, arm in enumerate(rows):
+            entry = {"k": k, "arm": arm, "n": len(items),
+                     "accuracy": {on: _accuracy(cells, arm, items, on) for on in ("L", "H")}}
+            if arm != "C" and len(items) >= 2:
+                entry["minus_card"] = _contrast(cells, arm, "C", items, bootstrap=True)
+            if k and rows[k - 1] != arm and len(items) >= 2:
+                entry["minus_previous"] = _contrast(cells, arm, rows[k - 1], items, bootstrap=True)
+            entries.append(entry)
+        out[bench] = entries
+    return out
+
+
 # ---------------------------------------------------------------------------------------------- the readout
-def readout(units, *, learned, procedures, label, evidence):
+def readout(units, *, learned, procedures, label, evidence, stages=None):
     """The sealed readout record (``fivebench-execskill-v1-readout``) of one chain's unsealed read; ``label``: the
-    unseal's read label (Codex F17)."""
+    unseal's read label (Codex F17); ``stages``: a stage read's rows (``stage_table``; F's readings are left out,
+    None, only where F learned nothing and the stage arms carry the read)."""
     return record("readout", evidence, {
         "evidence_kind": EVIDENCE_KIND, "read_label": label, "learned": list(learned),
         "similar": similar(learned), "dissimilar": dissimilar(learned),
         "shared_unanswered": {b: len(unanswered(units[b])) for b in sorted(units, key=BENCHES.index)},
-        "q1_home": q1_home(units, learned), "q2_similar": q2_similar(units, learned, procedures),
+        "q1_home": q1_home(units, learned) if learned or not stages else None,
+        "q2_similar": q2_similar(units, learned, procedures),
         "q3_noninferiority": q3_noninferiority(units, learned) if [b for b in dissimilar(learned) if b in units]
         else None,
         "code_vs_text": code_vs_text(units, learned), "placebo": placebo_contrast(units),
         "labels": labels(units, procedures), "format_withholding": format_withholding(units, procedures),
-        "arms": {b: arm_table(units[b]) for b in sorted(units, key=BENCHES.index)}})
+        "arms": {b: arm_table(units[b]) for b in sorted(units, key=BENCHES.index)},
+        **({"stages": stage_table(units, stages)} if stages else {})})
 
 
 def report(manifest, *, out):
@@ -541,13 +589,18 @@ def report(manifest, *, out):
         if read["status"] != "read":
             found[chain] = "not_read"
             continue
-        final = load(chain_root / "packages" / (read["package_sha256"] + ".json"))
+        start = empty(step="%s/s0" % chain, evidence=evidence)  # a stage read whose F is the empty start
+        final = start if read["package_sha256"] == start.sha256 else load(
+            chain_root / "packages" / (read["package_sha256"] + ".json"))
         procedures = {p.id: p.origin for p in final.procedures}
         learned = [b for b in BENCHES if b in procedures.values()]
         units = [chain_root / "test" / b for b in BENCHES if (chain_root / "test" / b / "unit.json").exists()]
         opened = evaluation.unseal(root, chain_root, chain, units, run=run, evidence=evidence)
+        rows = {tuple(found) for found in (opened.get("stages") or {}).values()}
+        require(len(rows) <= 1 and (not rows or set(opened["stages"]) == set(opened["units"])),
+                "Every read unit of a stage read names the same rows")
         value = readout(opened["units"], learned=learned, procedures=procedures, label=opened["label"],
-                        evidence=evidence)
+                        evidence=evidence, stages=list(rows.pop()) if rows else None)
         written[chain], found[chain] = value, value[RECORD_HASH]
     out.mkdir(parents=True)
     for chain, value in written.items():

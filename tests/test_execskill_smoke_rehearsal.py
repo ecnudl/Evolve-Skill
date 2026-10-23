@@ -89,7 +89,9 @@ def rehearsal(tmp_path_factory):
 
 
 def test_every_built_stage_is_recorded_and_judged(rehearsal):
-    assert set(rehearsal["stages"]) == set(smoke.BUILT_STAGES)  # ticket C7d-1: S3 is built and rehearsed
+    # ticket C7d-1: S3 is built and rehearsed; v2's example SX is rehearsed with a main-v2 smoke
+    # (tests/test_execskill_sx_rehearsal.py)
+    assert set(rehearsal["stages"]) == set(smoke.BUILT_STAGES) - {"SX"} and "SX" in smoke.BUILT_STAGES
     for stage, value in rehearsal["stages"].items():
         assert value["stage"] == stage and type(value["result"]["passed"]) is bool
         stored = read_json(rehearsal["root"] / smoke.STAGES_DIR / (stage + ".json"))
@@ -98,7 +100,7 @@ def test_every_built_stage_is_recorded_and_judged(rehearsal):
     found = smoke.summary(rehearsal["spec"])
     assert found["evidence"] == smoke.REHEARSAL_EVIDENCE  # any rehearsal stage labels the result
     assert found["stages"]["S0"] == found["stages"]["S1"] == "pass" and found["required"] == list(smoke.SMOKE_STAGES)
-    assert {found["stages"][s] for s in smoke.BUILT_STAGES} <= {"pass", "fail"}
+    assert {found["stages"][s] for s in set(smoke.BUILT_STAGES) - {"SX"}} <= {"pass", "fail"} and "SX" not in found["stages"]
     assert found["stages"]["S3"] == "pass"  # every role ran through on the S3 rehearsal
     assert found["stages"]["S2"] == "fail" and found["passed"] is False  # S1 synthesized: S2's receipt row fails
     assert read_json(rehearsal["root"] / smoke.RESULT) == found

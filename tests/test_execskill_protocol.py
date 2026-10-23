@@ -130,7 +130,7 @@ def test_sibling_copies_agree_with_the_registration():
     assert client.ELUCID_RESPONSE_MODEL_IDS == frozenset({protocol.SMOKE_SOLVER}) == frozenset({protocol.CHAINS["D"]})
     assert client.REASONING_EFFORT == protocol.REASONING_EFFORT == "none"
     # ticket A4-1 and the policy's own copies
-    assert set(registry.NAMESPACES) == set(protocol.CHAINS) | {"smoke"}
+    assert set(registry.NAMESPACES) == set(protocol.CHAINS) | {"smoke"} | set(protocol.V2_NAMESPACES.values())
     assert registry.HISTORY_ROOT == protocol.HISTORY_ROOT == "/data/execskill-history"
     assert set(registry.EVIDENCE) == set(protocol.EVIDENCE)
     assert exclusion.EXCLUSION_RUNS == protocol.EXCLUSION_RUNS
@@ -397,8 +397,9 @@ def test_main_is_the_five_bench_configuration_with_its_root_label_and_rules():
     assert protocol.first_call_bench("main") == "searchqa" and protocol.first_call_bench() == protocol.FIRST_CALL_BENCH
     assert protocol.MAIN_ROOT == "/data/execskill-20261022-main" == protocol.RUN_ROOTS["main"]
     assert "main_real_run" in protocol.EVIDENCE and protocol.REAL_RUN_EVIDENCE == {
-        "default": "pilot_real_run", "recommended": "pilot_real_run", "main": "main_real_run"}
-    assert protocol.COST_CHECK_PAUSES == {"default": True, "recommended": True, "main": False}
+        "default": "pilot_real_run", "recommended": "pilot_real_run", "main": "main_real_run",
+        "main-v2": "main_v2_real_run"}  # v2 (owner decision 2026-10-23 13:3x)
+    assert protocol.COST_CHECK_PAUSES == {"default": True, "recommended": True, "main": False, "main-v2": False}
     assert protocol.CONFIG_CAP_FACTOR["main"] == 3 and protocol.CONFIG_CAP_FACTOR["default"] == Fraction(3, 2)
     assert {bench: protocol.fired_share(bench, "main") for bench in protocol.BENCHES} == {
         bench: 1 for bench in protocol.BENCHES}  # all five home
@@ -518,9 +519,10 @@ def test_the_fired_shares_are_the_ones_the_test_read_cells_count():
     assert {b: protocol.fired_share(b) for b in protocol.BENCHES} == {
         "searchqa": Fraction(7, 10), "officeqa": 1, "livemath": Fraction(7, 10), "spreadsheetbench": 1,
         "alfworld": Fraction(1, 2)}
-    for pilot in protocol.PILOTS:
+    for pilot in protocol.PILOTS:  # main-v2's stage arms (protocol.STAGE_READ) add one procedure cell each
         for bench, (n, procedure) in protocol.TEST_READ_CELLS[pilot].items():
-            assert 5 * n * protocol.fired_share(bench, pilot) == procedure, (pilot, bench)
+            assert (5 + protocol.stage_arms_max(pilot)) * n * protocol.fired_share(bench, pilot) == procedure, (
+                pilot, bench)
     assert protocol.TEST_READ_ESTIMATE_ARMS == 4 and protocol.FIRED_SHARES["other"] == Fraction(1, 2)
 
 

@@ -167,6 +167,23 @@ outside the registered band of 20% to 80%: write specs for a harder set ("too_ea
 When it has "unparseable", your previous reply could not be read: reply again in this format."""
 PROMPT_SHA256 = {"policy": digest(POLICY_SYSTEM), "detectors": digest(DETECTOR_SYSTEM),
                  "generators": digest(GENERATOR_SYSTEM)}
+# v2 (owner decision 2026-10-23 13:3x; spec-v2): the generated sets are practice items of the engineer's training
+# rounds and are probed only with BAND_PROBE_ITEMS items, so the v2 policy asks for every research request, the v2
+# generator writes specs for every shown material, and a top-up call ("topup") follows while a set is short. v1's
+# prompts and hashes are unchanged.
+POLICY_SYSTEM_V2 = POLICY_SYSTEM + """
+
+Training mode: the tasks are practice items for the engineer's training rounds, and a set is probed and admitted only \
+when at least 30 tasks survive the truth check. Each found material yields at most 10 tasks, and half of the findings \
+are kept apart for the acceptance check. So use all 24 requests, at least 16 of them family_material requests spread \
+over the families you choose, each for a distinct concept likely to be found."""
+GENERATOR_SYSTEM_V2 = GENERATOR_SYSTEM + """
+
+Training mode: the set must hold at least 30 tasks after the truth check. Write one spec for every shown material of \
+a family's kind, each with up to 10 parameter sets. When the user message has "topup", the set built so far is short: \
+"topup" gives the tasks it holds, the tasks still needed and, per finding, the tasks already made from it (at most 10 \
+per finding in all); write further specs, on materials with room left, that add the missing tasks."""
+PROMPT_V2_SHA256 = {"policy": digest(POLICY_SYSTEM_V2), "generators": digest(GENERATOR_SYSTEM_V2)}
 
 
 class Unparseable(ValueError):
@@ -429,24 +446,26 @@ def _policy(value, bench):
     return {"bench": bench, "families": list(names), "requests": requests, "rationale": value["rationale"]}
 
 
-def policy_revise(roles, payload, *, label, evidence):
+def policy_revise(roles, payload, *, label, evidence, train=False):
     """``(policy, the sealed fivebench-execskill-v1-examiner-policy record)``: the examiner's generation policy for the
     step's research (module docstring 2). An invalid reply keeps the previous policy (``fallback`` "previous"), or an
-    empty one ("empty"). The policy and its counts are a process record, never effect evidence (§7.2)."""
+    empty one ("empty"). The policy and its counts are a process record, never effect evidence (§7.2). ``train``
+    (v2): under ``POLICY_SYSTEM_V2``."""
     require(isinstance(payload, dict) and payload.get("request") == "policy", "A policy payload")
     _refuse_forbidden(payload)
     bench, prefix = payload["bench"], "%s/%s/policy" % (ROLE, label)
     _generating(bench)
     value = None
     if roles.count(prefix) < POLICY_CALLS:
-        value = roles.ask(ROLE, POLICY_SYSTEM, payload, label=prefix, check=lambda reply: _policy(reply, bench))
+        value = roles.ask(ROLE, POLICY_SYSTEM_V2 if train else POLICY_SYSTEM, payload, label=prefix,
+                          check=lambda reply: _policy(reply, bench))
     fallback = None
     if value is None:
         fallback = "previous" if payload["previous"] is not None else "empty"
         value = payload["previous"] or {"bench": bench, "families": [], "requests": [], "rationale": ""}
     sealed = record("examiner-policy", evidence, {
-        "bench": bench, "label": label, "prompt_sha256": PROMPT_SHA256["policy"], "payload_sha256": digest(payload),
-        "policy": value, "fallback": fallback, **_attempted(roles, prefix)})
+        "bench": bench, "label": label, "prompt_sha256": (PROMPT_V2_SHA256 if train else PROMPT_SHA256)["policy"],
+        "payload_sha256": digest(payload), "policy": value, "fallback": fallback, **_attempted(roles, prefix)})
     return value, sealed
 
 
@@ -510,11 +529,11 @@ def researched_values(bench, materials):
     return out
 
 
-def generator_payload(bench, materials, *, sources=None, band=None):
+def generator_payload(bench, materials, *, sources=None, band=None, topup=None):
     """The user message of the generator call (module docstring 2): ``materials`` = the ``research.material`` values
     of one research half; ``sources`` (SpreadsheetBench only) = {key: the public view of a source task} -- public
     content only; ``band`` = the previous probe's ``band`` value when this call adjusts the parameters (at most twice
-    after an out-of-band probe)."""
+    after an out-of-band probe); ``topup`` (v2) = ``topup``'s hint when this call adds items to a short set."""
     _generating(bench)
     require(sources is None or (bench == "spreadsheetbench" and isinstance(sources, dict)),
             "Only SpreadsheetBench specs edit source tasks")
@@ -528,6 +547,9 @@ def generator_payload(bench, materials, *, sources=None, band=None):
             "parameters": researched_values(bench, materials),
             "sources": [{"key": key, "view": view} for key, view in sorted((sources or {}).items())],
             "max_parameter_sets": MAX_ITEMS_PER_FINDING, "band": hint}
+    if topup is not None:
+        require(isinstance(topup, dict) and band is None, "A top-up hint, never with a band adjustment")
+        user["topup"] = topup
     _refuse_forbidden(user)
     return fit(user, "sources", ROLE_INPUT_BYTES)
 
@@ -580,11 +602,11 @@ def _specs_shape(value):
     return items(value["specs"], limit=MAX_SPECS)
 
 
-def generator_write(roles, payload, *, label, evidence):
+def generator_write(roles, payload, *, label, evidence, train=False):
     """``(specs, the sealed fivebench-execskill-v1-examiner-generators record)``: the examiner's generator call(s) on
     ``payload`` (``generator_payload``) and the specs that name a registered family, a shown material (and source)
     and 1 to 10 parameter sets, without an answer-like key (module docstring 2). An invalid reply gets one more call;
-    two give no spec."""
+    two give no spec. ``train`` (v2): under ``GENERATOR_SYSTEM_V2``."""
     require(isinstance(payload, dict) and payload.get("request") == "generators", "A generator payload")
     _refuse_forbidden(payload)
     bench, prefix = payload["bench"], "%s/%s/generators/" % (ROLE, label)
@@ -593,7 +615,8 @@ def generator_write(roles, payload, *, label, evidence):
     for purpose in ("write", "rewrite"):
         if roles.count(prefix) >= GENERATOR_CALLS:
             break
-        value = roles.ask(ROLE, GENERATOR_SYSTEM, user, label=prefix + purpose, check=_specs_shape)
+        value = roles.ask(ROLE, GENERATOR_SYSTEM_V2 if train else GENERATOR_SYSTEM, user, label=prefix + purpose,
+                          check=_specs_shape)
         if value is None:
             reason = roles.calls[-1]["reason"]
             attempts.append({"parsed": False, "reason": reason})
@@ -610,7 +633,7 @@ def generator_write(roles, payload, *, label, evidence):
         else:
             specs.append({"n": n, **spec})
     sealed = record("examiner-generators", evidence, {
-        "bench": bench, "label": label, "prompt_sha256": PROMPT_SHA256["generators"],
+        "bench": bench, "label": label, "prompt_sha256": (PROMPT_V2_SHA256 if train else PROMPT_SHA256)["generators"],
         "payload_sha256": digest(payload), "attempts": attempts, "specs": specs, "dropped": dropped,
         "specs_sha256": digest(specs), **_attempted(roles, prefix)})
     return specs, sealed
@@ -676,6 +699,23 @@ def build(specs, materials, *, bench, generator, set_name, seed, evidence, start
         results.append({**made, "items": kept, "dropped": dict(sorted(dropped.items())), "status": status,
                         "family": spec["family"], "material": spec["material"]})
     return Generated(generator, bench, tuple(results), count, dict(sorted(used.items())))
+
+
+def joined(first, more):
+    """v2's top-up: the set ``first`` with the items of ``more``, a later build of the same generator and set that
+    was numbered from ``first.next_number`` and continued its per-finding counter (``derived``)."""
+    require(first.generator == more.generator and first.bench == more.bench
+            and more.next_number >= first.next_number
+            and all(more.derived.get(finding, 0) >= n for finding, n in first.derived.items()),
+            "A top-up continues its set's numbering and per-finding counter")
+    return Generated(first.generator, first.bench, first.results + more.results, more.next_number, dict(more.derived))
+
+
+def topup(generated, call):
+    """v2: the "topup" hint of a set's ``call``-th top-up call: the items it holds, the items still needed for its
+    band probe and the items made per finding so far (at most ``MAX_ITEMS_PER_FINDING`` each)."""
+    return {"call": call, "items": len(generated.items),
+            "needed": max(0, BAND_PROBE_ITEMS - len(generated.items)), "per_finding": dict(generated.derived)}
 
 
 def sufficient(generated):

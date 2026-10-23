@@ -31,7 +31,9 @@ chain can be terminated (chain.py:303-314). What changes:
   ``cap-check-G.json`` and pauses chain G only -- in a configuration whose cost check pauses
   (``protocol.COST_CHECK_PAUSES``); in main it records its factor and never pauses (registrar 17:0x), and the read
   gate still applies that factor;
-- the one test read (§8.1, §9.3): F = C (nothing accepted) is not read (``test-read.json``: ``not_read``); otherwise
+- the one test read (§8.1, §9.3): F = C (nothing accepted) is not read (``test-read.json``: ``not_read``) -- in a
+  stage-read configuration (``protocol.STAGE_READ``, main-v2) only when no step passed on a package with a procedure,
+  its read units running every step's package as well (``evaluation.stage_rows``); otherwise
   the owner's read consent is checked once for the chain (``read_consent``, registrar addendum 14:10 row 9: missing,
   the chain waits in ``read-waiting.json`` and no read attempt is opened), the remaining chain budget must cover 1.3 x
   the S-E6-corrected test-read estimate of the read units still to run (``TEST_START_FACTOR``; ``read_estimate_record``;
@@ -69,8 +71,8 @@ from .client import ELUCID_RESPONSE_MODEL_IDS, ROUTE_A, ROUTES
 from .errors import AssumptionBroken, BudgetStop, ConfigurationError, LedgerFailure
 from .package import empty
 from .protocol import (BENCHES, CHAINS, CONFIGURATIONS, COST_CHECK_PAUSES, FIRST_CALL_SYSTEM, FIRST_CALL_USER, PILOT,
-                       PROCEDURE_ARM_FACTOR, RECORD_HASH, SLOT_ROOT, TEST_READ_CELLS, TEST_READ_ESTIMATE_ARMS,
-                       TEST_START_FACTOR, configuration_of, estimate_test_read, fired_share, first_call_bench,
+                       PROCEDURE_ARM_FACTOR, RECORD_HASH, SLOT_ROOT, STAGE_READ, TEST_READ_CELLS, TEST_START_FACTOR,
+                       configuration_of, estimate_arms, estimate_test_read, fired_share, first_call_bench,
                        ledger_bound, order_of, read_estimate_terms, record, verified)
 
 __all__ = ("EXIT_AWAITING", "EXIT_COMPLETE", "EXIT_PAUSED", "RUNNER_LOCK", "Terminated", "cap_check", "chain_root",
@@ -373,12 +375,12 @@ def read_estimate_record(smoke_root, configuration=None):
         "smoke": {"root": str(root), "spec": spec[RECORD_HASH], "result": result[RECORD_HASH],
                   "se6": stage[RECORD_HASH]},
         "waiver": waived,  # registrar addendum 2026-10-23 05:3x: None, or {"sha256", "rows"} of the owner's waiver
-        "pilot": projected, "formula": "ceil(ratio x sum_b n_b x (card_b + 4 x f_b x proc_b)); registrar addendum "
-                                        "2026-10-22 14:10, row 8",
+        "pilot": projected, "formula": "ceil(ratio x sum_b n_b x (card_b + %d x f_b x proc_b)); registrar addendum "
+                                        "2026-10-22 14:10, row 8" % estimate_arms(projected),
         "inputs": {"ratio": se6["ratio"], "per_cell": per_cell,
                    "n": {bench: TEST_READ_CELLS[projected][bench][0] for bench in BENCHES},
                    "fired": {bench: str(fired_share(bench, projected)) for bench in BENCHES},
-                   "arms": TEST_READ_ESTIMATE_ARMS,
+                   "arms": estimate_arms(projected),  # 4; with main-v2's stage arms 8
                    "procedure_factor": str(PROCEDURE_ARM_FACTOR[1])},
         "value": value, "test_read_estimate": {chain: value for chain in sorted(CHAINS)},
         "terms": {bench: "%d/%d" % (term.numerator, term.denominator) for bench, term in terms.items()}})
@@ -454,7 +456,7 @@ def read_consent(setting, chain):
     from . import evaluation  # imported here: evaluation imports this module
 
     try:
-        evaluation.consent(setting.shared)
+        evaluation.consent(setting.shared, configuration_of(setting))  # a stage read's consent names its stage arms
     except ValueError:
         roots = [unit_root(setting, chain, bench) for bench in BENCHES]
         write_json(chain_root(setting, chain) / READ_WAITING, record("read-waiting", setting.evidence, {
@@ -552,7 +554,7 @@ def run(setting, chain, *, learn, launch=launch_child):
         budgets.own_ledger(setting, chain).declare({**budgets.chain_caps(chain, configuration),
                                                     **budgets.first_call_caps(chain)})
         start = empty(step="%s/s0" % chain, evidence=setting.evidence)
-        package, steps = start, []
+        package, steps, passed = start, [], []
         try:
             # registrar addendum 14:10, row 7: one confirmed reply before the first unit (a relaunch checks its pins)
             first_call(setting, chain, before=functools.partial(_verified, setting, root, identity, verify)
@@ -561,8 +563,13 @@ def run(setting, chain, *, learn, launch=launch_child):
                 _verified(setting, root, identity, verify)
                 package, step_record = learn(setting, root, chain, k, bench, package)
                 steps.append(step_record["record_sha256"])
+                passed.append(package)
             _verified(setting, root, identity, verify)
-            if package.sha256 == start.sha256 or not package.order:
+            if STAGE_READ[configuration] and not any(found.order for found in passed):
+                write_json(root / TEST_READ, record("test-read", setting.evidence, {
+                    "identity": identity, "status": "not_read", "reason": "Every step's package is C: nothing was "
+                    "accepted (§8.1; v2 stage reads)"}))
+            elif not STAGE_READ[configuration] and (package.sha256 == start.sha256 or not package.order):
                 write_json(root / TEST_READ, record("test-read", setting.evidence, {
                     "identity": identity, "status": "not_read", "reason": "F = C: nothing was accepted (§8.1)"}))
             else:

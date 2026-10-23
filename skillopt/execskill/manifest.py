@@ -186,11 +186,18 @@ def verify_unit(manifest, *, docker=None, repo=REPO):
     image_id(docker, manifest["sandbox"]["image_id"])
 
 
-def prompt_sha():
+def prompt_sha(configuration=None):
     """The pinned prompt hashes the manifest binds next to the lexicon hash (ticket A10-1 item 6, C6b-1 §3): the
-    describer's, the engineer's and the examiner's three (policy, detectors, generators)."""
-    return {"describer": describer.DESCRIBER_PROMPT_SHA256, "engineer": engineer.ENGINEER_PROMPT_SHA256,
-            "examiner": dict(examiner.PROMPT_SHA256)}
+    describer's, the engineer's and the examiner's three (policy, detectors, generators); for a run configuration that
+    trains (``protocol.LEARNING``) also ``v2``: v2's engineer and examiner prompts (owner decision 2026-10-23 13:3x)
+    and its analysts' (owner suggestion 2026-10-23 15:1x). A v1 configuration binds exactly the first three (Codex
+    review 2026-10-23 #1)."""
+    out = {"describer": describer.DESCRIBER_PROMPT_SHA256, "engineer": engineer.ENGINEER_PROMPT_SHA256,
+           "examiner": dict(examiner.PROMPT_SHA256)}
+    if protocol.LEARNING.get(configuration) == "train":
+        out["v2"] = {"engineer": engineer.ENGINEER_PROMPT_V2_SHA256, "analyst": engineer.ANALYST_PROMPT_SHA256,
+                     "examiner": dict(examiner.PROMPT_V2_SHA256)}
+    return out
 
 
 def _plain(value):
@@ -281,7 +288,8 @@ def check(manifest):
     require(set(value["environment"]) == ENVIRONMENT_FIELDS, "The environment block holds the registered fields")
     require(set(value["provenance"]) == PROVENANCE_FIELDS and value["provenance"]["env_files_absent"] is True,
             "The provenance names the verified snapshot without .env files")
-    require(isinstance(value["prompt_sha"], dict) and set(value["prompt_sha"]) == set(prompt_sha()),
+    require(isinstance(value["prompt_sha"], dict)
+            and set(value["prompt_sha"]) == set(prompt_sha(value.get("configuration"))),
             "The manifest binds the engineer's and the describer's prompt hashes")
     require(_card_texts(value["cards"]), "The manifest's cards are the five card texts, not their hashes: cells.py "
             "hands cards[bench] to the solver as the card (registrar addendum 14:10 row 12)")
@@ -317,7 +325,8 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
             "Registered limits for every sandbox kind")
     fields = {
         **given, **registered(), "history_root": protocol.HISTORY_ROOT, "slot_root": protocol.SLOT_ROOT,
-        "templates": protocol.TEMPLATES_SHA256, "lexicon_sha": notes.lexicon_sha256(), "prompt_sha": prompt_sha(),
+        "templates": protocol.TEMPLATES_SHA256, "lexicon_sha": notes.lexicon_sha256(),
+        "prompt_sha": prompt_sha(configuration),
         "placebo_corpus_sha": protocol.PLACEBO_CORPUS_SHA256, "configuration": configuration,
         "caps": budgets.caps(configuration),
         "importable_versions": [*protocol.IMPORTABLE, protocol.TEXTS_IMPORT],
@@ -369,6 +378,13 @@ def _solver_chain(chain, root):
     from . import smoke  # imported here: smoke imports this module
 
     return smoke.solver_of(smoke.load(safe_path(root) / smoke.SPEC)).chain
+
+
+def _smoke_example(root):
+    """Whether the smoke specification at ``root`` lists v2's example stage SX."""
+    from . import smoke  # imported here: smoke imports this module
+
+    return "SX" in smoke.load(safe_path(root) / smoke.SPEC).get("stages", ())
 
 
 def _items(entry, bench):
@@ -482,7 +498,7 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
     require(chain in RUNS, "Chain G, chain D or the smoke")
     require((m["evidence"] == SMOKE_EVIDENCE) == (chain == budgets.SMOKE),
             "The smoke runs on a smoke manifest and the chains on a pilot manifest")
-    require(m["lexicon_sha"] == notes.lexicon_sha256() and m["prompt_sha"] == prompt_sha(),
+    require(m["lexicon_sha"] == notes.lexicon_sha256() and m["prompt_sha"] == prompt_sha(m["configuration"]),
             "The lexicon or a pinned prompt differs from the manifest")
     root, docker = safe_path(m["root"]), docker or sandbox.Docker()
     solver_chain = _solver_chain(chain, root)  # the smoke: its specification's (registrar addendum 2026-10-23 02:3x)
@@ -498,8 +514,8 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
         extra["manifest"] = str(safe_path(path))
     if route is not None:
         extra["route"] = route
-    if chain == budgets.SMOKE:
-        budget.declare(budgets.smoke_caps())
+    if chain == budgets.SMOKE:  # a smoke listing v2's example SX: the example caps
+        budget.declare(budgets.smoke_caps(example=_smoke_example(root)))
     else:
         estimate = m["data"].get("test_read_estimate")
         require(isinstance(estimate, dict) and type(estimate.get(chain)) is int and estimate[chain] > 0,
