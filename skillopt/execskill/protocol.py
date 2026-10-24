@@ -37,7 +37,8 @@ RECORD_HASH = "record_sha256"  # plan §2: the canonical digest of the record wi
 # 2026-10-22 17:0x and 17:3x"), accepted wherever ``pilot_real_run`` is accepted for a real run (``REAL_RUN_EVIDENCE``)
 EVIDENCE = ("engineering_fixture", "smoke", "pilot_real_run", "historical_replay", "main_real_run",
             "main_v2_real_run",  # v2 (owner decision 2026-10-23 13:3x): the "train then accept" main experiment
-            "main_v2_1_real_run")  # v2.1 (owner decision 2026-10-24 02:2x): main-v2 with two engineer rules
+            "main_v2_1_real_run",  # v2.1 (owner decision 2026-10-24 02:2x): main-v2 with two engineer rules
+            "main_v2_2_real_run")  # v2.2 (owner decision 2026-10-24 12:1x): main-v2-1 with the practical gates
 IMPORTABLE = ("fivebench-coevolution-v3-sheet-qualification",)  # §1, owner #7, Codex F15: the one v3 record kind read
 TEXTS_IMPORT = "fivebench-coevolution-v3-texts-import"  # §2.2: the v3 task cards, imported by value (plan §6)
 
@@ -103,7 +104,7 @@ SMOKE_SOLVER = CHAINS["D"]  # §0 (c), §10: the registered default smoke solver
 # registrar addendum 2026-10-23 02:3x ("smoke solver chain"): the smoke specification pins its solver chain -- "D",
 # the registered default (unchanged), or "G": GLM-5.3 through its frozen client with chain G's settings, and no S1
 SMOKE_SOLVER_CHAINS = ("D", "G")
-NAMESPACES = ("G", "D", "smoke", "G-v2", "D-v2", "G-v2-1", "D-v2-1")  # §3.4: one consumption namespace per chain,
+NAMESPACES = ("G", "D", "smoke", "G-v2", "D-v2", "G-v2-1", "D-v2-1", "G-v2-2", "D-v2-2")  # §3.4: one consumption namespace per chain,
 # the smoke its own;
 # v2 (owner decision 2026-10-23 13:3x): each chain of the main-v2 configuration consumes in its own namespace
 # (``V2_NAMESPACES``, ``namespace_of``), so it cuts the registered slices from the same fixed order again: its run
@@ -114,6 +115,10 @@ V2_NAMESPACES = {"G": "G-v2", "D": "D-v2"}
 # v2.1 (owner decision 2026-10-24 02:2x): main-v2-1's chains consume in namespaces of their own again and cut the same
 # slices: main-v2 dispatched no acceptance item either (chain G stopped in step 3's training, chain D in step 1's run)
 V21_NAMESPACES = {"G": "G-v2-1", "D": "D-v2-1"}
+# v2.2 (owner decision 2026-10-24 12:1x): main-v2-2's chains consume in namespaces of their own and cut the same slices
+# again; main-v2-1 did dispatch acceptance items (chain D's LiveMath round), so these slices are reused there
+# (``ACCEPT_FRESHNESS``)
+V22_NAMESPACES = {"G": "G-v2-2", "D": "D-v2-2"}
 ROLE_MODEL = "glm-5.3"  # §4.2, §4.3, §7.2: every method role of both chains
 # §4.1 chain G: M = B = 65,536 on every bench and a 2,400 s read timeout (the frozen route, coevo5 protocol.py:327,
 # :92), so a chain G receipt is never over nominal.
@@ -873,29 +878,73 @@ PILOTS[MAIN_V2_1] = dict(PILOTS[MAIN_V2])
 STAGE_READ[MAIN_V2_1] = STAGE_READ[MAIN_V2]
 TEST_READ_CELLS[MAIN_V2_1] = dict(TEST_READ_CELLS[MAIN_V2])
 CHAIN_NAMESPACES = {MAIN_V2: V2_NAMESPACES, MAIN_V2_1: V21_NAMESPACES}
+# ------------- v2.2 (owner decision 2026-10-24 12:1x: "你的门槛设的太高了，请你根据具体的进化情况重新设计一下门槛怎么样才合适，
+# 我觉得acc变化五个点以上都可以算是有效果，不用要求那么高"; the owner then chose the proposed gates, the stop of main-v2-1
+# once main-v2-2 is ready and a delegated test-read consent)
+# main-v2-1's gates let 3 of 12 training candidates through and decided no acceptance: chain G's LiveMath candidate
+# fired on 12 acceptance items (< MIN_ASTAR), chain D's gained 9.9 points over S on A* but 1.1 over the yoked sham
+# (J2), and the registered MDE (``MDE_POINTS``) is the joint power of J1 and J2, about 10 points. The run
+# configuration ``main-v2-2`` is ``main-v2-1`` with the owner's practical gates:
+# - training (``TRAIN_SIGN``): fixed > broken and net >= max(1, ceil(2 %)) adopt; the sign test is recorded only;
+# - a candidate's new procedure that no evaluated training item enables is pruned before the training cells
+#   (``PRUNE_NON_FIRING``, ``step.prune_idle``), so it cannot ride along with one that fires (main-v2-1's chain D
+#   adopted a meta-option detector that fired on no item beside a procedure that did);
+# - acceptance (``ACCEPT_RULES``, sealed into the round by ``acceptance.prepare`` and read by ``acceptance.decide``):
+#   S' is accepted when its whole-batch gain over S is >= 5 points, or on SearchQA (1,000 items) >= 2 points with the
+#   one-sided p <= 0.05; P_y and P_i run and are reported, the decision labelling the gain "content" when S' - P_y is
+#   >= 5 points, else "form", and never deciding; J3, J4, J5, J6 and J7 are unchanged; |A*| must reach
+#   min(30, max(ceil(5 % of |A|), blocks + 2)) items (ALFWorld also min(20, blocks + 2) rooms), below which no
+#   procedure set could reach 5 points or the blocked t-test could not be formed (``acceptance.minimum_astar``).
+# The gates were chosen after reading main-v2-1's step-3 acceptance, and main-v2-2 cuts the same slices (its pools hold
+# no other supply), so its acceptance rounds reuse items main-v2-1 dispatched (chain D's LiveMath acceptance and probe
+# items at least); its method side sees none of main-v2-1's records. Its acceptance decisions are selection evidence
+# labelled ``ACCEPT_FRESHNESS``; the method effect is read on the untouched test split only. Slices, prompts, caps
+# and every other rule are main-v2-1's; its run root and consumption namespaces (``V22_NAMESPACES``) are new.
+MAIN_V2_2 = "main-v2-2"
+LEARNING[MAIN_V2_2] = "train"
+FIX_ECHO[MAIN_V2_2] = False
+META_COUNTERFACTUAL[MAIN_V2_2] = True
+TRAIN_SIGN = {"default": True, "recommended": True, "main": True, MAIN_V2: True, MAIN_V2_1: True, MAIN_V2_2: False}
+PRUNE_NON_FIRING = {"default": False, "recommended": False, "main": False, MAIN_V2: False, MAIN_V2_1: False,
+                    MAIN_V2_2: True}
+PRACTICAL_RULE = {"name": "practical-v2-2", "gain_points": 5, "significance_benches": ["searchqa"],
+                  "significance_points": 2, "alpha": ALPHA, "content_points": 5, "astar_share_percent": 5,
+                  "astar_cap": MIN_ASTAR, "rooms_cap": MIN_ASTAR_ROOMS, "blocks_extra": 2}
+ACCEPT_RULES = {"default": None, "recommended": None, "main": None, MAIN_V2: None, MAIN_V2_1: None,
+                MAIN_V2_2: PRACTICAL_RULE}
+ACCEPT_FRESHNESS = {MAIN_V2_2: "route_b_v2_1_slices_reused"}  # every other configuration: ``step.FRESHNESS``
+MAIN_V2_2_ROOT = "/data/execskill-20261024-main-v2-2"
+MAIN_V2_2_MANIFEST = "/data/execskill-20261024-main-v2-2-manifest.json"
+PILOTS[MAIN_V2_2] = dict(PILOTS[MAIN_V2])
+STAGE_READ[MAIN_V2_2] = STAGE_READ[MAIN_V2]
+TEST_READ_CELLS[MAIN_V2_2] = dict(TEST_READ_CELLS[MAIN_V2])
+CHAIN_NAMESPACES[MAIN_V2_2] = V22_NAMESPACES
 
 
 def namespace_of(setting, chain):
     """The consumption namespace of ``chain`` in the Setting's run configuration: the chain itself, or its own
-    namespace in main-v2 (``V2_NAMESPACES``) and main-v2-1 (``V21_NAMESPACES``)."""
+    namespace in main-v2 (``V2_NAMESPACES``), main-v2-1 (``V21_NAMESPACES``) and main-v2-2 (``V22_NAMESPACES``)."""
     found = CHAIN_NAMESPACES.get(configuration_of(setting))
     return found[chain] if found is not None else chain
 
 CONFIG_STEP_CAPS = {"default": STEP_CAPS, "recommended": STEP_CAPS, "main": MAIN_STEP_CAPS, MAIN_V2: MAIN_V2_STEP_CAPS,
-                    MAIN_V2_1: MAIN_V2_STEP_CAPS}
+                    MAIN_V2_1: MAIN_V2_STEP_CAPS, MAIN_V2_2: MAIN_V2_STEP_CAPS}
 CONFIG_SCHEDULE_CELLS = {"default": MAX_SCHEDULE_CELLS, "recommended": MAX_SCHEDULE_CELLS, "main": MAIN_SCHEDULE_CELLS,
-                         MAIN_V2: MAIN_V2_SCHEDULE_CELLS, MAIN_V2_1: MAIN_V2_SCHEDULE_CELLS}
+                         MAIN_V2: MAIN_V2_SCHEDULE_CELLS, MAIN_V2_1: MAIN_V2_SCHEDULE_CELLS,
+                         MAIN_V2_2: MAIN_V2_SCHEDULE_CELLS}
 CONFIG_ROLE_CAPS = {"default": ROLE_CAPS, "recommended": ROLE_CAPS, "main": MAIN_ROLE_CAPS, MAIN_V2: MAIN_V2_ROLE_CAPS,
-                    MAIN_V2_1: MAIN_V2_ROLE_CAPS}
+                    MAIN_V2_1: MAIN_V2_ROLE_CAPS, MAIN_V2_2: MAIN_V2_ROLE_CAPS}
 CONFIG_GLM_CAP = {"default": GLM_CAP, "recommended": GLM_CAP, "main": MAIN_GLM_CAP, MAIN_V2: MAIN_V2_GLM_CAP,
-                  MAIN_V2_1: MAIN_V2_GLM_CAP}
+                  MAIN_V2_1: MAIN_V2_GLM_CAP, MAIN_V2_2: MAIN_V2_GLM_CAP}
 CONFIG_CAP_FACTOR = {"default": Fraction(3, 2), "recommended": Fraction(3, 2), "main": Fraction(MAIN_CAP_FACTOR),
-                     MAIN_V2: Fraction(MAIN_CAP_FACTOR), MAIN_V2_1: Fraction(MAIN_CAP_FACTOR)}
-COST_CHECK_PAUSES = {"default": True, "recommended": True, "main": False, MAIN_V2: False, MAIN_V2_1: False}
+                     MAIN_V2: Fraction(MAIN_CAP_FACTOR), MAIN_V2_1: Fraction(MAIN_CAP_FACTOR),
+                     MAIN_V2_2: Fraction(MAIN_CAP_FACTOR)}
+COST_CHECK_PAUSES = {"default": True, "recommended": True, "main": False, MAIN_V2: False, MAIN_V2_1: False,
+                     MAIN_V2_2: False}
 REAL_RUN_EVIDENCE = {"default": "pilot_real_run", "recommended": "pilot_real_run", "main": "main_real_run",
-                     MAIN_V2: "main_v2_real_run", MAIN_V2_1: "main_v2_1_real_run"}
+                     MAIN_V2: "main_v2_real_run", MAIN_V2_1: "main_v2_1_real_run", MAIN_V2_2: "main_v2_2_real_run"}
 RUN_ROOTS = {"default": PILOT_ROOT, "recommended": PILOT_ROOT, "main": MAIN_ROOT, MAIN_V2: MAIN_V2_ROOT,
-             MAIN_V2_1: MAIN_V2_1_ROOT}
+             MAIN_V2_1: MAIN_V2_1_ROOT, MAIN_V2_2: MAIN_V2_2_ROOT}
 
 
 def configuration_of(setting):

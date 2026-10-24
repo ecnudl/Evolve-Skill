@@ -848,3 +848,61 @@ placeholder). Chain D launches after chain G's first call is confirmed.
 - Tests: registered selection (`prelaunch.TEST_FILES`) on the dev tree before the review 1,514 passed, 1 failed
   (mutation 30's site, moved by v2.1's GLM construction; site updated); after the review fixes targeted 187 passed;
   the registered selection again from 03:30 (`/root/ops2-20261022/logs/v21/tests-0330.log`).
+- **03:30-04:06 launch preconditions and launch** (owner: "先修，修好之后继续跑"):
+  - registered route-B selection (`prelaunch.TEST_FILES`) on the dev tree with the review fixes: 1,522 passed in 31:22
+    (`/root/ops2-20261022/logs/v21/tests-0330.log`; the run before the review: `tests-0251.log`, 1,514 passed, 1
+    failed -- mutation 30's site, updated);
+  - commit `f27e16e1c7cb…` (parent d44966d, dl local, not pushed); `git diff d44966d f27e16e -- skillopt scripts tests`
+    sha256 9e3e98921f40…f0da5c = `docs/handoff/execskill-v2-20261023/v21.diff` (committed with it), registered as
+    `main21_delta.V21_PATCH_SHA256`;
+  - `main21-prep.sh` 04:03:20-04:04:51, every step passed (logs `main21-{snapshot,q23,consent,go,pins,manifest}.log`):
+    snapshot g `/data/execskill-20261021-source-g` (1,276 files; list sha256 3b2e99d1…; provenance 4ac5ae78…), the
+    patch-hash check before any artifact; q23-g (qualification 145fe691…, `sheet-runtime-g.json` 92555e56…), delta vs
+    q23-e paths/hashes/timestamps only; the delegated consent `/data/execskill-20261024-main-v2-1/shared/consent.json`
+    (sha256 7c4d1641…; arms C, F, P_F, T_F, stages, twins; valid for main-v2-1); go checks (smoke of record on e
+    waived on S2.format by the owner's v2 waiver 8f176a98…, SX passed, leftovers clean, e -> g delta exactly the alias
+    and v2.1 files); pins (test-read estimate 29,236,449 per chain, record 22dc68b4…, configuration main-v2 = main-v2-1
+    priced alike; pins sha256 cc85a19f…); manifest `/data/execskill-20261024-main-v2-1-manifest.json` run
+    `0eef0699322d…` (file sha256 fb251c8d…), every block equal to the smoke's except the registered deltas, caps equal
+    main-v2's;
+  - `main-tls.py` 04:05: all three hosts 200 at the first try (bigmodel 0.08 s, elucid 0.93 s, northgate 0.26 s).
+- **04:05:19 chain G started** (tmux `execskill-main21-G`, `main21-run.sh G`): first-call confirmation passed (glm-5.3,
+  36 tokens, 1.5 s). **04:05:46 chain D started on route A** (tmux `execskill-main21-D`): first-call confirmation
+  passed (request deepseek-v4.1-flash-1017, echo deepseek-v4.1-flash, reasoning check passed, 26 tokens, 3.7 s).
+  Monitor: `bash /data/execskill-20261021-ops/main21-snap.sh`; nothing resumes by itself.
+
+## Owner decision 2026-10-24 12:1x: route B v2.2 (practical gates), main-v2-1 stopped once v2.2 is ready, delegated read consent
+
+- **Owner (chat, verbatim)**: "你的门槛设的太高了，请你根据具体的进化情况重新设计一下门槛怎么样才合适，我觉得acc变化五个点以上都可以
+  算是有效果，不用要求那么高". Answers 12:1x: "新门槛按上面的方案改，可以吗？" → "按这个方案改 (推荐)"; "新版本准备好后，现在
+  正在跑的这一轮怎么办？" → "新版好了就停掉旧的 (推荐)"; "新目录需要一份读测试集的同意书，谁来写？" → "授权你代写，内容同上次
+  (推荐)" (the delegation covers the read consent of `/data/execskill-20261024-main-v2-2` only; the smoke-waiver rule is
+  untouched: v2.2 reuses the v2 smoke of record and the owner's v2 waiver).
+- **Evidence that motivated it (main-v2-1 to 12:05)**: 33 engineer programs (8 passed at once, 19 after fix calls, 14
+  died: C9 7, C4 4, C3 2, C6 1); 17 training rounds, 12 candidates, 3 adopted (G s3 2/0 of 22; D s3 7/3 of 113; G s4
+  r1 12/5 of 31). G s3 acceptance not run (|A*| 12 < 30); D s3 acceptance run (91 A* items, 1,128 cells): S' - S
+  +9.0 points over the whole batch (p 0.003), S' - P_y +1.1 (p 0.38) -> rejected by J2; J3-J7 held.
+- **Registered v2.2 (configuration `main-v2-2`; `docs/handoff/execskill-v2-20261023/spec-v22.md`)**: the training sign
+  test recorded, not required (`TRAIN_SIGN`); idle procedures (enabled on no evaluated item, faulting on none) pruned
+  before the training cells (`PRUNE_NON_FIRING`, `step.prune_idle`); acceptance by the sealed practical rule
+  (`PRACTICAL_RULE`): whole-batch S' - S >= 5 points, or on SearchQA >= 2 points with one-sided paired t p <= 0.05;
+  S' - P_y a descriptive label (content >= 5 points, else form); |A*| floor min(30, max(ceil(5 % |A|), blocks + 2)),
+  ALFWorld rooms min(20, blocks + 2); J3-J7 unchanged; freshness `route_b_v2_1_slices_reused`. Every earlier
+  configuration and record decides as before. Registrar's disclosure: the gates were chosen after seeing main-v2-1's
+  acceptance results, so v2.2 acceptance decisions are selection evidence only; method-effect claims rest on the test
+  reads.
+- **Zero-call validation (15:36)**: D s3's stored sealed round and 1,128 cells: the recorded decision reproduces under
+  the registered rule; under PRACTICAL_RULE "accept" (+9.0 points, label form), same contrasts, same J3-J7. G s3
+  (|A*| 12) would run (floor 5). `/root/ops2-20261022/logs/v22/validate-v22.json`.
+- **Tests**: `tests/test_execskill_v22.py` (11) and three adapted assertions (protocol exact tables and namespace set;
+  v2.1's engineer-rule sets include main-v2-2; a fourth, the B1 integration test's namespace set, after the registered
+  selection below): targeted 129 passed (`logs/v22/targeted-2.log`); the registered
+  selection from 15:50 (`logs/v22/tests-1550.log`) ran the code before the Codex fixes and was stopped at 76 % without
+  a failure when they were written.
+- **Codex review (one round, 15:0x; `docs/handoff/execskill-v2-20261023/codex-review-v22.md`)**: NOT ACCEPTABLE, 1
+  MAJOR + 2 MINOR, all fixed: (1) under the rule a round whose answered A* units (rooms on ALFWorld) leave the t-test
+  no degree of freedom is recorded undetermined (pauses) instead of raising; (2) the training round record names the
+  evaluated (pruned) package, the engineered one as `proposed_sha256`; (3) a harmful sham under the rule is labelled
+  `harmful_sham_reported`. Legacy records unchanged; `test_execskill_v22.py` now 14 tests; targeted 42 + 84 passed;
+  the D s3 what-if re-run identical (`logs/v22/validate-v22-post-codex.json`); the registered selection from 16:14
+  (`logs/v22/tests-1614.log`): 1,536 passed and 1 failed in 35:01 -- the B1 integration test's exact namespace set, which did not list v2.2's namespaces; with that assertion updated, `test_execskill_integration_b1.py`, `test_execskill_v22.py` and `test_execskill_protocol.py`: 59 passed on the same code (`logs/v22/tests-b1-fix.log`). No second round (one round per item).

@@ -39,6 +39,17 @@ every contrast. S' is accepted iff J1-J7 all hold (§6.4):
 - J7 (LiveMath, formal chain): the options-only probe's S' - C is < 10 points or its one-sided p >= 0.05, else the
   shortcut rejects.
 
+v2.2 (``protocol.ACCEPT_RULES``, owner decision 2026-10-24 12:1x): a round prepared with a practical ``rule`` seals it
+(``sealed["rule"]``) and its |A*| floor (``minimum_astar``, the plan's ``minimum``); ``decide`` then replaces J1 and J2
+(``_practical``): J1 holds when the whole-batch S' - S is at least the rule's points (5), or on a significance bench
+(SearchQA) at least its smaller points (2) with the one-sided p <= its alpha; J2 records S' - P_y with the label
+"content" (at least the rule's content points) or "form" and never decides. J3-J7 and every recorded contrast stay as
+above; a round sealed without a rule is decided exactly as before. Two changes follow the smaller floor (Codex review
+2026-10-24): a round whose answered A* items leave the t-test no degree of freedom (no more units -- rooms on
+ALFWorld, else items -- than the blocks they fall in; ``_too_few_units``) is ``undetermined`` (paused, consumed but
+undecided) instead of raising, and a harmful yoked sham is labelled ``harmful_sham_reported``, J1 no longer tightening
+its alpha.
+
 The sign-flip and Wilcoxon tests are recorded as sensitivity analyses and never decide; S' - C, S - C, P_y - S (by
 donor cluster) and P_i - S are descriptive; withholding and restoration twins give tau per procedure, never deciding.
 So is §6.2's 15-minute series (``series``; registrar decision 2026-10-22 on ticket PR-F2-1): per set and arm, the
@@ -130,19 +141,33 @@ def dispatched(sealed):
 
 
 # --------------------------------------------------------------------------------------------------- sealing
+def minimum_astar(rule, size, blocks, *, alfworld=False):
+    """v2.2: the |A*| floor of a round under a practical ``rule`` (``protocol.ACCEPT_RULES``) as {"items", "rooms"}:
+    min(cap, max(ceil(share x |A|), blocks + extra)) items -- below the share no edit set could gain the rule's points
+    over the whole batch, below blocks + extra the blocked t-test of the recorded contrasts could not be formed once an
+    item went unanswered -- and on ALFWorld min(rooms cap, blocks + extra) rooms (the t-test's units)."""
+    share = -(-rule["astar_share_percent"] * size // 100)
+    items = min(rule["astar_cap"], max(share, blocks + rule["blocks_extra"]))
+    return {"items": items, "rooms": min(rule["rooms_cap"], blocks + rule["blocks_extra"]) if alfworld else None}
+
+
 def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks, workers, trajectories, rooms=None,
-            generate=None, dup=False, probe=(), freshness=None, mde=None):
+            generate=None, dup=False, probe=(), freshness=None, mde=None, rule=None):
     """Seal one acceptance round (module docstring) and write it once to ``<root>/sealed.json``. ``views``: {item:
     routing view} of the acceptance slice A in slice order (``solver.routing_view``); ``blocks``: {item: block} for A
     (ALFWorld blocks are whole rooms); ``workers(package, item)``: a context manager yielding a started sandbox worker
     holding ``package`` for ``item`` (acceptance or run-slice item); ``trajectories``: the parent's run-slice
     trajectories (the donors); ``rooms``: {item: room} on ALFWorld; ``generate(astar views) -> [{"id",
     "source_item"}]``: the examiner's frozen generator on the A* public views (G_acc; None without a generator);
-    ``dup``: the registered duplicate arm S_dup runs; ``probe``: LiveMath's J7 probe items."""
+    ``dup``: the registered duplicate arm S_dup runs; ``probe``: LiveMath's J7 probe items; ``rule``: v2.2's
+    practical rule (``protocol.ACCEPT_RULES``), sealed with its |A*| floor, None for the registered J1-J7."""
     require(set(blocks) == set(views), "Every acceptance item has a block")
     evidence = candidate.evidence
     corpus = donors.donor_corpus(candidate, parent, trajectories, workers)
-    plan = router.plan(candidate, parent, bench, views, workers, unit=unit, rooms=rooms, donors=corpus["donors"])
+    minimum = None if rule is None else minimum_astar(rule, len(views), len(set(blocks.values())),
+                                                      alfworld=bench == "alfworld")
+    plan = router.plan(candidate, parent, bench, views, workers, unit=unit, rooms=rooms, donors=corpus["donors"],
+                       minimum=minimum)
     astar = plan["astar"]
     changed = donors.changed(parent, candidate)
     shams = placebo.placebo_package(candidate, parent)[1]
@@ -165,6 +190,8 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
         "card_is_parent": not parent.for_bench(bench), "shams": list(shams),
         "packages": {name: package.sha256 for name, package in packages.items()},
         "plan": plan, "corpus": corpus, "placebo_y": placebo_y, "placebo_i": placebo_i, "g_acc": g_acc}
+    if rule is not None:  # v2.2: the practical rule ``decide`` reads
+        fields["rule"] = dict(rule)
     fields["seals"] = {
         "candidate": candidate.sha256, "parent": parent.sha256, "donor_corpus": corpus[RECORD_HASH],
         "placebo_y": digest(placebo_y), "placebo_i": None if placebo_i is None else digest(placebo_i),
@@ -524,6 +551,18 @@ def _design(sealed, items):
             "clusters": [sealed["rooms"][i] for i in items] if bench == "alfworld" else None}
 
 
+def _too_few_units(sealed, items):
+    """v2.2 (Codex review MAJOR 1): None when the answered A* items leave the t-test a degree of freedom -- more units
+    (rooms on ALFWorld, ``_design``'s clusters, else items) than the blocks they fall in -- else the reason they do not."""
+    alfworld = sealed["bench"] == "alfworld"
+    units = {sealed["rooms"][i] for i in items} if alfworld else set(items)
+    blocks = {sealed["blocks"][i] for i in items}
+    if len(units) > len(blocks):
+        return None
+    return "too few answered units for the t-test (%d %s in %d blocks)" % (
+        len(units), "rooms" if alfworld else "items", len(blocks))
+
+
 def _two_sided(test):
     """The two-sided p of a ``paired_t`` result (J6, descriptive intervals)."""
     if test["se"] == 0:
@@ -722,17 +761,21 @@ def _probe(cells):
 def not_run(sealed):
     """The decision of a round whose A* is too small (§3.3, Codex F1): nothing ran, nothing was consumed."""
     plan = sealed["plan"]
+    least = plan.get("minimum")  # v2.2: the practical rule's floor
+    floor = "the registered minimum" if least is None else "the minimum of %d items%s (%s)" % (
+        least["items"], "" if least["rooms"] is None else " and %d rooms" % least["rooms"], sealed["rule"]["name"])
     return record("decision", plan["evidence"], {
         **_header(sealed), "A_star": len(plan["astar"]), "A_star_rooms": plan["astar_rooms"],
-        "decision": SMALL, "reason": "|A*| = %d%s below the registered minimum; S' archived, S passes on, every slice "
-                                     "item released as routed_not_dispatched" % (
+        "decision": SMALL, "reason": "|A*| = %d%s below %s; S' archived, S passes on, every slice item released as "
+                                     "routed_not_dispatched" % (
                                          len(plan["astar"]), "" if plan["astar_rooms"] is None
-                                         else " (%d rooms)" % plan["astar_rooms"])})
+                                         else " (%d rooms)" % plan["astar_rooms"], floor)})
 
 
 def _header(sealed):
     seals = sealed["seals"]
-    return {"step": sealed["step"], "bench": sealed["bench"], "chain": sealed["chain"], "unit": sealed["unit"],
+    return {**({"rule": sealed["rule"]["name"]} if sealed.get("rule") else {}),  # v2.2
+            "step": sealed["step"], "bench": sealed["bench"], "chain": sealed["chain"], "unit": sealed["unit"],
             "freshness": sealed["freshness"], "evidence_kind": EVIDENCE_KIND, "A": len(sealed["A"]),
             "runs": sealed["runs"], "blocks": sorted(set(sealed["blocks"].values()), key=str),
             "mde_registered": sealed["mde_registered"],
@@ -759,7 +802,15 @@ def decide(cells, sealed):
     arms = sorted({a for (a, _) in cells_table if not a.startswith(("withhold:", "restore:"))})
     unanswered = shared_unanswered(cells, astar)
     items = [i for i in astar if i not in set(unanswered)]
-    require(len(items) > len(set(sealed["blocks"][i] for i in items)), "Too few answered items for the t-test")
+    if sealed.get("rule") is None:
+        require(len(items) > len(set(sealed["blocks"][i] for i in items)), "Too few answered items for the t-test")
+    else:  # v2.2 (Codex review MAJOR 1): the smaller floor can leave the t-test no degree of freedom
+        short = _too_few_units(sealed, items)
+        if short is not None:
+            return record("decision", plan["evidence"], {
+                **_header(sealed), "A_star": len(astar), "A_star_rooms": plan["astar_rooms"], "analysed": len(items),
+                "shared_unanswered": unanswered, "provenance": provenance, "decision": "undetermined",
+                "reason": short + "; the run pauses, the batch is consumed but undecided"})
     # §6.5 (Codex review 2026-10-22 #12): the twin-only items (A outside A*) hold S' and twin cells only; they enter
     # tau (``_twins``), J3 (S' runs on A) and the instrument checks over all real cells, never a decision contrast
     outside = twin_only(sealed)
@@ -768,11 +819,11 @@ def decide(cells, sealed):
     in_astar, alone = set(astar), set(outside)
     design = _design(sealed, items)
     pairs = plan["donors"]["pairs"]
+    gain, over_sham = (differences(cells_table, CANDIDATE, PARENT, items),
+                       differences(cells_table, CANDIDATE, PLACEBO_Y, items))
     contrasts = {
-        "S'-S": contrast(differences(cells_table, CANDIDATE, PARENT, items), design=design, whole=size_a,
-                         sensitivity=True),
-        "S'-P_y": contrast(differences(cells_table, CANDIDATE, PLACEBO_Y, items), design=design, whole=size_a,
-                           sensitivity=True),
+        "S'-S": contrast(gain, design=design, whole=size_a, sensitivity=True),
+        "S'-P_y": contrast(over_sham, design=design, whole=size_a, sensitivity=True),
         "S'-C": contrast(differences(cells_table, CANDIDATE, CARD, items), design=design, whole=size_a),
         "S-C": contrast(differences(cells_table, PARENT, CARD, items), design=design, whole=size_a)}
     sham = differences(cells_table, PLACEBO_Y, PARENT, items)
@@ -782,11 +833,16 @@ def decide(cells, sealed):
         contrasts["P_i-S"] = contrast(differences(cells_table, PLACEBO_I, PARENT, items), design=design, whole=size_a)
     lo, hi = contrasts["P_y-S"]["ci95"]
     rule = ("harmful_sham_parent_only_2.5pct" if hi < 0 else "helpful_sham_reported" if lo > 0 else "informative")
+    if hi < 0 and sealed.get("rule") is not None:  # v2.2 (Codex review MINOR 3): J1 tightens no alpha any more
+        rule = "harmful_sham_reported"
     alpha1 = HARMFUL_SHAM_ALPHA if hi < 0 else ALPHA
     first, second = contrasts["S'-S"], contrasts["S'-P_y"]
     j1 = {"p_t": first["p_t"], "alpha": alpha1, "whole_batch": first["whole_batch"],
           "ok": first["p_t"] <= alpha1 and first["whole_batch"] >= float(MIN_WHOLE_BATCH)}
     j2 = {"p_t": second["p_t"], "alpha": ALPHA, "informative": hi >= 0, "ok": hi < 0 or second["p_t"] <= ALPHA}
+    gate = sealed.get("rule")
+    if gate is not None:  # v2.2: the sealed practical rule replaces J1 and J2 (``rule`` is the placebo reading)
+        j1, j2 = _practical(gate, sealed["bench"], gain, over_sham, size_a, first, second)
     faults = _fault_items(cells, sealed)
     j3 = {"fault_items": len(faults), "items": faults, "A": size_a, "share": len(faults) / size_a,
           "max_items": fault_items_max(size_a), "ok": len(faults) * FAULT_SHARE_MAX.denominator
@@ -820,6 +876,9 @@ def decide(cells, sealed):
     else:
         verdict = "accept"
         reason = HARMFUL_WORDING if hi < 0 else "J1-J7 hold"
+        if gate is not None:
+            reason = "J1 (%s: %+.1f points over the whole batch%s) and J3-J7 hold; placebo label %s" % (
+                gate["name"], 100 * first["whole_batch"], "" if j1["practical"] else ", significant", j2["label"])
     calls = (CANDIDATE, PLACEBO_Y) + ((PLACEBO_I,) if PLACEBO_I in arms else ())
     return record("decision", plan["evidence"], {
         **_header(sealed), "A_star": len(astar), "A_star_rooms": plan["astar_rooms"], "analysed": len(items),
@@ -842,6 +901,23 @@ def decide(cells, sealed):
         "twins": _twins(cells_table, sealed, twin_items), "provenance": provenance,
         "series": series(cells),  # §6.2, ticket PR-F2-1: descriptive, after the verdict, read by no guard
         "decision": verdict, "reason": reason})
+
+
+def _practical(rule, bench, gain, over_sham, size_a, first, second):
+    """v2.2's J1 and J2 under a sealed practical rule (module docstring), in exact arithmetic on the per-item
+    differences over A* (the whole batch divides by |A|): J1 holds when S' - S reaches the rule's points, or on one of
+    its significance benches its smaller points with the one-sided paired t p <= its alpha; J2 labels S' - P_y "content"
+    (at least the rule's content points) or "form" and never decides."""
+    total, sham = sum(gain), sum(over_sham)
+    practical = total * 100 >= rule["gain_points"] * size_a
+    significant = (bench in rule["significance_benches"] and first["p_t"] <= rule["alpha"]
+                   and total * 100 >= rule["significance_points"] * size_a)
+    j1 = {"rule": rule["name"], "whole_batch": first["whole_batch"], "p_t": first["p_t"],
+          "gain_points": rule["gain_points"], "practical": practical, "significant": significant,
+          "ok": practical or significant}
+    j2 = {"rule": rule["name"], "whole_batch": second["whole_batch"], "p_t": second["p_t"], "decides": False,
+          "label": "content" if sham * 100 >= rule["content_points"] * size_a else "form", "ok": True}
+    return j1, j2
 
 
 def _by_donor(d, items, pairs):

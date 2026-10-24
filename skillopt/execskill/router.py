@@ -19,7 +19,7 @@ fired in S -- and their union; the twin draws (a seeded half of each eligible pr
 procedure's eligibility and draw count its firing items in the whole acceptance slice A, §6.5, and the A items outside
 A* that get a twin are listed in ``twin_only``, Codex review 2026-10-22 #12); the yoke pairs (one
 run-slice donor per A* item, §6.1); and the minimum-size rule (|A*| >= 30, ALFWorld >= 20 rooms, else
-``not_run_small_astar``).
+``not_run_small_astar``; v2.2: a sealed practical rule's ``minimum``, ``acceptance.minimum_astar``).
 """
 from __future__ import annotations
 
@@ -142,11 +142,13 @@ def yoke(items, donors, unit):
     return {"pairs": {item: pairs[item] for item in items}, "reuse": dict(sorted(Counter(pairs.values()).items()))}
 
 
-def plan(candidate, parent, bench, views, workers, *, unit, rooms=None, donors=()):
+def plan(candidate, parent, bench, views, workers, *, unit, rooms=None, donors=(), minimum=None):
     """The firing plan of one acceptance round (a sealed ``fivebench-execskill-v1-firing-plan`` record). ``views``:
     {item: routing view} of the acceptance slice in slice order, made from public data only; ``workers(package, item)``:
     a context manager yielding a started sandbox worker holding ``package`` for ``item`` (SpreadsheetBench mounts the
-    item's workbook); ``rooms``: {item: room}, required on ALFWorld; ``donors``: the run-slice donor ids."""
+    item's workbook); ``rooms``: {item: room}, required on ALFWorld; ``donors``: the run-slice donor ids;
+    ``minimum``: v2.2's {"items", "rooms"} floor of |A*| (``acceptance.minimum_astar``, recorded in the plan), None for
+    the registered ``MIN_ASTAR`` / ``MIN_ASTAR_ROOMS``."""
     require(isinstance(candidate, Package) and isinstance(parent, Package) and bench in BENCHES,
             "A candidate, its parent and a known bench")
     require(candidate.parent_sha256 == parent.sha256, "The candidate's parent hash is not its parent's")
@@ -202,8 +204,9 @@ def plan(candidate, parent, bench, views, workers, *, unit, rooms=None, donors=(
     fault_items = [i for i in items if any(f["procedure"] in fault_ids for side in ("candidate", "parent")
                                            for f in routed[i][side].faults)]
     astar_rooms = len({rooms[i] for i in astar}) if bench == "alfworld" else None
-    small = len(astar) < MIN_ASTAR or (astar_rooms is not None and astar_rooms < MIN_ASTAR_ROOMS)
-    return record("firing-plan", candidate.evidence, {
+    least, least_rooms = (MIN_ASTAR, MIN_ASTAR_ROOMS) if minimum is None else (minimum["items"], minimum["rooms"])
+    small = len(astar) < least or (astar_rooms is not None and astar_rooms < least_rooms)
+    fields = {
         "bench": bench, "unit": unit, "candidate_sha256": candidate.sha256, "parent_sha256": parent.sha256,
         "items": items, "edits": [c.to_json() for c in changes],
         "routes": {i: {side: {"enabled": list(routed[i][side].enabled), "fired": list(routed[i][side].fired),
@@ -215,4 +218,7 @@ def plan(candidate, parent, bench, views, workers, *, unit, rooms=None, donors=(
         "twins": {i: twins[i] for i in items if i in twins},
         "not_withheld": {i: skipped[i] for i in items if i in skipped}, "twin_only": twin_only,
         "donors": yoke(astar, donors, unit) if not small else {"pairs": {}, "reuse": {}},
-        "decision": SMALL if small else RUN})
+        "decision": SMALL if small else RUN}
+    if minimum is not None:  # v2.2: the practical rule's floor, sealed with the plan
+        fields["minimum"] = dict(minimum)
+    return record("firing-plan", candidate.evidence, fields)

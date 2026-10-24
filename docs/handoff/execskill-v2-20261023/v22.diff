@@ -1,0 +1,983 @@
+diff --git a/skillopt/execskill/acceptance.py b/skillopt/execskill/acceptance.py
+index 6474afb..57fa824 100644
+--- a/skillopt/execskill/acceptance.py
++++ b/skillopt/execskill/acceptance.py
+@@ -39,6 +39,17 @@ every contrast. S' is accepted iff J1-J7 all hold (§6.4):
+ - J7 (LiveMath, formal chain): the options-only probe's S' - C is < 10 points or its one-sided p >= 0.05, else the
+   shortcut rejects.
+ 
++v2.2 (``protocol.ACCEPT_RULES``, owner decision 2026-10-24 12:1x): a round prepared with a practical ``rule`` seals it
++(``sealed["rule"]``) and its |A*| floor (``minimum_astar``, the plan's ``minimum``); ``decide`` then replaces J1 and J2
++(``_practical``): J1 holds when the whole-batch S' - S is at least the rule's points (5), or on a significance bench
++(SearchQA) at least its smaller points (2) with the one-sided p <= its alpha; J2 records S' - P_y with the label
++"content" (at least the rule's content points) or "form" and never decides. J3-J7 and every recorded contrast stay as
++above; a round sealed without a rule is decided exactly as before. Two changes follow the smaller floor (Codex review
++2026-10-24): a round whose answered A* items leave the t-test no degree of freedom (no more units -- rooms on
++ALFWorld, else items -- than the blocks they fall in; ``_too_few_units``) is ``undetermined`` (paused, consumed but
++undecided) instead of raising, and a harmful yoked sham is labelled ``harmful_sham_reported``, J1 no longer tightening
++its alpha.
++
+ The sign-flip and Wilcoxon tests are recorded as sensitivity analyses and never decide; S' - C, S - C, P_y - S (by
+ donor cluster) and P_i - S are descriptive; withholding and restoration twins give tau per procedure, never deciding.
+ So is §6.2's 15-minute series (``series``; registrar decision 2026-10-22 on ticket PR-F2-1): per set and arm, the
+@@ -130,19 +141,33 @@ def dispatched(sealed):
+ 
+ 
+ # --------------------------------------------------------------------------------------------------- sealing
++def minimum_astar(rule, size, blocks, *, alfworld=False):
++    """v2.2: the |A*| floor of a round under a practical ``rule`` (``protocol.ACCEPT_RULES``) as {"items", "rooms"}:
++    min(cap, max(ceil(share x |A|), blocks + extra)) items -- below the share no edit set could gain the rule's points
++    over the whole batch, below blocks + extra the blocked t-test of the recorded contrasts could not be formed once an
++    item went unanswered -- and on ALFWorld min(rooms cap, blocks + extra) rooms (the t-test's units)."""
++    share = -(-rule["astar_share_percent"] * size // 100)
++    items = min(rule["astar_cap"], max(share, blocks + rule["blocks_extra"]))
++    return {"items": items, "rooms": min(rule["rooms_cap"], blocks + rule["blocks_extra"]) if alfworld else None}
++
++
+ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks, workers, trajectories, rooms=None,
+-            generate=None, dup=False, probe=(), freshness=None, mde=None):
++            generate=None, dup=False, probe=(), freshness=None, mde=None, rule=None):
+     """Seal one acceptance round (module docstring) and write it once to ``<root>/sealed.json``. ``views``: {item:
+     routing view} of the acceptance slice A in slice order (``solver.routing_view``); ``blocks``: {item: block} for A
+     (ALFWorld blocks are whole rooms); ``workers(package, item)``: a context manager yielding a started sandbox worker
+     holding ``package`` for ``item`` (acceptance or run-slice item); ``trajectories``: the parent's run-slice
+     trajectories (the donors); ``rooms``: {item: room} on ALFWorld; ``generate(astar views) -> [{"id",
+     "source_item"}]``: the examiner's frozen generator on the A* public views (G_acc; None without a generator);
+-    ``dup``: the registered duplicate arm S_dup runs; ``probe``: LiveMath's J7 probe items."""
++    ``dup``: the registered duplicate arm S_dup runs; ``probe``: LiveMath's J7 probe items; ``rule``: v2.2's
++    practical rule (``protocol.ACCEPT_RULES``), sealed with its |A*| floor, None for the registered J1-J7."""
+     require(set(blocks) == set(views), "Every acceptance item has a block")
+     evidence = candidate.evidence
+     corpus = donors.donor_corpus(candidate, parent, trajectories, workers)
+-    plan = router.plan(candidate, parent, bench, views, workers, unit=unit, rooms=rooms, donors=corpus["donors"])
++    minimum = None if rule is None else minimum_astar(rule, len(views), len(set(blocks.values())),
++                                                      alfworld=bench == "alfworld")
++    plan = router.plan(candidate, parent, bench, views, workers, unit=unit, rooms=rooms, donors=corpus["donors"],
++                       minimum=minimum)
+     astar = plan["astar"]
+     changed = donors.changed(parent, candidate)
+     shams = placebo.placebo_package(candidate, parent)[1]
+@@ -165,6 +190,8 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
+         "card_is_parent": not parent.for_bench(bench), "shams": list(shams),
+         "packages": {name: package.sha256 for name, package in packages.items()},
+         "plan": plan, "corpus": corpus, "placebo_y": placebo_y, "placebo_i": placebo_i, "g_acc": g_acc}
++    if rule is not None:  # v2.2: the practical rule ``decide`` reads
++        fields["rule"] = dict(rule)
+     fields["seals"] = {
+         "candidate": candidate.sha256, "parent": parent.sha256, "donor_corpus": corpus[RECORD_HASH],
+         "placebo_y": digest(placebo_y), "placebo_i": None if placebo_i is None else digest(placebo_i),
+@@ -524,6 +551,18 @@ def _design(sealed, items):
+             "clusters": [sealed["rooms"][i] for i in items] if bench == "alfworld" else None}
+ 
+ 
++def _too_few_units(sealed, items):
++    """v2.2 (Codex review MAJOR 1): None when the answered A* items leave the t-test a degree of freedom -- more units
++    (rooms on ALFWorld, ``_design``'s clusters, else items) than the blocks they fall in -- else the reason they do not."""
++    alfworld = sealed["bench"] == "alfworld"
++    units = {sealed["rooms"][i] for i in items} if alfworld else set(items)
++    blocks = {sealed["blocks"][i] for i in items}
++    if len(units) > len(blocks):
++        return None
++    return "too few answered units for the t-test (%d %s in %d blocks)" % (
++        len(units), "rooms" if alfworld else "items", len(blocks))
++
++
+ def _two_sided(test):
+     """The two-sided p of a ``paired_t`` result (J6, descriptive intervals)."""
+     if test["se"] == 0:
+@@ -722,17 +761,21 @@ def _probe(cells):
+ def not_run(sealed):
+     """The decision of a round whose A* is too small (§3.3, Codex F1): nothing ran, nothing was consumed."""
+     plan = sealed["plan"]
++    least = plan.get("minimum")  # v2.2: the practical rule's floor
++    floor = "the registered minimum" if least is None else "the minimum of %d items%s (%s)" % (
++        least["items"], "" if least["rooms"] is None else " and %d rooms" % least["rooms"], sealed["rule"]["name"])
+     return record("decision", plan["evidence"], {
+         **_header(sealed), "A_star": len(plan["astar"]), "A_star_rooms": plan["astar_rooms"],
+-        "decision": SMALL, "reason": "|A*| = %d%s below the registered minimum; S' archived, S passes on, every slice "
+-                                     "item released as routed_not_dispatched" % (
++        "decision": SMALL, "reason": "|A*| = %d%s below %s; S' archived, S passes on, every slice item released as "
++                                     "routed_not_dispatched" % (
+                                          len(plan["astar"]), "" if plan["astar_rooms"] is None
+-                                         else " (%d rooms)" % plan["astar_rooms"])})
++                                         else " (%d rooms)" % plan["astar_rooms"], floor)})
+ 
+ 
+ def _header(sealed):
+     seals = sealed["seals"]
+-    return {"step": sealed["step"], "bench": sealed["bench"], "chain": sealed["chain"], "unit": sealed["unit"],
++    return {**({"rule": sealed["rule"]["name"]} if sealed.get("rule") else {}),  # v2.2
++            "step": sealed["step"], "bench": sealed["bench"], "chain": sealed["chain"], "unit": sealed["unit"],
+             "freshness": sealed["freshness"], "evidence_kind": EVIDENCE_KIND, "A": len(sealed["A"]),
+             "runs": sealed["runs"], "blocks": sorted(set(sealed["blocks"].values()), key=str),
+             "mde_registered": sealed["mde_registered"],
+@@ -759,7 +802,15 @@ def decide(cells, sealed):
+     arms = sorted({a for (a, _) in cells_table if not a.startswith(("withhold:", "restore:"))})
+     unanswered = shared_unanswered(cells, astar)
+     items = [i for i in astar if i not in set(unanswered)]
+-    require(len(items) > len(set(sealed["blocks"][i] for i in items)), "Too few answered items for the t-test")
++    if sealed.get("rule") is None:
++        require(len(items) > len(set(sealed["blocks"][i] for i in items)), "Too few answered items for the t-test")
++    else:  # v2.2 (Codex review MAJOR 1): the smaller floor can leave the t-test no degree of freedom
++        short = _too_few_units(sealed, items)
++        if short is not None:
++            return record("decision", plan["evidence"], {
++                **_header(sealed), "A_star": len(astar), "A_star_rooms": plan["astar_rooms"], "analysed": len(items),
++                "shared_unanswered": unanswered, "provenance": provenance, "decision": "undetermined",
++                "reason": short + "; the run pauses, the batch is consumed but undecided"})
+     # §6.5 (Codex review 2026-10-22 #12): the twin-only items (A outside A*) hold S' and twin cells only; they enter
+     # tau (``_twins``), J3 (S' runs on A) and the instrument checks over all real cells, never a decision contrast
+     outside = twin_only(sealed)
+@@ -768,11 +819,11 @@ def decide(cells, sealed):
+     in_astar, alone = set(astar), set(outside)
+     design = _design(sealed, items)
+     pairs = plan["donors"]["pairs"]
++    gain, over_sham = (differences(cells_table, CANDIDATE, PARENT, items),
++                       differences(cells_table, CANDIDATE, PLACEBO_Y, items))
+     contrasts = {
+-        "S'-S": contrast(differences(cells_table, CANDIDATE, PARENT, items), design=design, whole=size_a,
+-                         sensitivity=True),
+-        "S'-P_y": contrast(differences(cells_table, CANDIDATE, PLACEBO_Y, items), design=design, whole=size_a,
+-                           sensitivity=True),
++        "S'-S": contrast(gain, design=design, whole=size_a, sensitivity=True),
++        "S'-P_y": contrast(over_sham, design=design, whole=size_a, sensitivity=True),
+         "S'-C": contrast(differences(cells_table, CANDIDATE, CARD, items), design=design, whole=size_a),
+         "S-C": contrast(differences(cells_table, PARENT, CARD, items), design=design, whole=size_a)}
+     sham = differences(cells_table, PLACEBO_Y, PARENT, items)
+@@ -782,11 +833,16 @@ def decide(cells, sealed):
+         contrasts["P_i-S"] = contrast(differences(cells_table, PLACEBO_I, PARENT, items), design=design, whole=size_a)
+     lo, hi = contrasts["P_y-S"]["ci95"]
+     rule = ("harmful_sham_parent_only_2.5pct" if hi < 0 else "helpful_sham_reported" if lo > 0 else "informative")
++    if hi < 0 and sealed.get("rule") is not None:  # v2.2 (Codex review MINOR 3): J1 tightens no alpha any more
++        rule = "harmful_sham_reported"
+     alpha1 = HARMFUL_SHAM_ALPHA if hi < 0 else ALPHA
+     first, second = contrasts["S'-S"], contrasts["S'-P_y"]
+     j1 = {"p_t": first["p_t"], "alpha": alpha1, "whole_batch": first["whole_batch"],
+           "ok": first["p_t"] <= alpha1 and first["whole_batch"] >= float(MIN_WHOLE_BATCH)}
+     j2 = {"p_t": second["p_t"], "alpha": ALPHA, "informative": hi >= 0, "ok": hi < 0 or second["p_t"] <= ALPHA}
++    gate = sealed.get("rule")
++    if gate is not None:  # v2.2: the sealed practical rule replaces J1 and J2 (``rule`` is the placebo reading)
++        j1, j2 = _practical(gate, sealed["bench"], gain, over_sham, size_a, first, second)
+     faults = _fault_items(cells, sealed)
+     j3 = {"fault_items": len(faults), "items": faults, "A": size_a, "share": len(faults) / size_a,
+           "max_items": fault_items_max(size_a), "ok": len(faults) * FAULT_SHARE_MAX.denominator
+@@ -820,6 +876,9 @@ def decide(cells, sealed):
+     else:
+         verdict = "accept"
+         reason = HARMFUL_WORDING if hi < 0 else "J1-J7 hold"
++        if gate is not None:
++            reason = "J1 (%s: %+.1f points over the whole batch%s) and J3-J7 hold; placebo label %s" % (
++                gate["name"], 100 * first["whole_batch"], "" if j1["practical"] else ", significant", j2["label"])
+     calls = (CANDIDATE, PLACEBO_Y) + ((PLACEBO_I,) if PLACEBO_I in arms else ())
+     return record("decision", plan["evidence"], {
+         **_header(sealed), "A_star": len(astar), "A_star_rooms": plan["astar_rooms"], "analysed": len(items),
+@@ -844,6 +903,23 @@ def decide(cells, sealed):
+         "decision": verdict, "reason": reason})
+ 
+ 
++def _practical(rule, bench, gain, over_sham, size_a, first, second):
++    """v2.2's J1 and J2 under a sealed practical rule (module docstring), in exact arithmetic on the per-item
++    differences over A* (the whole batch divides by |A|): J1 holds when S' - S reaches the rule's points, or on one of
++    its significance benches its smaller points with the one-sided paired t p <= its alpha; J2 labels S' - P_y "content"
++    (at least the rule's content points) or "form" and never decides."""
++    total, sham = sum(gain), sum(over_sham)
++    practical = total * 100 >= rule["gain_points"] * size_a
++    significant = (bench in rule["significance_benches"] and first["p_t"] <= rule["alpha"]
++                   and total * 100 >= rule["significance_points"] * size_a)
++    j1 = {"rule": rule["name"], "whole_batch": first["whole_batch"], "p_t": first["p_t"],
++          "gain_points": rule["gain_points"], "practical": practical, "significant": significant,
++          "ok": practical or significant}
++    j2 = {"rule": rule["name"], "whole_batch": second["whole_batch"], "p_t": second["p_t"], "decides": False,
++          "label": "content" if sham * 100 >= rule["content_points"] * size_a else "form", "ok": True}
++    return j1, j2
++
++
+ def _by_donor(d, items, pairs):
+     """P_y - S per donor cluster (descriptive, §6.1): {donor: {"n", "mean"}}."""
+     groups = {}
+diff --git a/skillopt/execskill/protocol.py b/skillopt/execskill/protocol.py
+index b6fb544..8a9b2fa 100644
+--- a/skillopt/execskill/protocol.py
++++ b/skillopt/execskill/protocol.py
+@@ -37,7 +37,8 @@ RECORD_HASH = "record_sha256"  # plan §2: the canonical digest of the record wi
+ # 2026-10-22 17:0x and 17:3x"), accepted wherever ``pilot_real_run`` is accepted for a real run (``REAL_RUN_EVIDENCE``)
+ EVIDENCE = ("engineering_fixture", "smoke", "pilot_real_run", "historical_replay", "main_real_run",
+             "main_v2_real_run",  # v2 (owner decision 2026-10-23 13:3x): the "train then accept" main experiment
+-            "main_v2_1_real_run")  # v2.1 (owner decision 2026-10-24 02:2x): main-v2 with two engineer rules
++            "main_v2_1_real_run",  # v2.1 (owner decision 2026-10-24 02:2x): main-v2 with two engineer rules
++            "main_v2_2_real_run")  # v2.2 (owner decision 2026-10-24 12:1x): main-v2-1 with the practical gates
+ IMPORTABLE = ("fivebench-coevolution-v3-sheet-qualification",)  # §1, owner #7, Codex F15: the one v3 record kind read
+ TEXTS_IMPORT = "fivebench-coevolution-v3-texts-import"  # §2.2: the v3 task cards, imported by value (plan §6)
+ 
+@@ -103,7 +104,7 @@ SMOKE_SOLVER = CHAINS["D"]  # §0 (c), §10: the registered default smoke solver
+ # registrar addendum 2026-10-23 02:3x ("smoke solver chain"): the smoke specification pins its solver chain -- "D",
+ # the registered default (unchanged), or "G": GLM-5.3 through its frozen client with chain G's settings, and no S1
+ SMOKE_SOLVER_CHAINS = ("D", "G")
+-NAMESPACES = ("G", "D", "smoke", "G-v2", "D-v2", "G-v2-1", "D-v2-1")  # §3.4: one consumption namespace per chain,
++NAMESPACES = ("G", "D", "smoke", "G-v2", "D-v2", "G-v2-1", "D-v2-1", "G-v2-2", "D-v2-2")  # §3.4: one consumption namespace per chain,
+ # the smoke its own;
+ # v2 (owner decision 2026-10-23 13:3x): each chain of the main-v2 configuration consumes in its own namespace
+ # (``V2_NAMESPACES``, ``namespace_of``), so it cuts the registered slices from the same fixed order again: its run
+@@ -114,6 +115,10 @@ V2_NAMESPACES = {"G": "G-v2", "D": "D-v2"}
+ # v2.1 (owner decision 2026-10-24 02:2x): main-v2-1's chains consume in namespaces of their own again and cut the same
+ # slices: main-v2 dispatched no acceptance item either (chain G stopped in step 3's training, chain D in step 1's run)
+ V21_NAMESPACES = {"G": "G-v2-1", "D": "D-v2-1"}
++# v2.2 (owner decision 2026-10-24 12:1x): main-v2-2's chains consume in namespaces of their own and cut the same slices
++# again; main-v2-1 did dispatch acceptance items (chain D's LiveMath round), so these slices are reused there
++# (``ACCEPT_FRESHNESS``)
++V22_NAMESPACES = {"G": "G-v2-2", "D": "D-v2-2"}
+ ROLE_MODEL = "glm-5.3"  # §4.2, §4.3, §7.2: every method role of both chains
+ # §4.1 chain G: M = B = 65,536 on every bench and a 2,400 s read timeout (the frozen route, coevo5 protocol.py:327,
+ # :92), so a chain G receipt is never over nominal.
+@@ -873,29 +878,73 @@ PILOTS[MAIN_V2_1] = dict(PILOTS[MAIN_V2])
+ STAGE_READ[MAIN_V2_1] = STAGE_READ[MAIN_V2]
+ TEST_READ_CELLS[MAIN_V2_1] = dict(TEST_READ_CELLS[MAIN_V2])
+ CHAIN_NAMESPACES = {MAIN_V2: V2_NAMESPACES, MAIN_V2_1: V21_NAMESPACES}
++# ------------- v2.2 (owner decision 2026-10-24 12:1x: "你的门槛设的太高了，请你根据具体的进化情况重新设计一下门槛怎么样才合适，
++# 我觉得acc变化五个点以上都可以算是有效果，不用要求那么高"; the owner then chose the proposed gates, the stop of main-v2-1
++# once main-v2-2 is ready and a delegated test-read consent)
++# main-v2-1's gates let 3 of 12 training candidates through and decided no acceptance: chain G's LiveMath candidate
++# fired on 12 acceptance items (< MIN_ASTAR), chain D's gained 9.9 points over S on A* but 1.1 over the yoked sham
++# (J2), and the registered MDE (``MDE_POINTS``) is the joint power of J1 and J2, about 10 points. The run
++# configuration ``main-v2-2`` is ``main-v2-1`` with the owner's practical gates:
++# - training (``TRAIN_SIGN``): fixed > broken and net >= max(1, ceil(2 %)) adopt; the sign test is recorded only;
++# - a candidate's new procedure that no evaluated training item enables is pruned before the training cells
++#   (``PRUNE_NON_FIRING``, ``step.prune_idle``), so it cannot ride along with one that fires (main-v2-1's chain D
++#   adopted a meta-option detector that fired on no item beside a procedure that did);
++# - acceptance (``ACCEPT_RULES``, sealed into the round by ``acceptance.prepare`` and read by ``acceptance.decide``):
++#   S' is accepted when its whole-batch gain over S is >= 5 points, or on SearchQA (1,000 items) >= 2 points with the
++#   one-sided p <= 0.05; P_y and P_i run and are reported, the decision labelling the gain "content" when S' - P_y is
++#   >= 5 points, else "form", and never deciding; J3, J4, J5, J6 and J7 are unchanged; |A*| must reach
++#   min(30, max(ceil(5 % of |A|), blocks + 2)) items (ALFWorld also min(20, blocks + 2) rooms), below which no
++#   procedure set could reach 5 points or the blocked t-test could not be formed (``acceptance.minimum_astar``).
++# The gates were chosen after reading main-v2-1's step-3 acceptance, and main-v2-2 cuts the same slices (its pools hold
++# no other supply), so its acceptance rounds reuse items main-v2-1 dispatched (chain D's LiveMath acceptance and probe
++# items at least); its method side sees none of main-v2-1's records. Its acceptance decisions are selection evidence
++# labelled ``ACCEPT_FRESHNESS``; the method effect is read on the untouched test split only. Slices, prompts, caps
++# and every other rule are main-v2-1's; its run root and consumption namespaces (``V22_NAMESPACES``) are new.
++MAIN_V2_2 = "main-v2-2"
++LEARNING[MAIN_V2_2] = "train"
++FIX_ECHO[MAIN_V2_2] = False
++META_COUNTERFACTUAL[MAIN_V2_2] = True
++TRAIN_SIGN = {"default": True, "recommended": True, "main": True, MAIN_V2: True, MAIN_V2_1: True, MAIN_V2_2: False}
++PRUNE_NON_FIRING = {"default": False, "recommended": False, "main": False, MAIN_V2: False, MAIN_V2_1: False,
++                    MAIN_V2_2: True}
++PRACTICAL_RULE = {"name": "practical-v2-2", "gain_points": 5, "significance_benches": ["searchqa"],
++                  "significance_points": 2, "alpha": ALPHA, "content_points": 5, "astar_share_percent": 5,
++                  "astar_cap": MIN_ASTAR, "rooms_cap": MIN_ASTAR_ROOMS, "blocks_extra": 2}
++ACCEPT_RULES = {"default": None, "recommended": None, "main": None, MAIN_V2: None, MAIN_V2_1: None,
++                MAIN_V2_2: PRACTICAL_RULE}
++ACCEPT_FRESHNESS = {MAIN_V2_2: "route_b_v2_1_slices_reused"}  # every other configuration: ``step.FRESHNESS``
++MAIN_V2_2_ROOT = "/data/execskill-20261024-main-v2-2"
++MAIN_V2_2_MANIFEST = "/data/execskill-20261024-main-v2-2-manifest.json"
++PILOTS[MAIN_V2_2] = dict(PILOTS[MAIN_V2])
++STAGE_READ[MAIN_V2_2] = STAGE_READ[MAIN_V2]
++TEST_READ_CELLS[MAIN_V2_2] = dict(TEST_READ_CELLS[MAIN_V2])
++CHAIN_NAMESPACES[MAIN_V2_2] = V22_NAMESPACES
+ 
+ 
+ def namespace_of(setting, chain):
+     """The consumption namespace of ``chain`` in the Setting's run configuration: the chain itself, or its own
+-    namespace in main-v2 (``V2_NAMESPACES``) and main-v2-1 (``V21_NAMESPACES``)."""
++    namespace in main-v2 (``V2_NAMESPACES``), main-v2-1 (``V21_NAMESPACES``) and main-v2-2 (``V22_NAMESPACES``)."""
+     found = CHAIN_NAMESPACES.get(configuration_of(setting))
+     return found[chain] if found is not None else chain
+ 
+ CONFIG_STEP_CAPS = {"default": STEP_CAPS, "recommended": STEP_CAPS, "main": MAIN_STEP_CAPS, MAIN_V2: MAIN_V2_STEP_CAPS,
+-                    MAIN_V2_1: MAIN_V2_STEP_CAPS}
++                    MAIN_V2_1: MAIN_V2_STEP_CAPS, MAIN_V2_2: MAIN_V2_STEP_CAPS}
+ CONFIG_SCHEDULE_CELLS = {"default": MAX_SCHEDULE_CELLS, "recommended": MAX_SCHEDULE_CELLS, "main": MAIN_SCHEDULE_CELLS,
+-                         MAIN_V2: MAIN_V2_SCHEDULE_CELLS, MAIN_V2_1: MAIN_V2_SCHEDULE_CELLS}
++                         MAIN_V2: MAIN_V2_SCHEDULE_CELLS, MAIN_V2_1: MAIN_V2_SCHEDULE_CELLS,
++                         MAIN_V2_2: MAIN_V2_SCHEDULE_CELLS}
+ CONFIG_ROLE_CAPS = {"default": ROLE_CAPS, "recommended": ROLE_CAPS, "main": MAIN_ROLE_CAPS, MAIN_V2: MAIN_V2_ROLE_CAPS,
+-                    MAIN_V2_1: MAIN_V2_ROLE_CAPS}
++                    MAIN_V2_1: MAIN_V2_ROLE_CAPS, MAIN_V2_2: MAIN_V2_ROLE_CAPS}
+ CONFIG_GLM_CAP = {"default": GLM_CAP, "recommended": GLM_CAP, "main": MAIN_GLM_CAP, MAIN_V2: MAIN_V2_GLM_CAP,
+-                  MAIN_V2_1: MAIN_V2_GLM_CAP}
++                  MAIN_V2_1: MAIN_V2_GLM_CAP, MAIN_V2_2: MAIN_V2_GLM_CAP}
+ CONFIG_CAP_FACTOR = {"default": Fraction(3, 2), "recommended": Fraction(3, 2), "main": Fraction(MAIN_CAP_FACTOR),
+-                     MAIN_V2: Fraction(MAIN_CAP_FACTOR), MAIN_V2_1: Fraction(MAIN_CAP_FACTOR)}
+-COST_CHECK_PAUSES = {"default": True, "recommended": True, "main": False, MAIN_V2: False, MAIN_V2_1: False}
++                     MAIN_V2: Fraction(MAIN_CAP_FACTOR), MAIN_V2_1: Fraction(MAIN_CAP_FACTOR),
++                     MAIN_V2_2: Fraction(MAIN_CAP_FACTOR)}
++COST_CHECK_PAUSES = {"default": True, "recommended": True, "main": False, MAIN_V2: False, MAIN_V2_1: False,
++                     MAIN_V2_2: False}
+ REAL_RUN_EVIDENCE = {"default": "pilot_real_run", "recommended": "pilot_real_run", "main": "main_real_run",
+-                     MAIN_V2: "main_v2_real_run", MAIN_V2_1: "main_v2_1_real_run"}
++                     MAIN_V2: "main_v2_real_run", MAIN_V2_1: "main_v2_1_real_run", MAIN_V2_2: "main_v2_2_real_run"}
+ RUN_ROOTS = {"default": PILOT_ROOT, "recommended": PILOT_ROOT, "main": MAIN_ROOT, MAIN_V2: MAIN_V2_ROOT,
+-             MAIN_V2_1: MAIN_V2_1_ROOT}
++             MAIN_V2_1: MAIN_V2_1_ROOT, MAIN_V2_2: MAIN_V2_2_ROOT}
+ 
+ 
+ def configuration_of(setting):
+diff --git a/skillopt/execskill/router.py b/skillopt/execskill/router.py
+index a2e6324..855eaff 100644
+--- a/skillopt/execskill/router.py
++++ b/skillopt/execskill/router.py
+@@ -19,7 +19,7 @@ fired in S -- and their union; the twin draws (a seeded half of each eligible pr
+ procedure's eligibility and draw count its firing items in the whole acceptance slice A, §6.5, and the A items outside
+ A* that get a twin are listed in ``twin_only``, Codex review 2026-10-22 #12); the yoke pairs (one
+ run-slice donor per A* item, §6.1); and the minimum-size rule (|A*| >= 30, ALFWorld >= 20 rooms, else
+-``not_run_small_astar``).
++``not_run_small_astar``; v2.2: a sealed practical rule's ``minimum``, ``acceptance.minimum_astar``).
+ """
+ from __future__ import annotations
+ 
+@@ -142,11 +142,13 @@ def yoke(items, donors, unit):
+     return {"pairs": {item: pairs[item] for item in items}, "reuse": dict(sorted(Counter(pairs.values()).items()))}
+ 
+ 
+-def plan(candidate, parent, bench, views, workers, *, unit, rooms=None, donors=()):
++def plan(candidate, parent, bench, views, workers, *, unit, rooms=None, donors=(), minimum=None):
+     """The firing plan of one acceptance round (a sealed ``fivebench-execskill-v1-firing-plan`` record). ``views``:
+     {item: routing view} of the acceptance slice in slice order, made from public data only; ``workers(package, item)``:
+     a context manager yielding a started sandbox worker holding ``package`` for ``item`` (SpreadsheetBench mounts the
+-    item's workbook); ``rooms``: {item: room}, required on ALFWorld; ``donors``: the run-slice donor ids."""
++    item's workbook); ``rooms``: {item: room}, required on ALFWorld; ``donors``: the run-slice donor ids;
++    ``minimum``: v2.2's {"items", "rooms"} floor of |A*| (``acceptance.minimum_astar``, recorded in the plan), None for
++    the registered ``MIN_ASTAR`` / ``MIN_ASTAR_ROOMS``."""
+     require(isinstance(candidate, Package) and isinstance(parent, Package) and bench in BENCHES,
+             "A candidate, its parent and a known bench")
+     require(candidate.parent_sha256 == parent.sha256, "The candidate's parent hash is not its parent's")
+@@ -202,8 +204,9 @@ def plan(candidate, parent, bench, views, workers, *, unit, rooms=None, donors=(
+     fault_items = [i for i in items if any(f["procedure"] in fault_ids for side in ("candidate", "parent")
+                                            for f in routed[i][side].faults)]
+     astar_rooms = len({rooms[i] for i in astar}) if bench == "alfworld" else None
+-    small = len(astar) < MIN_ASTAR or (astar_rooms is not None and astar_rooms < MIN_ASTAR_ROOMS)
+-    return record("firing-plan", candidate.evidence, {
++    least, least_rooms = (MIN_ASTAR, MIN_ASTAR_ROOMS) if minimum is None else (minimum["items"], minimum["rooms"])
++    small = len(astar) < least or (astar_rooms is not None and astar_rooms < least_rooms)
++    fields = {
+         "bench": bench, "unit": unit, "candidate_sha256": candidate.sha256, "parent_sha256": parent.sha256,
+         "items": items, "edits": [c.to_json() for c in changes],
+         "routes": {i: {side: {"enabled": list(routed[i][side].enabled), "fired": list(routed[i][side].fired),
+@@ -215,4 +218,7 @@ def plan(candidate, parent, bench, views, workers, *, unit, rooms=None, donors=(
+         "twins": {i: twins[i] for i in items if i in twins},
+         "not_withheld": {i: skipped[i] for i in items if i in skipped}, "twin_only": twin_only,
+         "donors": yoke(astar, donors, unit) if not small else {"pairs": {}, "reuse": {}},
+-        "decision": SMALL if small else RUN})
++        "decision": SMALL if small else RUN}
++    if minimum is not None:  # v2.2: the practical rule's floor, sealed with the plan
++        fields["minimum"] = dict(minimum)
++    return record("firing-plan", candidate.evidence, fields)
+diff --git a/skillopt/execskill/routes.py b/skillopt/execskill/routes.py
+index 5fca828..4c50b47 100644
+--- a/skillopt/execskill/routes.py
++++ b/skillopt/execskill/routes.py
+@@ -206,7 +206,7 @@ def check_pins(clients, *, configuration=None):
+     runs, each block equal to ``pin`` re-derived from its own env path and the chain's solver block. A ``main``
+     manifest must pin route B of chain D (registrar row "deepseek route B"). Raises ValueError."""
+     pinned = clients.get("routes")
+-    if configuration in (protocol.MAIN, protocol.MAIN_V2, protocol.MAIN_V2_1):  # main-v2(-1): main's chains
++    if configuration in (protocol.MAIN, protocol.MAIN_V2, protocol.MAIN_V2_1, protocol.MAIN_V2_2):  # main's chains
+         require(isinstance(pinned, dict) and isinstance(pinned.get("D"), dict) and client.ROUTE_B in pinned["D"],
+                 "A main manifest pins chain D's route B (clients.routes.D.B = routes.pin(...); registrar row "
+                 "\"deepseek route B\")")
+diff --git a/skillopt/execskill/step.py b/skillopt/execskill/step.py
+index fd0b9a4..8b42603 100644
+--- a/skillopt/execskill/step.py
++++ b/skillopt/execskill/step.py
+@@ -105,6 +105,13 @@ The smoke's v2 example SX is the same step on SearchQA smoke items (``SmokeStep.
+ no round adopts there, the last evaluated candidate takes the self-test and acceptance so that they run end to end,
+ recorded as ``exercise``.
+ 
++v2.2 (configuration ``main-v2-2``, owner decision 2026-10-24 12:1x): ``train_verdict`` records the sign test without
++requiring it (``protocol.TRAIN_SIGN``); ``_train_eval`` prunes from the candidate, before its cells, every procedure
++the round wrote that its routing pass enables on no evaluated item and faults on none (``prune_idle``,
++``protocol.PRUNE_NON_FIRING``; the pruned package is saved and evaluated, its unit records the proposed hash and the
++pruned ids, the round's history the fate ``pruned_no_firing``); the acceptance round is prepared with the practical
++rule (``protocol.ACCEPT_RULES``, ``acceptance.prepare``) and labelled ``protocol.ACCEPT_FRESHNESS``.
++
+ While a sub-step runs, the step's Setting and worker factories are that unit's (``units.for_unit``; registrar decision
+ on safety review 3, ticket C5-1): every sandbox container of the unit carries its tag, and the unit is drained
+ (``units.drainer``) before it is marked complete or paused. At the end of each unit attempt its role calls (reply
+@@ -140,12 +147,13 @@ from . import (acceptance, budgets, describer, detectors, donors, engineer, exam
+                research, rounds, router, solver, supply, trajectories, units)
+ from .cells import Arm, Pause, TrainingStore, cell_id, run_cells
+ from .chain import EXIT_AWAITING, EXIT_COMPLETE, EXIT_PAUSED, cap_check, check_pins, confirmation, heavy
+-from .package import EDIT_KINDS, Package, edits, empty, load, save, with_describer
++from .package import EDIT_KINDS, Package, edits, empty, load, save, validate, with_describer, withhold
+ from .protocol import (BAND_ROUNDS, BENCHES, CELL_ANCHORS, CHAINS, EARLIER_SET_MAX, ENTRY_READING_SHARE, G_SELF_MAX,
+                        MDE_POINTS, CONFIG_CAP_FACTOR, CONFIGURATIONS, NOTES_KEY, RECORD_HASH, ROLE_MAX_TOKENS,
+                        ROLE_MODEL, S4_SLICES, SEED, SX_SLICES, TOPUP_ROUNDS, TRAIN_ADOPT_SHARE, TRAIN_ALPHA,
+                        TRAIN_EXAMPLES, TRAIN_FORMAT_MARGIN, TRAIN_PATIENCE, TRAIN_ROUNDS, TRAIN_TEXT_CHARS,
+                        configuration_of, learning_of, namespace_of, order_of, FIX_ECHO, META_COUNTERFACTUAL,
++                       ACCEPT_FRESHNESS, ACCEPT_RULES, PRUNE_NON_FIRING, TRAIN_SIGN,
+                        SELFTEST_ALPHA, SELFTEST_FAULT_MAX, SELFTEST_FORMAT_MARGIN, SELFTEST_PASSES, SLICES,
+                        SMOKE_SOLVER, generator_seed, ledger_bound, record, round_tag, verified)
+ from .registry import HELD, run_identity
+@@ -1212,7 +1220,7 @@ def _token_share(found):
+     return Fraction(sum(_token(cell) == "pass" for cell in found), len(found))
+ 
+ 
+-def train_verdict(cells, items, generated, changed, *, predicate_faults, routed):
++def train_verdict(cells, items, generated, changed, *, predicate_faults, routed, sign=True):
+     """v2: the adoption rule of one training round from its cell records (module docstring). ``cells``: {(arm, item):
+     [cell records]} of arms S' (the candidate) and S (the incumbent); ``items`` / ``generated``: the run-slice and
+     G_self items evaluated (those routed differently); ``changed``: the ids of the procedures the candidate adds or
+@@ -1221,7 +1229,8 @@ def train_verdict(cells, items, generated, changed, *, predicate_faults, routed)
+     Adopted iff every guard holds -- S' cells with a fault of a changed procedure or an ``unknown_fault`` <= 2 %, the
+     predicate faults <= 2 % of the routed items, S' format-violating cells above S's by at most max(2, 2 % of its
+     cells) -- and every gain criterion: fixed > broken, net >= max(1, ceil(2 % of the evaluated items)) and the
+-    one-sided exact sign test of fixed against broken p <= ``TRAIN_ALPHA``."""
++    one-sided exact sign test of fixed against broken p <= ``TRAIN_ALPHA``. v2.2 (``protocol.TRAIN_SIGN``): with
++    ``sign`` False the sign test is recorded and not required (``sign_required``)."""
+     evaluated = list(items) + list(generated)
+     diff = {i: _token_share(cells[("S'", i)]) - _token_share(cells[("S", i)]) for i in evaluated}
+     fixed = sorted(i for i in evaluated if diff[i] > 0)
+@@ -1243,7 +1252,9 @@ def train_verdict(cells, items, generated, changed, *, predicate_faults, routed)
+     guards = {"own_faults": own <= SELFTEST_FAULT_MAX * len(candidate),
+               "predicate_faults": predicate_faults <= SELFTEST_FAULT_MAX * routed,
+               "format": formats["S'"] - formats["S"] <= margin}
+-    gain = {"fixed_over_broken": len(fixed) > len(broken), "net": net >= need, "sign": p <= TRAIN_ALPHA}
++    gain = {"fixed_over_broken": len(fixed) > len(broken), "net": net >= need}
++    if sign:
++        gain["sign"] = p <= TRAIN_ALPHA
+     adopted = bool(evaluated) and all(guards.values()) and all(gain.values())
+     reason = None
+     if not adopted:
+@@ -1252,7 +1263,25 @@ def train_verdict(cells, items, generated, changed, *, predicate_faults, routed)
+     return {"adopted": adopted, "reason": reason, "items": len(items), "generated": len(generated),
+             "fixed": fixed, "broken": broken, "net": "%d/%d" % (net.numerator, net.denominator), "need": need,
+             "p_sign": p, "guards": guards, "gain": gain, "own_fault_cells": own, "candidate_cells": len(candidate),
+-            "predicate_faults": predicate_faults, "routed": routed, "format_cells": formats, "format_margin": margin}
++            "predicate_faults": predicate_faults, "routed": routed, "format_cells": formats, "format_margin": margin,
++            **({} if sign else {"sign_required": False})}
++
++
++def prune_idle(candidate, incumbent, base, after):
++    """v2.2 (``protocol.PRUNE_NON_FIRING``): ``candidate`` -- one candidate of the step's parent ``base`` -- without the
++    procedures this round wrote (not in ``incumbent``) that ``after`` ({key: route log of the candidate on every
++    evaluated item}) enables on no item and faults on none -> ``(package, pruned ids)``. Such a procedure changes no
++    training cell (a predicate is a pure function of the view, C6), so pruning keeps the round's evidence and drops only
++    code without any; a procedure it replaced stays retired (a revision that fires nowhere leaves the old version
++    deleted). The pruned package is ``package.withhold``'s, re-validated against ``base``."""
++    active = ({pid for log in after.values() for pid in log.enabled}
++              | {f.get("procedure") for log in after.values() for f in log.faults})
++    idle = [pid for pid in candidate.order if pid not in set(incumbent.order) and pid not in active]
++    if not idle:
++        return candidate, []
++    pruned = withhold(candidate, idle)
++    validate(pruned, base)
++    return pruned, idle
+ 
+ 
+ def _attempt_trajectories(attempt):
+@@ -1356,7 +1385,12 @@ def _train_eval(st, cut, r, incumbent, candidate, generated):
+                    **{key: g["public"] for key, g in made.items()}}
+         views = [(key, solver.routing_view(st.bench, public, runtime=st.runtime())) for key, public in publics.items()]
+         before, after = _routes(st, incumbent, views, publics), _routes(st, candidate, views, publics)
+-        changed = {pid for pid in candidate.order if pid not in set(incumbent.order)}
++        trained, pruned = candidate, []
++        if PRUNE_NON_FIRING[configuration_of(st.setting)]:  # v2.2: an idle procedure never rides along
++            trained, pruned = prune_idle(candidate, incumbent, st.parent, after)
++            if pruned:
++                save(st.chain_root, trained)
++        changed = {pid for pid in trained.order if pid not in set(incumbent.order)}
+         routed = {key: {"incumbent": list(before[key].enabled), "candidate": list(after[key].enabled)}
+                   for key, _ in views}
+         differs = [key for key, _ in views if before[key].enabled != after[key].enabled]
+@@ -1366,7 +1400,7 @@ def _train_eval(st, cut, r, incumbent, candidate, generated):
+             source = items.get(key)
+             task = ({"benchmark": st.bench, "public": source["public"], "private": source["private"]}
+                     if source is not None else _task(made[key]))
+-            for arm, kind, package in (("S'", "candidate", candidate), ("S", "parent", incumbent)):
++            for arm, kind, package in (("S'", "candidate", trained), ("S", "parent", incumbent)):
+                 jobs += [(arm, Arm(kind, package), key, run, task) for run in range(runs if source else 1)]
+         found = _cells(st, attempt, st.solver("selftest", attempt), name, jobs, tag="train") if jobs else []
+         cells = {}
+@@ -1374,12 +1408,16 @@ def _train_eval(st, cut, r, incumbent, candidate, generated):
+             cells.setdefault((cell["cell"]["arm"], cell["cell"]["task_id"]), []).append(cell)
+         rounds.guard(cells, ["S", "S'"], name)
+         verdict = train_verdict(cells, [k for k in differs if k in items], [k for k in differs if k in made],
+-                                changed, predicate_faults=faults, routed=len(views))
+-        feedback = _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells,
++                                changed, predicate_faults=faults, routed=len(views),
++                                sign=TRAIN_SIGN[configuration_of(st.setting)])
++        feedback = _feedback(st, cut, unit, verdict, routed, incumbent, trained, cells,
+                              _attempt_trajectories(attempt))
+-        return {"learning": TRAIN, "round": r, "incumbent_sha256": incumbent.sha256,
+-                "candidate_sha256": candidate.sha256, "routed": len(views), "differs": len(differs),
+-                "cells": len(found), "adopted": verdict["adopted"], "verdict": verdict, "feedback": feedback}
++        out = {"learning": TRAIN, "round": r, "incumbent_sha256": incumbent.sha256,
++               "candidate_sha256": trained.sha256, "routed": len(views), "differs": len(differs),
++               "cells": len(found), "adopted": verdict["adopted"], "verdict": verdict, "feedback": feedback}
++        if PRUNE_NON_FIRING[configuration_of(st.setting)]:
++            out.update({"proposed_sha256": candidate.sha256, "pruned": pruned})
++        return out
+ 
+     return st.unit(unit, work)
+ 
+@@ -1389,7 +1427,7 @@ def _line(r, engineered, evaluated):
+     buffer, owner suggestion 2026-10-23 15:1x) its kind (a registered edit kind, else None), registrar id, target,
+     description excerpt -- only for a change whose final version passed the leakage check C4, i.e. survived or stopped
+     at C7, C8 or C9 (Codex review 2026-10-23 #3) -- and fate: the check that stopped it, ``dropped_in_combination``
+-    (``engineer._combined_train``), or the round's verdict."""
++    (``engineer._combined_train``), ``pruned_no_firing`` (v2.2, ``prune_idle``), or the round's verdict."""
+     line = {"round": r, "candidate": engineered["candidate_sha256"] is not None, "adopted": False, "items": 0,
+             "generated": 0, "fixed": 0, "broken": 0, "net": "0/1", "p_sign": None, "reason": "no_candidate"}
+     if evaluated is not None:
+@@ -1404,6 +1442,8 @@ def _line(r, engineered, evaluated):
+             fate = "check_failed:" + stopped
+         elif change["n"] in sealed["dropped"]:
+             fate = "dropped_in_combination"
++        elif evaluated is not None and change["id"] in evaluated.get("pruned", ()):
++            fate = "pruned_no_firing"
+         else:
+             fate = "adopted" if line["adopted"] else "not_adopted:" + line["reason"]
+         leak_checked = stopped is None or stopped in ("C7", "C8", "C9")
+@@ -1430,6 +1470,8 @@ def _train(st, cut, generated):
+         if engineered["candidate_sha256"] is not None:
+             candidate = _package(st, engineered["candidate_sha256"])
+             evaluated = _train_eval(st, cut, r, incumbent, candidate, generated)
++            if evaluated["candidate_sha256"] != candidate.sha256:  # v2.2: idle procedures were pruned
++                candidate = _package(st, evaluated["candidate_sha256"])
+             done.append(("train-r%d" % r, evaluated["adopted"]))
+             fed, training = "train-r%d" % r, evaluated["feedback"]
+             if evaluated["cells"]:
+@@ -1438,7 +1480,11 @@ def _train(st, cut, generated):
+                 incumbent = candidate
+         line = _line(r, engineered, evaluated)
+         history.append(line)
+-        out.append({**line, "candidate_sha256": engineered["candidate_sha256"], "incumbent_sha256": incumbent.sha256})
++        out.append({**line, "candidate_sha256": engineered["candidate_sha256"] if evaluated is None
++                    else evaluated["candidate_sha256"],  # v2.2 (Codex review MINOR 2): the package the cells ran
++                    **({key: evaluated[key] for key in ("proposed_sha256", "pruned")}
++                       if evaluated is not None and "proposed_sha256" in evaluated else {}),
++                    "incumbent_sha256": incumbent.sha256})
+         misses = 0 if line["adopted"] else misses + 1
+         if misses >= TRAIN_PATIENCE:
+             break
+@@ -1555,7 +1601,9 @@ def _accept(st, cut, candidate, generated):
+                 views=views, blocks=_blocks(st, accept), workers=workers, trajectories=donors_,
+                 rooms={i["task_id"]: i["room"] for i in accept} if st.bench == "alfworld" else None,
+                 generate=generate, dup=admitted and st.k > 1, probe=[item["task_id"] for item in probe],
+-                freshness=FRESHNESS, mde=MDE_POINTS[st.bench])  # A9-3: the registered MDE in decision.json
++                freshness=ACCEPT_FRESHNESS.get(configuration_of(st.setting), FRESHNESS),
++                mde=MDE_POINTS[st.bench],  # A9-3: the registered MDE in decision.json
++                rule=ACCEPT_RULES[configuration_of(st.setting)])  # v2.2: the practical rule, None before
+         packages = acceptance.round_packages(candidate, st.parent, step=sealed["step"], twins=sealed["plan"]["twins"])
+         tasks = _round_tasks(records, probe, acc)  # §6.4 J7: the probe items options-only
+         earlier = acceptance.earlier_blocks(sealed, root, attempt) if n > 1 else None  # §9.3, owner decision #15
+diff --git a/tests/test_execskill_integration_b1.py b/tests/test_execskill_integration_b1.py
+index 76b06cf..7446c5b 100644
+--- a/tests/test_execskill_integration_b1.py
++++ b/tests/test_execskill_integration_b1.py
+@@ -183,8 +183,9 @@ def test_registered_names_agree_across_the_b1_modules():
+     assert set(package.SECOND_CALL_HOOKS) <= set(package.NOTE_HOOKS) <= set(protocol.HOOKS)
+     assert set(notes.FIELD_TYPES) == set(notes.FIELD_ORDER) == set(protocol.NOTE_HEADERS)  # render indexes headers
+     assert set(protocol.NAMESPACES) == set(protocol.CHAINS) | {budgets.SMOKE} | set(protocol.V2_NAMESPACES.values()) | set(
+-        protocol.V21_NAMESPACES.values())
+-    assert set(protocol.V2_NAMESPACES) == set(protocol.V21_NAMESPACES) == set(protocol.CHAINS)  # v2, v2.1: their own
++        protocol.V21_NAMESPACES.values()) | set(protocol.V22_NAMESPACES.values())
++    assert set(protocol.V2_NAMESPACES) == set(protocol.V21_NAMESPACES) == set(protocol.V22_NAMESPACES) == set(
++        protocol.CHAINS)  # v2, v2.1, v2.2: their own
+     assert set(protocol.SOLVERS) <= set(slots.POOL_SIZES) and protocol.ROLE_MODEL in slots.POOL_SIZES
+ 
+ 
+diff --git a/tests/test_execskill_protocol.py b/tests/test_execskill_protocol.py
+index cdb2bc2..b4ff1a9 100644
+--- a/tests/test_execskill_protocol.py
++++ b/tests/test_execskill_protocol.py
+@@ -132,7 +132,7 @@ def test_sibling_copies_agree_with_the_registration():
+     assert client.REASONING_EFFORT == protocol.REASONING_EFFORT == "none"
+     # ticket A4-1 and the policy's own copies
+     assert set(registry.NAMESPACES) == set(protocol.CHAINS) | {"smoke"} | set(protocol.V2_NAMESPACES.values()) | set(
+-        protocol.V21_NAMESPACES.values())  # v2.1 (owner decision 2026-10-24 02:22)
++        protocol.V21_NAMESPACES.values()) | set(protocol.V22_NAMESPACES.values())  # v2.1 (2026-10-24 02:22), v2.2 (12:1x)
+     assert registry.HISTORY_ROOT == protocol.HISTORY_ROOT == "/data/execskill-history"
+     assert set(registry.EVIDENCE) == set(protocol.EVIDENCE)
+     assert exclusion.EXCLUSION_RUNS == protocol.EXCLUSION_RUNS
+@@ -400,9 +400,10 @@ def test_main_is_the_five_bench_configuration_with_its_root_label_and_rules():
+     assert protocol.MAIN_ROOT == "/data/execskill-20261022-main" == protocol.RUN_ROOTS["main"]
+     assert "main_real_run" in protocol.EVIDENCE and protocol.REAL_RUN_EVIDENCE == {
+         "default": "pilot_real_run", "recommended": "pilot_real_run", "main": "main_real_run",
+-        "main-v2": "main_v2_real_run", "main-v2-1": "main_v2_1_real_run"}  # v2 (2026-10-23 13:3x), v2.1 (10-24)
++        "main-v2": "main_v2_real_run", "main-v2-1": "main_v2_1_real_run",  # v2 (2026-10-23 13:3x), v2.1 (10-24)
++        "main-v2-2": "main_v2_2_real_run"}  # v2.2 (2026-10-24 12:1x)
+     assert protocol.COST_CHECK_PAUSES == {"default": True, "recommended": True, "main": False, "main-v2": False,
+-                                          "main-v2-1": False}
++                                          "main-v2-1": False, "main-v2-2": False}
+     assert protocol.CONFIG_CAP_FACTOR["main"] == 3 and protocol.CONFIG_CAP_FACTOR["default"] == Fraction(3, 2)
+     assert {bench: protocol.fired_share(bench, "main") for bench in protocol.BENCHES} == {
+         bench: 1 for bench in protocol.BENCHES}  # all five home
+diff --git a/tests/test_execskill_v21.py b/tests/test_execskill_v21.py
+index f75177e..8cb4c9f 100644
+--- a/tests/test_execskill_v21.py
++++ b/tests/test_execskill_v21.py
+@@ -67,8 +67,9 @@ def test_main_v2_1_is_main_v2_with_its_own_root_namespaces_and_two_engineer_rule
+     assert [protocol.namespace_of(configured("main"), c) for c in ("G", "D")] == ["G", "D"]
+     assert set(protocol.V21_NAMESPACES.values()) <= set(protocol.NAMESPACES)
+     assert set(protocol.FIX_ECHO) == set(protocol.META_COUNTERFACTUAL) == set(protocol.CONFIGURATIONS)
+-    assert {name for name, echo in protocol.FIX_ECHO.items() if not echo} == {V21}
+-    assert {name for name, on in protocol.META_COUNTERFACTUAL.items() if on} == {V21}
++    # v2.2 (owner decision 2026-10-24 12:1x) keeps v2.1's two engineer rules
++    assert {name for name, echo in protocol.FIX_ECHO.items() if not echo} == {V21, protocol.MAIN_V2_2}
++    assert {name for name, on in protocol.META_COUNTERFACTUAL.items() if on} == {V21, protocol.MAIN_V2_2}
+     with pytest.raises(ValueError, match="route B"):
+         routes.check_pins({}, configuration=V21)  # main's chains: chain D pins its route B
+     filler = protocol.META_FILLER
+diff --git a/tests/test_execskill_v22.py b/tests/test_execskill_v22.py
+new file mode 100644
+index 0000000..de29fa8
+--- /dev/null
++++ b/tests/test_execskill_v22.py
+@@ -0,0 +1,356 @@
++"""v2.2 (owner decision 2026-10-24 12:1x, "你的门槛设的太高了，请你根据具体的进化情况重新设计一下门槛怎么样才合适，我觉得acc变化五个
++点以上都可以算是有效果，不用要求那么高"; the proposed scheme approved as is): the run configuration ``main-v2-2`` -- main-v2-1
++whose training round records the sign test without requiring it (``protocol.TRAIN_SIGN``) and prunes, before its cells,
++every procedure it wrote that fires on no evaluated item and faults on none (``step.prune_idle``,
++``protocol.PRUNE_NON_FIRING``), and whose acceptance round is decided by the sealed practical rule
++(``protocol.PRACTICAL_RULE``): J1 holds when the whole-batch S' - S is at least 5 points, or on SearchQA at least 2
++points with the one-sided paired t p <= 0.05; S' - P_y only labels the effect ("content" from 5 points, else "form");
++|A*| needs min(30, max(ceil(5 % of |A|), blocks + 2)) items (ALFWorld also min(20, blocks + 2) rooms); J3-J7 as before.
++Offline: synthetic cell tables on T-ACC's FakeSandbox round, synthetic route logs, T-STEP-V2's fixtures (every role a
++FakeGLM, chain G's solver a FakeSolver, the cells' procedures FakeSandbox hooks); no model call."""
++from __future__ import annotations
++
++import dataclasses
++from fractions import Fraction
++from types import SimpleNamespace
++
++import pytest
++
++from skillopt.continual_eval.core import read_json
++from skillopt.execskill import acceptance, budgets, engineer, manifest, protocol, routes, smoke, step
++from skillopt.execskill.package import Package, edits, load, with_
++from skillopt.execskill.protocol import verified
++from tests import test_execskill_v2_step as v2_step
++from tests.execskill_fakes_env import procedure
++from tests.test_execskill_acceptance import (A, EVIDENCE, N, PATTERNS, fast_statistics, make_cells,  # noqa: F401
++                                             outcome, seal)
++from tests.test_execskill_integration_b3 import PARENT, sandboxes
++from tests.test_execskill_replay import fake, workers  # noqa: F401  (FakeDocker workers)
++from tests.test_execskill_step import BENCH, CHAIN, HOOKS_STEP, K, NEW, result
++from tests.test_execskill_v2 import cell, cells_of
++
++V21, V22 = protocol.MAIN_V2_1, protocol.MAIN_V2_2
++RULE = protocol.PRACTICAL_RULE
++M = procedure("p-officeqa-2-2", ("applies", "before_call"), header="Column helper notes.")
++
++
++def configured(name):
++    return SimpleNamespace(extra={"configuration": name})
++
++
++# ------------------------------------------------------------------------------------------- the configuration
++def test_main_v2_2_is_main_v2_1_with_the_practical_gates_and_its_own_root_and_namespaces():
++    assert V22 == "main-v2-2" and protocol.KIND.fullmatch(V22) and V22 in protocol.CONFIGURATIONS
++    assert protocol.LEARNING[V22] == "train" and protocol.STAGE_READ[V22] is True
++    for table in (protocol.PILOTS, protocol.TEST_READ_CELLS, protocol.CONFIG_STEP_CAPS, protocol.CONFIG_SCHEDULE_CELLS,
++                  protocol.CONFIG_ROLE_CAPS, protocol.CONFIG_GLM_CAP, protocol.CONFIG_CAP_FACTOR,
++                  protocol.COST_CHECK_PAUSES, protocol.FIX_ECHO, protocol.META_COUNTERFACTUAL):
++        assert table[V22] == table[V21]
++    assert all(budgets.chain_caps(chain, V22) == budgets.chain_caps(chain, V21) for chain in protocol.CHAINS)
++    assert manifest.prompt_sha(V22) == manifest.prompt_sha(V21)
++    assert smoke.max_role_calls(V22) == smoke.max_role_calls(V21)
++    assert smoke.engineer_request_floor(V22) == smoke.engineer_request_floor(V21)
++    assert protocol.read_arms_of(V22) == protocol.read_arms_of(V21)
++    assert protocol.REAL_RUN_EVIDENCE[V22] == "main_v2_2_real_run" and "main_v2_2_real_run" in protocol.EVIDENCE
++    assert protocol.RUN_ROOTS[V22] == protocol.MAIN_V2_2_ROOT == "/data/execskill-20261024-main-v2-2"
++    assert protocol.MAIN_V2_2_MANIFEST == "/data/execskill-20261024-main-v2-2-manifest.json"
++    assert protocol.MAIN_V2_2_ROOT not in (protocol.MAIN_ROOT, protocol.MAIN_V2_ROOT, protocol.MAIN_V2_1_ROOT)
++    assert [protocol.namespace_of(configured(V22), c) for c in ("G", "D")] == ["G-v2-2", "D-v2-2"]
++    assert [protocol.namespace_of(configured(V21), c) for c in ("G", "D")] == ["G-v2-1", "D-v2-1"]
++    assert set(protocol.V22_NAMESPACES.values()) <= set(protocol.NAMESPACES)
++    assert set(protocol.TRAIN_SIGN) == set(protocol.PRUNE_NON_FIRING) == set(protocol.ACCEPT_RULES) == set(
++        protocol.CONFIGURATIONS)
++    assert {name for name, required in protocol.TRAIN_SIGN.items() if not required} == {V22}
++    assert {name for name, on in protocol.PRUNE_NON_FIRING.items() if on} == {V22}
++    assert {name: rule for name, rule in protocol.ACCEPT_RULES.items() if rule} == {V22: RULE}
++    assert protocol.ACCEPT_FRESHNESS == {V22: "route_b_v2_1_slices_reused"}
++    assert RULE == {"name": "practical-v2-2", "gain_points": 5, "significance_benches": ["searchqa"],
++                    "significance_points": 2, "alpha": protocol.ALPHA, "content_points": 5, "astar_share_percent": 5,
++                    "astar_cap": protocol.MIN_ASTAR, "rooms_cap": protocol.MIN_ASTAR_ROOMS, "blocks_extra": 2}
++    assert protocol.ALPHA == 0.05 and protocol.MIN_ASTAR == 30 and protocol.MIN_ASTAR_ROOMS == 20
++    with pytest.raises(ValueError, match="route B"):
++        routes.check_pins({}, configuration=V22)  # main's chains: chain D pins its route B
++
++
++def test_the_astar_floor_of_each_bench_under_the_rule():
++    floors = {bench: acceptance.minimum_astar(RULE, protocol.SLICES[bench]["accept"][0],
++                                               protocol.SLICES[bench]["blocks"], alfworld=bench == "alfworld")
++              for bench in protocol.BENCHES}
++    assert floors == {"livemath": {"items": 5, "rooms": None}, "officeqa": {"items": 4, "rooms": None},
++                      "spreadsheetbench": {"items": 3, "rooms": None}, "searchqa": {"items": 30, "rooms": None},
++                      "alfworld": {"items": 8, "rooms": 6}}
++    # ceil(5 % of |A|) items, at least blocks + 2, at most the registered 30 (ALFWorld rooms: blocks + 2, at most 20)
++    assert acceptance.minimum_astar(RULE, 61, 1) == {"items": 4, "rooms": None}
++    assert acceptance.minimum_astar(RULE, 20, 1) == {"items": 3, "rooms": None}
++    assert acceptance.minimum_astar(RULE, 5_000, 30, alfworld=True) == {"items": 30, "rooms": 20}
++
++
++# ------------------------------------------------------------------------------------------- training
++def test_the_training_round_records_the_sign_test_without_requiring_it():
++    one = cells_of({"a": ("pp", "ff")})
++    required = step.train_verdict(one, ["a"], [], {"p1"}, predicate_faults=0, routed=1)
++    assert not required["adopted"] and required["reason"] == "gain:sign" and "sign_required" not in required
++    recorded = step.train_verdict(one, ["a"], [], {"p1"}, predicate_faults=0, routed=1, sign=False)
++    assert recorded["adopted"] and recorded["reason"] is None and recorded["p_sign"] == 1 / 2
++    assert recorded["gain"] == {"fixed_over_broken": True, "net": True} and recorded["sign_required"] is False
++    mixed = cells_of({"a": ("pp", "ff"), "b": ("pp", "ff"), "c": ("ff", "pp")})
++    assert step.train_verdict(mixed, ["a", "b", "c"], [], set(), predicate_faults=0, routed=3)["reason"] == "gain:sign"
++    assert step.train_verdict(mixed, ["a", "b", "c"], [], set(), predicate_faults=0, routed=3, sign=False)["adopted"]
++    # the other criteria and every guard are unchanged
++    tie = cells_of({"a": ("pp", "ff"), "b": ("ff", "pp")})
++    assert step.train_verdict(tie, ["a", "b"], [], set(), predicate_faults=0, routed=2,
++                              sign=False)["reason"] == "gain:fixed_over_broken"
++    rows = {"i%03d" % n: ("pp", "pp") for n in range(98)} | {"h1": ("pf", "ff"), "h2": ("pf", "ff")}
++    assert step.train_verdict(cells_of(rows), sorted(rows), [], set(), predicate_faults=0, routed=100,
++                              sign=False)["reason"] == "gain:net"
++    faulty = cells_of({"a": ("pp", "ff"), "b": ("pp", "ff"), "c": ("pp", "ff")})
++    faulty[("S'", "a")][0]["faults"] = [{"procedure": "p1"}]
++    assert step.train_verdict(faulty, ["a", "b", "c"], [], {"p1"}, predicate_faults=0, routed=3,
++                              sign=False)["reason"] == "guard:own_faults"
++    formats = cells_of({k: ("pp", "ff") for k in "abc"})
++    for k in "abc":
++        formats[("S'", k)] = [cell("pass", violation=True)] * 2
++    assert step.train_verdict(formats, ["a", "b", "c"], [], set(), predicate_faults=0, routed=3,
++                              sign=False)["reason"] == "guard:format"
++    nothing = step.train_verdict({}, [], [], set(), predicate_faults=0, routed=5, sign=False)
++    assert not nothing["adopted"] and nothing["reason"] == "no_item_routes_differently"
++
++
++def logs(*rows):
++    """{key: route-log stand-in} from (enabled ids, faulting ids) per evaluated item."""
++    return {"i%d" % n: SimpleNamespace(enabled=tuple(on), faults=[{"procedure": p, "kind": "predicate"} for p in bad])
++            for n, (on, bad) in enumerate(rows)}
++
++
++def test_prune_idle_drops_only_this_rounds_procedures_that_fire_and_fault_nowhere():
++    base = Package((A,), "s1", EVIDENCE)
++    candidate = with_(base, step="s2", add=[N, M])
++    pruned, ids = step.prune_idle(candidate, base, base, logs(((A.id, N.id), ()), ((A.id,), ())))
++    assert ids == [M.id] and pruned.order == (A.id, N.id) and pruned.parent_sha256 == base.sha256
++    assert (pruned.step, pruned.evidence) == (candidate.step, candidate.evidence)
++    assert [(e.kind, e.new.id) for e in edits(base, pruned)] == [("new", N.id)]
++    # a procedure that faults on an item is not idle (its faults are the round's evidence)
++    kept, none = step.prune_idle(candidate, base, base, logs(((A.id, N.id), (M.id,))))
++    assert kept is candidate and none == []
++    # the incumbent's procedures (the parent's, or adopted in an earlier round) are never pruned
++    incumbent = with_(base, step="s2", add=[N])
++    later, ids = step.prune_idle(candidate, incumbent, base, logs(((), ())))
++    assert ids == [M.id] and later.order == (A.id, N.id)
++    everything, ids = step.prune_idle(candidate, base, base, logs(((A.id,), ())))
++    assert ids == [N.id, M.id] and everything.order == (A.id,) and edits(base, everything) == []
++    # a revision firing nowhere is pruned and its old version stays retired: the round tests the deletion it routed
++    revised = procedure("p-officeqa-2-3", ("applies", "before_call"),
++                        lineage={"parent": A.sha256, "revises": A.id, "engineer_call": None})
++    rewrite = with_(base, step="s2", revise=[revised])
++    dropped, ids = step.prune_idle(rewrite, base, base, logs(((), ())))
++    assert ids == [revised.id] and dropped.order == () and A.sha256 in dropped.retired
++    assert [(e.kind, e.old.id) for e in edits(base, dropped)] == [("deletion", A.id)]
++
++
++# ------------------------------------------------------------------------------------------- acceptance
++@pytest.fixture(scope="module")
++def ruled(tmp_path_factory):
++    return seal(tmp_path_factory.mktemp("ruled"), rule=RULE)
++
++
++@pytest.fixture(scope="module")
++def registered(tmp_path_factory):
++    return seal(tmp_path_factory.mktemp("registered"))
++
++
++def gaining(rows):
++    """S' as S (one run of two passing on every row) but passing both runs on ``rows``: +1/2 per row."""
++    return dict(PATTERNS, **{"S'": lambda k, r: k in rows or (k + r) % 2 == 0})
++
++
++def test_a_round_prepared_with_the_rule_seals_it_and_its_floor(ruled, registered):
++    assert ruled["rule"] == RULE and ruled["plan"]["minimum"] == {"items": 4, "rooms": None}  # 60 items, 2 blocks
++    assert "rule" not in registered and "minimum" not in registered["plan"]
++    assert ruled["plan"]["astar"] == registered["plan"]["astar"] and len(ruled["plan"]["astar"]) == 45
++    assert ruled["freshness"] == registered["freshness"]  # the caller's label (the step passes ACCEPT_FRESHNESS)
++
++
++def test_the_rule_accepts_from_five_points_over_the_whole_batch_and_only_labels_the_placebo(ruled, registered):
++    decision = acceptance.decide(make_cells(ruled), ruled)
++    old = acceptance.decide(make_cells(registered), registered)
++    for name in ("S'-S", "S'-P_y", "S'-C", "S-C"):  # every recorded contrast is the registered one
++        assert all(decision["contrasts"][name][key] == old["contrasts"][name][key]
++                   for key in ("mean", "p_t", "whole_batch"))
++    gain = decision["contrasts"]["S'-S"]["whole_batch"]
++    assert old["decision"] == decision["decision"] == "accept" and decision["rule"] == RULE["name"]
++    assert "rule" not in old
++    assert decision["guards"]["J1"] == {"rule": RULE["name"], "whole_batch": gain,
++                                        "p_t": decision["contrasts"]["S'-S"]["p_t"], "gain_points": 5,
++                                        "practical": True, "significant": False, "ok": True}
++    j2 = decision["guards"]["J2"]
++    assert j2["decides"] is False and j2["label"] == "content" and j2["ok"]
++    assert decision["reason"] == ("J1 (practical-v2-2: %+.1f points over the whole batch) and J3-J7 hold; placebo "
++                                  "label content" % (100 * gain))
++    # a yoked sham doing as well as S' rejects under the registered J2; under the rule it labels the gain "form"
++    same = outcome(dict(PATTERNS, P_y=PATTERNS["S'"]))
++    before, after = acceptance.decide(make_cells(registered, same), registered), acceptance.decide(
++        make_cells(ruled, same), ruled)
++    assert before["decision"] == "reject" and "J2" in before["reason"]
++    assert after["decision"] == "accept" and after["guards"]["J2"]["label"] == "form"
++    assert after["reason"].endswith("placebo label form")
++
++
++def test_five_points_over_the_whole_batch_is_the_bar_and_the_other_guards_still_hold(ruled):
++    six = acceptance.decide(make_cells(ruled, outcome(gaining({0, 1, 2, 4, 5, 6}))), ruled)  # 3 of 60 items
++    assert six["contrasts"]["S'-S"]["whole_batch"] == pytest.approx(0.05) and six["decision"] == "accept"
++    five = acceptance.decide(make_cells(ruled, outcome(gaining({0, 1, 2, 4, 5}))), ruled)  # 2.5 of 60 items
++    assert five["contrasts"]["S'-S"]["whole_batch"] == pytest.approx(2.5 / 60) and five["decision"] == "reject"
++    assert "J1" in five["reason"] and not five["guards"]["J1"]["practical"] and not five["guards"]["J1"]["significant"]
++    # J4 (format) still rejects a gain made of format violations
++    violating = acceptance.decide(make_cells(ruled, violation=lambda job: job["arm"] == "S'"), ruled)
++    assert violating["decision"] == "reject" and "J4" in violating["reason"]
++
++
++def unanswered(cells, gone):
++    """``cells`` with every cell of the items ``gone`` unanswered: an unknown token and no delivered reply (§6.3)."""
++    for one in cells:
++        if one["task_id"] in gone:
++            one["judge"]["v2"]["token"], one["sends"] = "unknown", [{"receipt": None}]
++    return cells
++
++
++def test_too_few_answered_units_leave_a_ruled_round_undetermined_instead_of_raising(ruled, registered):
++    astar = ruled["plan"]["astar"]
++    kept = {"acc-00", "acc-32"}  # one answered item in each block: the t-test keeps no degree of freedom
++    assert kept <= set(astar) and {ruled["blocks"][i] for i in kept} == {"b1", "b2"}
++    gone = set(astar) - kept
++    decision = acceptance.decide(unanswered(make_cells(ruled), gone), ruled)
++    assert decision["decision"] == "undetermined" and decision["analysed"] == 2 and decision["rule"] == RULE["name"]
++    assert decision["shared_unanswered"] == sorted(gone) and "guards" not in decision
++    assert decision["reason"] == ("too few answered units for the t-test (2 items in 2 blocks); the run pauses, the "
++                                  "batch is consumed but undecided")
++    assert acceptance.reproduce(unanswered(make_cells(ruled), gone), ruled, decision)
++    with pytest.raises(acceptance.Pause) as stop:  # settle pauses before it marks anything decided
++        acceptance.settle(decision, ruled, None, None)
++    assert stop.value.kind == "acceptance_undetermined"
++    with pytest.raises(ValueError, match="Too few answered items for the t-test"):  # sealed without a rule: as before
++        acceptance.decide(unanswered(make_cells(registered), gone), registered)
++    # one more answered item gives the t-test its degree of freedom: the round is decided (J5 counts the unanswered)
++    decided = acceptance.decide(unanswered(make_cells(ruled), gone - {"acc-01"}), ruled)
++    assert decided["decision"] == "undetermined" and decided["guards"]["J5"]["pause"] and decided["analysed"] == 3
++
++
++def test_on_alfworld_the_units_of_the_floor_check_are_rooms():
++    sealed = {"bench": "alfworld", "blocks": {"g1": "b1", "g2": "b1", "g3": "b2", "g4": "b2"},
++              "rooms": {"g1": "r1", "g2": "r1", "g3": "r2", "g4": "r3"}}
++    assert acceptance._too_few_units(sealed, ["g1", "g2", "g3"]) == ("too few answered units for the t-test (2 rooms "
++                                                                    "in 2 blocks)")
++    assert acceptance._too_few_units(sealed, ["g1", "g3", "g4"]) is None  # rooms r1, r2, r3 in blocks b1, b2
++    assert acceptance._too_few_units(dict(sealed, bench="officeqa"), ["g1", "g2", "g3"]) is None  # items are units
++
++
++def test_a_harmful_sham_is_reported_under_the_rule_without_the_parent_only_label(ruled, registered):
++    harmful = outcome(dict(PATTERNS, P_y=lambda k, r: False))  # the yoked sham fails everywhere: P_y - S < 0
++    old = acceptance.decide(make_cells(registered, harmful), registered)
++    new = acceptance.decide(make_cells(ruled, harmful), ruled)
++    assert old["contrasts"]["P_y-S"]["ci95"] == new["contrasts"]["P_y-S"]["ci95"] and new["contrasts"]["P_y-S"][
++        "ci95"][1] < 0
++    assert old["placebo_rule"] == "harmful_sham_parent_only_2.5pct" and new["placebo_rule"] == "harmful_sham_reported"
++    assert "alpha" in old["guards"]["J1"] and "alpha" not in new["guards"]["J1"]
++
++
++def test_the_rule_runs_a_round_from_its_floor(tmp_path):
++    four = seal(tmp_path / "four", fires_n=lambda k: k < 4, rule=RULE)
++    assert len(four["plan"]["astar"]) == 4 and four["plan"]["decision"] == "run" and four["placebo_y"] is not None
++    rows = dict(PATTERNS, **{"S'": lambda k, r: True, "S": lambda k, r: k == 3 and r == 0})  # +3.5 of 60 items
++    small = acceptance.decide(make_cells(four, outcome(rows)), four)
++    assert small["A_star"] == 4 and small["decision"] == "accept" and small["guards"]["J1"]["practical"]
++    three = seal(tmp_path / "three", fires_n=lambda k: k < 3, rule=RULE)
++    assert three["plan"]["decision"] == acceptance.SMALL and acceptance.schedule(three) == {}
++    skipped = acceptance.decide([], three)
++    assert skipped["decision"] == acceptance.SMALL and skipped["rule"] == RULE["name"]
++    assert "below the minimum of 4 items (practical-v2-2)" in skipped["reason"]
++    registered = seal(tmp_path / "registered", fires_n=lambda k: k < 4)
++    assert registered["plan"]["decision"] == acceptance.SMALL
++    assert "below the registered minimum" in acceptance.decide([], registered)["reason"]
++
++
++def first(p, whole):
++    return {"p_t": p, "whole_batch": whole}
++
++
++def test_searchqa_alone_also_accepts_a_significant_gain_of_two_points():
++    size, content = 100, [Fraction(1, 2)] * 10  # S' - P_y: +5 points of 100 items, "content"
++    three = [Fraction(1)] * 3 + [Fraction(0)] * 27  # S' - S: +3 points
++    j1, j2 = acceptance._practical(RULE, "searchqa", three, content, size, first(0.01, 0.03), first(0.2, 0.05))
++    assert j1 == {"rule": RULE["name"], "whole_batch": 0.03, "p_t": 0.01, "gain_points": 5, "practical": False,
++                  "significant": True, "ok": True}
++    assert j2 == {"rule": RULE["name"], "whole_batch": 0.05, "p_t": 0.2, "decides": False, "label": "content",
++                  "ok": True}
++    assert not acceptance._practical(RULE, "officeqa", three, content, size, first(0.01, 0.03), first(0.2, 0.05))[0][
++        "ok"]  # the significance path is SearchQA's alone
++    assert not acceptance._practical(RULE, "searchqa", three, content, size, first(0.051, 0.03), first(0.2, 0.05))[0][
++        "ok"]
++    edge = acceptance._practical(RULE, "searchqa", [Fraction(1)] * 2, content, size, first(0.05, 0.02),
++                                 first(0.2, 0.05))[0]
++    assert edge["ok"] and edge["significant"]  # both bounds are inclusive, in exact arithmetic
++    below = [Fraction(1)] * 2 + [Fraction(-1, 100)]
++    assert not acceptance._practical(RULE, "searchqa", below, content, size, first(0.001, 0.0199), first(0.2, 0.05))[
++        0]["ok"]
++    j1, j2 = acceptance._practical(RULE, "alfworld", [Fraction(1, 2)] * 10, [Fraction(49, 10)], size,
++                                   first(0.4, 0.05), first(0.5, 0.049))
++    assert j1["ok"] and j1["practical"] and not j1["significant"] and j2["label"] == "form"
++
++
++# ------------------------------------------------------------------------------------------- one step
++@pytest.fixture()
++def v22(monkeypatch):
++    """T-STEP-V2's fixtures in the configuration ``main-v2-2``."""
++    monkeypatch.setattr(v2_step, "CONFIGURATION", V22)
++
++
++def step_root(setting):
++    return setting.root / CHAIN / ("s%d-%s" % (K, BENCH))
++
++
++def test_step_v2_2_trains_without_the_sign_test_and_accepts_under_the_practical_rule(tmp_path, monkeypatch, workers,
++                                                                                    v22):
++    setting, services, solver_fake, glm, waited = v2_step.build_v2(tmp_path, monkeypatch, workers)
++    found = step.run_step(setting, CHAIN, BENCH, K, PARENT, services=services)
++    root = step_root(setting)
++    record = verified(read_json(root / step.STEP_FILE), "step")
++    assert found.record == record and record["learning"] == "train" and record["decision"] == "accept"
++    trained = result(root, "train-r1")["result"]
++    assert trained["adopted"] and trained["pruned"] == [] and trained["proposed_sha256"] == trained["candidate_sha256"]
++    assert trained["verdict"]["sign_required"] is False and set(trained["verdict"]["gain"]) == {"fixed_over_broken",
++                                                                                                 "net"}
++    sealed = verified(read_json(root / "accept" / "sealed.json"), "acceptance-sealed")
++    assert sealed["chain"] == "G-v2-2" and sealed["rule"] == RULE and sealed["freshness"] == "route_b_v2_1_slices_reused"
++    assert sealed["plan"]["minimum"] == acceptance.minimum_astar(RULE, len(sealed["A"]),
++                                                                 len(set(sealed["blocks"].values())))
++    decision = result(root, "accept")["result"]
++    assert decision["decision"] == "accept"
++    first_round = record["training"]["rounds"][0]  # Codex review MINOR 2: the package the cells ran, and its proposal
++    assert first_round["candidate_sha256"] == first_round["proposed_sha256"] == trained["candidate_sha256"]
++    assert first_round["pruned"] == []
++    lines = services.registry.entries("G-v2-2", BENCH)
++    assert lines and not services.registry.entries(CHAIN, BENCH)
++
++
++def test_step_v2_2_prunes_a_procedure_that_fires_on_no_evaluated_item(tmp_path, monkeypatch, workers, v22):
++    setting, services, solver_fake, glm, waited = v2_step.build_v2(tmp_path, monkeypatch, workers)
++    idle = dict(HOOKS_STEP, **{NEW: dict(HOOKS_STEP[NEW], applies=lambda view: False)})  # the routing pass only
++    found = step.run_step(setting, CHAIN, BENCH, K, PARENT,
++                          services=dataclasses.replace(services, item_workers=sandboxes(idle)))
++    root = step_root(setting)
++    record = verified(read_json(root / step.STEP_FILE), "step")
++    engineered = result(root, "engineer-r1")["result"]["engineer"]
++    trained = result(root, "train-r1")["result"]
++    assert trained["pruned"] == [NEW] and trained["proposed_sha256"] == engineered["candidate_sha256"]
++    assert trained["candidate_sha256"] != trained["proposed_sha256"] and trained["differs"] == 0
++    assert trained["cells"] == 0 and not trained["adopted"]
++    assert trained["verdict"]["reason"] == "no_item_routes_differently"
++    pruned = load(next(setting.root.rglob("packages/%s.json" % trained["candidate_sha256"])))
++    assert pruned.order == PARENT.order and pruned.parent_sha256 == PARENT.sha256
++    first_round = record["training"]["rounds"][0]  # Codex review MINOR 2: the pruned package the cells would run
++    assert first_round["candidate_sha256"] == trained["candidate_sha256"] and first_round["pruned"] == [NEW]
++    assert first_round["proposed_sha256"] == engineered["candidate_sha256"]
++    proposals = [p for s, p in glm.seen if s == engineer.ENGINEER_SYSTEM_V2 and p["request"] == "propose"]
++    line = proposals[1]["history"][0]
++    assert not line["adopted"] and [p["fate"] for p in line["proposals"]] == ["pruned_no_firing"]
++    assert record["training"]["adopted"] == 0 and "accept" not in record["units"] and found.package == PARENT

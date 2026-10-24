@@ -67,8 +67,9 @@ def test_main_v2_1_is_main_v2_with_its_own_root_namespaces_and_two_engineer_rule
     assert [protocol.namespace_of(configured("main"), c) for c in ("G", "D")] == ["G", "D"]
     assert set(protocol.V21_NAMESPACES.values()) <= set(protocol.NAMESPACES)
     assert set(protocol.FIX_ECHO) == set(protocol.META_COUNTERFACTUAL) == set(protocol.CONFIGURATIONS)
-    assert {name for name, echo in protocol.FIX_ECHO.items() if not echo} == {V21}
-    assert {name for name, on in protocol.META_COUNTERFACTUAL.items() if on} == {V21}
+    # v2.2 (owner decision 2026-10-24 12:1x) keeps v2.1's two engineer rules
+    assert {name for name, echo in protocol.FIX_ECHO.items() if not echo} == {V21, protocol.MAIN_V2_2}
+    assert {name for name, on in protocol.META_COUNTERFACTUAL.items() if on} == {V21, protocol.MAIN_V2_2}
     with pytest.raises(ValueError, match="route B"):
         routes.check_pins({}, configuration=V21)  # main's chains: chain D pins its route B
     filler = protocol.META_FILLER

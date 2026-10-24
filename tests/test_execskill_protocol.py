@@ -132,7 +132,7 @@ def test_sibling_copies_agree_with_the_registration():
     assert client.REASONING_EFFORT == protocol.REASONING_EFFORT == "none"
     # ticket A4-1 and the policy's own copies
     assert set(registry.NAMESPACES) == set(protocol.CHAINS) | {"smoke"} | set(protocol.V2_NAMESPACES.values()) | set(
-        protocol.V21_NAMESPACES.values())  # v2.1 (owner decision 2026-10-24 02:22)
+        protocol.V21_NAMESPACES.values()) | set(protocol.V22_NAMESPACES.values())  # v2.1 (2026-10-24 02:22), v2.2 (12:1x)
     assert registry.HISTORY_ROOT == protocol.HISTORY_ROOT == "/data/execskill-history"
     assert set(registry.EVIDENCE) == set(protocol.EVIDENCE)
     assert exclusion.EXCLUSION_RUNS == protocol.EXCLUSION_RUNS
@@ -400,9 +400,10 @@ def test_main_is_the_five_bench_configuration_with_its_root_label_and_rules():
     assert protocol.MAIN_ROOT == "/data/execskill-20261022-main" == protocol.RUN_ROOTS["main"]
     assert "main_real_run" in protocol.EVIDENCE and protocol.REAL_RUN_EVIDENCE == {
         "default": "pilot_real_run", "recommended": "pilot_real_run", "main": "main_real_run",
-        "main-v2": "main_v2_real_run", "main-v2-1": "main_v2_1_real_run"}  # v2 (2026-10-23 13:3x), v2.1 (10-24)
+        "main-v2": "main_v2_real_run", "main-v2-1": "main_v2_1_real_run",  # v2 (2026-10-23 13:3x), v2.1 (10-24)
+        "main-v2-2": "main_v2_2_real_run"}  # v2.2 (2026-10-24 12:1x)
     assert protocol.COST_CHECK_PAUSES == {"default": True, "recommended": True, "main": False, "main-v2": False,
-                                          "main-v2-1": False}
+                                          "main-v2-1": False, "main-v2-2": False}
     assert protocol.CONFIG_CAP_FACTOR["main"] == 3 and protocol.CONFIG_CAP_FACTOR["default"] == Fraction(3, 2)
     assert {bench: protocol.fired_share(bench, "main") for bench in protocol.BENCHES} == {
         bench: 1 for bench in protocol.BENCHES}  # all five home

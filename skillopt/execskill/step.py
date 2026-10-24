@@ -105,6 +105,13 @@ The smoke's v2 example SX is the same step on SearchQA smoke items (``SmokeStep.
 no round adopts there, the last evaluated candidate takes the self-test and acceptance so that they run end to end,
 recorded as ``exercise``.
 
+v2.2 (configuration ``main-v2-2``, owner decision 2026-10-24 12:1x): ``train_verdict`` records the sign test without
+requiring it (``protocol.TRAIN_SIGN``); ``_train_eval`` prunes from the candidate, before its cells, every procedure
+the round wrote that its routing pass enables on no evaluated item and faults on none (``prune_idle``,
+``protocol.PRUNE_NON_FIRING``; the pruned package is saved and evaluated, its unit records the proposed hash and the
+pruned ids, the round's history the fate ``pruned_no_firing``); the acceptance round is prepared with the practical
+rule (``protocol.ACCEPT_RULES``, ``acceptance.prepare``) and labelled ``protocol.ACCEPT_FRESHNESS``.
+
 While a sub-step runs, the step's Setting and worker factories are that unit's (``units.for_unit``; registrar decision
 on safety review 3, ticket C5-1): every sandbox container of the unit carries its tag, and the unit is drained
 (``units.drainer``) before it is marked complete or paused. At the end of each unit attempt its role calls (reply
@@ -140,12 +147,13 @@ from . import (acceptance, budgets, describer, detectors, donors, engineer, exam
                research, rounds, router, solver, supply, trajectories, units)
 from .cells import Arm, Pause, TrainingStore, cell_id, run_cells
 from .chain import EXIT_AWAITING, EXIT_COMPLETE, EXIT_PAUSED, cap_check, check_pins, confirmation, heavy
-from .package import EDIT_KINDS, Package, edits, empty, load, save, with_describer
+from .package import EDIT_KINDS, Package, edits, empty, load, save, validate, with_describer, withhold
 from .protocol import (BAND_ROUNDS, BENCHES, CELL_ANCHORS, CHAINS, EARLIER_SET_MAX, ENTRY_READING_SHARE, G_SELF_MAX,
                        MDE_POINTS, CONFIG_CAP_FACTOR, CONFIGURATIONS, NOTES_KEY, RECORD_HASH, ROLE_MAX_TOKENS,
                        ROLE_MODEL, S4_SLICES, SEED, SX_SLICES, TOPUP_ROUNDS, TRAIN_ADOPT_SHARE, TRAIN_ALPHA,
                        TRAIN_EXAMPLES, TRAIN_FORMAT_MARGIN, TRAIN_PATIENCE, TRAIN_ROUNDS, TRAIN_TEXT_CHARS,
                        configuration_of, learning_of, namespace_of, order_of, FIX_ECHO, META_COUNTERFACTUAL,
+                       ACCEPT_FRESHNESS, ACCEPT_RULES, PRUNE_NON_FIRING, TRAIN_SIGN,
                        SELFTEST_ALPHA, SELFTEST_FAULT_MAX, SELFTEST_FORMAT_MARGIN, SELFTEST_PASSES, SLICES,
                        SMOKE_SOLVER, generator_seed, ledger_bound, record, round_tag, verified)
 from .registry import HELD, run_identity
@@ -1212,7 +1220,7 @@ def _token_share(found):
     return Fraction(sum(_token(cell) == "pass" for cell in found), len(found))
 
 
-def train_verdict(cells, items, generated, changed, *, predicate_faults, routed):
+def train_verdict(cells, items, generated, changed, *, predicate_faults, routed, sign=True):
     """v2: the adoption rule of one training round from its cell records (module docstring). ``cells``: {(arm, item):
     [cell records]} of arms S' (the candidate) and S (the incumbent); ``items`` / ``generated``: the run-slice and
     G_self items evaluated (those routed differently); ``changed``: the ids of the procedures the candidate adds or
@@ -1221,7 +1229,8 @@ def train_verdict(cells, items, generated, changed, *, predicate_faults, routed)
     Adopted iff every guard holds -- S' cells with a fault of a changed procedure or an ``unknown_fault`` <= 2 %, the
     predicate faults <= 2 % of the routed items, S' format-violating cells above S's by at most max(2, 2 % of its
     cells) -- and every gain criterion: fixed > broken, net >= max(1, ceil(2 % of the evaluated items)) and the
-    one-sided exact sign test of fixed against broken p <= ``TRAIN_ALPHA``."""
+    one-sided exact sign test of fixed against broken p <= ``TRAIN_ALPHA``. v2.2 (``protocol.TRAIN_SIGN``): with
+    ``sign`` False the sign test is recorded and not required (``sign_required``)."""
     evaluated = list(items) + list(generated)
     diff = {i: _token_share(cells[("S'", i)]) - _token_share(cells[("S", i)]) for i in evaluated}
     fixed = sorted(i for i in evaluated if diff[i] > 0)
@@ -1243,7 +1252,9 @@ def train_verdict(cells, items, generated, changed, *, predicate_faults, routed)
     guards = {"own_faults": own <= SELFTEST_FAULT_MAX * len(candidate),
               "predicate_faults": predicate_faults <= SELFTEST_FAULT_MAX * routed,
               "format": formats["S'"] - formats["S"] <= margin}
-    gain = {"fixed_over_broken": len(fixed) > len(broken), "net": net >= need, "sign": p <= TRAIN_ALPHA}
+    gain = {"fixed_over_broken": len(fixed) > len(broken), "net": net >= need}
+    if sign:
+        gain["sign"] = p <= TRAIN_ALPHA
     adopted = bool(evaluated) and all(guards.values()) and all(gain.values())
     reason = None
     if not adopted:
@@ -1252,7 +1263,25 @@ def train_verdict(cells, items, generated, changed, *, predicate_faults, routed)
     return {"adopted": adopted, "reason": reason, "items": len(items), "generated": len(generated),
             "fixed": fixed, "broken": broken, "net": "%d/%d" % (net.numerator, net.denominator), "need": need,
             "p_sign": p, "guards": guards, "gain": gain, "own_fault_cells": own, "candidate_cells": len(candidate),
-            "predicate_faults": predicate_faults, "routed": routed, "format_cells": formats, "format_margin": margin}
+            "predicate_faults": predicate_faults, "routed": routed, "format_cells": formats, "format_margin": margin,
+            **({} if sign else {"sign_required": False})}
+
+
+def prune_idle(candidate, incumbent, base, after):
+    """v2.2 (``protocol.PRUNE_NON_FIRING``): ``candidate`` -- one candidate of the step's parent ``base`` -- without the
+    procedures this round wrote (not in ``incumbent``) that ``after`` ({key: route log of the candidate on every
+    evaluated item}) enables on no item and faults on none -> ``(package, pruned ids)``. Such a procedure changes no
+    training cell (a predicate is a pure function of the view, C6), so pruning keeps the round's evidence and drops only
+    code without any; a procedure it replaced stays retired (a revision that fires nowhere leaves the old version
+    deleted). The pruned package is ``package.withhold``'s, re-validated against ``base``."""
+    active = ({pid for log in after.values() for pid in log.enabled}
+              | {f.get("procedure") for log in after.values() for f in log.faults})
+    idle = [pid for pid in candidate.order if pid not in set(incumbent.order) and pid not in active]
+    if not idle:
+        return candidate, []
+    pruned = withhold(candidate, idle)
+    validate(pruned, base)
+    return pruned, idle
 
 
 def _attempt_trajectories(attempt):
@@ -1356,7 +1385,12 @@ def _train_eval(st, cut, r, incumbent, candidate, generated):
                    **{key: g["public"] for key, g in made.items()}}
         views = [(key, solver.routing_view(st.bench, public, runtime=st.runtime())) for key, public in publics.items()]
         before, after = _routes(st, incumbent, views, publics), _routes(st, candidate, views, publics)
-        changed = {pid for pid in candidate.order if pid not in set(incumbent.order)}
+        trained, pruned = candidate, []
+        if PRUNE_NON_FIRING[configuration_of(st.setting)]:  # v2.2: an idle procedure never rides along
+            trained, pruned = prune_idle(candidate, incumbent, st.parent, after)
+            if pruned:
+                save(st.chain_root, trained)
+        changed = {pid for pid in trained.order if pid not in set(incumbent.order)}
         routed = {key: {"incumbent": list(before[key].enabled), "candidate": list(after[key].enabled)}
                   for key, _ in views}
         differs = [key for key, _ in views if before[key].enabled != after[key].enabled]
@@ -1366,7 +1400,7 @@ def _train_eval(st, cut, r, incumbent, candidate, generated):
             source = items.get(key)
             task = ({"benchmark": st.bench, "public": source["public"], "private": source["private"]}
                     if source is not None else _task(made[key]))
-            for arm, kind, package in (("S'", "candidate", candidate), ("S", "parent", incumbent)):
+            for arm, kind, package in (("S'", "candidate", trained), ("S", "parent", incumbent)):
                 jobs += [(arm, Arm(kind, package), key, run, task) for run in range(runs if source else 1)]
         found = _cells(st, attempt, st.solver("selftest", attempt), name, jobs, tag="train") if jobs else []
         cells = {}
@@ -1374,12 +1408,16 @@ def _train_eval(st, cut, r, incumbent, candidate, generated):
             cells.setdefault((cell["cell"]["arm"], cell["cell"]["task_id"]), []).append(cell)
         rounds.guard(cells, ["S", "S'"], name)
         verdict = train_verdict(cells, [k for k in differs if k in items], [k for k in differs if k in made],
-                                changed, predicate_faults=faults, routed=len(views))
-        feedback = _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells,
+                                changed, predicate_faults=faults, routed=len(views),
+                                sign=TRAIN_SIGN[configuration_of(st.setting)])
+        feedback = _feedback(st, cut, unit, verdict, routed, incumbent, trained, cells,
                              _attempt_trajectories(attempt))
-        return {"learning": TRAIN, "round": r, "incumbent_sha256": incumbent.sha256,
-                "candidate_sha256": candidate.sha256, "routed": len(views), "differs": len(differs),
-                "cells": len(found), "adopted": verdict["adopted"], "verdict": verdict, "feedback": feedback}
+        out = {"learning": TRAIN, "round": r, "incumbent_sha256": incumbent.sha256,
+               "candidate_sha256": trained.sha256, "routed": len(views), "differs": len(differs),
+               "cells": len(found), "adopted": verdict["adopted"], "verdict": verdict, "feedback": feedback}
+        if PRUNE_NON_FIRING[configuration_of(st.setting)]:
+            out.update({"proposed_sha256": candidate.sha256, "pruned": pruned})
+        return out
 
     return st.unit(unit, work)
 
@@ -1389,7 +1427,7 @@ def _line(r, engineered, evaluated):
     buffer, owner suggestion 2026-10-23 15:1x) its kind (a registered edit kind, else None), registrar id, target,
     description excerpt -- only for a change whose final version passed the leakage check C4, i.e. survived or stopped
     at C7, C8 or C9 (Codex review 2026-10-23 #3) -- and fate: the check that stopped it, ``dropped_in_combination``
-    (``engineer._combined_train``), or the round's verdict."""
+    (``engineer._combined_train``), ``pruned_no_firing`` (v2.2, ``prune_idle``), or the round's verdict."""
     line = {"round": r, "candidate": engineered["candidate_sha256"] is not None, "adopted": False, "items": 0,
             "generated": 0, "fixed": 0, "broken": 0, "net": "0/1", "p_sign": None, "reason": "no_candidate"}
     if evaluated is not None:
@@ -1404,6 +1442,8 @@ def _line(r, engineered, evaluated):
             fate = "check_failed:" + stopped
         elif change["n"] in sealed["dropped"]:
             fate = "dropped_in_combination"
+        elif evaluated is not None and change["id"] in evaluated.get("pruned", ()):
+            fate = "pruned_no_firing"
         else:
             fate = "adopted" if line["adopted"] else "not_adopted:" + line["reason"]
         leak_checked = stopped is None or stopped in ("C7", "C8", "C9")
@@ -1430,6 +1470,8 @@ def _train(st, cut, generated):
         if engineered["candidate_sha256"] is not None:
             candidate = _package(st, engineered["candidate_sha256"])
             evaluated = _train_eval(st, cut, r, incumbent, candidate, generated)
+            if evaluated["candidate_sha256"] != candidate.sha256:  # v2.2: idle procedures were pruned
+                candidate = _package(st, evaluated["candidate_sha256"])
             done.append(("train-r%d" % r, evaluated["adopted"]))
             fed, training = "train-r%d" % r, evaluated["feedback"]
             if evaluated["cells"]:
@@ -1438,7 +1480,11 @@ def _train(st, cut, generated):
                 incumbent = candidate
         line = _line(r, engineered, evaluated)
         history.append(line)
-        out.append({**line, "candidate_sha256": engineered["candidate_sha256"], "incumbent_sha256": incumbent.sha256})
+        out.append({**line, "candidate_sha256": engineered["candidate_sha256"] if evaluated is None
+                    else evaluated["candidate_sha256"],  # v2.2 (Codex review MINOR 2): the package the cells ran
+                    **({key: evaluated[key] for key in ("proposed_sha256", "pruned")}
+                       if evaluated is not None and "proposed_sha256" in evaluated else {}),
+                    "incumbent_sha256": incumbent.sha256})
         misses = 0 if line["adopted"] else misses + 1
         if misses >= TRAIN_PATIENCE:
             break
@@ -1555,7 +1601,9 @@ def _accept(st, cut, candidate, generated):
                 views=views, blocks=_blocks(st, accept), workers=workers, trajectories=donors_,
                 rooms={i["task_id"]: i["room"] for i in accept} if st.bench == "alfworld" else None,
                 generate=generate, dup=admitted and st.k > 1, probe=[item["task_id"] for item in probe],
-                freshness=FRESHNESS, mde=MDE_POINTS[st.bench])  # A9-3: the registered MDE in decision.json
+                freshness=ACCEPT_FRESHNESS.get(configuration_of(st.setting), FRESHNESS),
+                mde=MDE_POINTS[st.bench],  # A9-3: the registered MDE in decision.json
+                rule=ACCEPT_RULES[configuration_of(st.setting)])  # v2.2: the practical rule, None before
         packages = acceptance.round_packages(candidate, st.parent, step=sealed["step"], twins=sealed["plan"]["twins"])
         tasks = _round_tasks(records, probe, acc)  # §6.4 J7: the probe items options-only
         earlier = acceptance.earlier_blocks(sealed, root, attempt) if n > 1 else None  # §9.3, owner decision #15
