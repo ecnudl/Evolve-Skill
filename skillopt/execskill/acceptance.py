@@ -116,7 +116,7 @@ from . import donors, placebo, router, stats_ext, reuse as request_reuse
 from .cells import Arm, Pause, cell_id, run_cell, run_parallel
 from .outcomes_ext import DELIVERED
 from .package import Package, empty, restore
-from .protocol import (ALPHA, BLOCK_GAP_SECONDS, DUP_ALPHA, FAULT_SHARE_MAX, G_ACC, HARMFUL_SHAM_ALPHA,
+from .profiles import (ALPHA, BLOCK_GAP_SECONDS, DUP_ALPHA, FAULT_SHARE_MAX, G_ACC, HARMFUL_SHAM_ALPHA,
                        INFRA_UNKNOWN_MAX,
                        META_PROBE_ALPHA, META_PROBE_GAIN, MIN_WHOLE_BATCH, RECORD_HASH, REASONING_MISMATCH_MAX,
                        SECOND_CALL_FLAG, SEED, SHARED_UNANSWERED_MAX, SLICES, START_BALANCE_MAX, TIME_WINDOW_SECONDS,
@@ -183,6 +183,9 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
     practical rule (``protocol.ACCEPT_RULES``), sealed with its |A*| floor, None for the registered J1-J7. ``reuse``:
     v2.3's {card_text, runtime, views: {G_acc/probe: {item: shell view}}}, None for the historical full dispatch."""
     require(set(blocks) == set(views), "Every acceptance item has a block")
+    if bench == "zebralogic":
+        require(generate is None and not dup and not probe,
+                "zebra-pc-v1 has no generator, duplicate instrument or LiveMath probe")
     evidence = candidate.evidence
     corpus = donors.donor_corpus(candidate, parent, trajectories, workers)
     minimum = None if rule is None else minimum_astar(rule, len(views), len(set(blocks.values())),
@@ -213,6 +216,8 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
         "plan": plan, "corpus": corpus, "placebo_y": placebo_y, "placebo_i": placebo_i, "g_acc": g_acc}
     if rule is not None:  # v2.2: the practical rule ``decide`` reads
         fields["rule"] = dict(rule)
+    if bench == "zebralogic":
+        fields["j6_registered"] = False
     if reuse is not None:
         fields["seeds"] = {"request_reuse": SEED}
     fields["seals"] = {
@@ -1128,6 +1133,9 @@ def _by_donor(d, items, pairs):
 def _duplicate(cells_table, sealed, items, design):
     """J6: every registered same-text duplicate pair of this round -- C-S while S has no procedure on the bench,
     S_dup-S when the duplicate arm runs -- each two-sided at 1 % (statistics review 2); None when there is none."""
+    if sealed.get("j6_registered") is False:
+        require(sealed["bench"] == "zebralogic" and not sealed["dup"], "Only the registered grid control omits J6")
+        return None
     pairs = ([(CARD, PARENT)] if sealed["card_is_parent"] else []) + ([(DUP, PARENT)] if sealed["dup"] else [])
     if not pairs:
         return None

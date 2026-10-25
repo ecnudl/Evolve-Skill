@@ -61,7 +61,7 @@ from skillopt.continual_eval.core import read_json, require, safe_path, write_js
 
 from . import evaluation, stats_ext
 from .package import empty, load
-from .protocol import (ALPHA, BENCHES, CANNOT_ACT_FIRED, CHAINS, NI_MARGIN, NI_MIN_FIRED, RECORD_HASH, SIMILAR_PAIRS,
+from .profiles import (ALPHA, BENCHES, SUPPORTED_BENCHES, ZEBRA, ZEBRA_PC_V1, read_benches, CANNOT_ACT_FIRED, CHAINS, NI_MARGIN, NI_MIN_FIRED, RECORD_HASH, SIMILAR_PAIRS,
                        STAGE_ARM, TIME_WINDOW_SECONDS, record, verified)
 
 __all__ = ("arm_table", "code_vs_text", "differences", "format_withholding", "labels", "placebo_contrast", "q1_home",
@@ -239,10 +239,12 @@ def q1_home(units, learned):
 def similar(learned):
     """The benches similar to a learned one (``SIMILAR_PAIRS``), outside L."""
     found = {b for pair in SIMILAR_PAIRS for a, b in (pair, pair[::-1]) if a in learned}
-    return sorted(found - set(learned), key=BENCHES.index)
+    return sorted(found - set(learned), key=SUPPORTED_BENCHES.index)
 
 
 def dissimilar(learned):
+    if set(learned) == {"zebralogic"}:
+        return []
     return [b for b in BENCHES if b not in learned and b not in similar(learned)]
 
 
@@ -301,7 +303,7 @@ def code_vs_text(units, learned):
     """F − T_F per bench with the interval readings of §8.2 (Codex F20); the rest "inconclusive"; below the Q3
     enable threshold "cannot_act_by_construction" (the two arms differ only where F is enabled)."""
     out = {}
-    for bench in sorted(units, key=BENCHES.index):
+    for bench in sorted(units, key=SUPPORTED_BENCHES.index):
         cells = units[bench]
         _clustered(bench, cells)
         items = _items(cells, "F", "T_F")
@@ -331,7 +333,7 @@ def code_vs_text(units, learned):
 def placebo_contrast(units):
     """F − P_F per bench, description only (§8.1's sham arm of the read)."""
     out = {}
-    for bench in sorted(units, key=BENCHES.index):
+    for bench in sorted(units, key=SUPPORTED_BENCHES.index):
         cells = units[bench]
         _clustered(bench, cells)
         items = _items(cells, "F", "P_F")
@@ -533,7 +535,7 @@ def stage_table(units, rows):
     Description only: no test, no correction, no decision."""
     require(isinstance(rows, list) and rows and rows[0] == "C", "The stage table's rows start with the card arm")
     out = {}
-    for bench in sorted(units, key=BENCHES.index):
+    for bench in sorted(units, key=SUPPORTED_BENCHES.index):
         cells = units[bench]
         _clustered(bench, cells)
         items = _items(cells, *sorted(set(rows)))
@@ -556,16 +558,17 @@ def readout(units, *, learned, procedures, label, evidence, stages=None):
     unseal's read label (Codex F17); ``stages``: a stage read's rows (``stage_table``; F's readings are left out,
     None, only where F learned nothing and the stage arms carry the read)."""
     return record("readout", evidence, {
-        "evidence_kind": EVIDENCE_KIND, "read_label": label, "learned": list(learned),
+        "evidence_kind": "pipeline_control" if set(units) == {ZEBRA} else EVIDENCE_KIND,
+        "read_label": label, "learned": list(learned),
         "similar": similar(learned), "dissimilar": dissimilar(learned),
-        "shared_unanswered": {b: len(unanswered(units[b])) for b in sorted(units, key=BENCHES.index)},
+        "shared_unanswered": {b: len(unanswered(units[b])) for b in sorted(units, key=SUPPORTED_BENCHES.index)},
         "q1_home": q1_home(units, learned) if learned or not stages else None,
         "q2_similar": q2_similar(units, learned, procedures),
         "q3_noninferiority": q3_noninferiority(units, learned) if [b for b in dissimilar(learned) if b in units]
         else None,
         "code_vs_text": code_vs_text(units, learned), "placebo": placebo_contrast(units),
         "labels": labels(units, procedures), "format_withholding": format_withholding(units, procedures),
-        "arms": {b: arm_table(units[b]) for b in sorted(units, key=BENCHES.index)},
+        "arms": {b: arm_table(units[b]) for b in sorted(units, key=SUPPORTED_BENCHES.index)},
         **({"stages": stage_table(units, stages)} if stages else {})})
 
 
@@ -579,7 +582,9 @@ def report(manifest, *, out):
     require(not out.exists(), "The readout goes to a new directory")
     root, run, evidence = safe_path(manifest["root"]), manifest[RECORD_HASH], manifest["evidence"]
     found, written = {}, {}
-    for chain in sorted(CHAINS):
+    chains = (manifest["data"].get("launchable_chains", CHAINS)
+              if manifest["configuration"] == ZEBRA_PC_V1 else CHAINS)
+    for chain in sorted(chains):
         chain_root = root / chain
         if not (chain_root / "test-read.json").exists():  # terminated before its read
             require((chain_root / "chain-terminated.json").exists(), "Chain %s has neither read nor ended" % chain)
@@ -593,9 +598,12 @@ def report(manifest, *, out):
         final = start if read["package_sha256"] == start.sha256 else load(
             chain_root / "packages" / (read["package_sha256"] + ".json"))
         procedures = {p.id: p.origin for p in final.procedures}
-        learned = [b for b in BENCHES if b in procedures.values()]
-        units = [chain_root / "test" / b for b in BENCHES if (chain_root / "test" / b / "unit.json").exists()]
-        opened = evaluation.unseal(root, chain_root, chain, units, run=run, evidence=evidence)
+        roster = read_benches(manifest["configuration"])
+        learned = [b for b in roster if b in procedures.values()]
+        units = [chain_root / "test" / b for b in roster if (chain_root / "test" / b / "unit.json").exists()]
+        opened = evaluation.unseal(root, chain_root, chain, units, run=run, evidence=evidence,
+                                   **({"configuration": ZEBRA_PC_V1}
+                                      if manifest["configuration"] == ZEBRA_PC_V1 else {}))
         rows = {tuple(found) for found in (opened.get("stages") or {}).values()}
         require(len(rows) <= 1 and (not rows or set(opened["stages"]) == set(opened["units"])),
                 "Every read unit of a stage read names the same rows")

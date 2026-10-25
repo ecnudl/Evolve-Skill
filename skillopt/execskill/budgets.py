@@ -54,7 +54,7 @@ from skillopt.coevo5.calls import Endpoint
 from skillopt.continual_eval.core import require, safe_path
 
 from .errors import ConfigurationError
-from .protocol import (BENCHES, CHAINS, CONFIG_GLM_CAP, CONFIG_ROLE_CAPS, CONFIG_STEP_CAPS, FIRST_CALL_CAP, LEDGER,
+from .profiles import (SUPPORTED_BENCHES, BENCHES, CHAINS, CONFIG_GLM_CAP, CONFIG_ROLE_CAPS, CONFIG_STEP_CAPS, FIRST_CALL_CAP, LEDGER,
                        MAX_REDOS, PILOT, PILOTS, PROBE_CAP, ROLE_CAPS, SMOKE_CAPS, SMOKE_SX_CAPS)
 
 ROOT = OVERALL
@@ -90,7 +90,7 @@ def own_ledger(setting, chain):
 
 
 def _step(chain, bench, k):
-    require(chain in CHAINS and bench in BENCHES and type(k) is int and k >= 1, "Unknown chain, bench or step")
+    require(chain in CHAINS and bench in SUPPORTED_BENCHES and type(k) is int and k >= 1, "Unknown chain, bench or step")
     return "%s:xs:%s:%d" % (chain, bench, k)
 
 

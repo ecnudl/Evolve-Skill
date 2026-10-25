@@ -52,7 +52,7 @@ from skillopt.coevo5.stats import OUTCOMES
 from skillopt.continual_eval.core import require
 
 from .errors import STOP_KINDS
-from .protocol import BENCHES
+from .profiles import SUPPORTED_BENCHES as BENCHES
 
 FAULT = "fault"  # P3's kind
 UNKNOWN_FAULT = "unknown_fault"  # P3's token

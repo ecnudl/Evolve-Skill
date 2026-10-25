@@ -103,8 +103,10 @@ from skillopt.continual_eval import backends
 from skillopt.continual_eval.core import read_json, require, safe_path, write_json
 from skillopt.validator_pilot.api import digest
 
-from . import (acceptance, budgets, client, engineer, fixtures, manifest, precheck, prelaunch, protocol, rounds, router,
+from . import (acceptance, budgets, client, engineer, fixtures, manifest, precheck, prelaunch, rounds, router,
                slots, solver, step, trajectories, units)
+from . import profiles as protocol
+from . import protocol as historical_protocol
 from . import placebo as placebos
 from .cells import Arm, Pause, cell_id
 from .chain import FIRST_CALL_ECHO
@@ -193,7 +195,7 @@ def make(root, *, items, selftest, control_cells=(), noise_anchor=None, stages=N
     ``TRIMMED``); ``stages``: the stages ``summary`` passes on, recorded in the spec (default ``SMOKE_STAGES``, plus
     S-N1 and/or S4 if listed; v2: SX, the example of the train-then-accept step, whose smoke ledger then has the
     example caps ``budgets.smoke_caps(example=True)``); ``write`` False: a dry run that writes nothing; ``probe_root``: the S1 probe's own
-    ledger root, apart from the smoke root (default ``protocol.PROBE_ROOT``; a rehearsal names its own, registrar
+    ledger root, apart from the smoke root (default ``historical_protocol.PROBE_ROOT``; a rehearsal names its own, registrar
     addendum 15:0x), where ``run_probe`` writes and S2 reads the probe's receipts; ``solver_chain`` (registrar addendum
     2026-10-23 02:3x, ``protocol.SMOKE_SOLVER_CHAINS``): "D", the registered default, whose specification is
     unchanged, or "G" -- GLM-5.3 through its frozen client with chain G's registered settings (M = B = 65,536 on every
@@ -205,7 +207,7 @@ def make(root, *, items, selftest, control_cells=(), noise_anchor=None, stages=N
             "2026-10-23 02:3x)")
     chain_g = solver_chain == "G"
     root = safe_path(root)
-    probe = None if chain_g else safe_path(protocol.PROBE_ROOT if probe_root is None else probe_root)
+    probe = None if chain_g else safe_path(historical_protocol.PROBE_ROOT if probe_root is None else probe_root)
     require(not (root / SPEC).exists(), "A smoke runs in a new directory")
     if chain_g:
         require(probe_root is None, "A chain-G smoke names no probe root: " + NO_S1)
@@ -316,8 +318,8 @@ def _evidence_of(spec, stages):
 def rehearsal_roots(spec, *, probe=False):
     """A zero-call rehearsal never writes the registered smoke root (nor, ``probe``, the registered probe root), so its
     records can never stand in for the smoke's (registrar addendum 2026-10-22 15:0x)."""
-    require(safe_path(spec["root"]) != safe_path(protocol.SMOKE_ROOT)
-            and not (probe and safe_path(spec["probe_root"]) == safe_path(protocol.PROBE_ROOT)),
+    require(safe_path(spec["root"]) != safe_path(historical_protocol.SMOKE_ROOT)
+            and not (probe and safe_path(spec["probe_root"]) == safe_path(historical_protocol.PROBE_ROOT)),
             "A rehearsal never runs on the registered smoke or probe root (registrar addendum 15:0x)")
 
 
@@ -885,6 +887,7 @@ def _slice(stage, name, items):
     """The stage's items of one set (§10): SearchQA's and ALFWorld's smoke items are cut in stage order S2, S-N1, S4
     (``protocol.SMOKE_REAL_ITEMS``: 20 / 200 / 60 and 6 / 6, disjoint); the 20 fixtures of each other set are S2's."""
     sizes = protocol.SMOKE_REAL_ITEMS.get(name)
+    require(name != "zebralogic", "Use the profile-specific zebra smoke recipe")
     if sizes is None:
         require(stage == "S2" and len(items) == protocol.SMOKE_FIXTURES, "S2 runs the 20 fixtures of %s" % name)
         return list(items)
@@ -1228,6 +1231,7 @@ def run_stage(spec, manifest_path, stage, *, fake=False, env_path=None, roles_re
     require(stage in BUILT_STAGES, "Smoke stage %s is not run by run_stage (built: %s)" % (stage, BUILT_STAGES))
     require(not (safe_path(spec["root"]) / STAGES_DIR / (stage + ".json")).exists(), "Stage %s is recorded" % stage)
     m = manifest.load(manifest_path, verify=False)
+    require(m["configuration"] != protocol.ZEBRA_PC_V1, "Use zpc-smoke for the ZebraLogic profile")
     require(m["evidence"] == manifest.SMOKE_EVIDENCE and m["root"] == spec["root"], "The smoke manifest of this spec")
     if fake:
         rehearsal_roots(spec)  # registrar addendum 15:0x: a rehearsal never records into the registered smoke root
@@ -1323,7 +1327,10 @@ def max_role_calls(configuration=protocol.PILOT):
 def engineer_request_floor(configuration=protocol.PILOT):
     """``ENGINEER_REQUEST_FLOOR`` with the configuration's engineer prompt (v2: the longer of ``ENGINEER_SYSTEM_V2``
     and the analysts' ``ANALYST_SYSTEM``, both engineer-role calls). v2.3 also pins its single-mode smoke prompt."""
-    if configuration == protocol.MAIN_V2_3:
+    if configuration == protocol.ZEBRA_PC_V1:
+        return protocol.ROLE_INPUT_BYTES + max(len(prompt.encode()) for prompt in (
+            engineer.ENGINEER_SYSTEM_ZPC, engineer.ENGINEER_SYSTEM_SINGLE_ZPC, engineer.ANALYST_SYSTEM))
+    if protocol.is_v23(configuration):
         return protocol.ROLE_INPUT_BYTES + max(len(prompt.encode()) for prompt in (
             engineer.ENGINEER_SYSTEM_V23, engineer.ENGINEER_SYSTEM_SINGLE_V23, engineer.ANALYST_SYSTEM))
     if protocol.LEARNING[configuration] != "train":
@@ -1894,3 +1901,9 @@ def recovery_cli(args):
     value = write_recovery(load(args.spec), args.attempt, decision=args.decision)
     print(json.dumps({"recovery": str(safe_path(args.attempt) / "recovery.json"), **value}, sort_keys=True))
     return 0
+
+
+def zebra_stage(manifest_path, chain, stage, **options):
+    """The isolated zebra-pc-v1 lean smoke; no historical smoke stages or panels are implied."""
+    from .zebra_smoke import run_stage
+    return run_stage(manifest_path, chain, stage, **options)

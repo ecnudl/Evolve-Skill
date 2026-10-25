@@ -209,6 +209,8 @@ def build_i(placebo_y, procedures, *, bench, unit):
     """The sealed P_i content {item: {"procedures": {id: {hook: fields}}}} (§6.1): every shammed note of P_y replaced
     by ``facts`` of the item's irrelevant text with the same rendered length (within 20 %); ALFWorld steps and benches
     outside ``PI_BENCHES`` have none (None). ``procedures``: {id: Procedure} of the shammed procedures."""
+    if bench == "zebralogic":  # zebra-pc-v1: explicitly no irrelevant-text arm
+        return None
     if bench not in PI_BENCHES:
         return None
     out = {}

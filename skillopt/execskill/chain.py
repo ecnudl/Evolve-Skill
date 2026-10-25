@@ -70,7 +70,7 @@ from .cells import Pause
 from .client import ELUCID_RESPONSE_MODEL_IDS, ROUTE_A, ROUTES
 from .errors import AssumptionBroken, BudgetStop, ConfigurationError, LedgerFailure
 from .package import empty
-from .protocol import (BENCHES, CHAINS, CONFIGURATIONS, COST_CHECK_PAUSES, FIRST_CALL_SYSTEM, FIRST_CALL_USER, PILOT,
+from .profiles import (BENCHES, SUPPORTED_BENCHES, read_benches, CHAINS, CONFIGURATIONS, COST_CHECK_PAUSES, FIRST_CALL_SYSTEM, FIRST_CALL_USER, PILOT,
                        PROCEDURE_ARM_FACTOR, RECORD_HASH, SLOT_ROOT, STAGE_READ, TEST_READ_CELLS, TEST_START_FACTOR,
                        configuration_of, estimate_arms, estimate_test_read, fired_share, first_call_bench,
                        ledger_bound, order_of, read_estimate_terms, record, verified)
@@ -108,7 +108,7 @@ def chain_root(setting, chain):
 
 def unit_root(setting, chain, bench):
     """A test-read unit: ``<chain root>/test/<bench>``."""
-    require(bench in BENCHES, "Unknown bench")
+    require(bench in SUPPORTED_BENCHES, "Unknown bench")
     return chain_root(setting, chain) / "test" / bench
 
 
@@ -117,7 +117,7 @@ def heavy_mode(benches):
     any is SpreadsheetBench, shared when any is ALFWorld, else none -- a mixed unit (a self-test running an earlier
     SpreadsheetBench set at a later step, §5.5) takes the spreadsheet lock like a SpreadsheetBench unit."""
     benches = tuple(benches)
-    require(benches and all(bench in BENCHES for bench in benches), "The benches a unit runs")
+    require(benches and all(bench in SUPPORTED_BENCHES for bench in benches), "The benches a unit runs")
     modes = {HEAVY[bench] for bench in benches if bench in HEAVY}
     return fcntl.LOCK_EX if fcntl.LOCK_EX in modes else fcntl.LOCK_SH if modes else None
 
@@ -361,10 +361,11 @@ def read_estimate_record(smoke_root, configuration=None):
     require(stage["stage"] == "SE6" and stage["spec"] == spec[RECORD_HASH] and stage["result"].get("passed") is True,
             "S-E6's passed stage record of this smoke")
     se6 = stage["result"]
-    require(isinstance(se6.get("per_cell"), dict) and set(se6["per_cell"]) == set(BENCHES),
+    roster = read_benches(se6.get("configuration", PILOT))
+    require(isinstance(se6.get("per_cell"), dict) and set(se6["per_cell"]) == set(roster),
             "S-E6's per-cell tokens of every bench")
     per_cell = {bench: {key: se6["per_cell"][bench].get(key) for key in ("card", "procedure", "procedure_assumed")}
-                for bench in BENCHES}
+                for bench in roster}
     projected = se6.get("configuration", PILOT)
     require(projected in CONFIGURATIONS and configuration in (None, projected), "S-E6 projected the run configuration "
             "%r, not %r (registrar 17:0x)" % (projected, configuration))
@@ -378,8 +379,8 @@ def read_estimate_record(smoke_root, configuration=None):
         "pilot": projected, "formula": "ceil(ratio x sum_b n_b x (card_b + %d x f_b x proc_b)); registrar addendum "
                                         "2026-10-22 14:10, row 8" % estimate_arms(projected),
         "inputs": {"ratio": se6["ratio"], "per_cell": per_cell,
-                   "n": {bench: TEST_READ_CELLS[projected][bench][0] for bench in BENCHES},
-                   "fired": {bench: str(fired_share(bench, projected)) for bench in BENCHES},
+                   "n": {bench: TEST_READ_CELLS[projected][bench][0] for bench in roster},
+                   "fired": {bench: str(fired_share(bench, projected)) for bench in roster},
                    "arms": estimate_arms(projected),  # 4; with main-v2's stage arms 8
                    "procedure_factor": str(PROCEDURE_ARM_FACTOR[1])},
         "value": value, "test_read_estimate": {chain: value for chain in sorted(CHAINS)},
@@ -422,11 +423,12 @@ def read_budget(setting, chain):
     "cap_check", "used", "need"}; ``test-read.json`` records the gate of the launch that completed the read."""
     estimate = setting.extra["test_read_estimate"][chain]
     require(type(estimate) is int and estimate > 0, "The S-E6-corrected test-read estimate, in tokens")
-    units = [bench for bench in BENCHES if not (unit_root(setting, chain, bench) / "unit.json").exists()]
+    roster = read_benches(configuration_of(setting))
+    units = [bench for bench in roster if not (unit_root(setting, chain, bench) / "unit.json").exists()]
     part = estimate
-    if len(units) < len(BENCHES):  # ticket P2C-2: a relaunch prices only the read units still to run
+    if len(units) < len(roster):  # ticket P2C-2: a relaunch prices only the read units still to run
         terms = (setting.extra.get("test_read_terms") or {}).get(chain)
-        require(isinstance(terms, dict) and set(terms) == set(BENCHES), "The per-bench terms of the test-read "
+        require(isinstance(terms, dict) and set(terms) == set(roster), "The per-bench terms of the test-read "
                 "estimate (data.test_read_terms; registrar addendum 15:3x, ticket P2C-2)")
         part = math.ceil(sum((Fraction(terms[bench]) for bench in units), Fraction(0)))
     factor, check, used = None, None, part
@@ -458,7 +460,7 @@ def read_consent(setting, chain):
     try:
         evaluation.consent(setting.shared, configuration_of(setting))  # a stage read's consent names its stage arms
     except ValueError:
-        roots = [unit_root(setting, chain, bench) for bench in BENCHES]
+        roots = [unit_root(setting, chain, bench) for bench in read_benches(configuration_of(setting))]
         write_json(chain_root(setting, chain) / READ_WAITING, record("read-waiting", setting.evidence, {
             "identity": {"run": setting.run, "chain": chain}, "kind": "consent_missing", "read_units": len(roots),
             "read_attempts": sum(len(attempts(path)) for path in roots),
@@ -470,7 +472,8 @@ def read_consent(setting, chain):
 def evaluate(setting, chain, package, *, launch=launch_child):
     """The chain's one test read (§8.1): five units side by side, each a child under the memory lock. Returns {bench:
     unit root}; raises the first ``Pause`` once every child has ended."""
-    roots = {b: unit_root(setting, chain, b) for b in BENCHES}
+    roster = read_benches(configuration_of(setting))
+    roots = {b: unit_root(setting, chain, b) for b in roster}
 
     def one(bench):
         root = roots[bench]
@@ -489,8 +492,8 @@ def evaluate(setting, chain, package, *, launch=launch_child):
                 "A read unit of another run, chain or package")
         return None
 
-    with ThreadPoolExecutor(max_workers=len(BENCHES)) as pool:
-        results = list(pool.map(one, BENCHES))
+    with ThreadPoolExecutor(max_workers=len(roster)) as pool:
+        results = list(pool.map(one, roster))
     for pause in results:
         if pause is not None:
             raise pause
@@ -618,6 +621,7 @@ def run_manifest(manifest, *, chain, path, docker=None, transport=None):
     require(chain in CHAINS, "Chain G or D")
     from . import manifest as manifests, step  # imported here: step imports this module
 
+    require(manifest["evidence"] != "smoke", "A smoke manifest runs through its registered smoke command")
     setting = manifests.setting_of(manifest, chain, path=path, docker=docker, transport=transport)
     services = manifests.services_of(manifest, chain, setting=setting, transport=transport)
     return run(setting, chain, learn=functools.partial(step.learn, services=services))

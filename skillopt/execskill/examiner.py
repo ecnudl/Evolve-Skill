@@ -68,7 +68,7 @@ from . import detectors, generators, validity
 from .generators import alfworld_select, livemath, officeqa, sheet
 from .generators.families import Drop
 from .package import FIXTURE
-from .protocol import (BAND, BAND_PROBE_ITEMS, BAND_ROUNDS, BENCHES, DETECTOR_CALLS, DETECTORS_PER_STEP,
+from .profiles import (SUPPORTED_BENCHES, BAND, BAND_PROBE_ITEMS, BAND_ROUNDS, BENCHES, DETECTOR_CALLS, DETECTORS_PER_STEP,
                        EXAMINER_PROBE_TAG as PROBE_TAG, G_ACC, GENERATOR_CALLS, KEY_SHARE, KEY_TOLERANCE,
                        MAX_CONCEPT_CHARS, MAX_ITEMS_PER_FINDING, MAX_QUESTION_CHARS, MAX_RATIONALE,
                        MAX_RESEARCH_REQUESTS, MAX_SPECS, POLICY_CALLS, ROLE_INPUT_BYTES, SEED, SHORTCUT_DROP_MAX,
@@ -213,6 +213,7 @@ def _aggregate(value):
 
 
 def _generating(bench):
+    require(bench != "zebralogic", "ZebraLogic neither generates nor researches for generation")
     require(bench in BENCHES and bench != "searchqa", "SearchQA neither generates nor researches for generation (§7.2)")
 
 
@@ -292,7 +293,7 @@ def detector_write(roles, payload, *, k, label, evidence):
     """``(candidates, the sealed fivebench-execskill-v1-examiner-detectors record)``: the examiner's detector call(s)
     on ``payload`` (``detector_payload``) and the parsed candidates (module docstring 1). ``k``: the step number in
     detector ids; ``label``: the unit's label. An unparseable reply gets one more call; two give no candidate."""
-    require(isinstance(payload, dict) and payload.get("request") == "detectors" and payload.get("bench") in BENCHES,
+    require(isinstance(payload, dict) and payload.get("request") == "detectors" and payload.get("bench") in SUPPORTED_BENCHES,
             "A detector payload")
     require(type(k) is int and 0 <= k <= 999, "A step number of at most three digits")
     _refuse_forbidden(payload)

@@ -123,7 +123,7 @@ from .chain import EXIT_AWAITING, EXIT_COMPLETE, EXIT_PAUSED, unit_root as read_
 from .errors import CleanupUnconfirmed, stop_kind
 from .manifest import setting_of
 from .package import Package, empty, load
-from .protocol import (BENCHES, CANARIES, CHAINS, CONFIGURATIONS, CONSENT_FIELDS, FORMAL_ADDENDUM,
+from .profiles import (BENCHES, SUPPORTED_BENCHES, ZEBRA_PC_V1, read_benches, CANARIES, CHAINS, CONFIGURATIONS, CONSENT_FIELDS, FORMAL_ADDENDUM,
                        FORMAL_ADDENDUM_DOCUMENT, INFRA_UNKNOWN_MAX, OFFICEQA_TEST_BLOCKS, ORDER, OWNER_CONTINUATION,
                        RECORD_HASH, STAGE_ARM, STAGE_READ, TEST_RUNS, configuration_of, discourage_tag, ledger_bound,
                        order_of, read_arms_of, record, round_tag, verified)
@@ -331,6 +331,8 @@ def test_tasks(shared, pinned, bench, unit, *, run, runtime, native, workers, ev
     """The tasks a bench is read on (the evaluation unit only; evaluation.py:227-247). ``panel``: the frozen
     ``data.test_panel`` (a unit test passes a synthetic one)."""
     allowed = consent(shared)
+    if bench == "zebralogic" and panel is data.test_panel:
+        from .zebralogic import test_panel as panel
     tasks, report = panel(pinned, bench, access=data.TestAccess(unit))
     entry = {"run": run, "benchmark": bench, "panel_hash": report["panel_hash"],
              "tasks": sorted(t["task_id"] for t in tasks), "excluded_without_pages": report["excluded_without_pages"],
@@ -386,7 +388,7 @@ def _with_views(tasks, bench, reset):
 def twin_unit(bench):
     """The seed unit of the test read's withholding twins: ``"test/<bench>"``, the chain dropped (registrar decision
     2026-10-22), so chains G and D withhold the same seeded halves on the same items."""
-    require(bench in BENCHES, "Unknown bench")
+    require(bench in SUPPORTED_BENCHES, "Unknown bench")
     return "test/%s" % bench
 
 
@@ -439,7 +441,7 @@ def test_plan(tasks, final, *, bench, unit, runtime, workers, reset=None):
     sandbox worker holding ``package`` for ``item`` (router.plan's convention); on SpreadsheetBench it is called as
     ``workers(package, item, inputs_dir=)`` with the item's public workbook mounted (``mounting``, Codex finding #1).
     ``unit``: the chain's read unit ``<chain>/test/<bench>``; its twins are drawn under ``twin_unit(bench)``."""
-    require(isinstance(final, Package) and bench in BENCHES, "Plan the read of a package on a known bench")
+    require(isinstance(final, Package) and bench in SUPPORTED_BENCHES, "Plan the read of a package on a known bench")
     require(isinstance(unit, str) and unit.partition("/")[0] in CHAINS and unit.partition("/")[2] == twin_unit(bench),
             "A chain's read unit <chain>/test/<bench>")
     tasks = _with_views(tasks, bench, reset)
@@ -738,25 +740,33 @@ def _training_side(pools, order=ORDER):
     return texts, pins
 
 
-def _checked(value):
+def _checked(value, *, configuration=None):
     """A sealed canary record: its canaries are lengths with sha256 prefixes, as many as its per-bench counts."""
     found, counts = value["canaries"], value["counts"]
     require(isinstance(found, list) and found and all(
         isinstance(c, dict) and set(c) == {"chars", "sha256_16"} and type(c["chars"]) is int
         and c["chars"] >= MIN_CANARY_CHARS and re.fullmatch(r"[0-9a-f]{%d}" % CANARY_HEX, str(c["sha256_16"]))
         for c in found), "Registered canaries are lengths with sha256 prefixes")
-    require(isinstance(counts, dict) and counts and set(counts) <= set(BENCHES) and all(
+    benches = ("zebralogic",) if configuration == ZEBRA_PC_V1 else BENCHES
+    require(isinstance(counts, dict) and counts and set(counts) <= set(benches) and all(
         type(n) is int and n > 0 for n in counts.values()) and sum(counts.values()) == len(found),
         "Registered canaries are counted per bench")
     return value
 
 
-def _canary_records(root, *, read):
+def _canary_records(root, *, read, configuration=None):
     """The run root's sealed canary records: the S0 exclusion unit's (``CANARIES``) and the test read's
     (``READ_CANARIES``), which must extend it with the three other benches and name, per bench, the training pool its
     selection checked and the number of test texts it skipped (registrar decision PR-C31-3 (1a)); the second is None
-    before it is made (refused when ``read``)."""
+    before it is made (refused when ``read``). ``configuration`` comes from the verified run manifest or Setting;
+    without one the historical two-record validation applies, never a branch selected by record content."""
     root = safe_path(root)
+    if configuration == ZEBRA_PC_V1:
+        require((root / READ_CANARIES).is_file(), "The isolated test read's canaries are not made yet")
+        isolated = verified(read_json(root / READ_CANARIES), "test-read-canaries")
+        require(isolated.get("configuration") == configuration and set(isolated["counts"]) == {"zebralogic"}
+                and isolated.get("extends") is None, "The trusted ZebraLogic run needs isolated ZebraLogic canaries")
+        return _checked(isolated, configuration=configuration), None
     require((root / CANARIES).is_file(), "No registered test canaries in the run root")
     first = _checked(verified(read_json(root / CANARIES), "test-canaries"))
     second = None
@@ -775,12 +785,12 @@ def _canary_records(root, *, read):
     return first, second
 
 
-def load_canaries(root, *, read=False):
+def load_canaries(root, *, read=False, configuration=None):
     """The run root's registered canaries, merged (§8.1, Codex F16; registrar decision C3-1 (b)): the S0 exclusion
     unit's sealed ``test-canaries`` record (``shared/test-canaries.json``), followed by the test read's sealed
     ``test-read-canaries`` record (``shared/test-read-canaries.json``) once it is made. ``read``: the second record is
     required (a read unit; the run-root scan before an unseal)."""
-    first, second = _canary_records(root, read=read)
+    first, second = _canary_records(root, read=read, configuration=configuration)
     return first["canaries"] + (second["canaries"] if second is not None else [])
 
 
@@ -790,7 +800,7 @@ def _benches(first, second):
             for bench in sorted(value["counts"]) for _ in range(value["counts"][bench])]
 
 
-def make_read_canaries(root, pinned, *, pools, run, evidence, panel=data.test_panel, order=ORDER):
+def make_read_canaries(root, pinned, *, pools, run, evidence, panel=data.test_panel, order=ORDER, configuration=None):
     """Registrar decision C3-1 (b): the test read's second sealed canary record ``shared/test-read-canaries.json``
     (``test-read-canaries``), made once per run root at the start of the pilot's test read -- under the owner's
     test-read consent only (``consent``, checked first: never before it) and before the first read unit's attempt
@@ -805,8 +815,11 @@ def make_read_canaries(root, pinned, *, pools, run, evidence, panel=data.test_pa
     record (``extends``: its record hash) and names the run, the consent's hash and each panel's hash. Prints nothing;
     returns the record. ``panel``: the frozen ``data.test_panel`` (a unit test passes a synthetic one)."""
     root = safe_path(root)
+    if configuration == ZEBRA_PC_V1:
+        require(tuple(order) == ("zebralogic",), "The trusted ZebraLogic run has one benchmark")
+        return _make_zebra_canaries(root, pinned, pools=pools, run=run, evidence=evidence, panel=panel)
     allowed = consent(root / "shared")
-    first, _ = _canary_records(root, read=False)
+    first, _ = _canary_records(root, read=False, configuration=configuration)
     path = root / READ_CANARIES
     with exclusive(root / "shared" / "test-read-canaries.lock", wait=True):
         if not path.exists():
@@ -823,7 +836,7 @@ def make_read_canaries(root, pinned, *, pools, run, evidence, panel=data.test_pa
                 "skipped": {bench: len(skip[bench]) for bench in counts}, "training_pools": pins,
                 "unit": READ_CANARY_UNIT, "run": run, "panels": panels, "consent_sha256": digest(allowed),
                 "extends": first[RECORD_HASH]}))
-        _, value = _canary_records(root, read=True)
+        _, value = _canary_records(root, read=True, configuration=configuration)
     require(value.get("run") == run and value.get("consent_sha256") == digest(allowed),
             "The test read's canaries belong to another run or consent")
     return value
@@ -1450,9 +1463,12 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
     require(isinstance(found, dict) and set(found) == SPEC_FIELDS, "An evaluate-unit spec names chain, bench, "
             "package_sha256 and unit_root")
     chain, bench = found["chain"], found["bench"]
-    require(chain in CHAINS and bench in BENCHES, "A read unit of a chain and a bench")
+    require(chain in CHAINS and bench in SUPPORTED_BENCHES, "A read unit of a chain and a bench")
     setting = setting_of(manifest, chain, docker=docker, transport=transport)
     configuration = configuration_of(setting)
+    require(bench in read_benches(configuration), "A read unit belongs to its configuration read roster")
+    if bench == "zebralogic" and panel is data.test_panel:
+        from .zebralogic import test_panel as panel
     consent(setting.shared, configuration)  # a stage read's consent names its stage arms
     unit_root = read_root(setting, chain, bench)
     require(safe_path(found["unit_root"]) == unit_root, "The read unit's registered directory")
@@ -1483,11 +1499,11 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
             "T_F": Arm("text", final, text=frozen_texts(chain_root, final))}
     pinned = manifest["data"].get("pinned")
     make_read_canaries(setting.root, pinned, pools=manifest["data"].get("pools"), run=setting.run,
-                       evidence=setting.evidence, panel=panel, order=order_of(setting))
+                       evidence=setting.evidence, panel=panel, order=order_of(setting), configuration=configuration)
     try:
         evaluate(unit_root, run=setting.run, shared=setting.shared, pinned=pinned, chain=chain, bench=bench, arms=arms,
                  context=units.cell_context(own, attempt, endpoint), workers=own.workers, route_workers=route_workers,
-                 canaries=load_canaries(setting.root, read=True), panel=panel, reset=reset,
+                 canaries=load_canaries(setting.root, read=True, configuration=configuration), panel=panel, reset=reset,
                  drain=units.drainer(setting, chain, unit), stages=stages, run_configuration=configuration)
     except Pause as pause:
         return EXIT_AWAITING if pause.kind == "awaiting_owner_decision" else EXIT_PAUSED
@@ -1682,7 +1698,7 @@ def _same_hits(scan, released):
     return released is not None and all(scan[key] == released.get(key) for key in keys)
 
 
-def _root_scanned(root, chain_root, chain, *, evidence):
+def _root_scanned(root, chain_root, chain, *, evidence, configuration=None):
     """Registrar decision C3-1 (b): before the chain's first unseal (every chain of the root has ended), the whole run
     root is searched for every registered canary (``load_canaries(read=True)``, ``root_scan`` with ``scan_workers``
     processes) in a new attempt ``<chain root>/root-scan/attempt-N``, whose ``scan.json`` (``root-canary-scan``) is
@@ -1712,8 +1728,9 @@ def _root_scanned(root, chain_root, chain, *, evidence):
             raise Pause("awaiting_owner_decision", attempts(base)[-1].name, unit)
         release, released = _release(base, attempt)
         attempt.mkdir()
-        first, second = _canary_records(root, read=True)
-        canaries, benches = first["canaries"] + second["canaries"], _benches(first, second)
+        first, second = _canary_records(root, read=True, configuration=configuration)
+        canaries = first["canaries"] + (second["canaries"] if second is not None else [])
+        benches = _benches(first, second)
         files, hits = root_scan(root, canaries, workers=scan_workers())
         value = record("root-canary-scan", evidence, {
             "chain": chain, "files_scanned": files, "hits": len(hits), "files_hit": len({h["path"] for h in hits}),
@@ -1730,7 +1747,7 @@ def _root_scanned(root, chain_root, chain, *, evidence):
     return {"attempt": attempt.name, "record_sha256": value[RECORD_HASH], "release": release if hits else None}
 
 
-def unseal(root, chain_root, chain, unit_roots, *, run, evidence, clock=_now):
+def unseal(root, chain_root, chain, unit_roots, *, run, evidence, clock=_now, configuration=None):
     """{"label", "later_reads", "units": {bench: {(arm, task_id, run): {"token", "v2", "official", "final",
     "lenient", "kind", "shared_with", "shared_arm", "answered", "enabled", "block", "room", "format", "flags",
     "carrier", "fault_kinds", "worst_delivery", "dispatch_ts", "finish_ts", "completion_tokens", "solver_route"}}}} --
@@ -1745,7 +1762,7 @@ def unseal(root, chain_root, chain, unit_roots, *, run, evidence, clock=_now):
     require(all(_ended(safe_path(root) / name) for name in CHAINS if (safe_path(root) / name).exists()),
             "Test scores stay sealed until every chain of the run root is complete or terminated")
     continuation(root)
-    scan = _root_scanned(safe_path(root), chain_root, chain, evidence=evidence)
+    scan = _root_scanned(safe_path(root), chain_root, chain, evidence=evidence, configuration=configuration)
     units, stages = {}, {}
     for unit_root in unit_roots:
         unit_root = safe_path(unit_root)
@@ -1777,3 +1794,33 @@ def unseal(root, chain_root, chain, unit_roots, *, run, evidence, clock=_now):
     marker = _marker(root, chain_root, evidence=evidence, clock=clock, scan=scan)
     return {"label": marker["label"], "later_reads": marker["later_reads"], "units": units,
             **({"stages": stages} if stages else {})}
+
+
+def _make_zebra_canaries(root, pinned, *, pools, run, evidence, panel):
+    """The single-panel canary record is created only under end-of-chain read consent."""
+    from . import zebralogic
+    allowed = consent(root / "shared", ZEBRA_PC_V1)
+    require(set(pools or {}) == {"zebralogic"}, "Only the ZebraLogic training pool is visible")
+    if panel is data.test_panel:
+        panel = zebralogic.test_panel
+    path = root / READ_CANARIES
+    with exclusive(root / "shared" / "test-read-canaries.lock", wait=True):
+        if not path.exists():
+            entry = pools["zebralogic"]
+            training = zebralogic.load_pool(entry["path"], expected_sha256=entry["sha256"])
+            tasks, report = panel(pinned, "zebralogic", access=data.TestAccess(READ_CANARY_UNIT))
+            texts = {"zebralogic": [t["public"]["question"] for t in tasks]}
+            skip = training_duplicates(texts, {"zebralogic": [t["public"]["question"] for t in training]})
+            found, counts = select_canaries(texts, skip=skip)
+            write_json(path, record("test-read-canaries", evidence, {
+                "configuration": ZEBRA_PC_V1, "canaries": found, "counts": counts,
+                "per_bench": CANARIES_PER_BENCH, "seed_tag": CANARY_TAG,
+                "sources": {"zebralogic": "the public question"},
+                "skipped": {"zebralogic": len(skip["zebralogic"])},
+                "training_pools": {"zebralogic": entry["sha256"]}, "unit": READ_CANARY_UNIT,
+                "run": run, "panels": {"zebralogic": report["panel_hash"]},
+                "consent_sha256": digest(allowed), "extends": None}))
+        value, second = _canary_records(root, read=True, configuration=ZEBRA_PC_V1)
+    require(second is None and value.get("run") == run and value.get("consent_sha256") == digest(allowed),
+            "The isolated read canaries belong to this run and consent")
+    return value

@@ -263,7 +263,8 @@ def _engineer(roles, setting, workers, unit, run, evidence):
     routing = {}
     if protocol.CHECK_NON_FIRING[protocol.configuration_of(setting)]:
         routing = {"routing_items": [(key, solver.routing_view(BENCH, by_key[key]["public"])) for key in keys],
-                   "routing_workers": lambda package, key: workers(package, kind="cell", inputs_dir=None)}
+                   "routing_workers": lambda package, key: workers(package, kind="cell", inputs_dir=None),
+                   "routing_shared_worker": True}
     ctx = engineer.Context(bench=BENCH, k=K, step=unit, evidence=evidence, parent=empty(step="smoke/s0",
                                                                                         evidence=evidence),
                            trajectories=run, corpora={BENCH: leakage.Corpus(BENCH, [by_key[k] for k in keys])},
@@ -502,3 +503,28 @@ def run(spec, m, manifest_path, *, fake=False, env_path=None, roles_repo=None, r
         return value
     return smoke.record(spec, STAGE, judged(value),  # a rehearsal's record is a fixture's (registrar addendum 15:0x)
                         evidence=smoke.REHEARSAL_EVIDENCE if fake else manifest.SMOKE_EVIDENCE)
+
+
+def zebra_training(setting, services, chain, items):
+    """One real engineer/train round on synthetic grids; no family or research role."""
+    from dataclasses import replace
+    from . import step
+    from .registry import Registry
+    from .package import empty
+    root = safe_path(setting.root) / chain / "role-smoke"
+    services = replace(services, registry=Registry(root / "fixture-history", evidence=setting.evidence))
+    setting = replace(setting, pools={"zebralogic": list(items)})
+    parent = empty(step="%s/s0" % chain, evidence=setting.evidence)
+    st = step._Step(setting, services, chain, "zebralogic", 1, parent, root, None)
+    cut = {"run": list(items), "accept": []}
+    step._run(st, cut)
+    step._diagnose(st, cut)
+    generated = step._generate(st, cut)
+    engineered = step._engineer_train(st, cut, 1, parent, done=[], fed=None, history=[], training=None,
+                                      lint=[], reserved=frozenset(), analysed=frozenset(), disclosed=frozenset(),
+                                      generated=generated)
+    candidate = step._package(st, engineered["candidate_sha256"]) if engineered["candidate_sha256"] else None
+    evaluated = step._train_eval(st, cut, 1, parent, candidate, generated) if candidate is not None else None
+    return {"passed": candidate is not None and evaluated is not None and evaluated["cells"] > 0, "rounds": 1,
+            "engineer": engineered, "training": evaluated, "fixtures": len(items),
+            "generator": "selection", "research": "not_applicable"}

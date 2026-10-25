@@ -98,11 +98,11 @@ from skillopt.coevo5.roles import Invalid, fit, message_bytes, parse as parse_re
 from skillopt.continual_eval.core import require
 from skillopt.validator_pilot.api import digest
 
-from . import engineer_payload, policy, protocol, replay, router
+from . import engineer_payload, policy, profiles as protocol, replay, router
 from .donors import public_text
 from .errors import PackageInvalid
 from .package import EDIT_KINDS, FIXTURE, Package, Procedure, edits, validate, with_
-from .protocol import (ANALYST_TAG, BENCHES, ENGINEER_CALLS, ENGINEER_SHOWN, HOOKS, MAX_CHANGES, MAX_DESCRIPTION_CHARS,
+from .profiles import (ANALYST_TAG, BENCHES, ENGINEER_CALLS, ENGINEER_SHOWN, HOOKS, MAX_CHANGES, MAX_DESCRIPTION_CHARS,
                        MAX_TESTS,
                        MAX_HEADER_CHARS, MAX_PACKAGE_BYTES, MAX_PROCEDURE_BYTES, QA, ROLE_INPUT_BYTES, SEED, SHOWN_TAG,
                        TRAIN_ANALYST_BATCH, TRAIN_ANALYST_CALLS, TRAIN_ENGINEER_CALLS, TRAIN_FINDING_CHARS,
@@ -304,6 +304,18 @@ ENGINEER_SYSTEM_V23 = ENGINEER_SYSTEM_V2 + ENGINEER_FACTS_V23
 ENGINEER_PROMPT_V23_SHA256 = digest(ENGINEER_SYSTEM_V23)
 ENGINEER_SYSTEM_SINGLE_V23 = ENGINEER_SYSTEM + ENGINEER_FACTS_V23
 ENGINEER_PROMPT_SINGLE_V23_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_V23)
+ENGINEER_FACTS_ZPC = """\
+ZebraLogic grid-mode addition (zebra-pc-v1): applies(view) and before_call(view, state) both receive exactly
+{"question": the puzzle text, "columns": the registered column names}. Use applies and before_call; bindings and
+the calculator round trip do not apply. The solver must return the task card's JSON solution grid. A parser and
+exact solver may compute a table from the public clues and pass that table in before_call notes. Table cells
+quoted verbatim from the public puzzle retain the ordinary screening rule; there is no lexicon exemption.
+There is no generator, G_self, or research material on this benchmark. Training uses the run slice only.
+"""
+ENGINEER_SYSTEM_ZPC = ENGINEER_SYSTEM_V23 + ENGINEER_FACTS_ZPC
+ENGINEER_SYSTEM_SINGLE_ZPC = ENGINEER_SYSTEM_SINGLE_V23 + ENGINEER_FACTS_ZPC
+ENGINEER_PROMPT_ZPC_SHA256 = digest(ENGINEER_SYSTEM_ZPC)
+ENGINEER_PROMPT_SINGLE_ZPC_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_ZPC)
 # v2's analysts (owner suggestion 2026-10-23 15:1x; SkillOpt's minibatch reflection): engineer-role calls before each
 # round's proposal, on groups of the incumbent's failed run-slice items, whose findings the proposal call is shown
 ANALYST_SYSTEM = """\
@@ -362,7 +374,8 @@ class Context:
     What the engineer may be given is checked here (§4.2; isolation review 5): every trajectory is a sealed record of
     a run unit (``<chain>/s<k>-<bench>/run``) of this chain (the label's first part) at this step or before -- never an
     acceptance or test cell; references only on QA and table benches, only for this bench's run-slice failures, in a
-    frozen answer shape (text, list of texts, or answer positions to scalars) -- never an expert plan or a game path;
+    frozen answer shape (text, list of texts, answer positions to scalars, or ZebraLogic's house/column grid) -- never
+    an expert plan or a game path;
     detectors and previous as counts only.
 
     v2 (``mode`` "train", module docstring): ``round`` (1..``TRAIN_ROUNDS``); ``base``: the step's parent S, against
@@ -415,6 +428,9 @@ class Context:
     # v2.3 Amendment 2: exactly the train unit's (item key, routing view) pairs and per-item sandbox factory.
     routing_items: list = field(default_factory=list)
     routing_workers: object = None
+    # The ordinary non-workbook routing factory can hold one worker across pure predicates. Custom factories
+    # remain per item unless the caller explicitly declares this capability.
+    routing_shared_worker: bool = False
     # the payload's disclosed SpreadsheetBench values and the public workbooks read for their check (``disclosed``)
     sheet: dict = field(default_factory=dict, init=False, repr=False, compare=False)
 
@@ -424,7 +440,8 @@ class Context:
         return TRAIN_ENGINEER_CALLS if self.mode == TRAIN else ENGINEER_CALLS
 
     def __post_init__(self):
-        require(self.bench in BENCHES and type(self.k) is int and 0 <= self.k <= 999, "A known bench and step number")
+        require(self.bench in protocol.SUPPORTED_BENCHES and type(self.k) is int and 0 <= self.k <= 999,
+                "A known bench and step number")
         require(self.mode in ("single", TRAIN), "A known learning mode")
         require(self.configuration in protocol.CONFIGURATIONS, "A known engineer configuration")
         require(isinstance(self.routing_items, list) and all(
@@ -433,7 +450,13 @@ class Context:
             for entry in self.routing_items), "Training routing items hold public view mappings")
         require(len({entry[0] for entry in self.routing_items}) == len(self.routing_items),
                 "Training routing items are distinct")
+        if self.bench == "zebralogic":
+            from .zebralogic import public_view
+            require(all(set(view) == {"question", "columns"} and public_view(view) == view
+                        for _, view in self.routing_items), "Zebra routing items contain only the exact public view")
         require(not self.routing_items or callable(self.routing_workers), "Training routing items have sandbox workers")
+        require(type(self.routing_shared_worker) is bool and not (
+            self.bench == "spreadsheetbench" and self.routing_shared_worker), "Workbook routing workers stay per item")
         require(type(self.echo) is bool and type(self.counterfactual) is bool
                 and (self.mode == TRAIN or (self.echo and not self.counterfactual)),
                 "v2.1's fix-call and counterfactual rules belong to the train mode")
@@ -452,7 +475,8 @@ class Context:
                     and not self.history and self.training is None and not self.lint and not self.reserved
                     and not self.analysed and not self.disclosed, "Training inputs only in the train mode")
         require(self.bench != "alfworld" or not self.references, "No reference reaches the engineer on ALFWorld")
-        require(set(self.references) <= failures and all(_answer_shape(v) for v in self.references.values()),
+        require(set(self.references) <= failures and all(
+            _answer_shape(v, grid=self.bench == "zebralogic") for v in self.references.values()),
                 "References only for this bench's run-slice failures, in a frozen answer shape")
         require(_counts(self.detectors), "The engineer sees detector counts only")
         require(self.previous is None or (
@@ -583,13 +607,17 @@ def _example_ok(example, references, own, evaluated, bench):
                                                 and example["reference"] == references.get(example["task_id"]))))
 
 
-def _answer_shape(value):
+def _answer_shape(value, *, grid=False):
     """A frozen reference shape: a text, a list of texts (SearchQA's answers), or answer positions to scalars."""
     if type(value) is str:
         return bool(value.strip())
     if isinstance(value, list):
         return bool(value) and all(type(v) is str for v in value)
     if isinstance(value, dict):
+        if grid:
+            return bool(value) and all(type(k) is str and re.fullmatch(r"House [1-9][0-9]*", k)
+                and type(row) is dict and row and all(type(c) is str and c not in HIDDEN and type(v) is str
+                                                    for c, v in row.items()) for k, row in value.items())
         return bool(value) and all(type(k) is str and k not in HIDDEN and type(v) in (str, int, float)
                                    for k, v in value.items())
     return False
@@ -781,6 +809,8 @@ def _ask(ctx, user, purpose):
     modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
     if modern:
         system = ENGINEER_SYSTEM_V23 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_V23
+    if ctx.configuration == protocol.ZEBRA_PC_V1:
+        system = ENGINEER_SYSTEM_ZPC if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_ZPC
     options = ({"max_tokens": protocol.ENGINEER_MAX_TOKENS[ctx.configuration]}
                if modern and ctx.mode == TRAIN and purpose in ("propose", "repropose") else {})
     reply = ctx.roles.plain(ROLE, system, json.dumps(user, ensure_ascii=False, sort_keys=True),
@@ -839,7 +869,7 @@ def _keys(kind, train=False):
             {"kind", *PROCEDURE_KEYS, *revises})
 
 
-def _structure(change, parent, taken, *, train=False):
+def _structure(change, parent, taken, *, train=False, benches=BENCHES):
     """C1: None when the entry is well formed for its kind, else why not."""
     entry, kind = change.entry, change.kind
     if kind not in EDIT_KINDS:
@@ -851,14 +881,15 @@ def _structure(change, parent, taken, *, train=False):
         if not all(type(entry[k]) is t for k, t in PROCEDURE_KEYS.items() if k in entry):
             return "types"
         if not all(type(h) is str and h in HOOKS for h in entry["hooks"]) \
-                or not all(type(b) is str and b in BENCHES for b in entry.get("excluded_benches", [])):
+                or not all(type(b) is str and b in benches for b in entry.get("excluded_benches", [])):
             return "unknown_hook_or_bench"
-        if "bindings" in entry["hooks"] and not set(NO_CALC_BENCHES) <= set(entry.get("excluded_benches", [])):
-            return BINDINGS_SCOPE
+        no_calc = tuple(b for b in benches if b not in QA)
+        if "bindings" in entry["hooks"] and not set(no_calc) <= set(entry.get("excluded_benches", [])):
+            return "bindings_is_qa_only: list %s in excluded_benches" % " and ".join(no_calc)
     elif set(entry) != {"kind", "id", *(("benches",) if kind == "narrowing" else ())}:
         return "keys"
     if kind == "narrowing" and not (type(entry["benches"]) is list and entry["benches"]
-                                    and all(type(b) is str and b in BENCHES for b in entry["benches"])):
+                                    and all(type(b) is str and b in benches for b in entry["benches"])):
         return "benches"
     target = entry.get(TARGET_KEYS.get(kind))
     if kind != "new" and (type(target) is not str or target not in parent.order):
@@ -868,7 +899,7 @@ def _structure(change, parent, taken, *, train=False):
     return None
 
 
-def _normalize(change):
+def _normalize(change, *, benches=BENCHES):
     """E4, before C1: order valid hooks and extend the scope of a QA-only bindings declaration."""
     entry = change.entry
     if change.kind not in CODED or not isinstance(entry, dict):
@@ -881,11 +912,11 @@ def _normalize(change):
             entry["hooks"] = ordered
             change.normalized.append({"field": "hooks", "before": hooks, "after": ordered})
         excluded = entry.get("excluded_benches", [])
-        if "bindings" in hooks and isinstance(excluded, list) and all(type(b) is str and b in BENCHES
+        if "bindings" in hooks and isinstance(excluded, list) and all(type(b) is str and b in benches
                                                                         for b in excluded):
-            missing = [b for b in NO_CALC_BENCHES if b not in excluded]
+            missing = [b for b in benches if b not in QA and b not in excluded]
             if missing:
-                entry["excluded_benches"] = [b for b in BENCHES if b in excluded or b in missing]
+                entry["excluded_benches"] = [b for b in benches if b in excluded or b in missing]
                 change.normalized.append({"field": "excluded_benches", "added": missing,
                                           "reason": "bindings_is_qa_only"})
 
@@ -910,6 +941,7 @@ def _new_id(ctx, n):
 def _build(change, ctx):
     """C3: the procedure record and the one-change candidate."""
     entry, parent = change.entry, ctx.parent
+    benches = protocol.SUPPORTED_BENCHES if ctx.bench == "zebralogic" else BENCHES
     if change.kind in CODED:
         old = parent.get(entry["revises"]) if change.kind == "revision" else None
         values = {**OPTIONAL, **{k: v for k, v in entry.items() if k in PROCEDURE_KEYS}}
@@ -924,14 +956,14 @@ def _build(change, ctx):
             hooks=tuple(h for h in HOOKS if h in values["hooks"]), source=change.source, evidence=ctx.evidence,
             header=values["header"], max_note_chars=values["max_note_chars"],
             requests_second_call=values["requests_second_call"], state_bytes=values["state_bytes"],
-            excluded_benches=tuple(b for b in BENCHES if b in values["excluded_benches"]),
+            excluded_benches=tuple(b for b in benches if b in values["excluded_benches"]),
             replay_tests=tuple(values["replay_tests"]),
             lineage={"parent": old.sha256 if old else None, "revises": old.id if old else None,
                      "engineer_call": change.call}, policy_version=protocol.POLICY_VERSIONS[ctx.configuration])
         change.target = old.id if old else None
     else:
         change.target = entry["id"]
-        change.benches = tuple(b for b in BENCHES if b in entry.get("benches", []))
+        change.benches = tuple(b for b in benches if b in entry.get("benches", []))
     return candidate(parent, [change], step=ctx.step)
 
 
@@ -1099,6 +1131,10 @@ def disclosed(ctx):
     payload disclosed -- exactly those ``run`` sent (``payload`` recomputed, deterministically, for a direct check) --
     that are not trivial and not public in their own item (``SHEET_REASON``'s comment), in payload order. Read once per
     context."""
+    if ctx.bench == "zebralogic":
+        # Grid reference cells use the ZebraLogic Corpus adapter. The workbook answer-position checker has
+        # no workbook, scalar position map, or answer_values interpretation on this text benchmark.
+        return {}
     if "disclosed" not in ctx.sheet:
         shown = ctx.sheet.get("shown")
         if shown is None:
@@ -1156,7 +1192,7 @@ def leak_check(change, ctx, outcomes, entries):
     texts += [("header", procedure.header, cited, named, corpora)] if procedure.header.strip() else []
     texts += [("literal", literal, cited, named, corpora) for literal in _literals(procedure.source)]
     texts += [("note:%s" % cell, note["text"], note["public"], [entries[cell]] if cell in entries else [],
-               [ctx.corpora[outcome.bench]] if outcome.bench in ctx.corpora else [])
+               [corpus for corpus in ctx.corpora.values() if corpus.benchmark == outcome.bench])
               for cell, outcome in outcomes.items() for note in outcome.notes]
     hits, colliding, copied = [], [], []
     for where, text, public, quoted, against in texts:
@@ -1229,11 +1265,18 @@ def _firing(procedure, ctx):
     if not ctx.routing_items and ctx.mode == "single":
         return True, {**detail, "skipped": True, "reason": "no_training_items"}
     package = replay.solo(procedure)
-    for item, view in ctx.routing_items:
-        with ctx.routing_workers(package, item) as worker:
-            routed = router.route(package, ctx.bench, view, worker)
+    def count(view, worker):
+        routed = router.route(package, ctx.bench, view, worker)
         detail["fires_on"] += procedure.id in routed.enabled
         detail["predicate_faults"] += bool(routed.faults)
+    if ctx.routing_items and ctx.routing_shared_worker:
+        with ctx.routing_workers(package, ctx.routing_items[0][0]) as worker:
+            for _, view in ctx.routing_items:
+                count(view, worker)
+    else:
+        for item, view in ctx.routing_items:
+            with ctx.routing_workers(package, item) as worker:
+                count(view, worker)
     return detail["fires_on"] > 0, detail
 
 
@@ -1249,9 +1292,10 @@ def check(change, ctx, taken=()):
             report["failed"] = check_id
         return passed
 
+    benches = protocol.SUPPORTED_BENCHES if ctx.bench == "zebralogic" else BENCHES
     if protocol.NORMALIZE_STRUCTURE[ctx.configuration]:
-        _normalize(change)
-    problem = _structure(change, ctx.parent, taken, train=train)
+        _normalize(change, benches=benches)
+    problem = _structure(change, ctx.parent, taken, train=train, benches=benches)
     if not done("C1", problem is None, _structure_detail(change, problem) if train and problem else problem):
         return report
     if change.kind in CODED:
@@ -1477,7 +1521,8 @@ def run(ctx):
     modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
     sealed = record(protocol.ENGINEER_RECORDS[ctx.configuration], ctx.evidence, {
         "bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
-        "prompt_sha256": ENGINEER_PROMPT_SINGLE_V23_SHA256 if modern else ENGINEER_PROMPT_SHA256,
+        "prompt_sha256": (ENGINEER_PROMPT_SINGLE_ZPC_SHA256 if ctx.configuration == protocol.ZEBRA_PC_V1 else
+                          ENGINEER_PROMPT_SINGLE_V23_SHA256 if modern else ENGINEER_PROMPT_SHA256),
         "proposals": proposals, "changes": outcomes,
         "kept": [c.n for c in kept], "candidate_sha256": package.sha256 if package else None,
         "procedures": [p.to_json() for p in package.procedures] if package else [],
@@ -1572,7 +1617,8 @@ def run_train(ctx):
     modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
     sealed = record(protocol.ENGINEER_RECORDS[ctx.configuration], ctx.evidence, {
         "bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
-        "prompt_sha256": ENGINEER_PROMPT_V23_SHA256 if modern else ENGINEER_PROMPT_V2_SHA256,
+        "prompt_sha256": (ENGINEER_PROMPT_ZPC_SHA256 if ctx.configuration == protocol.ZEBRA_PC_V1 else
+                          ENGINEER_PROMPT_V23_SHA256 if modern else ENGINEER_PROMPT_V2_SHA256),
         "proposals": proposals, "changes": outcomes,
         "kept": [c.n for c in kept], "dropped": [c.n for c in survivors[len(kept):]],
         "candidate_sha256": package.sha256 if package else None,

@@ -474,7 +474,7 @@ def check(source, *, bench=None, version=POLICY_VERSION):
     of §5.4 C4 to that bench's; ``None`` applies every bench's, as for a procedure whose scope is every bench."""
     if type(version) is not str or version not in POLICIES:
         raise ValueError("Unknown policy version")
-    if bench is not None and bench not in BENCHES:
+    if bench is not None and bench not in BENCHES + ("zebralogic",):
         raise ValueError("Unknown bench")
     if type(source) is not str:
         return [Violation("size", "source is not text")]

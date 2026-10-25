@@ -40,8 +40,8 @@ from skillopt.coevo5.calls import USAGE_FIELDS
 from skillopt.coevo5.cells import exclusive
 from skillopt.continual_eval.core import read_json, require, safe_path, write_json
 
-from . import outcomes_ext
-from .protocol import BENCHES, LANDMARK_STEPS, NOTES_KEY, QA, RECORD_HASH, record, verified
+from . import outcomes_ext, zebralogic
+from .profiles import SUPPORTED_BENCHES as BENCHES, LANDMARK_STEPS, NOTES_KEY, QA, RECORD_HASH, record, verified
 
 TRAJECTORIES = "trajectories"
 ENABLE_LOG = "enable_log.jsonl"
@@ -192,7 +192,8 @@ def whitelisted(trajectory):
     trajectory = verified(trajectory, "trajectory")
     _refuse_hidden(trajectory)
     for call in trajectory["calls"]:
-        _refuse_hidden(json.loads(call["user"]))
+        _refuse_hidden(zebralogic.parse_user(call["user"]) if trajectory["bench"] == zebralogic.BENCH
+                       else json.loads(call["user"]))
     out = {name: trajectory[name] for name in TOP}
     out["calls"] = [{name: call[name] for name in CALL_KEYS} for call in trajectory["calls"]]
     out["shell"] = {name: trajectory["shell"][name] for name in SHELL_KEYS}
@@ -204,6 +205,8 @@ def whitelisted(trajectory):
 def _carried(bench, reply):
     """The answers a reply's carriers hold: answer tags (closed and unclosed), JSON "answer" values and, on SearchQA
     without either, the last non-empty line."""
+    if bench == zebralogic.BENCH:
+        return zebralogic.carried_values(reply)
     found = [m.group(2) for m in ANSWER_TAG.finditer(reply)] + [m.group(2) for m in OPEN_TAG.finditer(reply)]
     for m in JSON_ANSWER.finditer(reply):
         try:
@@ -251,6 +254,8 @@ def _option_masked(text, answer, choices):
 def mask_answers(bench, reply, *, choices=None):
     """``reply`` with the content of every answer carrier, and every restatement of a carried answer, replaced by
     ``MASK`` (module docstring); ``choices``: LiveMath's public options."""
+    if bench == zebralogic.BENCH:
+        return zebralogic.mask_reply(reply)
     require(bench in QA, "Answer carriers are masked on the QA benches")
     if reply is None:
         return None
@@ -300,10 +305,13 @@ def masked_view(trajectory, *, bench, purpose):
         if not clean["calls"]:
             return Excluded("no_call")
         require(clean["calls"][0]["purpose"] == "first", "A QA or sheet trajectory starts with its first call")
-        task = json.loads(clean["calls"][0]["user"])
+        task = (zebralogic.parse_user(clean["calls"][0]["user"]) if bench == zebralogic.BENCH
+                else json.loads(clean["calls"][0]["user"]))
         notes = task.pop(NOTES_KEY, None)
         replies = ([mask_answers(bench, reply, choices=task.get("choices")) for reply in clean["replies"]]
-                   if bench in QA else clean["replies"][:1])
+                   if bench in (*QA, zebralogic.BENCH) else clean["replies"][:1])
+        if bench == zebralogic.BENCH and notes:
+            notes = MASK  # an exact solver can carry the entire answer grid in its notes
         view = {"bench": bench, "task": task, "notes": notes, "replies": replies}
     if purpose == "examiner":
         view["passed"] = clean["token"] == "pass"

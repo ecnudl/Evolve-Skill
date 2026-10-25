@@ -29,7 +29,7 @@ from skillopt.continual_eval.core import require
 
 from .cells import Arm, Pause, TrainingStore, cell_id, run_cells
 from .outcomes_ext import UNKNOWN_FAULT
-from .protocol import BENCHES, INFRA_UNKNOWN_MAX, SEED, round_tag
+from .profiles import SUPPORTED_BENCHES, BENCHES, INFRA_UNKNOWN_MAX, SEED, round_tag
 from .units import cell_context
 
 INFRASTRUCTURE = ("infrastructure", "unclassified")  # the frozen guard's kinds (step.py:128-130)
@@ -37,14 +37,14 @@ INFRASTRUCTURE = ("infrastructure", "unclassified")  # the frozen guard's kinds 
 
 # --------------------------------------------------------------------------------------------------- items
 def key(bench, task_id):
-    require(bench in BENCHES and type(task_id) is str and task_id, "A known bench and a task id")
+    require(bench in SUPPORTED_BENCHES and type(task_id) is str and task_id, "A known bench and a task id")
     return "%s/%s" % (bench, task_id)
 
 
 def bench_of(item):
     """The bench of an item key ``<bench>/<task id>`` (route B has no forward items, step.py:75-76)."""
     bench, _, task_id = item.partition("/")
-    require(bench in BENCHES and task_id, "An item key is <bench>/<task id>")
+    require(bench in SUPPORTED_BENCHES and task_id, "An item key is <bench>/<task id>")
     return bench
 
 

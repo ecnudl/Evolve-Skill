@@ -133,7 +133,7 @@ from skillopt.execskill import (  # noqa: E402
     manifest,
     package,
     prelaunch,
-    protocol,
+    profiles as protocol,
     qualify,
     replay,
     routes,
@@ -143,6 +143,7 @@ from skillopt.execskill import (  # noqa: E402
     supply,
     trajectories,
 )
+from skillopt.execskill import protocol as historical_protocol  # legacy runtime overrides remain observable
 from skillopt.execskill.errors import ConfigurationError  # noqa: E402
 from skillopt.execskill.sandbox import client as sandbox  # noqa: E402
 from skillopt.validator_pilot.api import digest  # noqa: E402
@@ -268,6 +269,7 @@ def make_items(args):
     """Plan §10 S0: the supply file of ALFWorld's new games or the SearchQA tail (a dry run prints counts only). For
     ALFWorld the routing views of the cut slices only (smoke 12, run 60, accept 150, select 200) are pre-reset with
     zero model calls (``supply.prereset``) and written once beside the supply."""
+    require(args.bench in ("alfworld", "searchqa"), "make-items explicitly supports ALFWorld and SearchQA only; use zpc-s0")
     value = (_alfworld_items if args.bench == "alfworld" else _searchqa_items)(args)
     shown = {"bench": args.bench, "counts": value["counts"], "written": not args.dry_run}
     if not args.dry_run:
@@ -605,12 +607,21 @@ def make_manifest(args):
     require(configuration in protocol.CONFIGURATIONS, "Unknown run configuration: %r" % (configuration,))
     require(pins["evidence"] not in protocol.REAL_RUN_EVIDENCE.values()
             or (pins["evidence"] == protocol.REAL_RUN_EVIDENCE[configuration]
-                and safe_path(pins["root"]) == safe_path(protocol.RUN_ROOTS[configuration])),
+                and safe_path(pins["root"]) == safe_path((protocol.RUN_ROOTS if configuration == protocol.ZEBRA_PC_V1
+                                                               else historical_protocol.RUN_ROOTS)[configuration])),
             "A real run's manifest names its configuration's evidence label and run root (registrar 17:0x)")
     runtime = pins.get("runtime")
     sheet = runtime.get("spreadsheetbench") if isinstance(runtime, dict) else None
     if isinstance(sheet, dict) and sheet.get("spreadsheet_scorer") == qualify.SCORER:
         qualify.revalidate(sheet)  # ticket C7b1-3: before anything is written; zero calls
+    if configuration == protocol.ZEBRA_PC_V1:
+        require(pins["data"].get("zebra_pc") is not None, "ZebraLogic requires its by-value registration")
+        limits = {kind: sandbox.Limits(**value) for kind, value in pins.pop("limits").items()}
+        record = manifest.make(args.out, evidence=pins.pop("evidence"), measured=pins.pop("measured"), limits=limits,
+                               configuration=configuration, **pins)
+        _print({"manifest": str(args.out), "run": record[protocol.RECORD_HASH], "root": record["root"],
+                "configuration": configuration, "sealed_reads": 0})
+        return
     found = exclusion_records(args.exclusion_root)
     root = safe_path(pins["root"])
     write_json(root / protocol.CANARIES, found["test_canaries"][1])
@@ -758,6 +769,34 @@ def monitor(args):
             "ledgers": {path.name: Budget(path).snapshot() for path in ledgers}})  # G's, D's, the smoke's (C2-1)
 
 
+def zpc_snapshot(args):
+    from skillopt.execskill import zebra_smoke
+    _print(zebra_smoke.snapshot(args.out, source=args.source, git_head=args.git_head))
+
+
+def zpc_s0(args):
+    result = s0.zebra_collect(args.out, pool=args.pool, split_manifest=args.split_manifest,
+                             snapshot_root=args.snapshot, selftest=args.selftest)
+    _print({"s0": str(Path(args.out) / "zebra-s0.json"), "passed": result["passed"],
+            "slice_counts": result["slice_counts"], "sealed_reads": result["sealed_reads"]})
+    return 0 if result["passed"] else 3
+
+
+def zpc_manifest(args):
+    from skillopt.execskill import zebra_smoke
+    result = zebra_smoke.make_manifest(args.out, root=args.root, s0_file=args.s0, provenance=args.provenance,
+        roles_repo=args.roles_repo, elucid_env=args.elucid_env, route_b_env=args.route_b_env,
+        smoke_chain=args.smoke_chain, smoke_results=args.smoke_result)
+    _print({"manifest": str(args.out), "run": result[protocol.RECORD_HASH], "root": result["root"],
+            "launchable_chains": result["data"]["launchable_chains"], "sealed_reads": 0})
+
+
+def zpc_smoke(args):
+    result = smoke.zebra_stage(args.manifest, args.chain, args.stage)
+    _print({"stage": args.stage, "chain": args.chain, "passed": result["result"]["passed"]})
+    return 0 if result["result"]["passed"] else 3
+
+
 def parser():
     top = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = top.add_subparsers(dest="command", required=True)
@@ -894,6 +933,30 @@ def parser():
     command.add_argument("--reason")
     sub.add_parser("show-package").add_argument("--package", required=True)
     sub.add_parser("monitor").add_argument("--root", required=True)
+    command = sub.add_parser("zpc-snapshot")
+    command.add_argument("--source", default=str(PROJECT_ROOT))
+    command.add_argument("--out", required=True)
+    command.add_argument("--git-head", required=True)
+    command = sub.add_parser("zpc-s0")
+    command.add_argument("--out", required=True)
+    command.add_argument("--snapshot", default=str(PROJECT_ROOT))
+    command.add_argument("--pool", default="/data/probe-data-20261025/split-v1/zebralogic/pool.json")
+    command.add_argument("--split-manifest", default="/data/probe-data-20261025/split-v1/split-manifest.json")
+    command.add_argument("--selftest")
+    command = sub.add_parser("zpc-manifest")
+    command.add_argument("--out", required=True)
+    command.add_argument("--root", required=True)
+    command.add_argument("--s0", required=True)
+    command.add_argument("--provenance", required=True)
+    command.add_argument("--roles-repo", required=True)
+    command.add_argument("--elucid-env", required=True)
+    command.add_argument("--route-b-env", required=True)
+    command.add_argument("--smoke-chain", choices=("G", "D"))
+    command.add_argument("--smoke-result", action="append", default=[])
+    command = sub.add_parser("zpc-smoke")
+    command.add_argument("--manifest", required=True)
+    command.add_argument("--chain", choices=("G", "D"), required=True)
+    command.add_argument("--stage", choices=("S1", "S2", "S3", "SE6"), required=True)
     fixtures.add_arguments(sub)
     return top
 
@@ -901,7 +964,8 @@ def parser():
 BENCH_OPTIONS = {"alfworld": ("data_root", "pool_games"),
                  "searchqa": ("fresh_manifest", "dataset", "revision", "exclude", "cache_sha256")}
 
-HANDLERS = {"verify-snapshot": verify_snapshot, "zero-call-checks": zero_call_checks, "leftovers": leftovers,
+HANDLERS = {"zpc-snapshot": zpc_snapshot, "zpc-s0": zpc_s0, "zpc-manifest": zpc_manifest, "zpc-smoke": zpc_smoke,
+            "verify-snapshot": verify_snapshot, "zero-call-checks": zero_call_checks, "leftovers": leftovers,
             "sandbox-selftest": sandbox_selftest, "import-texts": import_texts,
             "import-sheet-qualification": import_sheet_qualification, "make-items": make_items,
             "exclude-tests": exclude_tests, "make-fixtures": fixtures.make_fixtures_cli,

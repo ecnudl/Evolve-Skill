@@ -41,7 +41,7 @@ from skillopt.validator_pilot.api import digest
 from . import notes, router
 from .errors import ConfigurationError
 from .package import Package, edits
-from .protocol import BENCHES, NOTES_KEY, RECORD_HASH, SANDBOX_TIMEOUTS, record, verified
+from .profiles import SUPPORTED_BENCHES as BENCHES, NOTES_KEY, RECORD_HASH, SANDBOX_TIMEOUTS, record, verified
 
 QA_HOOKS = ("before_call", "bindings")
 SHEET_HOOK = "sheet_feedback"
@@ -62,9 +62,13 @@ def public_text(value):
     return "" if value is None else str(value)
 
 
-def _view(call):
+def _view(call, *, bench=None):
     """The view a request showed: its user JSON without the procedure notes."""
-    view = json.loads(call["user"])
+    if bench == "zebralogic":
+        from .zebralogic import parse_user
+        view = parse_user(call["user"])
+    else:
+        view = json.loads(call["user"])
     require(isinstance(view, dict), "A request's user content is a JSON object")
     view.pop(NOTES_KEY, None)
     return view
@@ -82,7 +86,7 @@ def donor_inputs(trajectory, *, bench):
     if bench != "alfworld":
         require(calls and calls[0].get("purpose") == "first", "A QA or sheet trajectory starts with its first call")
         report = (trajectory.get("shell") or {}).get("precheck")
-        return {"id": donor, "item": item, "view": _view(calls[0]), "report": report, "steps": None}
+        return {"id": donor, "item": item, "view": _view(calls[0], bench=bench), "report": report, "steps": None}
     views = [_view(c) for c in calls if c.get("purpose") == "step"]
     actions = [s.get("action") for s in trajectory.get("alfworld_steps") or []]
     # the shell logs a step only after a usable reply, so the last request may have none (ticket A10-2)

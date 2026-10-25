@@ -19,19 +19,20 @@ from collections import Counter
 from skillopt.continual_eval.core import require
 
 from ..protocol import BENCHES, MAX_ITEMS_PER_FINDING
+from ..profiles import SUPPORTED_BENCHES
 from . import alfworld_select, livemath, officeqa, sheet
 from .families import DROPS, Drop, Family, generated_item
 
 __all__ = ["DROPS", "Drop", "FAMILIES", "Family", "alfworld_select", "family", "generate", "mode"]
 
 FAMILIES = {"officeqa": officeqa.FAMILIES, "livemath": livemath.FAMILIES, "spreadsheetbench": sheet.FAMILIES,
-            "alfworld": {}, "searchqa": {}}
+            "alfworld": {}, "searchqa": {}, "zebralogic": {}}
 MATERIAL_KINDS = {"table": "table", "definition": "definition", "function": "functions"}
 
 
 def mode(bench):
     """"families" for a bench with registered families, else "selection_only" (no generated truth)."""
-    require(bench in BENCHES, "Unknown bench")
+    require(bench in SUPPORTED_BENCHES, "Unknown bench")
     return "families" if FAMILIES[bench] else "selection_only"
 
 
@@ -80,9 +81,11 @@ def generate(family_, param_sets, material, *, generator, set_name, seed, eviden
                 built = officeqa.apply(family_, params, material)
             elif family_.bench == "livemath":
                 built = livemath.apply(family_, params, material, checker=checker, number=number)
-            else:
+            elif family_.bench == "spreadsheetbench":
                 built = sheet.apply(family_, params, material, engine=engine, source_item=source, out_dir=out_dir,
                                     item_id=item_id)
+            else:
+                raise ValueError("No generator for benchmark: " + family_.bench)
         except Drop as drop:
             dropped[drop.reason] += 1
             continue

@@ -65,6 +65,7 @@ def _pattern(term):
 
 
 PATTERNS = {bench: tuple((term, _pattern(term)) for term in LEXICON[bench]) for bench in BENCHES}
+PATTERNS["zebralogic"] = tuple((term, _pattern(term)) for term in LEXICON["searchqa"])
 
 
 def lexicon_record():
@@ -235,7 +236,8 @@ def assemble(notes, *, bench):
     ``[(procedure_id, text, max_note_chars)]``. A note longer than its procedure's declared cap is skipped
     (``over_declared_cap``, a procedure fault, §5.4 C9); a note that would bring the total over
     ``protocol.MAX_NOTE_CHARS[bench]`` is skipped whole (``over_total_cap``, the same in every arm, §2.3)."""
-    require(bench in MAX_NOTE_CHARS, "Unknown bench")
+    require(bench in PATTERNS, "Unknown bench")
+    cap = 4_000 if bench == "zebralogic" else MAX_NOTE_CHARS[bench]
     parts, skipped, total = [], [], 0
     for procedure, text, declared in notes:
         if not text:
@@ -244,7 +246,7 @@ def assemble(notes, *, bench):
             skipped.append({"procedure": procedure, "reason": "over_declared_cap", "chars": len(text)})
             continue
         added = len(text) + (len(SEPARATOR) if parts else 0)
-        if total + added > MAX_NOTE_CHARS[bench]:
+        if total + added > cap:
             skipped.append({"procedure": procedure, "reason": "over_total_cap", "chars": len(text)})
             continue
         parts.append(text)

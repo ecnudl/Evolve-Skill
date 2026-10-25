@@ -151,18 +151,19 @@ from pathlib import Path
 from statistics import fmean
 
 from skillopt.coevo5.data import ranked
-from skillopt.coevo5.leakage import Corpus
 from skillopt.coevo5.roles import Invalid, Roles, parse as parse_reply
 from skillopt.continual_eval import spreadsheet_compat
 from skillopt.continual_eval.core import read_json, require, safe_path, write_json
 from skillopt.validator_pilot.api import digest
 
-from . import (acceptance, budgets, describer, detectors, donors, engineer, examiner, exclusion, generators, protocol,
+from . import (acceptance, budgets, describer, detectors, donors, engineer, examiner, exclusion, generators,
+               profiles as protocol,
                replay, research, rounds, router, solver, supply, trajectories, units, reuse as request_reuse)
+from .corpus import Corpus
 from .cells import Arm, Pause, TrainingStore, cell_id, run_cells
 from .chain import EXIT_AWAITING, EXIT_COMPLETE, EXIT_PAUSED, cap_check, check_pins, confirmation, heavy
 from .package import EDIT_KINDS, Package, edits, empty, load, save, validate, with_describer, withhold
-from .protocol import (BAND_ROUNDS, BENCHES, CELL_ANCHORS, CHAINS, EARLIER_SET_MAX, ENTRY_READING_SHARE, G_SELF_MAX,
+from .profiles import (BAND_ROUNDS, BENCHES, CELL_ANCHORS, CHAINS, EARLIER_SET_MAX, ENTRY_READING_SHARE, G_SELF_MAX,
                        MDE_POINTS, CONFIG_CAP_FACTOR, CONFIGURATIONS, NOTES_KEY, RECORD_HASH, ROLE_MAX_TOKENS,
                        ROLE_MODEL, S4_SLICES, SEED, SX_SLICES, TOPUP_ROUNDS, TRAIN_ADOPT_SHARE, TRAIN_ALPHA,
                        TRAIN_EXAMPLES, TRAIN_FORMAT_MARGIN, TRAIN_PATIENCE, TRAIN_ROUNDS, TRAIN_TEXT_CHARS,
@@ -195,7 +196,8 @@ UNITS_V2 = ("run", "diagnose", "generate",
             *("%s-r%d" % (kind, r) for r in range(1, TRAIN_ROUNDS + 1) for kind in ("engineer", "train")),
             "selftest", "accept", "freeze")
 QUESTION_FIELDS = {"searchqa": "question", "officeqa": "question", "livemath": "question",
-                   "spreadsheetbench": "instruction", "alfworld": "task_text"}  # v2 feedback: the item's question
+                   "spreadsheetbench": "instruction", "alfworld": "task_text",
+                   "zebralogic": "question"}  # v2 feedback: the item's question
 FEEDBACK_TAG = "execskill-v2:feedback"  # the seeded order of a round's examples
 EXERCISE = "exercise_last_candidate"  # SX only: no round adopted; the last evaluated candidate takes the acceptance
 
@@ -482,7 +484,15 @@ def _cut(st, held):
     slice (1,000 x 1) from the kept fresh tail (``_tail``, ``supply.slices(kept=)``); ALFWorld's run (60) and
     acceptance (150) slices from the registered room groups of the fresh-supply pool (§3.1 O6: 16 and 40 rooms of the
     seeded room order, <= 5 games per room; ``supply.alfworld_pool``), each game with its view (``_alfworld_views``)."""
-    bench, pool, sizes = st.bench, st.setting.pools[st.bench], supply.registered_sizes(st.bench)
+    bench, pool = st.bench, st.setting.pools[st.bench]
+    if bench == "zebralogic":
+        from . import zebralogic
+        sliced = zebralogic.slices(pool)
+        cut = {name: sliced[name] for name in ("run", "accept")}
+        require(not set(held) & {item["task_id"] for items in cut.values() for item in items},
+                "ZebraLogic's registered slices contain already held or consumed items")
+        return cut
+    sizes = supply.registered_sizes(st.bench)
     if bench == "searchqa":
         items, kept = _tail(st)
         accept = supply.slices(bench, supply.order(bench, items), supply.registered_sizes(bench, "tail"), held,
@@ -933,10 +943,21 @@ def _references(st, cut, parents, also=()):
     """§4.2: the reference answers of this bench's run-slice items the parent failed (v2: and of the items ``also``,
     whose references earlier training rounds disclosed), never on ALFWorld; a frozen answer shape only: an answer text
     or SearchQA's answer list, and on SpreadsheetBench the answer-position cell values of the item's answer workbook
-    (``_sheet_reference``; registrar addendum 2026-10-22 15:5x R1)."""
+    (``_sheet_reference``; registrar addendum 2026-10-22 15:5x R1). ZebraLogic retains its grid references, verified
+    against this run unit's decided consumption entries before any reference is selected."""
     if st.bench == "alfworld":
         return {}
     failed = {t["task_id"] for t in parents if t["token"] == "fail"} | set(also)
+    if st.bench == "zebralogic":
+        from skillopt.coevo5.data import item_hash
+        consumed = st.services.registry.entries(st.namespace, st.bench)
+        for item in cut["run"]:
+            entry = consumed.get(item["task_id"], {})
+            require(entry.get("state") == "decided" and entry.get("unit") == st.label("run")
+                    and entry.get("purpose") == st.purpose("run")
+                    and entry.get("run_root") == run_identity(st.setting.root)
+                    and entry.get("item_hash") == item_hash(item),
+                    "Zebra references require this unit's consumed run items with their registered identities")
     out = {}
     for item in cut["run"]:
         key = rounds.key(st.bench, item["task_id"])
@@ -963,11 +984,19 @@ def _previous(st):
 
 
 def _corpora(st, cut):
+    """Current corpus under its benchmark identity; repeated earlier slices retain their step provenance.
+    A chain without repeated benchmarks retains exactly its historical keys, order and corpus contents."""
     out = {st.bench: Corpus(st.bench, cut["run"])}
     for k, bench, _ in _earlier(st, "run"):
         value = verified(read_json(st.chain_root / ("s%d-%s" % (k, bench)) / SLICES_FILE), "step-slices")
         by_id = {item["task_id"]: item for item in st.setting.pools[bench]}
-        out[bench] = Corpus(bench, [by_id[i] for i in value["slices"]["run"]])
+        corpus = Corpus(bench, [by_id[i] for i in value["slices"]["run"]])
+        if bench in out:
+            corpus.provenance = {"bench": bench, "k": k, "step": "s%d-%s" % (k, bench),
+                                 "slices_sha256": value[RECORD_HASH]}
+            out["%s@s%d" % (bench, k)] = corpus
+        else:
+            out[bench] = corpus
     return out
 
 
@@ -1262,7 +1291,9 @@ def _engineer_train(st, cut, r, incumbent, *, done, fed, history, training, lint
             _, _, publics = _training_publics(cut, generated, st.bench)
             routing = {"routing_items": [(key, solver.routing_view(st.bench, public, runtime=st.runtime()))
                                          for key, public in publics.items()],
-                       "routing_workers": _item_workers(st, publics)}
+                       "routing_workers": _item_workers(st, publics),
+                       "routing_shared_worker": st.bench != "spreadsheetbench"
+                                                and st.services.item_workers is None}
         with _inputs_dirs(st, _distinct(stored + current + evaluated), cut) as inputs:
             ctx = engineer.Context(bench=st.bench, k=st.k, step=st.name, evidence=st.evidence, parent=incumbent,
                                    trajectories=stored, corpora=_corpora(st, cut), workers=st.services.workers,
@@ -1400,6 +1431,9 @@ def _notes_text(trajectory):
                                        if step.get("notes")))
     if not trajectory["calls"]:
         return ""
+    if trajectory["bench"] == "zebralogic":
+        from .zebralogic import parse_user
+        return str(parse_user(trajectory["calls"][0]["user"]).get(NOTES_KEY) or "")
     return str(json.loads(trajectory["calls"][0]["user"]).get(NOTES_KEY) or "")
 
 
@@ -1823,7 +1857,8 @@ def run_step(setting, chain, bench, k, parent, *, services, chain_root=None, smo
     empty parent; run, accept and freeze with the given candidate). Raises ``cells.Pause`` (a unit paused; nothing
     resumes by itself) or ``chain.Terminated``."""
     if smoke is None:
-        require(chain in CHAINS and bench in BENCHES and type(k) is int and k >= 1 and isinstance(parent, Package),
+        require(chain in CHAINS and bench in protocol.SUPPORTED_BENCHES and type(k) is int and k >= 1
+                and isinstance(parent, Package),
                 "A chain, a bench, a step position and the parent package")
     else:
         require(isinstance(smoke, SmokeStep) and chain == budgets.SMOKE and bench == SMOKE_BENCH and k == 1

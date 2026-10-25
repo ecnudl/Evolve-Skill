@@ -76,7 +76,7 @@ from . import policy
 from .generators.families import Entry, bundle
 from .judge import json_answer
 from .outcomes_ext import TRUNCATED
-from .protocol import (BENCHES, BOOTSTRAP_RESAMPLES, DETECTOR_LIFT, DETECTOR_MAX_JACCARD, DETECTOR_MIN_FIRED,
+from .profiles import (SUPPORTED_BENCHES as BENCHES, BOOTSTRAP_RESAMPLES, DETECTOR_LIFT, DETECTOR_MAX_JACCARD, DETECTOR_MIN_FIRED,
                        DETECTOR_MIN_ITEMS, DETECTOR_MIN_RECALL, DETECTOR_MIN_ROOMS, DETECTORS_PER_STEP, HOLM_FAMILY,
                        MIN_ROOMS_PER_HALF, QA, SANDBOX_TIMEOUTS, SEED, detsplit_tag, record, verified)
 from .stats_ext import holm
@@ -85,7 +85,7 @@ from .trajectories import OPEN_TAG, UNKNOWN_TOKENS, Excluded, masked_view, white
 ENTRY = "detect"
 DETECTOR_ID = re.compile(r"d-[a-z]+-\d{1,3}-\d{1,2}|fx-[a-z0-9][a-z0-9-]{0,39}")
 MAX_DESCRIPTION = 600
-VIEWS = {"alfworld": "alf_landmark10", "spreadsheetbench": "sheet_masked", **{bench: "qa_masked" for bench in QA}}
+VIEWS = {"zebralogic": "zebra_grid_masked", "alfworld": "alf_landmark10", "spreadsheetbench": "sheet_masked", **{bench: "qa_masked" for bench in QA}}
 CANDIDATES = "candidates.json"
 CANNOT_DECIDE = "cannot_decide"
 
@@ -247,11 +247,13 @@ def _on(take, test):
 
 
 MECHANICAL_MASKED = {
+    "zebralogic": {},  # selection-mode generic detectors only; no new categories
     **{bench: {name: _on(_last_reply, test) for name, test in QA_TEXT.items()} for bench in QA},
     "spreadsheetbench": {name: _on(_first_reply, test) for name, test in SHEET_TEXT.items()},
     "alfworld": {name: _on(_view_pairs, test) for name, test in ALF_PAIRS.items()},
 }
 MECHANICAL = {
+    "zebralogic": {},
     **{bench: {**{name: _on(_deciding_reply, test) for name, test in QA_TEXT.items()},
                "truncated_or_suspected": lambda t: open_answer_tag(_deciding_reply(t)) or _truncated(t)}
        for bench in QA},

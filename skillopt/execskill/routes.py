@@ -37,7 +37,8 @@ from pathlib import Path
 from skillopt.coevo5.cells import exclusive
 from skillopt.continual_eval.core import read_json, require, safe_path, write_json
 
-from . import client, protocol
+from . import client
+from . import profiles as protocol
 from .errors import ConfigurationError
 
 ROUTED = {"D": (client.ROUTE_A, client.ROUTE_B)}  # chain -> its routes, the first its registered start
@@ -181,7 +182,7 @@ def switch(chain_root, *, to, run, evidence, chain="D", reason=None, now=None):
 
 
 # ------------------------------------------------------------------------------------------- the manifest's pin
-def pin(chain, route, *, env_path, solver_block):
+def pin(chain, route, *, env_path, solver_block, configuration=None):
     """The manifest's ``clients.routes[chain][route]`` block (module docstring). ``env_path``: the route's credential
     file, recorded by path (never read here); ``solver_block``: the manifest's ``clients.solver[chain]`` block, whose
     S1 branch and longest reply give route B's ``longest``."""
@@ -191,7 +192,7 @@ def pin(chain, route, *, env_path, solver_block):
     found = solver_block.get("longest")
     longest = found if solver_block.get("branch") == "N" else S1B_CEILING
     require(type(longest) is int and longest > 0, "The solver block's S1 longest reply (branch N)")
-    model, provider, benches = protocol.CHAINS[chain], client.ROUTES[route], protocol.BENCHES
+    model, provider, benches = protocol.CHAINS[chain], client.ROUTES[route], protocol.active_benches(configuration)
     return {"route": route, "backend": provider.backend, "model": provider.model, "url_host": provider.host,
             "env_path": str(safe_path(env_path)), "proxy": protocol.GATEWAY,
             "reasoning_effort": protocol.REASONING_EFFORT, "M": {b: protocol.solver_tokens(model, b) for b in benches},
@@ -206,7 +207,7 @@ def check_pins(clients, *, configuration=None):
     runs, each block equal to ``pin`` re-derived from its own env path and the chain's solver block. A ``main``
     manifest must pin route B of chain D (registrar row "deepseek route B"). Raises ValueError."""
     pinned = clients.get("routes")
-    if configuration in (protocol.MAIN, protocol.MAIN_V2, protocol.MAIN_V2_1, protocol.MAIN_V2_2, protocol.MAIN_V2_3):  # main's chains
+    if configuration in (protocol.MAIN, protocol.MAIN_V2, protocol.MAIN_V2_1, protocol.MAIN_V2_2) or protocol.is_v23(configuration):  # main's chains
         require(isinstance(pinned, dict) and isinstance(pinned.get("D"), dict) and client.ROUTE_B in pinned["D"],
                 "A main manifest pins chain D's route B (clients.routes.D.B = routes.pin(...); registrar row "
                 "\"deepseek route B\")")
@@ -219,7 +220,7 @@ def check_pins(clients, *, configuration=None):
                 "Chain %s pins only %s" % (chain, list(PINNED[chain])))
         for route, block in blocks.items():
             require(isinstance(block, dict) and set(block) == FIELDS, "A route block holds the registered fields")
-            expected = pin(chain, route, env_path=block["env_path"], solver_block=clients["solver"][chain])
+            expected = pin(chain, route, env_path=block["env_path"], solver_block=clients["solver"][chain], configuration=configuration)
             same = {key for key in FIELDS if block[key] == expected[key]}
             require(same == FIELDS, "Chain %s's route %s block differs from the registration: %s"
                     % (chain, route, sorted(FIELDS - same)))

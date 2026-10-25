@@ -39,6 +39,7 @@ from skillopt.continual_eval.core import require, safe_path
 
 from .errors import ConsumptionConflict
 from .protocol import BENCHES, EVIDENCE, HISTORY_ROOT, NAMESPACES, record, verified
+from .profiles import SUPPORTED_BENCHES, SUPPORTED_NAMESPACES
 
 RECORD_KIND = "consumption"  # version fivebench-execskill-v1-consumption
 PURPOSES = ("smoke", "run", "accept", "accept_probe", "examiner", "detector_holdout")  # plan §2.7
@@ -130,8 +131,8 @@ class Registry:
         return run_root
 
     def path(self, chain, bench):
-        require(chain in NAMESPACES, "Unknown consumption namespace")
-        require(bench in BENCHES, "Unknown benchmark")
+        require(chain in SUPPORTED_NAMESPACES, "Unknown consumption namespace")
+        require(bench in SUPPORTED_BENCHES, "Unknown benchmark")
         return self.root / "consumption" / chain / (bench + ".jsonl")
 
     @contextmanager

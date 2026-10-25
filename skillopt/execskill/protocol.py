@@ -38,7 +38,7 @@ RECORD_HASH = "record_sha256"  # plan §2: the canonical digest of the record wi
 EVIDENCE = ("engineering_fixture", "smoke", "pilot_real_run", "historical_replay", "main_real_run",
             "main_v2_real_run",  # v2 (owner decision 2026-10-23 13:3x): the "train then accept" main experiment
             "main_v2_1_real_run",  # v2.1 (owner decision 2026-10-24 02:2x): main-v2 with two engineer rules
-            "main_v2_2_real_run", "main_v2_3_real_run")  # v2.2 (owner decision 2026-10-24 12:1x): main-v2-1 with the practical gates
+            "main_v2_2_real_run", "main_v2_3_real_run", "zebra_pc_v1_real_run")  # separately registered positive control
 IMPORTABLE = ("fivebench-coevolution-v3-sheet-qualification",)  # §1, owner #7, Codex F15: the one v3 record kind read
 TEXTS_IMPORT = "fivebench-coevolution-v3-texts-import"  # §2.2: the v3 task cards, imported by value (plan §6)
 

@@ -31,8 +31,9 @@ from skillopt.continual_eval.core import read_json, require, safe_path, write_js
 from . import policy
 from .errors import PackageInvalid
 from .notes import header_hits
-from .protocol import (BENCHES, EVIDENCE, HOOKS, MAX_CHANGES, MAX_DESCRIPTION_CHARS, MAX_HEADER_CHARS, MAX_NOTE_CHARS,
+from .profiles import (BENCHES, EVIDENCE, HOOKS, MAX_CHANGES, MAX_DESCRIPTION_CHARS, MAX_HEADER_CHARS, MAX_NOTE_CHARS,
                        MAX_PACKAGE_BYTES, MAX_PROCEDURES, RECORD_HASH, record, verified)
+from .profiles import SUPPORTED_BENCHES, ZEBRA
 
 FIXTURE = "engineering_fixture"
 HOOK_PARAMETERS = {"applies": 1, "before_call": 2, "bindings": 1, "sheet_feedback": 3, "alf_before_step": 2,
@@ -41,7 +42,7 @@ NOTE_HOOKS = ("before_call", "bindings", "sheet_feedback", "alf_before_step")
 SECOND_CALL_HOOKS = ("bindings", "sheet_feedback")
 EDIT_KINDS = ("new", "revision", "deletion", "narrowing")
 MAX_STATE_BYTES = 65_536  # implementation cap on a declared ALFWorld state (the registration fixes none)
-LEARNED_ID = re.compile(r"p-(%s)-(\d{1,3})-(\d{1,3})" % "|".join(BENCHES))
+LEARNED_ID = re.compile(r"p-(%s)-(\d{1,3})-(\d{1,3})" % "|".join(SUPPORTED_BENCHES))
 FIXTURE_ID = re.compile(r"fx-[a-z0-9][a-z0-9-]{0,39}")
 SHA = re.compile(r"[0-9a-f]{64}")
 STEP = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}")
@@ -67,7 +68,12 @@ def _plain(value):
 
 
 def _benches(value):
-    return tuple(b for b in BENCHES if b in value)
+    return tuple(b for b in SUPPORTED_BENCHES if b in value)
+
+
+def procedure_benches(procedure):
+    """Historical procedures keep exactly their registered five-benchmark scope."""
+    return SUPPORTED_BENCHES if procedure.origin == ZEBRA else BENCHES
 
 
 def _is_procedure_id(value):
@@ -119,7 +125,7 @@ class Procedure:
     def _validate(self):
         learned = LEARNED_ID.fullmatch(self.id) if type(self.id) is str else None
         ensure(_is_procedure_id(self.id), "A procedure id is p-<bench>-<step>-<n> or fx-<name>")
-        ensure(self.origin in BENCHES and (learned is None or learned.group(1) == self.origin),
+        ensure(self.origin in SUPPORTED_BENCHES and (learned is None or learned.group(1) == self.origin),
                "A procedure's origin is the bench in its id")
         ensure(self.evidence in EVIDENCE and (learned is not None or self.evidence == FIXTURE),
                "Evidence is registered; a fixture procedure is an engineering fixture")
@@ -139,8 +145,11 @@ class Procedure:
                "A module-level hook function must be declared")
         ensure(type(self.excluded_benches) is tuple and self.excluded_benches == _benches(self.excluded_benches)
                and len(set(self.excluded_benches)) == len(self.excluded_benches)
-               and len(self.excluded_benches) < len(BENCHES), "Excluded benches are known, ordered and not all")
-        scope = [b for b in BENCHES if b not in self.excluded_benches]
+               and set(self.excluded_benches) <= set(procedure_benches(self))
+               and len(self.excluded_benches) < len(procedure_benches(self)), "Excluded benches are known, ordered and not all")
+        scope = [b for b in procedure_benches(self) if b not in self.excluded_benches]
+        ensure(self.origin != ZEBRA or (self.hooks == ("applies", "before_call")
+               and not self.requests_second_call), "ZebraLogic procedures use applies and before_call only")
         ensure(type(self.header) is str and len(self.header) <= MAX_HEADER_CHARS
                and not header_hits(self.header, benches=scope), "A header is at most 200 lexicon-clean characters")
         notes = any(h in NOTE_HOOKS for h in self.hooks)
@@ -231,7 +240,7 @@ class Package:
         ensure(isinstance(self.procedures, (list, tuple)) and isinstance(self.retired, (list, tuple))
                and isinstance(self.narrowed, dict) and isinstance(self.describer, dict)
                and all(type(k) is str and isinstance(v, (list, tuple)) and all(type(b) is str for b in v)
-                       and set(v) <= set(BENCHES) and len(set(v)) == len(v) for k, v in self.narrowed.items()),
+                       and set(v) <= set(SUPPORTED_BENCHES) and len(set(v)) == len(v) for k, v in self.narrowed.items()),
                "Procedures and retired hashes are lists; narrowings map ids to known benches")
         object.__setattr__(self, "procedures", tuple(self.procedures))
         object.__setattr__(self, "retired", tuple(sorted(set(self.retired), key=str)))
@@ -257,8 +266,8 @@ class Package:
 
     def for_bench(self, bench):
         """The procedures that may run on ``bench``, in package order (the router's input)."""
-        require(bench in BENCHES, "Unknown bench")
-        return tuple(p for p in self.procedures if bench not in self.excluded(p.id))
+        require(bench in SUPPORTED_BENCHES, "Unknown bench")
+        return tuple(p for p in self.procedures if bench in procedure_benches(p) and bench not in self.excluded(p.id))
 
     def to_json(self):
         """The sealed record: ``version`` = fivebench-execskill-v1-package, ``evidence``, ``record_sha256``."""
@@ -292,7 +301,9 @@ def _check_package(package):
     for procedure_id, benches in package.narrowed.items():
         ensure(procedure_id in package.order and benches, "A narrowing names a procedure of the package and benches")
         own = package.get(procedure_id).excluded_benches
-        ensure(not set(benches) & set(own) and len(set(benches) | set(own)) < len(BENCHES),
+        scope = procedure_benches(package.get(procedure_id))
+        ensure(set(benches) <= set(scope) and not set(benches) & set(own)
+               and len(set(benches) | set(own)) < len(scope),
                "A narrowing adds benches and leaves at least one")
     for procedure_id, entry in package.describer.items():
         ensure(procedure_id in package.order and type(entry) is dict

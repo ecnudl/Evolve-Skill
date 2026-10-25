@@ -22,8 +22,8 @@ from skillopt.continual_eval.core import require
 from skillopt.validator_pilot.api import digest
 
 from .notes import lexicon_hits
-from .package import Procedure
-from .protocol import BENCHES, DEFAULT_TARGET, MAX_NOTE_CHARS, TEXT_LENGTH_BAND, record, verified
+from .package import Procedure, procedure_benches
+from .profiles import BENCHES, DEFAULT_TARGET, MAX_NOTE_CHARS, TEXT_LENGTH_BAND, record, verified
 
 ROLE = "describer"
 DESCRIBER_SYSTEM = """\
@@ -38,7 +38,7 @@ SENTENCE = re.compile(r"[^.!?\n]+(?:[.!?]+|\n|$)")
 
 
 def _scope(procedure, excluded):
-    return [b for b in BENCHES if b not in set(procedure.excluded_benches) | set(excluded)]
+    return [b for b in procedure_benches(procedure) if b not in set(procedure.excluded_benches) | set(excluded)]
 
 
 def screened(text, benches):

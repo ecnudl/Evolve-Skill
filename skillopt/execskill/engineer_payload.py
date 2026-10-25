@@ -10,6 +10,7 @@ import json
 import re
 
 from .trajectories import _carried
+from . import zebralogic
 
 TRIM_CHARS = 6_000
 HEAD_CHARS = 1_500
@@ -123,13 +124,16 @@ def trim(user):
             refs = _texts(entry.get("reference")) if entry.get("kind") == "failures" else []
             replies = entry.get("replies") or []
             final = next((reply for reply in reversed(replies) if isinstance(reply, str)), "")
-            answers = _carried(entry.get("bench", out.get("bench")), final) or ([final] if final else [])
+            bench = entry.get("bench", out.get("bench"))
+            answers = _carried(bench, final) or ([final] if final else [])
             for n, call in enumerate(entry.get("calls", [])):
-                view = json.loads(call["user"])
+                view = (zebralogic.parse_user(call["user"]) if bench == zebralogic.BENCH
+                        else json.loads(call["user"]))
                 question = "\n".join(_texts(view.get("question", view.get("instruction", ""))))
                 for key in sorted(PUBLIC_FIELDS & set(view)):
                     view[key] = cut(view[key], "trajectories/%d/calls/%d/%s" % (index, n, key), question, refs, answers)
-                call["user"] = json.dumps(view, ensure_ascii=False, sort_keys=True)
+                call["user"] = (zebralogic.render_user(view, view.get("procedure_notes", ""))
+                                if bench == zebralogic.BENCH else json.dumps(view, ensure_ascii=False, sort_keys=True))
         for n, procedure in enumerate((out.get("training") or {}).get("procedures", [])):
             for m, example in enumerate(procedure.get("examples", [])):
                 refs = _texts(example.get("reference"))

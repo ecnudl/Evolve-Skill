@@ -62,12 +62,12 @@ from skillopt.continual_eval.core import require, safe_path, write_json
 from skillopt.validator_pilot.api import digest
 
 from . import judge as judges
-from . import outcomes_ext, solver, trajectories
+from . import outcomes_ext, solver, trajectories, zebralogic
 from .client import route_of
 from .errors import AssumptionBroken, ConfigurationError, LedgerFailure, stop_kind
 from .outcomes_ext import REPLAY_MISMATCH
 from .package import Package
-from .protocol import BENCHES, EVIDENCE, record, verified
+from .profiles import SUPPORTED_BENCHES as BENCHES, EVIDENCE, record, verified
 
 __all__ = ("ARM_KINDS", "Arm", "Calls", "Context", "Pause", "Replay", "TrainingStore", "cell_id", "run_cell",
            "run_cells", "run_parallel", "share_cell", "share_same")
@@ -292,6 +292,8 @@ def _score(context, cell, task, prediction, index, store):
     """The frozen native score (cells.py:152-163); SpreadsheetBench in a scoring directory of its own."""
     bench = cell["benchmark"]
     runtime = deepcopy(context.runtime[bench])
+    if bench == zebralogic.BENCH:
+        return zebralogic.score(task["public"], task["private"], prediction, runtime=runtime)
     if bench != "spreadsheetbench":
         return backends.score(bench, task["public"], task["private"], prediction, runtime=runtime)
     request = {"benchmark": bench, "unit": cell["unit"], "cell": cell["id"], "scoring": index}

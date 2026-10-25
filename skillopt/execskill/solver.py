@@ -84,18 +84,18 @@ from skillopt.continual_eval.backends import (ALFWORLD_TRACE_VERSION, ANSWER_TAG
                                               CONTRACT_FIRST_LAYOUT_V2, CONTRACT_FIRST_LAYOUTS, LIVEMATH_CONTRACT,
                                               SHEET_CONTRACT_V2, SHEET_PREVIEW_VERSION, _alf_post_observation, _code,
                                               _completed_without_text, _layout_supported, _prediction_unknown,
-                                              _public_view, _response, _sheet_preview, _unknown, _xlsx_bytes)
+                                              _public_view as _legacy_public_view, _response, _sheet_preview, _unknown, _xlsx_bytes)
 from skillopt.continual_eval.core import require
 from skillopt.validator_pilot.api import digest
 
-from . import compute, notes, router
+from . import compute, notes, router, zebralogic
 from .code_delivery import VERSION as CODE_EXTRACTION_V23
 from . import precheck as prechecks
 from .canonical import canonical
 from .errors import STOP_KINDS, CleanupUnconfirmed, ConfigurationError
 from .outcomes_ext import worst_delivery
 from .package import Package
-from .protocol import (BENCHES, COMPUTE_FOLLOWUP, COMPUTE_INVITE, NOT_EVALUATED, NOT_RECOMMENDED_PREFIX, NOTES_KEY, QA,
+from .profiles import (SUPPORTED_BENCHES as BENCHES, COMPUTE_FOLLOWUP, COMPUTE_INVITE, NOT_EVALUATED, NOT_RECOMMENDED_PREFIX, NOTES_KEY, QA,
                        REPAIR_FRAME, SANDBOX_TIMEOUTS, TRUNCATION_MARGIN, record)
 from .supply import routing_view as alfworld_routing_view
 
@@ -146,6 +146,8 @@ def _public_text(value):
 
 def _system(bench, card_text, runtime):
     """The frozen system prompt (backends.py:379-394) with the active bench card as the skill text."""
+    if bench == zebralogic.BENCH:
+        return QA_SYSTEM  # the official format and examples live only in the USER message
     guidance = ("\n\n" + GUIDANCE + card_text) if card_text.strip() else ""
     if bench in {"searchqa", "officeqa"}:
         contract = "\nReturn the concise final answer inside <answer>...</answer>."
@@ -153,11 +155,24 @@ def _system(bench, card_text, runtime):
         contract = LIVEMATH_CONTRACT
     elif bench == "spreadsheetbench" and runtime.get("prompt_layout") == CONTRACT_FIRST_LAYOUT_V2:
         contract = SHEET_CONTRACT_V2
-    else:
+    elif bench in {"spreadsheetbench", "alfworld"}:
         contract = "\nReturn one complete Python program in a ```python code block."
+    else:
+        raise ValueError("Unknown text-solver benchmark")
     if runtime.get("prompt_layout") in CONTRACT_FIRST_LAYOUTS:
         return QA_SYSTEM + contract + guidance
     return QA_SYSTEM + guidance + contract  # the historical order
+
+
+
+def _user(bench, view, text=""):
+    """Exact benchmark USER transport; hooks always receive the separate public view."""
+    if bench == zebralogic.BENCH:
+        return zebralogic.render_user(view, text)
+    request = dict(view)
+    if text:
+        request[NOTES_KEY] = text
+    return json.dumps(request, ensure_ascii=False)
 
 
 def _sheet_view(view, runtime, *, shortcut=None):
@@ -181,6 +196,11 @@ def _registered_view(public):
     if not isinstance(view, dict) or digest(view) != public.get("routing_view_sha256"):
         raise ConfigurationError("alfworld_routing_view_hash_mismatch: the items file's view")
     return view
+
+
+def _public_view(bench, public):
+    """Versioned public adapter; frozen backend admission remains unchanged."""
+    return zebralogic.public_view(public) if bench == zebralogic.BENCH else _legacy_public_view(bench, public)
 
 
 def routing_view(bench, public, *, runtime=None):
@@ -422,7 +442,7 @@ class _Shell:
         response, costs, reason = _response(recorded, system, user)
         index = len(self.receipts) - 1 if len(self.receipts) > before else None
         receipt = self.receipts[index] if index is not None else None
-        if response is None and self.bench in ANSWER_TAG_BENCHMARKS and _completed_without_text(receipt):
+        if response is None and self.bench in (*ANSWER_TAG_BENCHMARKS, zebralogic.BENCH) and _completed_without_text(receipt):
             response, reason = "", "model_response_completed_without_text"
         if response and self._margin_truncated(receipt, response):
             response, reason = None, "model_response_truncated"
@@ -593,6 +613,7 @@ def _solve(shell, bench, public, card_text, runtime, stored):
         return _solve_alfworld(shell, public, view, card_text, runtime)
     if bench == "spreadsheetbench":
         return _solve_sheet(shell, public, view, card_text, runtime, stored)
+    require(bench in (*QA, zebralogic.BENCH), "Unknown text-solver benchmark")
     return _solve_qa(shell, view, card_text, runtime)
 
 
@@ -608,7 +629,7 @@ def _solve_qa(shell, view, card_text, runtime):
         request = dict(view)
         if text:
             request[NOTES_KEY] = text
-        response, costs, reason, first = shell.request("first", system, json.dumps(request, ensure_ascii=False))
+        response, costs, reason, first = shell.request("first", system, _user(shell.bench, view, text))
         if response is None:
             return shell.unknown(reason, costs=costs)
         shell.deciding = first

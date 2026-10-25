@@ -56,8 +56,9 @@ from skillopt.validator_pilot.api import digest
 from . import notes
 from .donors import public_text, shaped
 from .package import Package
-from .protocol import (BENCHES, LIVEMATH_META_OPTION, MAX_FRAGMENTS, MAX_NOTE_CHARS, MAX_PROPERTY_TEXT, MAX_TESTS,
-                       META_FILLER, MUTATIONS, NOT_RECOMMENDED_PREFIX, NOTES_KEY, PROPERTY_KINDS, SANDBOX_TIMEOUTS,
+from .protocol import MUTATIONS  # historical exported registration remains unchanged
+from .profiles import (SUPPORTED_BENCHES, BENCHES, LIVEMATH_META_OPTION, MAX_FRAGMENTS, MAX_NOTE_CHARS, MAX_PROPERTY_TEXT, MAX_TESTS,
+                       META_FILLER, MUTATIONS as SUPPORTED_MUTATIONS, NOT_RECOMMENDED_PREFIX, NOTES_KEY, PROPERTY_KINDS, SANDBOX_TIMEOUTS,
                        STATE_FACTS, TRACKER_AGREEMENT)
 from .supply import routing_view as alfworld_routing_view
 
@@ -155,9 +156,13 @@ def facts_agree(state, reference):
 
 
 # ------------------------------------------------------------------------------------------------------ inputs
-def _view(call):
+def _view(call, *, bench=None):
     """The view a request showed: its user JSON without the procedure notes."""
-    view = json.loads(call["user"])
+    if bench == "zebralogic":
+        from .zebralogic import parse_user
+        view = parse_user(call["user"])
+    else:
+        view = json.loads(call["user"])
     require(isinstance(view, dict), "A request's user content is a JSON object")
     view.pop(NOTES_KEY, None)
     return view
@@ -174,14 +179,14 @@ def inputs_of(trajectory):
     SpreadsheetBench: the first request's view and the stored pre-check report; ALFWorld: per step request its view, the
     stored action (None when the request got no reply) and the event after it (None after the last step)."""
     bench = trajectory["bench"]
-    require(bench in BENCHES, "A trajectory of a known bench")
+    require(bench in SUPPORTED_BENCHES, "A trajectory of a known bench")
     calls = trajectory.get("calls") or []
     base = {"cell": trajectory["cell"], "bench": bench, "item": trajectory["task_id"], "token": trajectory.get("token")}
     if bench != "alfworld":
         first = [call for call in calls if call.get("purpose") == "first"]
         if not first:
             return None
-        view = _view(first[0])
+        view = _view(first[0], bench=bench)
         report = (trajectory.get("shell") or {}).get("precheck") if bench == "spreadsheetbench" else None
         return {**base, "view": view, "request_view": view, "report": report, "steps": None}
     views = [_view(call) for call in calls if call.get("purpose") == "step"]
@@ -217,7 +222,7 @@ def mutate(inputs, mutation):
     """A perturbed copy of ``inputs`` (``MUTATIONS``): every digit removed from the item's texts; the pre-check
     report's exception message dropped, or the report made a clean run; every observation after an action replaced by
     the environment's rejection text."""
-    require(mutation in MUTATIONS and inputs["bench"] in MUTATIONS[mutation], "A registered mutation of this bench")
+    require(mutation in SUPPORTED_MUTATIONS and inputs["bench"] in SUPPORTED_MUTATIONS[mutation], "A registered mutation of this bench")
     out = copy.deepcopy(inputs)
     if mutation == "strip_digits":
         for key in ("view", "request_view", "report", "steps"):
@@ -476,8 +481,8 @@ def validate_test(test, procedure, entries):
             or sorted(nonvacuity) != ["mutation", "withheld_expect"] or nonvacuity["withheld_expect"] is not False:
         return "nonvacuity"
     mutation = nonvacuity["mutation"]
-    if mutation is not None and (type(mutation) is not str or mutation not in MUTATIONS
-                                 or entry["bench"] not in MUTATIONS[mutation]):
+    if mutation is not None and (type(mutation) is not str or mutation not in SUPPORTED_MUTATIONS
+                                 or entry["bench"] not in SUPPORTED_MUTATIONS[mutation]):
         return "mutation"
     if kind in ("applies_true", "applies_false") and mutation is None:
         return "predicate_needs_mutation"

@@ -22,7 +22,7 @@ from . import solver
 from .protocol import NOTES_KEY, SEED, round_tag
 
 VERSION = "identical-request-classes-v2-3"
-BENCHES = ("searchqa", "officeqa", "livemath", "spreadsheetbench")
+BENCHES = ("searchqa", "officeqa", "livemath", "spreadsheetbench", "zebralogic")
 
 
 def signature(bench, package, view, worker, *, card_text="", runtime=None, withhold=(), restore=(), placebo=None):
@@ -49,7 +49,7 @@ def signature(bench, package, view, worker, *, card_text="", runtime=None, withh
         post.append({"hook": "second", "bindings": names,
                      "sham": any(p.id in shell.shams for p in shell.enabled(("bindings",)))})
     return {"request_sha256": _request_hash(solver._system(bench, card_text, runtime or {}),
-                                            json.dumps(request, ensure_ascii=False)),
+                                            solver._user(bench, view, text)),
             "post_call": post, "faults": [dict(f) for f in shell.faults], "enabled": list(shell.route.enabled)}
 
 
@@ -63,7 +63,7 @@ def interchangeable(first, second, *, bench):
 
 def card_sample(sealed, preferred=None):
     """The seeded C instrument sample, taking already-dispatched S items before supplemental S dispatches."""
-    if sealed["bench"] not in BENCHES or not sealed["card_is_parent"]:
+    if sealed.get("j6_registered") is False or sealed["bench"] not in BENCHES or not sealed["card_is_parent"]:
         return None
     if preferred is None and sealed.get("reuse") is not None:
         return dict(sealed["reuse"]["card_sample"])

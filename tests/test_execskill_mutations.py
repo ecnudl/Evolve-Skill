@@ -189,7 +189,8 @@ MUTATIONS = {
         "                        proxy=config[\"proxy\"], read_timeout=READ_TIMEOUT_SECONDS, transport=transport)\n",
         [T + "client.py::test_chain_g_gets_the_frozen_bigmodel_client_built_like_v3"]),
     "31-unseal-skips-the-run-root-scan": (
-        PE + "evaluation.py", "    scan = _root_scanned(safe_path(root), chain_root, chain, evidence=evidence)\n",
+        PE + "evaluation.py",
+        "    scan = _root_scanned(safe_path(root), chain_root, chain, evidence=evidence, configuration=configuration)\n",
         "    scan = None\n",
         [T + "canaries.py::test_a_canary_planted_in_the_run_root_pauses_the_unseal_until_the_owner_decides"]),
     "32-no-workbook-view-shows-the-preview": (
@@ -199,7 +200,10 @@ MUTATIONS = {
         PE + "cells.py", '        extra["shortcut"] = cell["shortcut"]\n', "        pass\n",
         [T + "shortcut_sb.py::test_c1_2_a_probe_cell_hands_its_mode_to_the_shell_and_its_record_states_it"]),
     "34-read-canaries-skip-nothing-on-the-training-side": (
-        PE + "evaluation.py", "            found, counts = select_canaries(texts, skip=skip)\n",
+        PE + "evaluation.py",
+        "            skip = training_duplicates(texts, training)\n"
+        "            found, counts = select_canaries(texts, skip=skip)\n",
+        "            skip = training_duplicates(texts, training)\n"
         "            found, counts = select_canaries(texts)\n",
         [T + "canaries.py::test_the_read_selection_skips_test_texts_found_verbatim_in_the_same_field_of_the_"
          "training_pools"]),
@@ -307,11 +311,11 @@ MUTATIONS = {
         "    require(found[\"passed\"] is True or True,\n",
         [T + "runcli.py::test_step_unit_runs_one_step_of_the_order_and_maps_its_pause_to_the_exit_code"]),
     "58-a-relaunched-read-gate-prices-the-whole-estimate": (
-        PE + "chain.py", "    if len(units) < len(BENCHES):  # ticket P2C-2: a relaunch prices only the read units",
+        PE + "chain.py", "    if len(units) < len(roster):  # ticket P2C-2: a relaunch prices only the read units",
         "    if False:  # ticket P2C-2: a relaunch prices only the read units",
         [T + "chain.py::test_p2c_2_a_relaunched_read_gate_prices_only_the_read_units_still_to_run"]),
     "59-setting-takes-terms-of-another-estimate": (
-        PE + "manifest.py", "_read_terms(terms.get(chain), estimate[chain])",
+        PE + "manifest.py", "_read_terms(terms.get(chain), estimate[chain], m[\"configuration\"])",
         "isinstance(terms.get(chain), dict)",
         [T + "manifest.py::test_p2c_2_setting_of_needs_each_chains_per_bench_terms_of_its_estimate"]),
     # registrar addendum 2026-10-22 15:0x: the manual smoke path, probe --fake and the probe roots
@@ -345,7 +349,7 @@ MUTATIONS = {
         PE + "solver.py", "and self.bench not in QA):\n", "and False):\n",
         [T + "solver.py::test_r3_bindings_is_qa_only_no_note_and_no_invitation_on_spreadsheetbench"]),
     "68-c1-takes-bindings-in-a-bench-without-calc": (
-        PE + "engineer.py", "not set(NO_CALC_BENCHES) <= set(entry.get(\"excluded_benches\", [])):\n", "False:\n",
+        PE + "engineer.py", "not set(no_calc) <= set(entry.get(\"excluded_benches\", [])):\n", "False:\n",
         [T + "engineer.py::test_r3_a_bindings_hook_whose_declared_scope_reaches_a_bench_without_calc_fails_c1"]),
     "69-role-calls-left-unlogged": (
         PE + "step.py", "                role_calls(root, attempt, self.calls)\n", "                pass\n",

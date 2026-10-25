@@ -935,3 +935,9 @@ def fake_escape_report():
                        "group": {"child_pid": 7, "child_pgid": 7, "parent_pgid": 1, "child_dumpable": 0,
                                  "descendant": "gone"}}}
 
+
+
+def zebra_collect(out, **options):
+    """ZebraLogic preparation and sandbox/prelaunch checks without sealed-panel access."""
+    from .zebra_smoke import collect_s0
+    return collect_s0(out, **options)

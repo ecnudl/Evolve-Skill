@@ -52,10 +52,10 @@ from skillopt.coevo5.protocol import RESEND_COOLDOWN_SECONDS
 from skillopt.coevo5.roles import Roles
 from skillopt.continual_eval.core import read_json, require, safe_path, write_json
 
-from . import budgets, protocol, solver
+from . import budgets, profiles as protocol, solver
 from .cells import Context, Pause
 from .errors import stop_kind
-from .protocol import (BENCHES, LIVE_SANDBOX_UNIT_CAP, MAX_REDOS, ROLE_MAX_TOKENS, ROLE_MODEL, SLOTS, ledger_bound,
+from .profiles import (SUPPORTED_BENCHES, BENCHES, LIVE_SANDBOX_UNIT_CAP, MAX_REDOS, ROLE_MAX_TOKENS, ROLE_MODEL, SLOTS, ledger_bound,
                        record, solver_tokens, verified)
 from .sandbox.client import Worker, unit_tag
 from .slots import CALL, EPISODE, LIVE, NATIVE
@@ -122,7 +122,7 @@ def solver_endpoint(setting, chain, bench, k, kind, attempt, *, first_run=False,
     require(not first_run or kind == "accept", "Only an acceptance round has blocks of a first run in a redo")
     require(not g_acc or kind == "examiner", "Only the examiner scope holds an acceptance round's G_acc cells")
     on = bench if cell_bench is None else cell_bench
-    require(on in BENCHES, "A cell bench")
+    require(on in SUPPORTED_BENCHES, "A cell bench")
     model = CHAINS[chain]["solver"]
     client = setting.clients(model, on)
     require(client.model == model, "The chain's solver client")
@@ -183,7 +183,7 @@ class BoundedRoles(Roles):
 
 
 def roles(endpoint, *, configuration=protocol.PILOT):
-    return BoundedRoles(endpoint) if configuration == protocol.MAIN_V2_3 else Roles(endpoint)
+    return BoundedRoles(endpoint) if protocol.is_v23(configuration) else Roles(endpoint)
 
 
 def cell_context(setting, attempt, endpoint, *, solve=solver.solve):
@@ -194,7 +194,7 @@ def cell_context(setting, attempt, endpoint, *, solve=solver.solve):
     def worker(bench):
         return Worker(**setting.sandbox, live=capped.get(bench, pools[LIVE]), per_call=pools[CALL])
 
-    nominal = ({bench: solver_tokens(endpoint.model, bench) for bench in BENCHES}
+    nominal = ({bench: solver_tokens(endpoint.model, bench) for bench in protocol.active_benches(protocol.configuration_of(setting))}
                if endpoint.model == protocol.CHAINS["D"] else {})
     return Context(attempt=attempt, endpoint=endpoint, runtime=setting.runtime, cards=setting.cards,
                    native=pools[NATIVE], episodes=pools[EPISODE], worker=worker, evidence=setting.evidence,
@@ -205,7 +205,7 @@ def for_unit(setting, chain, bench, unit):
     """The Setting of one unit of ``chain`` on ``bench`` (module docstring; ticket C5-1): ``setting`` with the sandbox
     keyword ``tag`` = ``unit_tag(chain, unit)``, so every container the unit's workers start is named for the unit and
     ``drain_unit(chain, unit)`` finds exactly those, and on ALFWorld at most ``ALFWORLD_WORKERS`` cells at once."""
-    require(bench in BENCHES and type(unit) is str and unit, "A unit of a known bench")
+    require(bench in SUPPORTED_BENCHES and type(unit) is str and unit, "A unit of a known bench")
     workers = min(setting.workers, ALFWORLD_WORKERS) if bench == "alfworld" else setting.workers
     return replace(setting, sandbox={**setting.sandbox, "tag": unit_tag(chain, unit)}, workers=workers)
 
@@ -220,7 +220,7 @@ def drainer(setting, chain, unit):
 
 def unit_path(chain_root, k, bench, name):
     """``<chain root>/s<k>-<bench>/<name>``."""
-    require(type(k) is int and k >= 1 and bench in BENCHES, "A step position and a known bench")
+    require(type(k) is int and k >= 1 and bench in SUPPORTED_BENCHES, "A step position and a known bench")
     return safe_path(chain_root) / ("s%d-%s" % (k, bench)) / name
 
 
@@ -259,7 +259,7 @@ def run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=Non
     the attempt's status or the unit's record is written; its CleanupUnconfirmed pauses the unit as a stop, so a unit
     whose containers remain is never complete. Returns the unit's record; raises ``Pause`` after writing the attempt's
     status."""
-    suffix = "-v2-3" if configuration == protocol.MAIN_V2_3 else ""
+    suffix = "-v2-3" if protocol.is_v23(configuration) else ""
     unit_root = safe_path(unit_root)
     unit_root.mkdir(parents=True, exist_ok=True)
     name = identity["unit"]

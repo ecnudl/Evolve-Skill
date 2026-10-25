@@ -60,8 +60,9 @@ from skillopt.validator_pilot.api import BIGMODEL_HOST, digest
 from scripts.weak_solver_probe import Client
 from skillopt.coevo5.budget import Budget
 
-from . import (budgets, client, describer, engineer, engines, examiner, notes, policy, protocol, research, routes,
+from . import (budgets, client, describer, engineer, engines, examiner, notes, policy, research, routes,
                slots, step, supply, units)
+from . import profiles as protocol
 from .errors import ConfigurationError
 from .generators import livemath
 from .registry import Registry
@@ -194,12 +195,15 @@ def prompt_sha(configuration=None):
     review 2026-10-23 #1)."""
     out = {"describer": describer.DESCRIBER_PROMPT_SHA256, "engineer": engineer.ENGINEER_PROMPT_SHA256,
            "examiner": dict(examiner.PROMPT_SHA256)}
-    if configuration == protocol.MAIN_V2_3:
+    if protocol.is_v23(configuration):
         out["engineer"] = engineer.ENGINEER_PROMPT_SINGLE_V23_SHA256
     if protocol.LEARNING.get(configuration) == "train":
-        out["v2"] = {"engineer": (engineer.ENGINEER_PROMPT_V23_SHA256 if configuration == protocol.MAIN_V2_3
+        out["v2"] = {"engineer": (engineer.ENGINEER_PROMPT_V23_SHA256 if protocol.is_v23(configuration)
                                           else engineer.ENGINEER_PROMPT_V2_SHA256), "analyst": engineer.ANALYST_PROMPT_SHA256,
                      "examiner": dict(examiner.PROMPT_V2_SHA256)}
+    if configuration == protocol.ZEBRA_PC_V1:
+        out["engineer"] = engineer.ENGINEER_PROMPT_SINGLE_ZPC_SHA256
+        out["v2"]["engineer"] = engineer.ENGINEER_PROMPT_ZPC_SHA256
     return out
 
 
@@ -215,9 +219,10 @@ def _plain(value):
     return value
 
 
-def registered():
+def registered(configuration=None):
     """The registered seeds, sizes and thresholds the manifest binds (values of ``protocol``)."""
-    p = protocol
+    from . import protocol as historical
+    p = protocol if configuration == protocol.ZEBRA_PC_V1 else historical
     return _plain({
         "seeds": {"seed": p.SEED, "rooms_tag": p.ROOMS_TAG, "alfworld_env_seed": p.ALFWORLD_ENV_SEED,
                   "searchqa_fresh_seed": p.SEARCHQA_FRESH_SEED},
@@ -234,14 +239,14 @@ def registered():
                        "min_production_receipts": p.MIN_PRODUCTION_RECEIPTS}})
 
 
-def _solver_fields(chain, env_path, branch, longest):
+def _solver_fields(chain, env_path, branch, longest, configuration=None):
     """A solver block without its ledger bound B; ``longest`` (the S1 probes' longest completion, branch N only) is
     recorded so that B can be re-derived from the block alone (safety review finding 2)."""
     require(chain in protocol.CHAINS, "A registered chain")
     model = protocol.CHAINS[chain]
     elucid = model == client.ELUCID_MODEL
     require(branch in protocol.BRANCHES if elucid else branch is None, "Chain D names its S1 branch; chain G none")
-    benches = protocol.BENCHES
+    benches = protocol.active_benches(configuration)
     return {"backend": "elucid" if elucid else "bigmodel", "model": model,
             "url_host": client.ELUCID_HOST if elucid else BIGMODEL_HOST, "env_path": str(safe_path(env_path)),
             "proxy": protocol.GATEWAY, "reasoning_effort": protocol.REASONING_EFFORT if elucid else "low",
@@ -252,20 +257,20 @@ def _solver_fields(chain, env_path, branch, longest):
             "client_source_sha": _sha(Path(client.__file__))}
 
 
-def solver_block(chain, *, env_path, branch=None, longest=None):
+def solver_block(chain, *, env_path, branch=None, longest=None, configuration=None):
     """The ``clients.solver[chain]`` block (§4.1, §21; plan §2.9): the registered client of the chain's solver with
     its per-bench nominal M, ledger bound B (``protocol.ledger_bound``) and read timeout. ``env_path``: chain D's
     credential file, chain G's credential repository (read by path only, never here)."""
-    fields = _solver_fields(chain, env_path, branch, longest)
+    fields = _solver_fields(chain, env_path, branch, longest, configuration)
     model = fields["model"]
     return {**fields, "B": {b: protocol.ledger_bound(model, b, branch=branch, longest=longest)
-                            for b in protocol.BENCHES}}
+                            for b in protocol.active_benches(configuration)}}
 
 
 def role_settings(configuration=None):
     """The frozen default role bound, plus v2.3's explicitly named train proposal bound (E1)."""
     return {**ROLES, "engineer_propose_max_tokens": protocol.ENGINEER_MAX_TOKENS[configuration]} \
-        if configuration == protocol.MAIN_V2_3 else dict(ROLES)
+        if protocol.is_v23(configuration) else dict(ROLES)
 
 
 def check_clients(clients, *, configuration=None):
@@ -280,7 +285,7 @@ def check_clients(clients, *, configuration=None):
     require(isinstance(solvers, dict) and solvers and set(solvers) <= set(protocol.CHAINS), "Solver blocks per chain")
     for chain, block in solvers.items():
         require(isinstance(block, dict) and set(block) == SOLVER_FIELDS, "A solver block holds the registered fields")
-        expected = solver_block(chain, env_path=block["env_path"], branch=block["branch"], longest=block["longest"])
+        expected = solver_block(chain, env_path=block["env_path"], branch=block["branch"], longest=block["longest"], configuration=configuration)
         same = {key for key in SOLVER_FIELDS if block[key] == expected[key]}
         require(same == SOLVER_FIELDS, "The %s solver block differs from the registration: %s"
                 % (chain, sorted(SOLVER_FIELDS - same)))
@@ -300,7 +305,7 @@ def check(manifest):
     require(isinstance(value["prompt_sha"], dict)
             and set(value["prompt_sha"]) == set(prompt_sha(value.get("configuration"))),
             "The manifest binds the engineer's and the describer's prompt hashes")
-    require(_card_texts(value["cards"]), "The manifest's cards are the five card texts, not their hashes: cells.py "
+    require(_card_texts(value["cards"], value["configuration"]), "The manifest's cards are the five card texts, not their hashes: cells.py "
             "hands cards[bench] to the solver as the card (registrar addendum 14:10 row 12)")
     configuration = value["configuration"]
     require(configuration in protocol.CONFIGURATIONS and value["caps"] == budgets.caps(configuration),
@@ -309,20 +314,23 @@ def check(manifest):
     require(value["evidence"] not in real or value["evidence"] == protocol.REAL_RUN_EVIDENCE[configuration],
             "A real run's evidence label is its configuration's: %s" % protocol.REAL_RUN_EVIDENCE[configuration])
     check_clients(value["clients"], configuration=configuration)
-    if configuration == protocol.MAIN_V2_3:
+    if protocol.is_v23(configuration):
         require(value["sandbox"]["policy_sha256"] == policy.policy_sha256(
             version=protocol.POLICY_VERSIONS[configuration]), "The v2.3 sandbox policy is pinned")
-        sheet = value["runtime"]["spreadsheetbench"]
+        sheet = value["runtime"].get("spreadsheetbench")
+        if sheet is None:
+            require(configuration == protocol.ZEBRA_PC_V1, "Only a registered text-only profile omits sheet runtime")
+            return _check_zebra(value)
         require(sheet.get("code_extraction_version") == protocol.CODE_EXTRACTION[configuration]
                 and sheet.get("multiple_python_blocks") == protocol.MULTIPLE_PYTHON_BLOCKS[configuration],
                 "The v2.3 extraction and multiple-block decision are pinned")
-    return value
+    return _check_zebra(value) if configuration == protocol.ZEBRA_PC_V1 else value
 
 
-def _card_texts(cards):
+def _card_texts(cards, configuration=None):
     """Whether ``cards`` is {bench: card text} for every bench (pilot-runbook §3.1): non-empty texts, none of them a
     bare sha256 hex digest."""
-    return isinstance(cards, dict) and set(cards) == set(protocol.BENCHES) and all(
+    return isinstance(cards, dict) and set(cards) == set(protocol.active_benches(configuration)) and all(
         type(text) is str and text.strip() and not (len(text) == 64 and set(text) <= set("0123456789abcdef"))
         for text in cards.values())
 
@@ -339,26 +347,32 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
     limits = dict(sandbox.LIMITS if limits is None else limits)
     require(set(limits) == set(sandbox.KINDS) and all(isinstance(v, sandbox.Limits) for v in limits.values()),
             "Registered limits for every sandbox kind")
-    if configuration == protocol.MAIN_V2_3:
+    if protocol.is_v23(configuration) and "spreadsheetbench" in given["runtime"]:
         given = {**given, "clients": {**given["clients"], "roles": role_settings(configuration)},
                  "runtime": {**given["runtime"], "spreadsheetbench": {
                      **given["runtime"]["spreadsheetbench"],
                      "code_extraction_version": protocol.CODE_EXTRACTION[configuration],
                      "multiple_python_blocks": protocol.MULTIPLE_PYTHON_BLOCKS[configuration]}}}
+    if configuration == protocol.ZEBRA_PC_V1:
+        from .zebralogic import CARD_VERSION
+        given = {**given, "clients": {**given["clients"], "roles": role_settings(configuration)},
+                 "data": {**given["data"], "zebra_pc_features": zebra_features()}}
+    from . import protocol as historical
     fields = {
-        **given, **registered(), "history_root": protocol.HISTORY_ROOT, "slot_root": protocol.SLOT_ROOT,
+        **given, **registered(configuration), "history_root": historical.HISTORY_ROOT, "slot_root": historical.SLOT_ROOT,
         "templates": protocol.TEMPLATES_SHA256, "lexicon_sha": notes.lexicon_sha256(),
         "prompt_sha": prompt_sha(configuration),
         "placebo_corpus_sha": protocol.PLACEBO_CORPUS_SHA256, "configuration": configuration,
         "caps": budgets.caps(configuration),
-        "importable_versions": [*protocol.IMPORTABLE, protocol.TEXTS_IMPORT],
+        "importable_versions": ([*protocol.IMPORTABLE, CARD_VERSION]
+                                if configuration == protocol.ZEBRA_PC_V1 else [*protocol.IMPORTABLE, protocol.TEXTS_IMPORT]),
         "sandbox": {"image_id": sandbox.IMAGE, "worker_sha256": sandbox.worker_sha256(),
                     "policy_sha256": policy.policy_sha256(version=protocol.POLICY_VERSIONS[configuration]),
                     "docker_argv_template_sha": digest({k: sandbox.argv_template(k, v) for k, v in limits.items()}),
                     "limits": {k: asdict(v) for k, v in sorted(limits.items())}, "measured": measured},
         "code": pin_code(), "loaded_code": sorted(loaded_code()),
         "environment": environment() if environment_found is None else environment_found}
-    record = check(protocol.record(KIND + ("-v2-3" if configuration == protocol.MAIN_V2_3 else ""), evidence, fields))
+    record = check(protocol.record(KIND + ("-v2-3" if protocol.is_v23(configuration) else ""), evidence, fields))
     write_json(out, record)
     return record
 
@@ -411,6 +425,9 @@ def _smoke_example(root):
 
 def _items(entry, bench):
     """One bench's items from a pinned JSON list file (``{"path", "sha256"}``), in the bench's fixed order."""
+    if bench == "zebralogic":
+        from . import zebralogic
+        return zebralogic.load_pool(entry["path"], expected_sha256=entry["sha256"])
     path = safe_path(entry["path"])
     require(_sha(path) == entry["sha256"], "The %s item file differs from its pin" % bench)
     found = read_json(path)
@@ -482,7 +499,7 @@ def _clients(m, chain, transport, route=None):
                 except (SystemExit, OSError) as refusal:  # the frozen refusals carry no secret
                     raise ConfigurationError("glm-5.3 role credentials: %s" % refusal) from None
             else:
-                require(wanted == model and bench in protocol.BENCHES, "The run's solver on a known bench")
+                require(wanted == model and bench in protocol.active_benches(m["configuration"]), "The run's solver on a known bench")
                 cache[key] = client.solver_client(model, config=solver_config(m, run, bench, route),
                                                   transport=transport)
         return cache[key]
@@ -498,7 +515,7 @@ def _safety(setting, block):
     require(set(pools) == set(slots.POOL_SIZES) and all(isinstance(p, slots.OrderedSlots) for p in pools.values())
             and len({id(p.holdings) for p in pools.values()}) == 1, "The Setting's slots are one slots.pools set")
     require(pools[slots.LIVE] is not None and pools[slots.CALL] is not None, "Workers get the live and per-call pools")
-    for bench in protocol.BENCHES:
+    for bench in protocol.active_benches(protocol.configuration_of(setting)):
         require(protocol.ledger_bound(block["model"], bench, branch=setting.branch, longest=setting.longest)
                 == block["B"][bench], "The Setting's ledger bound is the manifest's B on %s" % bench)
 
@@ -520,10 +537,13 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
     of the workers, the drain and the image check (a fake in tests); ``transport``: the clients' httpx transport
     (tests)."""
     require(chain in RUNS, "Chain G, chain D or the smoke")
-    require((m["evidence"] == SMOKE_EVIDENCE) == (chain == budgets.SMOKE),
+    require((m["evidence"] == SMOKE_EVIDENCE) == (chain == budgets.SMOKE)
+            or (m["configuration"] == protocol.ZEBRA_PC_V1 and m["evidence"] == SMOKE_EVIDENCE),
             "The smoke runs on a smoke manifest and the chains on a pilot manifest")
     require(m["lexicon_sha"] == notes.lexicon_sha256() and m["prompt_sha"] == prompt_sha(m["configuration"]),
             "The lexicon or a pinned prompt differs from the manifest")
+    if m["configuration"] == protocol.ZEBRA_PC_V1:
+        require(chain in m["data"].get("launchable_chains", protocol.CHAINS), "This chain needs its own passed smoke")
     root, docker = safe_path(m["root"]), docker or sandbox.Docker()
     solver_chain = _solver_chain(chain, root)  # the smoke: its specification's (registrar addendum 2026-10-23 02:3x)
     route = routes.current(root / chain, run=m[protocol.RECORD_HASH], chain=chain) if chain in routes.ROUTED else None
@@ -546,7 +566,7 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
                 "The data pins hold the S-E6-corrected test-read estimate of chain %s" % chain)
         extra["test_read_estimate"] = {chain: estimate[chain]}
         terms = m["data"].get("test_read_terms")
-        require(isinstance(terms, dict) and _read_terms(terms.get(chain), estimate[chain]), "The data pins hold the "
+        require(isinstance(terms, dict) and _read_terms(terms.get(chain), estimate[chain], m["configuration"]), "The data pins hold the "
                 "per-bench terms of that estimate (data.test_read_terms[%s], {bench: \"p/q\"} whose sum rounds up to "
                 "it; registrar addendum 15:3x, ticket P2C-2)" % chain)
         extra["test_read_terms"] = {chain: dict(terms[chain])}
@@ -576,11 +596,11 @@ def _searchqa_tail(data):
     return {**tail, "exclusion": dict(bound)}
 
 
-def _read_terms(terms, estimate):
+def _read_terms(terms, estimate, configuration=None):
     """Whether ``terms`` are the per-bench terms of the test-read ``estimate`` (``test-read-estimate``'s ``terms``,
     ``protocol.read_estimate_terms``): {bench: "p/q"} for every bench, each positive, the ceiling of their sum the
     estimate (registrar addendum 2026-10-22 15:3x, ticket P2C-2)."""
-    if not (isinstance(terms, dict) and set(terms) == set(protocol.BENCHES)
+    if not (isinstance(terms, dict) and set(terms) == set(protocol.read_benches(configuration))
             and all(type(text) is str for text in terms.values())):
         return False
     try:
@@ -600,6 +620,8 @@ class Services(step.Services):
     another kind given explicitly (a fake) is kept."""
 
     def __post_init__(self):
+        if self.sources is None:
+            return  # selection-only profile: no LiveMath service
         if self.checker is None or (isinstance(self.checker, livemath.WorkerChecker)
                                     and self.checker.workers is not self.workers):
             object.__setattr__(self, "checker", livemath.WorkerChecker(self.workers))
@@ -619,6 +641,10 @@ def services_of(m, chain, *, setting, transport=None):
     solve of a set (ticket I1-2, registrar addendum 14:4x)."""
     require(chain in RUNS and setting.evidence == m["evidence"] and setting.run == m[protocol.RECORD_HASH],
             "The Setting of this manifest")
+    if m["configuration"] == protocol.ZEBRA_PC_V1:
+        workers = functools.partial(sandbox.with_worker, **setting.sandbox, live=setting.slots[slots.LIVE],
+                                    per_call=setting.slots[slots.CALL])
+        return Services(registry=Registry(m["history_root"], evidence=m["evidence"]), sources=None, workers=workers)
     entry = m["data"].get("research")
     require(isinstance(entry, dict) and set(entry) == RESEARCH_FIELDS, "The data pins bind the research archive")
     archive = research.Archive(entry["archive"])
@@ -631,3 +657,33 @@ def services_of(m, chain, *, setting, transport=None):
                                    evidence=m["evidence"])
     return Services(registry=Registry(m["history_root"], evidence=m["evidence"]), sources=sources, workers=workers,
                     engine=engine)
+
+
+def _check_zebra(value):
+    """The profile's experiment and sealed identities, checked by value without opening the panel."""
+    from . import zebralogic
+    require(value["data"].get("zebra_pc_features") == zebra_features(), "The ZebraLogic feature family is pinned by value")
+    require(value["data"].get("zebra_pc") == zebralogic.identity(), "The ZebraLogic registration is pinned by value")
+    if value["evidence"] in (SMOKE_EVIDENCE, protocol.REAL_RUN_EVIDENCE[protocol.ZEBRA_PC_V1]):
+        require(value["data"]["pools"]["zebralogic"]["sha256"] == zebralogic.POOL_SHA256, "The registered pool hash")
+    require(value["cards"] == {"zebralogic": zebralogic.CARD_TEXT}, "The registered grid card is pinned by value")
+    require(set(value["runtime"]) == {"zebralogic"}, "The profile has only its grid runtime")
+    require(set(value["data"].get("pools", {})) == {"zebralogic"}, "The profile names only its pool")
+    require(value["data"].get("pinned") == zebralogic.identity()["sealed"], "The sealed panel identity is pinned externally")
+    return value
+
+
+def zebra_features():
+    """The new profile's inherited behavior, benchmark gates and active/read roster by value."""
+    p, name = protocol, protocol.ZEBRA_PC_V1
+    tables = ("LEARNING", "FIX_ECHO", "META_COUNTERFACTUAL", "TRAIN_SIGN", "PRUNE_NON_FIRING", "ACCEPT_RULES",
+              "ENGINEER_MAX_TOKENS", "TRIM_PAYLOADS", "NORMALIZE_STRUCTURE", "CHECK_NON_FIRING",
+              "ENGINEER_RECORDS", "IDENTICAL_REQUEST_REUSE", "POLICY_VERSIONS", "CODE_EXTRACTION",
+              "MULTIPLE_PYTHON_BLOCKS", "STAGE_READ", "ACCEPT_FRESHNESS")
+    return _plain({"family": p.FEATURE_FAMILIES[name], "features": {key: getattr(p, key)[name] for key in tables},
+                   "configuration": p.CONFIGURATIONS[name], "active": p.active_benches(name),
+                   "read": p.read_benches(name), "namespaces": p.CHAIN_NAMESPACES[name],
+                   "slices": p.SLICES["zebralogic"], "g_acc": p.G_ACC["zebralogic"],
+                   "mde_points": p.MDE_POINTS["zebralogic"], "note_cap": p.MAX_NOTE_CHARS["zebralogic"],
+                   "cell_anchors": p.CELL_ANCHORS["zebralogic"], "bindings": False,
+                   "generator": "selection_only", "placebo_i": False, "j7": False})

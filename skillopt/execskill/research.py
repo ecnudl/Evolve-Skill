@@ -56,7 +56,8 @@ from skillopt.validator_pilot.api import digest
 
 from . import VERSION
 from .client import POOL_LIMITS
-from .protocol import (
+from .profiles import (
+    SUPPORTED_BENCHES,
     BENCHES,
     LIVEMATH_DEFINITION_CHARS,
     MAX_RESEARCH_REQUESTS,

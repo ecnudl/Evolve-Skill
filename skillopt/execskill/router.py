@@ -31,7 +31,7 @@ from skillopt.continual_eval.core import require
 from skillopt.validator_pilot.api import digest
 
 from .package import Package, edits
-from .protocol import (BENCHES, INHERITED_TWIN_MIN_FIRED, MAX_TWINS_PER_ITEM, MIN_ASTAR, MIN_ASTAR_ROOMS, RECORD_HASH,
+from .profiles import (SUPPORTED_BENCHES, BENCHES, INHERITED_TWIN_MIN_FIRED, MAX_TWINS_PER_ITEM, MIN_ASTAR, MIN_ASTAR_ROOMS, RECORD_HASH,
                        SANDBOX_TIMEOUTS, SEED, TWIN_MIN_FIRED, record, withhold_tag, yoke_tag)
 
 PREDICATE = "applies"
@@ -86,7 +86,7 @@ def predicate_fault(procedure_id, result):
 def route(package, bench, routing_view, worker, *, withhold=frozenset(), restore=frozenset()):
     """The ``RouteLog`` of ``package`` on one item. ``worker``: a started sandbox worker holding the package (None only
     when no procedure may fire on the bench); ``withhold`` / ``restore``: procedure ids of the package."""
-    require(isinstance(package, Package) and bench in BENCHES, "Route a package on a known bench")
+    require(isinstance(package, Package) and bench in SUPPORTED_BENCHES, "Route a package on a known bench")
     withhold, restore = frozenset(withhold), frozenset(restore)
     require(withhold <= set(package.order) and restore <= set(package.order) and not withhold & restore,
             "Withheld and restored procedures are distinct procedures of the package")
@@ -149,7 +149,7 @@ def plan(candidate, parent, bench, views, workers, *, unit, rooms=None, donors=(
     item's workbook); ``rooms``: {item: room}, required on ALFWorld; ``donors``: the run-slice donor ids;
     ``minimum``: v2.2's {"items", "rooms"} floor of |A*| (``acceptance.minimum_astar``, recorded in the plan), None for
     the registered ``MIN_ASTAR`` / ``MIN_ASTAR_ROOMS``."""
-    require(isinstance(candidate, Package) and isinstance(parent, Package) and bench in BENCHES,
+    require(isinstance(candidate, Package) and isinstance(parent, Package) and bench in SUPPORTED_BENCHES,
             "A candidate, its parent and a known bench")
     require(candidate.parent_sha256 == parent.sha256, "The candidate's parent hash is not its parent's")
     require(isinstance(views, dict) and views, "Routing views of the acceptance items")

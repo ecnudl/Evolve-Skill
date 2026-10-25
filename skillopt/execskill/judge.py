@@ -46,8 +46,8 @@ from skillopt.continual_eval.code_delivery import extract_python
 from skillopt.continual_eval.core import require
 from skillopt.envs.searchqa.evaluator import extract_answer, normalize_answer
 
-from . import outcomes_ext
-from .protocol import ALFWORLD_ADMISSIBLE_MIN, BENCHES, QA, kind
+from . import outcomes_ext, zebralogic
+from .profiles import ALFWORLD_ADMISSIBLE_MIN, SUPPORTED_BENCHES as BENCHES, QA, kind
 
 SCORER = "execskill-judge-v2"  # §4.4: the scorer's own version
 CARRIERS = ("official", "json", "none")
@@ -77,7 +77,8 @@ def judge(bench, public, private, prediction, receipts=(), *, runtime, score=Non
         deciding = outcomes_ext.deciding_receipt(prediction, receipts)
     outcomes_ext.check_deciding(receipts, deciding)
     if score is None and (bench != "spreadsheetbench" or prediction.get("status") != "available"):
-        score = backends.score(bench, public, private, prediction, runtime=runtime)  # host only
+        score = (zebralogic.score(public, private, prediction, runtime=runtime) if bench == zebralogic.BENCH
+                 else backends.score(bench, public, private, prediction, runtime=runtime))  # host only
     if verdict is None:
         verdict = outcomes_ext.preflight(bench, prediction, receipts, deciding=deciding)
         if verdict is None:
@@ -103,7 +104,9 @@ def judge(bench, public, private, prediction, receipts=(), *, runtime, score=Non
             "final": {"token": final, "outcome": verdict.outcome, "kind": verdict.kind, "row": verdict.row,
                       "public": outcomes.public(verdict)},
             "v2": {"token": v2}, "lenient": {"pass": lenient},
-            "format": _format(bench, prediction, reply, answer, final),
+            "format": ({"reply": reply is not None, "grid": zebralogic.format_valid(public, private, reply),
+                        "violation": None if final in UNKNOWN_TOKENS else not zebralogic.format_valid(public, private, reply)}
+                       if bench == zebralogic.BENCH else _format(bench, prediction, reply, answer, final)),
             "flags": _flags(bench, private, prediction, receipts, deciding, final, v2, lenient), "carrier": carrier}
 
 
@@ -112,8 +115,11 @@ def select_answer(bench, reply, *, configuration="default"):
     ``CARRIERS``, answer None for ``none``."""
     require(bench in BENCHES, "Unknown benchmark")
     require(type(reply) is str, "A reply is text")
+    if bench == zebralogic.BENCH:
+        grid = zebralogic.parse_solution(reply)
+        return (grid, "official") if grid is not None else (None, "none")
     if bench == "spreadsheetbench":
-        from . import protocol
+        from . import profiles as protocol
 
         if protocol.CODE_EXTRACTION[configuration] == "explicit-python-fences-v2":
             from .code_delivery import extract_python as extract_v2
@@ -195,11 +201,11 @@ def _reply(bench, prediction):
     """A QA cell's delivered reply text (the frozen scorer's input, backends.py:436), else None."""
     output = prediction.get("output")
     available = prediction.get("status") == "available" and type(output) is str
-    return output if bench in QA and available else None
+    return output if bench in (*QA, zebralogic.BENCH) and available else None
 
 
 def _carrier(bench, prediction, reply):
-    if bench in QA:
+    if bench in (*QA, zebralogic.BENCH):
         return select_answer(bench, reply) if reply is not None else (None, "none")
     # SpreadsheetBench and ALFWorld: the shell applied the frozen extraction; an available prediction carries its
     # program, or every action of its episode
