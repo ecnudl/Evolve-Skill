@@ -60,10 +60,11 @@ def test_main_v2_2_is_main_v2_1_with_the_practical_gates_and_its_own_root_and_na
     assert set(protocol.V22_NAMESPACES.values()) <= set(protocol.NAMESPACES)
     assert set(protocol.TRAIN_SIGN) == set(protocol.PRUNE_NON_FIRING) == set(protocol.ACCEPT_RULES) == set(
         protocol.CONFIGURATIONS)
-    assert {name for name, required in protocol.TRAIN_SIGN.items() if not required} == {V22}
-    assert {name for name, on in protocol.PRUNE_NON_FIRING.items() if on} == {V22}
-    assert {name: rule for name, rule in protocol.ACCEPT_RULES.items() if rule} == {V22: RULE}
-    assert protocol.ACCEPT_FRESHNESS == {V22: "route_b_v2_1_slices_reused"}
+    assert {name for name, required in protocol.TRAIN_SIGN.items() if not required} == {V22, protocol.MAIN_V2_3}
+    assert {name for name, on in protocol.PRUNE_NON_FIRING.items() if on} == {V22, protocol.MAIN_V2_3}
+    assert {name: rule for name, rule in protocol.ACCEPT_RULES.items() if rule} == {V22: RULE, protocol.MAIN_V2_3: RULE}
+    assert protocol.ACCEPT_FRESHNESS == {V22: "route_b_v2_1_slices_reused",
+                                         protocol.MAIN_V2_3: "route_b_v2_2_slices_reused"}
     assert RULE == {"name": "practical-v2-2", "gain_points": 5, "significance_benches": ["searchqa"],
                     "significance_points": 2, "alpha": protocol.ALPHA, "content_points": 5, "astar_share_percent": 5,
                     "astar_cap": protocol.MIN_ASTAR, "rooms_cap": protocol.MIN_ASTAR_ROOMS, "blocks_extra": 2}

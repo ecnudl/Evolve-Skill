@@ -97,7 +97,9 @@ def judge(bench, public, private, prediction, receipts=(), *, runtime, score=Non
     require(v2 == "pass" or official["status"] != "pass", "Scorer v2 below the official score")
     lenient = scoring.lenient(bench, private, {"status": "available", "output": TAG % answer}
                               if carrier == "json" else prediction)
-    return {"version": kind("judge"), "scorer": SCORER, "official": official,
+    revised = runtime.get("code_extraction_version") == "explicit-python-fences-v2"
+    return {"version": kind("judge-v2-3" if revised else "judge"),
+            "scorer": "execskill-judge-v2-3" if revised else SCORER, "official": official,
             "final": {"token": final, "outcome": verdict.outcome, "kind": verdict.kind, "row": verdict.row,
                       "public": outcomes.public(verdict)},
             "v2": {"token": v2}, "lenient": {"pass": lenient},
@@ -105,13 +107,20 @@ def judge(bench, public, private, prediction, receipts=(), *, runtime, score=Non
             "flags": _flags(bench, private, prediction, receipts, deciding, final, v2, lenient), "carrier": carrier}
 
 
-def select_answer(bench, reply):
+def select_answer(bench, reply, *, configuration="default"):
     """``(answer, carrier)`` of one reply by the reference-independent precedence (module docstring); carrier is one of
     ``CARRIERS``, answer None for ``none``."""
     require(bench in BENCHES, "Unknown benchmark")
     require(type(reply) is str, "A reply is text")
     if bench == "spreadsheetbench":
-        extracted = extract_python(reply)
+        from . import protocol
+
+        if protocol.CODE_EXTRACTION[configuration] == "explicit-python-fences-v2":
+            from .code_delivery import extract_python as extract_v2
+
+            extracted = extract_v2(reply, multiple=protocol.MULTIPLE_PYTHON_BLOCKS[configuration])
+        else:
+            extracted = extract_python(reply)
         return (extracted["code"], "official") if extracted["status"] == "available" else (None, "none")
     if bench == "alfworld":
         match = ACTION.search(reply)

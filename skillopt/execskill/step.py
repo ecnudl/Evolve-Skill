@@ -112,6 +112,20 @@ the round wrote that its routing pass enables on no evaluated item and faults on
 pruned ids, the round's history the fate ``pruned_no_firing``); the acceptance round is prepared with the practical
 rule (``protocol.ACCEPT_RULES``, ``acceptance.prepare``) and labelled ``protocol.ACCEPT_FRESHNESS``.
 
+v2.3 (owner request 2026-10-25 T1/T2, ``protocol.IDENTICAL_REQUEST_REUSE``): the self-test seals full-view request
+identities and its skipped items before dispatch, reusing the same plan on resume. An interchangeable item runs
+neither arm, counts as an unchanged item in the fault and format denominators, and has no measured accuracy (the
+accuracy denominator explicitly lists only dispatched items). An entirely identical self-test passes without an
+endpoint or call. Training prunes idle procedures first, then skips the enabled-list differences whose exact
+requests and post-call behavior are identical, listing them as ``identical`` with neither a fix nor a break.
+Amendment 1 (2026-10-25): those skipped training items remain evaluated with exact zero differences. The adoption
+threshold counts them, and the format/fault denominator includes their registered runs (generated items once).
+Zero-call rendering faults prevent either skip and remain in the guards even if the later execution succeeds.
+ALFWorld preserves its enabled-list rule. Acceptance receives the configuration's sealed reuse inputs; the test
+reads and stage reads keep their registered behavior.
+Amendment 2 (2026-10-25): the engineer receives exactly this round's run and admitted G_self routing views for its
+repairable C6b predicate-firing check. ``_training_publics`` supplies both passes; idle pruning remains the backstop.
+
 While a sub-step runs, the step's Setting and worker factories are that unit's (``units.for_unit``; registrar decision
 on safety review 3, ticket C5-1): every sandbox container of the unit carries its tag, and the unit is drained
 (``units.drainer``) before it is marked complete or paused. At the end of each unit attempt its role calls (reply
@@ -143,8 +157,8 @@ from skillopt.continual_eval import spreadsheet_compat
 from skillopt.continual_eval.core import read_json, require, safe_path, write_json
 from skillopt.validator_pilot.api import digest
 
-from . import (acceptance, budgets, describer, detectors, donors, engineer, examiner, exclusion, generators, replay,
-               research, rounds, router, solver, supply, trajectories, units)
+from . import (acceptance, budgets, describer, detectors, donors, engineer, examiner, exclusion, generators, protocol,
+               replay, research, rounds, router, solver, supply, trajectories, units, reuse as request_reuse)
 from .cells import Arm, Pause, TrainingStore, cell_id, run_cells
 from .chain import EXIT_AWAITING, EXIT_COMPLETE, EXIT_PAUSED, cap_check, check_pins, confirmation, heavy
 from .package import EDIT_KINDS, Package, edits, empty, load, save, validate, with_describer, withhold
@@ -153,7 +167,7 @@ from .protocol import (BAND_ROUNDS, BENCHES, CELL_ANCHORS, CHAINS, EARLIER_SET_M
                        ROLE_MODEL, S4_SLICES, SEED, SX_SLICES, TOPUP_ROUNDS, TRAIN_ADOPT_SHARE, TRAIN_ALPHA,
                        TRAIN_EXAMPLES, TRAIN_FORMAT_MARGIN, TRAIN_PATIENCE, TRAIN_ROUNDS, TRAIN_TEXT_CHARS,
                        configuration_of, learning_of, namespace_of, order_of, FIX_ECHO, META_COUNTERFACTUAL,
-                       ACCEPT_FRESHNESS, ACCEPT_RULES, PRUNE_NON_FIRING, TRAIN_SIGN,
+                       ACCEPT_FRESHNESS, ACCEPT_RULES, PRUNE_NON_FIRING, TRAIN_SIGN, IDENTICAL_REQUEST_REUSE,
                        SELFTEST_ALPHA, SELFTEST_FAULT_MAX, SELFTEST_FORMAT_MARGIN, SELFTEST_PASSES, SLICES,
                        SMOKE_SOLVER, generator_seed, ledger_bound, record, round_tag, verified)
 from .registry import HELD, run_identity
@@ -288,11 +302,13 @@ class _Step:
         """GLM-5.3 roles of this step charged to ``budgets.glm_scopes`` of ``role`` (§4.2-§4.3, §9.3); in the smoke
         to ``smoke:glm``."""
         if self.smoke is None:
-            made = Roles(units.role_endpoint(self.setting, self.chain, role, self.bench, self.k))
+            made = units.roles(units.role_endpoint(self.setting, self.chain, role, self.bench, self.k),
+                               configuration=configuration_of(self.setting))
         else:
-            made = Roles(budgets.endpoint(self.setting, budgets.glm_scopes(budgets.SMOKE, role, None, None),
-                                          client=self.setting.clients(ROLE_MODEL, None),
-                                          max_tokens_bound=ROLE_MAX_TOKENS))
+            made = units.roles(budgets.endpoint(self.setting, budgets.glm_scopes(budgets.SMOKE, role, None, None),
+                                               client=self.setting.clients(ROLE_MODEL, None),
+                                               max_tokens_bound=ROLE_MAX_TOKENS),
+                               configuration=configuration_of(self.setting))
         if self.calls is not None:
             self.calls.append(made)
         return made
@@ -364,6 +380,7 @@ class _Step:
         try:
             with heavy(base, self.bench, *benches):
                 found = units.run_unit(root, run=base.run, identity=identity, work=logged, evidence=self.evidence,
+                                       configuration=configuration_of(base),
                                        drain=units.drainer(base, self.chain, label), settle=settle)
         finally:
             self.setting, self.services = base, services
@@ -1001,7 +1018,7 @@ def _engineer(st, cut, unit, previous):
                                    card=st.setting.cards.get(st.bench, ""), references=_references(st, cut, parents),
                                    inputs_dirs=inputs,
                                    detectors=detectors.counts(detectors.diagnosis(parents, bench=st.bench)),
-                                   previous=previous, spent=spent)
+                                   previous=previous, spent=spent, configuration=configuration_of(st.setting))
             candidate, sealed = engineer.run(ctx)
         if candidate is not None:
             save(st.chain_root, candidate)
@@ -1044,7 +1061,7 @@ def _token(cell):
     return ((cell.get("judge") or {}).get("v2") or {}).get("token")
 
 
-def selftest_verdict(cells, sets, changed):
+def selftest_verdict(cells, sets, changed, *, identical=None, request_faults=None):
     """§5.5: the two registered blocks, from the cell records alone. ``cells``: the self-test's cell records (arms
     S' and S, one run); ``sets``: {bench: [item ids]}; ``changed``: the ids of the procedures the step adds or revises.
     (a) S' cells with a fault of a changed procedure or a re-execution ``unknown_fault`` (J3's rule, Codex F22) > 2 %;
@@ -1055,13 +1072,17 @@ def selftest_verdict(cells, sets, changed):
     candidate = [c for c in cells if c["cell"]["arm"] == "S'"]
 
     def own_fault(cell):
-        return _token(cell) == "unknown_fault" or any(f.get("procedure") in changed for f in cell.get("faults") or [])
+        return (_token(cell) == "unknown_fault" or cell["cell"]["task_id"] in (request_faults or [])
+                or any(f.get("procedure") in changed for f in cell.get("faults") or []))
 
     faulted = sum(1 for c in candidate if own_fault(c))
     inherited = sum(1 for c in candidate if c.get("faults") and not own_fault(c))
-    fault_share = Fraction(faulted, len(candidate)) if candidate else Fraction(0)
+    skipped = sum(len(ids) for ids in (identical or {}).values())
+    total = len(candidate) + skipped
+    fault_share = Fraction(faulted, total) if total else Fraction(0)
     rows = {}
     for bench, ids in sorted(sets.items()):
+        evaluated = [i for i in ids if i not in (identical or {}).get(bench, [])]
         def violates(arm, item):
             judge = by[(arm, item)].get("judge") or {}
             return bool((judge.get("format") or {}).get("violation"))
@@ -1069,17 +1090,35 @@ def selftest_verdict(cells, sets, changed):
         def passed(arm, item):
             return _token(by[(arm, item)]) == "pass"
 
-        worse = sum(1 for i in ids if violates("S'", i) and not violates("S", i))
-        better = sum(1 for i in ids if violates("S", i) and not violates("S'", i))
-        gap = Fraction(sum(violates("S'", i) for i in ids) - sum(violates("S", i) for i in ids), len(ids))
+        worse = sum(1 for i in evaluated if violates("S'", i) and not violates("S", i))
+        better = sum(1 for i in evaluated if violates("S", i) and not violates("S'", i))
+        gap = Fraction(sum(violates("S'", i) for i in evaluated) - sum(violates("S", i) for i in evaluated), len(ids))
         p = _one_sided_sign(worse, better)
         rows[bench] = {"items": len(ids), "format_gap": float(gap), "worse": worse, "better": better, "p_sign": p,
                        "blocks": gap >= SELFTEST_FORMAT_MARGIN and p < SELFTEST_ALPHA,
-                       "accuracy": {arm: sum(passed(arm, i) for i in ids) / len(ids) for arm in ("S'", "S")}}
+                       "accuracy": {arm: sum(passed(arm, i) for i in evaluated) / len(evaluated)
+                                    if evaluated else None for arm in ("S'", "S")},
+                       **({"identical": len(ids) - len(evaluated), "accuracy_items": len(evaluated)}
+                          if identical is not None else {})}
     blocked = fault_share > SELFTEST_FAULT_MAX or any(row["blocks"] for row in rows.values())
     return {"fault_cells": faulted, "inherited_fault_cells": inherited, "candidate_cells": len(candidate),
             "fault_share": float(fault_share), "fault_blocks": fault_share > SELFTEST_FAULT_MAX, "sets": rows,
-            "blocked": blocked}
+            "blocked": blocked, **({"identical": identical, "skipped_items": skipped, "fault_items_denominator": total}
+                                   if identical is not None else {})}
+
+
+def _pair_signatures(st, candidate, parent, publics, views):
+    """v2.3: the two exact requests and post-call identities on full public views, with zero model calls."""
+    if st.bench not in request_reuse.BENCHES:
+        return {}
+    workers, out = _item_workers(st, publics), {}
+    for item, view in views:
+        out[item] = {}
+        for arm, package in (("S'", candidate), ("S", parent)):
+            with workers(package, item) as worker:
+                out[item][arm] = request_reuse.signature(st.bench, package, view, worker,
+                                                       card_text=st.setting.cards.get(st.bench, ""), runtime=st.runtime())
+    return out
 
 
 def _selftest(st, unit, candidate, generated):
@@ -1087,16 +1126,45 @@ def _selftest(st, unit, candidate, generated):
         sets = _sets(st, generated)
         if not sets:
             return {"sets": {}, "blocked": False, "reason": "no_generated_items", "cells": 0}
+        identical, sealed = None, None
+        if IDENTICAL_REQUEST_REUSE[configuration_of(st.setting)]:
+            path = units.unit_path(st.chain_root, st.k, st.bench, unit) / "request-plan.json"
+            identity = {"candidate": candidate.sha256, "parent": st.parent.sha256,
+                        "sets": {b: [i["id"] for i in items] for b, items in sets.items()}, "sets_sha256": digest(sets)}
+            if path.exists():
+                sealed = verified(read_json(path), "selftest-requests-v2-3")
+                require(sealed["identity"] == identity, "A resumed self-test keeps its sealed requests")
+            else:
+                signatures, identical = {}, {}
+                for bench, items in sets.items():
+                    public = {item["id"]: item["public"] for item in items}
+                    views = [(key, solver.routing_view(bench, value, runtime=st.runtime(bench)))
+                             for key, value in public.items()] if bench in request_reuse.BENCHES else []
+                    signatures[bench] = _pair_signatures(replace(st, bench=bench), candidate, st.parent, public, views)
+                    identical[bench] = [key for key, arms in signatures[bench].items()
+                                        if request_reuse.interchangeable(arms["S'"], arms["S"], bench=bench)]
+                sealed = record("selftest-requests-v2-3", st.evidence,
+                                {"identity": identity, "signatures": signatures, "identical": identical})
+                write_json(path, sealed)
+            identical = sealed["identical"]
         jobs = [(arm, Arm(kind, package), item["id"], 0, _task(item))
-                for items in sets.values() for item in items
+                for bench, items in sets.items() for item in items
+                if item["id"] not in (identical or {}).get(bench, [])
                 for arm, kind, package in (("S'", "candidate", candidate), ("S", "parent", st.parent))]
         # Codex finding #4: each set's cells on its own bench's client, M, timeout and B, charged to this step's
         # ...:selftest scope, in the one seeded interleaving
-        endpoints = {bench: st.solver("selftest", attempt, cell_bench=bench) for bench in sorted(sets)}
-        cells = _cells(st, attempt, endpoints, st.label(unit), jobs, tag="selftest")
+        endpoints = {bench: st.solver("selftest", attempt, cell_bench=bench) for bench in sorted(sets)} if jobs else {}
+        cells = _cells(st, attempt, endpoints, st.label(unit), jobs, tag="selftest") if jobs else []
+        changed = _changed_ids(st.parent, candidate)
+        request_faults = (sorted({item for items in sealed["signatures"].values() for item, arms in items.items()
+                                 if any(f.get("procedure") in changed for f in arms["S'"]["faults"])})
+                          if sealed is not None else None)
         verdict = selftest_verdict(cells, {b: [i["id"] for i in items] for b, items in sets.items()},
-                                   _changed_ids(st.parent, candidate))
-        return {**verdict, "cells": len(cells), "reason": None}
+                                   changed, identical=identical, request_faults=request_faults)
+        return {**verdict, "cells": len(cells), "reason": "identical_requests_no_calls" if not jobs else None,
+                **({"request_plan_sha256": sealed[RECORD_HASH], "version": "paired-selftest-v2-3",
+                    "request_fault_items": request_faults}
+                   if sealed is not None else {})}
 
     # Codex finding #5: the memory lock of every bench the self-test's cells run on (an earlier SpreadsheetBench set)
     return st.unit(unit, work, benches=tuple(sorted(_sets(st, generated))))
@@ -1163,7 +1231,19 @@ def _distinct(found):
     return list({trajectory["cell"]: trajectory for trajectory in found}.values())
 
 
-def _engineer_train(st, cut, r, incumbent, *, done, fed, history, training, lint, reserved, analysed, disclosed):
+def _training_publics(cut, generated, bench):
+    """v2.3 Amendment 2: the identical run/admitted G_self set for C6b and the later training routing pass."""
+    admitted = bool(generated and generated.get("generator") and generated["generator"]["status"] == "admitted")
+    g_self = list(generated.get("g_self") or [])[:G_SELF_MAX] if admitted else []
+    items = {rounds.key(bench, item["task_id"]): item for item in cut["run"]}
+    made = {g["id"]: g for g in g_self}
+    publics = {**{key: item["public"] for key, item in items.items()},
+               **{key: g["public"] for key, g in made.items()}}
+    return items, made, publics
+
+
+def _engineer_train(st, cut, r, incumbent, *, done, fed, history, training, lint, reserved, analysed, disclosed,
+                    generated=None):
     """v2's unit ``engineer-r<r>`` (``engineer.run_train``): the engineer on the incumbent with the round's inputs; the
     candidate (re-expressed against S) is saved with the chain's packages."""
     unit = "engineer-r%d" % r
@@ -1177,6 +1257,12 @@ def _engineer_train(st, cut, r, incumbent, *, done, fed, history, training, lint
         stored += own
         parents = [t for t in own if t["arm_kind"] == "parent"]
         current, evaluated = _current(st, done), _evaluated(st, cut, fed)
+        routing = {}
+        if protocol.CHECK_NON_FIRING[configuration_of(st.setting)]:
+            _, _, publics = _training_publics(cut, generated, st.bench)
+            routing = {"routing_items": [(key, solver.routing_view(st.bench, public, runtime=st.runtime()))
+                                         for key, public in publics.items()],
+                       "routing_workers": _item_workers(st, publics)}
         with _inputs_dirs(st, _distinct(stored + current + evaluated), cut) as inputs:
             ctx = engineer.Context(bench=st.bench, k=st.k, step=st.name, evidence=st.evidence, parent=incumbent,
                                    trajectories=stored, corpora=_corpora(st, cut), workers=st.services.workers,
@@ -1188,8 +1274,9 @@ def _engineer_train(st, cut, r, incumbent, *, done, fed, history, training, lint
                                    evaluated=evaluated, history=list(history), training=training, lint=list(lint),
                                    reserved=frozenset(reserved), analysed=frozenset(analysed),
                                    disclosed=frozenset(disclosed),
+                                   configuration=configuration_of(st.setting),
                                    echo=FIX_ECHO[configuration_of(st.setting)],  # v2.1: main-v2-1 redacts
-                                   counterfactual=META_COUNTERFACTUAL[configuration_of(st.setting)])
+                                   counterfactual=META_COUNTERFACTUAL[configuration_of(st.setting)], **routing)
             candidate, sealed = engineer.run_train(ctx)
         if candidate is not None:
             save(st.chain_root, candidate)
@@ -1220,7 +1307,8 @@ def _token_share(found):
     return Fraction(sum(_token(cell) == "pass" for cell in found), len(found))
 
 
-def train_verdict(cells, items, generated, changed, *, predicate_faults, routed, sign=True):
+def train_verdict(cells, items, generated, changed, *, predicate_faults, routed, sign=True, request_faults=None,
+                  identical=None, runs=1):
     """v2: the adoption rule of one training round from its cell records (module docstring). ``cells``: {(arm, item):
     [cell records]} of arms S' (the candidate) and S (the incumbent); ``items`` / ``generated``: the run-slice and
     G_self items evaluated (those routed differently); ``changed``: the ids of the procedures the candidate adds or
@@ -1230,13 +1318,23 @@ def train_verdict(cells, items, generated, changed, *, predicate_faults, routed,
     predicate faults <= 2 % of the routed items, S' format-violating cells above S's by at most max(2, 2 % of its
     cells) -- and every gain criterion: fixed > broken, net >= max(1, ceil(2 % of the evaluated items)) and the
     one-sided exact sign test of fixed against broken p <= ``TRAIN_ALPHA``. v2.2 (``protocol.TRAIN_SIGN``): with
-    ``sign`` False the sign test is recorded and not required (``sign_required``)."""
+    ``sign`` False the sign test is recorded and not required (``sign_required``). v2.3 Amendment 1: ``identical``
+    names evaluated items skipped for both arms, with zero difference; their ``runs`` registered run-slice cells
+    (one per generated item) remain in the format/fault denominator. None preserves the frozen verdict shape."""
     evaluated = list(items) + list(generated)
-    diff = {i: _token_share(cells[("S'", i)]) - _token_share(cells[("S", i)]) for i in evaluated}
+    skipped = set(identical or ())
+    if identical is not None:
+        require(type(runs) is int and runs > 0 and len(skipped) == len(identical) and skipped <= set(evaluated)
+                and not any(item in skipped for _, item in cells)
+                and not skipped & set(request_faults or ()), "Identical training items are fault-free and undispatched")
+    diff = {i: Fraction(0) if i in skipped else _token_share(cells[("S'", i)]) - _token_share(cells[("S", i)])
+            for i in evaluated}
     fixed = sorted(i for i in evaluated if diff[i] > 0)
     broken = sorted(i for i in evaluated if diff[i] < 0)
     net = sum(diff.values(), Fraction(0))
     candidate = [c for (arm, _), found in sorted(cells.items()) if arm == "S'" for c in found]
+    skipped_cells = sum(runs if i in items else 1 for i in evaluated if i in skipped)
+    candidate_denominator = len(candidate) + skipped_cells
 
     def own_fault(cell):
         return _token(cell) == "unknown_fault" or any(f.get("procedure") in changed for f in cell.get("faults") or [])
@@ -1245,11 +1343,13 @@ def train_verdict(cells, items, generated, changed, *, predicate_faults, routed,
         return sum(1 for (name, _), found in cells.items() if name == arm for cell in found
                    if ((cell.get("judge") or {}).get("format") or {}).get("violation"))
 
-    own, formats = sum(1 for c in candidate if own_fault(c)), {"S": violating("S"), "S'": violating("S'")}
-    margin = max(TRAIN_FORMAT_MARGIN[0], math.ceil(TRAIN_FORMAT_MARGIN[1] * len(candidate)))
+    own = sum(1 for (arm, item), found in cells.items() if arm == "S'" for c in found
+              if own_fault(c) or item in (request_faults or []))
+    formats = {"S": violating("S"), "S'": violating("S'")}
+    margin = max(TRAIN_FORMAT_MARGIN[0], math.ceil(TRAIN_FORMAT_MARGIN[1] * candidate_denominator))
     need = max(1, math.ceil(TRAIN_ADOPT_SHARE * len(evaluated)))
     p = _one_sided_sign(len(fixed), len(broken))
-    guards = {"own_faults": own <= SELFTEST_FAULT_MAX * len(candidate),
+    guards = {"own_faults": own <= SELFTEST_FAULT_MAX * candidate_denominator,
               "predicate_faults": predicate_faults <= SELFTEST_FAULT_MAX * routed,
               "format": formats["S'"] - formats["S"] <= margin}
     gain = {"fixed_over_broken": len(fixed) > len(broken), "net": net >= need}
@@ -1264,7 +1364,9 @@ def train_verdict(cells, items, generated, changed, *, predicate_faults, routed,
             "fixed": fixed, "broken": broken, "net": "%d/%d" % (net.numerator, net.denominator), "need": need,
             "p_sign": p, "guards": guards, "gain": gain, "own_fault_cells": own, "candidate_cells": len(candidate),
             "predicate_faults": predicate_faults, "routed": routed, "format_cells": formats, "format_margin": margin,
-            **({} if sign else {"sign_required": False})}
+            **({} if sign else {"sign_required": False}),
+            **({"identical": list(identical), "skipped_candidate_cells": skipped_cells,
+                "candidate_cells_denominator": candidate_denominator} if identical is not None else {})}
 
 
 def prune_idle(candidate, incumbent, base, after):
@@ -1323,6 +1425,7 @@ def _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells, made)
     evaluated = [key for key in by_key if (("S", key) in cells)]
     references = _references(st, cut, [made[c["cell"]["id"]] for key in evaluated for arm in ("S", "S'")
                                        for c in cells[(arm, key)] if c["cell"]["id"] in made])
+    evaluated += [key for key in verdict.get("identical", ()) if key in by_key and key not in evaluated]
     before, after = set(incumbent.order), set(candidate.order)
     entries = [(pid, "added", "candidate") for pid in candidate.order if pid not in before]
     entries += [(pid, "removed", "incumbent") for pid in incumbent.order if pid not in after]
@@ -1383,6 +1486,8 @@ def _train_eval(st, cut, r, incumbent, candidate, generated):
         made = {g["id"]: g for g in g_self}
         publics = {**{key: item["public"] for key, item in items.items()},
                    **{key: g["public"] for key, g in made.items()}}
+        if protocol.CHECK_NON_FIRING[configuration_of(st.setting)]:
+            items, made, publics = _training_publics(cut, generated, st.bench)
         views = [(key, solver.routing_view(st.bench, public, runtime=st.runtime())) for key, public in publics.items()]
         before, after = _routes(st, incumbent, views, publics), _routes(st, candidate, views, publics)
         trained, pruned = candidate, []
@@ -1394,6 +1499,14 @@ def _train_eval(st, cut, r, incumbent, candidate, generated):
         routed = {key: {"incumbent": list(before[key].enabled), "candidate": list(after[key].enabled)}
                   for key, _ in views}
         differs = [key for key, _ in views if before[key].enabled != after[key].enabled]
+        evaluated = list(differs)
+        identical, signatures = [], None
+        if IDENTICAL_REQUEST_REUSE[configuration_of(st.setting)]:
+            signatures = _pair_signatures(st, trained, incumbent, publics,
+                                         [(key, view) for key, view in views if key in differs])
+            identical = [key for key, arms in signatures.items()
+                         if request_reuse.interchangeable(arms["S'"], arms["S"], bench=st.bench)]
+            differs = [key for key in differs if key not in identical]
         faults = sum(1 for key, _ in views for f in after[key].faults if f.get("procedure") in changed)
         jobs = []
         for key in differs:
@@ -1407,9 +1520,13 @@ def _train_eval(st, cut, r, incumbent, candidate, generated):
         for cell in found:
             cells.setdefault((cell["cell"]["arm"], cell["cell"]["task_id"]), []).append(cell)
         rounds.guard(cells, ["S", "S'"], name)
-        verdict = train_verdict(cells, [k for k in differs if k in items], [k for k in differs if k in made],
+        verdict = train_verdict(cells, [k for k in evaluated if k in items], [k for k in evaluated if k in made],
                                 changed, predicate_faults=faults, routed=len(views),
-                                sign=TRAIN_SIGN[configuration_of(st.setting)])
+                                sign=TRAIN_SIGN[configuration_of(st.setting)],
+                                request_faults=([key for key, arms in signatures.items()
+                                                 if any(f.get("procedure") in changed for f in arms["S'"]["faults"])]
+                                                if signatures is not None else None),
+                                **({"identical": identical, "runs": runs} if signatures is not None else {}))
         feedback = _feedback(st, cut, unit, verdict, routed, incumbent, trained, cells,
                              _attempt_trajectories(attempt))
         out = {"learning": TRAIN, "round": r, "incumbent_sha256": incumbent.sha256,
@@ -1417,6 +1534,8 @@ def _train_eval(st, cut, r, incumbent, candidate, generated):
                "cells": len(found), "adopted": verdict["adopted"], "verdict": verdict, "feedback": feedback}
         if PRUNE_NON_FIRING[configuration_of(st.setting)]:
             out.update({"proposed_sha256": candidate.sha256, "pruned": pruned})
+        if signatures is not None:
+            out.update({"version": "training-requests-v2-3", "identical": identical, "request_signatures": signatures})
         return out
 
     return st.unit(unit, work)
@@ -1461,7 +1580,9 @@ def _train(st, cut, generated):
     out, last, misses, analysed, disclosed = [], None, 0, frozenset(), frozenset()
     for r in range(1, TRAIN_ROUNDS + 1):
         engineered = _engineer_train(st, cut, r, incumbent, done=done, fed=fed, history=history, training=training,
-                                     lint=lint, reserved=reserved, analysed=analysed, disclosed=disclosed)
+                                     lint=lint, reserved=reserved, analysed=analysed, disclosed=disclosed,
+                                     **({"generated": generated}
+                                        if protocol.CHECK_NON_FIRING[configuration_of(st.setting)] else {}))
         sealed = engineered["engineer"]
         reserved = reserved | {c["id"] for c in sealed["changes"] if c.get("id")}
         analysed = analysed | set(sealed["analysis"]["items"])
@@ -1585,6 +1706,8 @@ def _accept(st, cut, candidate, generated):
         acc = _g_acc(st, generated, attempt)
         publics = {item["task_id"]: item["public"] for item in accept + probe}
         publics.update({rounds.key(st.bench, item["task_id"]): item["public"] for item in cut["run"]})  # donors
+        if IDENTICAL_REQUEST_REUSE[configuration_of(st.setting)]:
+            publics.update({g["id"]: g["public"] for g in acc or []})
         workers = _item_workers(st, publics)
         if (root / "sealed.json").exists():
             sealed = verified(read_json(root / "sealed.json"), "acceptance-sealed")
@@ -1596,6 +1719,13 @@ def _accept(st, cut, candidate, generated):
                             and generated["generator"]["status"] == "admitted")
             generate = None if acc is None else (
                 lambda astar: examiner.g_acc(acc, list(astar), bench=st.bench, generator=_generator_id(st)))
+            reuse = None
+            if IDENTICAL_REQUEST_REUSE[configuration_of(st.setting)]:
+                extra = {"G_acc": {g["id"]: g["public"] for g in acc or []},
+                         "probe": {i["task_id"]: _options_only(i)["public"] for i in probe}}
+                reuse = {"card_text": st.setting.cards.get(st.bench, ""), "runtime": st.runtime(),
+                         "views": {name: {key: solver.routing_view(st.bench, public, runtime=st.runtime())
+                                          for key, public in entries.items()} for name, entries in extra.items()}}
             sealed = acceptance.prepare(  # the sealed "chain" is the namespace dispatch and settle register in
                 root, chain=st.namespace, bench=st.bench, step=st.name, unit=name, candidate=candidate, parent=st.parent,
                 views=views, blocks=_blocks(st, accept), workers=workers, trajectories=donors_,
@@ -1603,7 +1733,7 @@ def _accept(st, cut, candidate, generated):
                 generate=generate, dup=admitted and st.k > 1, probe=[item["task_id"] for item in probe],
                 freshness=ACCEPT_FRESHNESS.get(configuration_of(st.setting), FRESHNESS),
                 mde=MDE_POINTS[st.bench],  # A9-3: the registered MDE in decision.json
-                rule=ACCEPT_RULES[configuration_of(st.setting)])  # v2.2: the practical rule, None before
+                rule=ACCEPT_RULES[configuration_of(st.setting)], reuse=reuse)  # v2.2: the practical rule, None before
         packages = acceptance.round_packages(candidate, st.parent, step=sealed["step"], twins=sealed["plan"]["twins"])
         tasks = _round_tasks(records, probe, acc)  # §6.4 J7: the probe items options-only
         earlier = acceptance.earlier_blocks(sealed, root, attempt) if n > 1 else None  # §9.3, owner decision #15
@@ -1727,7 +1857,7 @@ def run_step(setting, chain, bench, k, parent, *, services, chain_root=None, smo
     accepted = outcome["decision"] == "accept"
     frozen = _freeze(st, cut, candidate, accepted)
     package = _package(st, frozen["package_sha256"]) if accepted else parent
-    value = record("step", st.evidence, {
+    value = record("step-v2-3" if IDENTICAL_REQUEST_REUSE[configuration_of(setting)] else "step", st.evidence, {
         "chain": chain, "k": k, "bench": bench, "step": st.name, "parent_sha256": parent.sha256,
         "candidate_sha256": candidate.sha256 if candidate is not None else None,
         "package_sha256": package.sha256, "decision": outcome["decision"], "reason": outcome["reason"],

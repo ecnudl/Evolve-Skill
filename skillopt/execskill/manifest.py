@@ -194,8 +194,11 @@ def prompt_sha(configuration=None):
     review 2026-10-23 #1)."""
     out = {"describer": describer.DESCRIBER_PROMPT_SHA256, "engineer": engineer.ENGINEER_PROMPT_SHA256,
            "examiner": dict(examiner.PROMPT_SHA256)}
+    if configuration == protocol.MAIN_V2_3:
+        out["engineer"] = engineer.ENGINEER_PROMPT_SINGLE_V23_SHA256
     if protocol.LEARNING.get(configuration) == "train":
-        out["v2"] = {"engineer": engineer.ENGINEER_PROMPT_V2_SHA256, "analyst": engineer.ANALYST_PROMPT_SHA256,
+        out["v2"] = {"engineer": (engineer.ENGINEER_PROMPT_V23_SHA256 if configuration == protocol.MAIN_V2_3
+                                          else engineer.ENGINEER_PROMPT_V2_SHA256), "analyst": engineer.ANALYST_PROMPT_SHA256,
                      "examiner": dict(examiner.PROMPT_V2_SHA256)}
     return out
 
@@ -259,6 +262,12 @@ def solver_block(chain, *, env_path, branch=None, longest=None):
                             for b in protocol.BENCHES}}
 
 
+def role_settings(configuration=None):
+    """The frozen default role bound, plus v2.3's explicitly named train proposal bound (E1)."""
+    return {**ROLES, "engineer_propose_max_tokens": protocol.ENGINEER_MAX_TOKENS[configuration]} \
+        if configuration == protocol.MAIN_V2_3 else dict(ROLES)
+
+
 def check_clients(clients, *, configuration=None):
     """The clients block: one registered solver block per listed chain and the registered role settings. Every
     field of a solver block, the ledger bound B included, must equal ``solver_block`` re-derived from the block's own
@@ -275,7 +284,7 @@ def check_clients(clients, *, configuration=None):
         same = {key for key in SOLVER_FIELDS if block[key] == expected[key]}
         require(same == SOLVER_FIELDS, "The %s solver block differs from the registration: %s"
                 % (chain, sorted(SOLVER_FIELDS - same)))
-    require(clients["roles"] == ROLES, "The method roles' registered settings")
+    require(clients["roles"] == role_settings(configuration), "The method roles' registered settings")
     routes.check_pins(clients, configuration=configuration)  # M4: route B (registrar 17:3x)
 
 
@@ -300,6 +309,13 @@ def check(manifest):
     require(value["evidence"] not in real or value["evidence"] == protocol.REAL_RUN_EVIDENCE[configuration],
             "A real run's evidence label is its configuration's: %s" % protocol.REAL_RUN_EVIDENCE[configuration])
     check_clients(value["clients"], configuration=configuration)
+    if configuration == protocol.MAIN_V2_3:
+        require(value["sandbox"]["policy_sha256"] == policy.policy_sha256(
+            version=protocol.POLICY_VERSIONS[configuration]), "The v2.3 sandbox policy is pinned")
+        sheet = value["runtime"]["spreadsheetbench"]
+        require(sheet.get("code_extraction_version") == protocol.CODE_EXTRACTION[configuration]
+                and sheet.get("multiple_python_blocks") == protocol.MULTIPLE_PYTHON_BLOCKS[configuration],
+                "The v2.3 extraction and multiple-block decision are pinned")
     return value
 
 
@@ -323,6 +339,12 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
     limits = dict(sandbox.LIMITS if limits is None else limits)
     require(set(limits) == set(sandbox.KINDS) and all(isinstance(v, sandbox.Limits) for v in limits.values()),
             "Registered limits for every sandbox kind")
+    if configuration == protocol.MAIN_V2_3:
+        given = {**given, "clients": {**given["clients"], "roles": role_settings(configuration)},
+                 "runtime": {**given["runtime"], "spreadsheetbench": {
+                     **given["runtime"]["spreadsheetbench"],
+                     "code_extraction_version": protocol.CODE_EXTRACTION[configuration],
+                     "multiple_python_blocks": protocol.MULTIPLE_PYTHON_BLOCKS[configuration]}}}
     fields = {
         **given, **registered(), "history_root": protocol.HISTORY_ROOT, "slot_root": protocol.SLOT_ROOT,
         "templates": protocol.TEMPLATES_SHA256, "lexicon_sha": notes.lexicon_sha256(),
@@ -331,12 +353,12 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
         "caps": budgets.caps(configuration),
         "importable_versions": [*protocol.IMPORTABLE, protocol.TEXTS_IMPORT],
         "sandbox": {"image_id": sandbox.IMAGE, "worker_sha256": sandbox.worker_sha256(),
-                    "policy_sha256": policy.policy_sha256(),
+                    "policy_sha256": policy.policy_sha256(version=protocol.POLICY_VERSIONS[configuration]),
                     "docker_argv_template_sha": digest({k: sandbox.argv_template(k, v) for k, v in limits.items()}),
                     "limits": {k: asdict(v) for k, v in sorted(limits.items())}, "measured": measured},
         "code": pin_code(), "loaded_code": sorted(loaded_code()),
         "environment": environment() if environment_found is None else environment_found}
-    record = check(protocol.record(KIND, evidence, fields))
+    record = check(protocol.record(KIND + ("-v2-3" if configuration == protocol.MAIN_V2_3 else ""), evidence, fields))
     write_json(out, record)
     return record
 

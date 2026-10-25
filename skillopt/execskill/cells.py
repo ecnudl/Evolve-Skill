@@ -442,7 +442,8 @@ def run_cell(context, cell, task, arm, *, store):
         "judge": judged if final is not None else None, "shared_with": None, "sandbox": _sandbox(runs),
         "solver_route": _solver_route(context, recorders, cell["benchmark"]),
         "dispatch_ts": dispatched, "finish_ts": finished, "stop": stop}
-    sealed = record("cell", context.evidence, fields)
+    revised = context.runtime.get(bench, {}).get("code_extraction_version") == "explicit-python-fences-v2"
+    sealed = record("cell-v2-3" if revised else "cell", context.evidence, fields)
     trajectory = None
     if final is not None:
         trajectory = trajectories.build(

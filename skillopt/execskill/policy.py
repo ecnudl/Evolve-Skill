@@ -32,6 +32,9 @@ orders). ``POLICY`` is the whole policy as data; ``policy_sha256()`` is its cano
 ``validator_pilot.api.digest`` form) and ``write_policy_json()`` writes exactly those bytes to
 ``sandbox/policy.json``, which the manifest hashes. This module imports only the standard library, so the sandbox
 worker can load this same file from its read-only runner directory and check policy and syntax again inside (plan §4).
+
+v2.3 (owner request 2026-10-25 E3): a separately pinned policy also permits the listed pure constant expressions.
+The default policy and its canonical bytes stay frozen; callers select the version explicitly.
 """
 from __future__ import annotations
 
@@ -44,6 +47,8 @@ from pathlib import Path
 
 POLICY_VERSION = "fivebench-execskill-v1-policy"
 POLICY_PATH = Path(__file__).resolve().parent / "sandbox" / "policy.json"
+POLICY_VERSION_V23 = "fivebench-execskill-v2-3-policy"
+POLICY_PATH_V23 = POLICY_PATH.with_name("policy-v2-3.json")
 BENCHES = ("searchqa", "officeqa", "livemath", "spreadsheetbench", "alfworld")
 MAX_SOURCE_BYTES = 6000
 MAX_CONSTANT_CHARS = 2000
@@ -136,6 +141,16 @@ POLICY = {
         "alfworld": {"pattern": RECEPTACLE_PATTERN, "flags": "IGNORECASE", "scope": "string literals"},
     },
 }
+POLICY_V23 = {**POLICY, "version": POLICY_VERSION_V23,
+              "registration": "Route B v2.3 request 2026-10-25 E3",
+              "constant_expressions": ["literal", "re.compile(str[, re flags joined by |])",
+                                       "set/frozenset(literal iterable)", "tuple/list/dict/sorted(literal)",
+                                       "str.split([str])", "str.join(literal list/tuple of str)",
+                                       "same-type literal +", "previous constant name"],
+              "constant_bindings": "whole-module, all-scope binding audit; plain import re exempt; constructors, "
+                                   "re, compile and used flags must be unbound elsewhere; referenced constants "
+                                   "must have one defining assignment and audited dependencies; otherwise literal-only"}
+POLICIES = {POLICY_VERSION: POLICY, POLICY_VERSION_V23: POLICY_V23}
 
 BULLETIN = re.compile("|".join("(?:%s)" % p for p in BULLETIN_PATTERNS), re.I)
 RECEPTACLE = re.compile(RECEPTACLE_PATTERN, re.I)
@@ -166,23 +181,181 @@ def _canonical(value):
     return json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
 
 
-def policy_sha256():
+def policy_sha256(*, version=POLICY_VERSION):
     """The canonical-JSON hash of ``POLICY`` (equal to ``validator_pilot.api.digest(POLICY)``)."""
-    return hashlib.sha256(_canonical(POLICY)).hexdigest()
+    return hashlib.sha256(_canonical(POLICIES[version])).hexdigest()
 
 
-def write_policy_json(path=POLICY_PATH):
+def write_policy_json(path=None, *, version=POLICY_VERSION):
     """Write ``POLICY`` as canonical JSON, so the file's sha256 is ``policy_sha256()``. An existing file must hold the
     same bytes: a changed policy is a new protocol version, never an overwrite."""
-    path = Path(path)
-    data = _canonical(POLICY)
+    path = Path(path) if path is not None else (POLICY_PATH_V23 if version == POLICY_VERSION_V23 else POLICY_PATH)
+    data = _canonical(POLICIES[version])
     if path.exists():
         if path.read_bytes() != data:
             raise ValueError("policy.json differs from POLICY; a changed policy needs a new protocol version")
-        return policy_sha256()
+        return policy_sha256(version=version)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(data)
-    return policy_sha256()
+    return policy_sha256(version=version)
+
+
+def _literal(node):
+    try:
+        return True, ast.literal_eval(node)
+    except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
+        return False, None
+
+
+RE_FLAGS = frozenset({"A", "ASCII", "I", "IGNORECASE", "L", "LOCALE", "M", "MULTILINE", "S", "DOTALL",
+                      "U", "UNICODE", "X", "VERBOSE", "DEBUG", "NOFLAG", "T", "TEMPLATE"})
+CONSTRUCTORS = frozenset({"set", "frozenset", "tuple", "list", "dict", "sorted"})
+
+
+def _re_flags(node, bound):
+    return ((isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == "re"
+             and node.attr in RE_FLAGS and node.attr not in bound)
+            or (isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr)
+                and _re_flags(node.left, bound) and _re_flags(node.right, bound)))
+
+
+def _constant_bindings(tree):
+    """Review finding 1: every binding counts, regardless of its scope or evaluation order.
+
+    Keep defining nodes so a previous constant can exempt exactly its own assignment. Attribute/subscript
+    targets also invalidate their root; flag/compile attribute writes count through aliases conservatively.
+    No expression is executed and only a plain ``import re`` is exempt from the import census.
+    """
+    bound = {}
+
+    def add(name, node):
+        if name:
+            bound.setdefault(name, []).append(node)
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)):
+            add(node.id, node)
+        elif isinstance(node, ast.arg):
+            add(node.arg, node)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            add(node.name, node)
+        elif isinstance(node, (ast.Import, ast.ImportFrom)):
+            for alias in node.names:
+                if isinstance(node, ast.Import) and alias.name == "re" and alias.asname is None:
+                    continue
+                add(alias.asname or (alias.name.split(".")[0] if isinstance(node, ast.Import) else alias.name), node)
+        elif isinstance(node, ast.ExceptHandler):
+            add(node.name, node)
+        elif isinstance(node, (ast.Global, ast.Nonlocal)):
+            for name in node.names:
+                add(name, node)
+        elif isinstance(node, (ast.MatchAs, ast.MatchStar)):
+            add(node.name, node)
+        elif isinstance(node, ast.MatchMapping):
+            add(node.rest, node)
+        elif type(node).__name__ in ("TypeVar", "ParamSpec", "TypeVarTuple"):
+            add(node.name, node)
+        elif isinstance(node, (ast.Attribute, ast.Subscript)) and isinstance(node.ctx, (ast.Store, ast.Del)):
+            if isinstance(node, ast.Attribute) and node.attr in RE_FLAGS | {"compile"}:
+                add(node.attr, node)
+            root = node.value
+            while isinstance(root, (ast.Attribute, ast.Subscript)):
+                root = root.value
+            if isinstance(root, ast.Name):
+                add(root.id, node)
+    return bound
+
+
+def _unbound_literal_names(node, bound):
+    # ast.literal_eval permits set() even inside container literals. When a larger, newly admitted expression
+    # uses that spelling, it still relies on the actual builtin, rather than an arbitrary binding named set.
+    return not any(isinstance(part, ast.Name) and isinstance(part.ctx, ast.Load)
+                   and (part.id in bound or "*" in bound) for part in ast.walk(node))
+
+
+def _addition_type(node):
+    literal, value = _literal(node)
+    if literal:
+        return type(value)
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        left, right = _addition_type(node.left), _addition_type(node.right)
+        if left is right and left in (str, bytes, bool, int, float, complex, list, tuple):
+            return left
+    return None
+
+
+def _pure_constant(node, defined, bound, re_imported):
+    """E3's closed AST grammar; no procedure expression is executed by the validator."""
+    if _literal(node)[0]:
+        return True
+    if isinstance(node, ast.Name):
+        return node.id in defined
+    if not _unbound_literal_names(node, bound):
+        return False
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        return _addition_type(node) is not None
+    if not isinstance(node, ast.Call) or node.keywords or any(isinstance(a, ast.Starred) for a in node.args):
+        return False
+    if isinstance(node.func, ast.Name) and node.func.id in CONSTRUCTORS and node.func.id not in bound:
+        if len(node.args) != 1:
+            return False
+        literal, value = _literal(node.args[0])
+        return literal and (node.func.id not in ("set", "frozenset")
+                            or isinstance(value, (str, bytes, list, tuple, set, dict)))
+    if not isinstance(node.func, ast.Attribute):
+        return False
+    obj, method = node.func.value, node.func.attr
+    if (isinstance(obj, ast.Name) and obj.id == "re" and re_imported and method == "compile"
+            and "compile" not in bound):
+        return (len(node.args) in (1, 2) and isinstance(node.args[0], ast.Constant)
+                and type(node.args[0].value) is str and (len(node.args) == 1 or _re_flags(node.args[1], bound)))
+    if not isinstance(obj, ast.Constant) or type(obj.value) is not str:
+        return False
+    if method == "split":
+        return len(node.args) == 0 or (len(node.args) == 1 and isinstance(node.args[0], ast.Constant)
+                                       and type(node.args[0].value) is str)
+    if method == "join" and len(node.args) == 1 and isinstance(node.args[0], (ast.List, ast.Tuple)):
+        return all(isinstance(a, ast.Constant) and type(a.value) is str for a in node.args[0].elts)
+    return False
+
+
+def _module_level_v23(source, tree):
+    out, defined, bound, re_imported = [], set(), _constant_bindings(tree), False
+    for index, node in enumerate(tree.body):
+        if (index == 0 and isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant)
+                and type(node.value.value) is str):
+            continue
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            for alias in node.names:
+                name = alias.asname or (alias.name.split(".")[0] if isinstance(node, ast.Import) else alias.name)
+                defined.discard(name)
+                if name == "re":
+                    re_imported = isinstance(node, ast.Import) and alias.name == "re" and alias.asname is None
+            continue
+        if isinstance(node, ast.FunctionDef):
+            defined.discard(node.name)
+            if node.name == "re":
+                re_imported = False
+            continue
+        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+            name = node.targets[0].id
+            allowed = _pure_constant(node.value, defined, bound, re_imported)
+            written = ast.get_source_segment(source, node.value) or ""
+            if not allowed:
+                out.append(Violation("module_level", "a constant must be a literal or a registered pure expression",
+                                     node.lineno))
+            elif len(written) > MAX_CONSTANT_CHARS:
+                out.append(Violation("constant_size", "%d characters" % len(written), node.lineno))
+            elif (bound.get(name) == [node.targets[0]] and "*" not in bound
+                  and (not _literal(node.value)[0] or _unbound_literal_names(node.value, bound))):
+                defined.add(name)
+            if not allowed or len(written) > MAX_CONSTANT_CHARS:
+                defined.discard(name)
+            if name == "re":
+                re_imported = False
+            continue
+        out.append(Violation("module_level", type(node).__name__, node.lineno))
+    return out
 
 
 def meta_option_hits(text):
@@ -296,9 +469,11 @@ def _node(node, parents, numpy_names):
     return []
 
 
-def check(source, *, bench=None):
+def check(source, *, bench=None, version=POLICY_VERSION):
     """The violations of one procedure module, sorted (empty: the module passes). ``bench`` restricts the static bans
     of §5.4 C4 to that bench's; ``None`` applies every bench's, as for a procedure whose scope is every bench."""
+    if type(version) is not str or version not in POLICIES:
+        raise ValueError("Unknown policy version")
     if bench is not None and bench not in BENCHES:
         raise ValueError("Unknown bench")
     if type(source) is not str:
@@ -312,7 +487,7 @@ def check(source, *, bench=None):
         return [Violation("syntax", type(error).__name__, getattr(error, "lineno", 0) or 0)]
     parents = {child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)}
     numpy_names = _numpy_names(tree)
-    out = _module_level(source, tree)
+    out = (_module_level_v23 if version == POLICY_VERSION_V23 else _module_level)(source, tree)
     for node in ast.walk(tree):
         out.extend(_node(node, parents, numpy_names))
     if bench in (None, "livemath"):

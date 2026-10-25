@@ -14,6 +14,9 @@ narrowings and the describer hashes. Both are sealed records (``protocol.record`
 ``with_`` builds a candidate from its parent with at most ``MAX_CHANGES`` edits (§9.2); ``edits`` classifies them as
 new, revision, deletion or narrowing (§6.1); ``withhold`` and ``restore`` build the twin arms (§6.5): a withholding
 twin drops procedures, a restoration twin puts a deleted procedure or a narrowed scope of the parent back.
+
+v2.3 (2026-10-25 E3): a new procedure pins its selected ``policy_version`` in a new record kind. Historical
+procedures omit that field and retain their original validation, records and hashes.
 """
 from __future__ import annotations
 
@@ -98,6 +101,7 @@ class Procedure:
     replay_tests: tuple = ()
     lineage: dict = field(default_factory=lambda: {"parent": None, "revises": None, "engineer_call": None})
     accepted_at: str | None = None
+    policy_version: str = policy.POLICY_VERSION
 
     def __post_init__(self):
         for name in ("hooks", "excluded_benches"):
@@ -124,7 +128,9 @@ class Procedure:
         ensure(type(self.hooks) is tuple and self.hooks == tuple(h for h in HOOKS if h in self.hooks)
                and len(set(self.hooks)) == len(self.hooks) and "applies" in self.hooks and len(self.hooks) >= 2,
                "Hooks are distinct registered hooks in registered order: applies and at least one more")
-        violations = policy.check(self.source)
+        ensure(type(self.policy_version) is str and self.policy_version in policy.POLICIES,
+               "A registered procedure policy")
+        violations = policy.check(self.source, version=self.policy_version)
         ensure(not violations, "Policy violations: %s" % [v.to_json() for v in violations[:5]])
         functions = _hook_functions(self.source)
         ensure(all(functions.get(h) == HOOK_PARAMETERS[h] for h in self.hooks),
@@ -169,6 +175,9 @@ class Procedure:
         fields = {name: getattr(self, name) for name in PROCEDURE_FIELDS}
         fields.update(hooks=list(self.hooks), excluded_benches=list(self.excluded_benches),
                       replay_tests=_plain(list(self.replay_tests)), lineage=dict(self.lineage))
+        if self.policy_version != policy.POLICY_VERSION:
+            fields["policy_version"] = self.policy_version
+            return record("procedure-v2-3", self.evidence, fields)
         return record("procedure", self.evidence, fields)
 
     @property
@@ -177,12 +186,15 @@ class Procedure:
 
     @classmethod
     def from_json(cls, value):
+        modern = value.get("policy_version") == policy.POLICY_VERSION_V23 if isinstance(value, dict) else False
         try:
-            value = verified(value, "procedure")
+            value = verified(value, "procedure-v2-3" if modern else "procedure")
         except ValueError as error:
             raise PackageInvalid("Not a sealed procedure record: %s" % error) from None
-        ensure(set(value) == set(PROCEDURE_FIELDS) | set(STAMP), "Unexpected procedure record fields")
-        procedure = cls(evidence=value["evidence"], **{name: value[name] for name in PROCEDURE_FIELDS})
+        ensure(set(value) == set(PROCEDURE_FIELDS) | set(STAMP) | ({"policy_version"} if modern else set()),
+               "Unexpected procedure record fields")
+        procedure = cls(evidence=value["evidence"], **{name: value[name] for name in PROCEDURE_FIELDS},
+                        **({"policy_version": value["policy_version"]} if modern else {}))
         ensure(procedure.sha256 == value[RECORD_HASH], "Procedure hash mismatch")
         return procedure
 

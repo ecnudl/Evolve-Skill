@@ -42,12 +42,14 @@ from __future__ import annotations
 import functools
 import re
 import traceback
+from copy import copy
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from skillopt.coevo5.cells import exclusive
 from skillopt.coevo5.evaluation import _next_attempt, attempts
 from skillopt.coevo5.protocol import RESEND_COOLDOWN_SECONDS
+from skillopt.coevo5.roles import Roles
 from skillopt.continual_eval.core import read_json, require, safe_path, write_json
 
 from . import budgets, protocol, solver
@@ -141,6 +143,49 @@ def role_endpoint(setting, chain, role, bench, k):
                             max_tokens_bound=ROLE_MAX_TOKENS)
 
 
+
+def _bounded_endpoint(endpoint, bound):
+    """A v2.3 call-local nominal M and reservation B; preserve the original pool and halt generation."""
+    made = copy(endpoint)
+    made.max_tokens = bound
+    if hasattr(endpoint, "client"):
+        made.client = copy(endpoint.client)
+        made.client.max_tokens = bound
+    else:  # smoke_roles.Metered: both the guard and the underlying reservation see the actual bound
+        made.endpoint = _bounded_endpoint(endpoint.endpoint, bound)
+    return made
+
+
+def _carry_halts(original, made):
+    if hasattr(original, "endpoint"):
+        _carry_halts(original.endpoint, made.endpoint)
+    else:
+        original.halted, original.failed = made.halted, made.failed
+
+
+class BoundedRoles(Roles):
+    """v2.3 proposal calls may reserve/send 32K; every other role call keeps the frozen 16K bound (E1)."""
+
+    def plain(self, role, system, user, *, label, max_tokens=None):
+        bound = ROLE_MAX_TOKENS if max_tokens is None else max_tokens
+        require(bound in (ROLE_MAX_TOKENS, protocol.ENGINEER_MAX_TOKENS[protocol.MAIN_V2_3]),
+                "A registered role output bound")
+        original = self.endpoint
+        self.endpoint = _bounded_endpoint(original, bound)
+        before = len(self.calls)
+        try:
+            return super().plain(role, system, user, label=label)
+        finally:
+            if len(self.calls) > before:
+                self.calls[-1]["max_tokens"] = bound
+            _carry_halts(original, self.endpoint)
+            self.endpoint = original
+
+
+def roles(endpoint, *, configuration=protocol.PILOT):
+    return BoundedRoles(endpoint) if configuration == protocol.MAIN_V2_3 else Roles(endpoint)
+
+
 def cell_context(setting, attempt, endpoint, *, solve=solver.solve):
     """The cells' ``Context`` of one unit attempt (module docstring); ``solve``: the shell."""
     pools = setting.slots
@@ -204,7 +249,7 @@ def completed(unit_root, *, run, identity):
     return None
 
 
-def run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=None):
+def run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=None, configuration=protocol.PILOT):
     """Run ``work(attempt)`` -> result (a JSON-safe dict) in the unit's next attempt, unless the unit is complete.
     The commit (module docstring; Codex finding #8): the result is persisted as the attempt's completion evidence
     (``COMPLETED``) before ``settle(attempt, result)`` -- the unit's consumption settlement, idempotent -- runs; when an
@@ -214,6 +259,7 @@ def run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=Non
     the attempt's status or the unit's record is written; its CleanupUnconfirmed pauses the unit as a stop, so a unit
     whose containers remain is never complete. Returns the unit's record; raises ``Pause`` after writing the attempt's
     status."""
+    suffix = "-v2-3" if configuration == protocol.MAIN_V2_3 else ""
     unit_root = safe_path(unit_root)
     unit_root.mkdir(parents=True, exist_ok=True)
     name = identity["unit"]
@@ -228,13 +274,13 @@ def run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=Non
         if finished is None and attempt_number(attempt) > 1 + MAX_REDOS:
             raise Pause("redo_limit", "%s: at most %d redos of a unit (§3.4)" % (attempt.name, MAX_REDOS), name)
         attempt.mkdir()
-        write_json(attempt / "started.json", record("unit-started", evidence, {
+        write_json(attempt / "started.json", record("unit-started" + suffix, evidence, {
             "run": run, "identity": identity, **({"commit_of": finished[0].name} if finished else {})}))
         try:
             try:
                 if finished is None:
                     result = work(attempt)
-                    write_json(attempt / COMPLETED, record("unit-completed", evidence, {
+                    write_json(attempt / COMPLETED, record("unit-completed" + suffix, evidence, {
                         "run": run, "identity": identity, "attempt": attempt.name, "result": result}))
                     worked = attempt
                 else:
@@ -245,16 +291,16 @@ def run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=Non
                 if drain is not None:
                     drain()
         except Pause as pause:
-            write_json(attempt / "status.json", record("unit-status", evidence, {
+            write_json(attempt / "status.json", record("unit-status" + suffix, evidence, {
                 "status": "paused", "kind": pause.kind, "reason": pause.reason, "cell": pause.cell}))
             raise
         except Exception as error:  # a stop of the run, a configuration check or a crash: the unit pauses
             (attempt / "diagnostics.log").write_text(traceback.format_exc(), encoding="utf-8")
             kind = stop_kind(error) or ("configuration" if isinstance(error, ValueError) else "exception")
-            write_json(attempt / "status.json", record("unit-status", evidence, {
+            write_json(attempt / "status.json", record("unit-status" + suffix, evidence, {
                 "status": "paused", "kind": kind, "reason": type(error).__name__, "cell": None}))
             raise Pause(kind, type(error).__name__, name) from error
-        value = record("unit", evidence, {"run": run, "identity": identity, "status": "complete",
+        value = record("unit" + suffix, evidence, {"run": run, "identity": identity, "status": "complete",
                                           "attempt": worked.name, "result": result,
                                           **({"committed_in": attempt.name} if finished else {})})
         write_json(unit_root / "unit.json", value)

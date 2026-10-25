@@ -68,6 +68,15 @@ either: a lexicon or meta-option fault's message and the detail of a note field 
 (``_unechoed``; Codex review 2026-10-24 #3). The prompts are main-v2's. In every configuration a model-written value
 is type-checked before it is used as a key (``_fix``, ``leak_check``; main-v2's chain G stopped on a mutation written
 as an object).
+
+v2.3 (2026-10-25 request E1-E4): configuration-selected proposal output caps, excerpts of shown public text,
+pure module constants and structure normalisation. Full trajectories still drive C5-C9. The new pinned prompts and
+engineer/procedure records distinguish this behaviour from every frozen earlier configuration. Codex review #4:
+single-mode smoke keeps mandatory replay tests under its own prompt; train mode keeps optional advisory tests.
+Amendment 2 adds C6b after C6: every new or revised procedure must fire without a predicate fault on at least one
+of this round's exact training routing views (run items and admitted generated items). Its counts and public field
+names feed the existing repair loop; empty single-mode smoke records a skip. C1-C9 and the call budgets keep their
+registered meanings.
 """
 from __future__ import annotations
 
@@ -89,7 +98,7 @@ from skillopt.coevo5.roles import Invalid, fit, message_bytes, parse as parse_re
 from skillopt.continual_eval.core import require
 from skillopt.validator_pilot.api import digest
 
-from . import policy, replay
+from . import engineer_payload, policy, protocol, replay, router
 from .donors import public_text
 from .errors import PackageInvalid
 from .package import EDIT_KINDS, FIXTURE, Package, Procedure, edits, validate, with_
@@ -140,6 +149,7 @@ MAX_ID_CHARS = 64
 PREVIOUS_FIELDS = frozenset({"decision", "faults", "format"})  # §4.2: accepted / not accepted + fault, format counts
 OPTION_LETTER = re.compile(r"\b(?i:option|choice)\s*\(?[A-E]\)?(?![A-Za-z])|^\s*(?:-\s*)?\(?[A-E]\)?[.)]?\s*$", re.M)
 CODED = ("new", "revision")
+ALFWORLD_STEP_VIEW_KEYS = ("initial_observation", "observation", "admissible_commands", "recent_history")
 PROCEDURE_KEYS = {"description": str, "hooks": list, "header": str, "max_note_chars": int,
                   "requests_second_call": bool, "state_bytes": int, "replay_tests": list, "excluded_benches": list}
 OPTIONAL = {"header": "", "max_note_chars": 0, "requests_second_call": False, "state_bytes": 0, "excluded_benches": []}
@@ -272,6 +282,28 @@ failed and the measured detail: reply in the same format with exactly that chang
 target, its code in a ```python block)."""
 ENGINEER_SYSTEM_V2 = ENGINEER_SYSTEM[:ENGINEER_SYSTEM.index("Replay tests (1 to 8")] + TRAIN_TAIL
 ENGINEER_PROMPT_V2_SHA256 = digest(ENGINEER_SYSTEM_V2)
+ENGINEER_FACTS_V23 = """\
+
+Registered structure and note facts. Canonical hook order: applies, before_call, bindings, sheet_feedback, \
+alf_before_step, alf_after_step. bindings is QA-only: exclude spreadsheetbench and alfworld. Before C1 the registrar \
+orders hooks and adds those exclusions, recording each normalisation.
+All note fields are optional: facts: list[str] (each <=200 characters); table: list[list[str]] (<=20 rows, <=12 \
+columns, each cell <=40 characters); candidates: list[str] (each <=120 characters); warnings: list[str] (each \
+<=200 characters); bindings: list[dict] with exactly name, quote, value, all strings <=200 characters. A binding \
+name is a calculator name, value is numeric text and quote must contain that value verbatim in the item's public \
+text. Each note hook uses these same field names and types. Valid minimal examples: before_call(view, state) -> {}; \
+bindings(view) -> {"bindings": []}; sheet_feedback(view, run_report, state) -> {"fields": {}, "request_repair": \
+False}; alf_before_step(view, state) -> {"fields": {}, "discourage": []}. request_repair is bool; discourage is \
+list[str]. No other note fields are allowed.
+Module constants may also use these pure expressions over literals: re.compile(str[, re flags joined by |]) after \
+import re; set/frozenset(literal iterable); tuple/list/dict/sorted(literal); str.split([str]); str.join(literal \
+list/tuple of str); + of same-type literals; a previously defined constant name. The written expression remains \
+at most 2000 characters. Move any other call into a function or write its literal value.
+"""
+ENGINEER_SYSTEM_V23 = ENGINEER_SYSTEM_V2 + ENGINEER_FACTS_V23
+ENGINEER_PROMPT_V23_SHA256 = digest(ENGINEER_SYSTEM_V23)
+ENGINEER_SYSTEM_SINGLE_V23 = ENGINEER_SYSTEM + ENGINEER_FACTS_V23
+ENGINEER_PROMPT_SINGLE_V23_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_V23)
 # v2's analysts (owner suggestion 2026-10-23 15:1x; SkillOpt's minibatch reflection): engineer-role calls before each
 # round's proposal, on groups of the incumbent's failed run-slice items, whose findings the proposal call is shown
 ANALYST_SYSTEM = """\
@@ -305,12 +337,14 @@ class Change:
     target: str | None = None
     benches: tuple = ()
     truncated: dict = field(default_factory=dict)  # v2: {field: its length} of a description or header cut to its cap
+    normalized: list = field(default_factory=list)  # v2.3 E4: the structural changes made before C1
 
     def to_json(self):
         return {"n": self.n, "kind": self.kind, "target": self.target, "benches": list(self.benches),
                 "id": self.procedure.id if self.procedure else None,
                 "procedure_sha256": self.procedure.sha256 if self.procedure else None, "engineer_call": self.call,
-                **({"truncated": dict(self.truncated)} if self.truncated else {})}
+                **({"truncated": dict(self.truncated)} if self.truncated else {}),
+                **({"normalized": list(self.normalized)} if self.normalized else {})}
 
 
 @dataclass
@@ -343,7 +377,11 @@ class Context:
     them in every later round; Codex review 2026-10-23 #3). References may then name any run-slice item a shown or
     evaluated cell failed, and every disclosed item. The history, the training feedback and the lint have exactly the
     fields ``step._line``, ``step._feedback`` and ``_lint`` write (#4). ``spent`` is 0 in the train mode:
-    each ``engineer-r<r>`` unit has its own ``TRAIN_ENGINEER_CALLS`` and ``TRAIN_ANALYST_CALLS``."""
+    each ``engineer-r<r>`` unit has its own ``TRAIN_ENGINEER_CALLS`` and ``TRAIN_ANALYST_CALLS``.
+
+    v2.3 Amendment 2: ``routing_items`` are this round's exact run/admitted-generated (item key, public routing view)
+    pairs, independent of stored trajectories; ``routing_workers(package, item)`` mounts that item's public inputs.
+    C6b alone consumes them. They never enter the proposal payload; feedback gives counts and field names only."""
     bench: str
     k: int
     step: str
@@ -373,6 +411,10 @@ class Context:
     disclosed: frozenset = frozenset()
     echo: bool = True  # v2.1 (``protocol.FIX_ECHO``): False -- fix calls show failed C4 and C9 redacted (``_redacted``)
     counterfactual: bool = False  # v2.1 (``protocol.META_COUNTERFACTUAL``): C4 runs ``replay.meta_counterfactual``
+    configuration: str = protocol.PILOT
+    # v2.3 Amendment 2: exactly the train unit's (item key, routing view) pairs and per-item sandbox factory.
+    routing_items: list = field(default_factory=list)
+    routing_workers: object = None
     # the payload's disclosed SpreadsheetBench values and the public workbooks read for their check (``disclosed``)
     sheet: dict = field(default_factory=dict, init=False, repr=False, compare=False)
 
@@ -384,6 +426,14 @@ class Context:
     def __post_init__(self):
         require(self.bench in BENCHES and type(self.k) is int and 0 <= self.k <= 999, "A known bench and step number")
         require(self.mode in ("single", TRAIN), "A known learning mode")
+        require(self.configuration in protocol.CONFIGURATIONS, "A known engineer configuration")
+        require(isinstance(self.routing_items, list) and all(
+            isinstance(entry, (tuple, list)) and len(entry) == 2 and type(entry[0]) is str
+            and isinstance(entry[1], dict) and all(type(key) is str for key in entry[1])
+            for entry in self.routing_items), "Training routing items hold public view mappings")
+        require(len({entry[0] for entry in self.routing_items}) == len(self.routing_items),
+                "Training routing items are distinct")
+        require(not self.routing_items or callable(self.routing_workers), "Training routing items have sandbox workers")
         require(type(self.echo) is bool and type(self.counterfactual) is bool
                 and (self.mode == TRAIN or (self.echo and not self.counterfactual)),
                 "v2.1's fix-call and counterfactual rules belong to the train mode")
@@ -609,10 +659,14 @@ def payload(ctx, analyses=None):
             "trajectories": [_shown_view(kind, t, ctx.references, ctx.echo) for kind, t in shown(ctx)],
             "detectors": ctx.detectors, "previous": ctx.previous}
     if ctx.mode != TRAIN:
+        if protocol.TRIM_PAYLOADS[ctx.configuration]:
+            user = engineer_payload.trim(user)
         return fit(user, "trajectories", ROLE_INPUT_BYTES)
     # v2: the round, the earlier rounds, the last evaluation and lint, the edit budget
     user.update({"round": ctx.round, "rounds": TRAIN_ROUNDS, "history": ctx.history, "training": ctx.training,
                  "lint": ctx.lint, "edits": budget(ctx), "analyses": list(analyses or [])})
+    if protocol.TRIM_PAYLOADS[ctx.configuration]:
+        user = engineer_payload.trim(user)
     return _fit_train(user)
 
 
@@ -664,8 +718,11 @@ def analyse(ctx):
     for n, start in enumerate(range(0, len(chosen), TRAIN_ANALYST_BATCH), 1):
         group = [_shown_view("failures", first[i], ctx.references, ctx.echo)
                  for i in chosen[start:start + TRAIN_ANALYST_BATCH]]
-        user = fit({"request": "analyse", "bench": ctx.bench, "card": ctx.card, "package": package,
-                    "trajectories": group}, "trajectories", ROLE_INPUT_BYTES)
+        user = {"request": "analyse", "bench": ctx.bench, "card": ctx.card, "package": package,
+                "trajectories": group}
+        if protocol.TRIM_PAYLOADS[ctx.configuration]:
+            user = engineer_payload.trim(user)
+        user = fit(user, "trajectories", ROLE_INPUT_BYTES)
         seen = [t["task_id"] for t in user["trajectories"]]
         shown_refs += [(t["cell"], t["reference"]) for t in user["trajectories"] if isinstance(t.get("reference"), dict)]
         reply = ctx.roles.plain(ROLE, ANALYST_SYSTEM, json.dumps(user, ensure_ascii=False, sort_keys=True),
@@ -673,7 +730,8 @@ def analyse(ctx):
         found, reason = _findings(reply, seen)
         findings += found
         calls.append({"call": ctx.roles.calls[-1]["request_sha256"], "items": seen, "findings": len(found),
-                      "reason": reason})
+                      "reason": reason,
+                      **({"payload_trimming": user["payload_trimming"]} if "payload_trimming" in user else {})})
     return findings, shown_refs, {"items": [i for c in calls for i in c["items"]], "calls": calls,
                                   "failed_items": len(first)}
 
@@ -720,8 +778,13 @@ def _ask(ctx, user, purpose):
     if ctx.spent + ctx.roles.count(prefix) >= ctx.calls_cap:
         return None, None
     system = ENGINEER_SYSTEM_V2 if ctx.mode == TRAIN else ENGINEER_SYSTEM
+    modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
+    if modern:
+        system = ENGINEER_SYSTEM_V23 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_V23
+    options = ({"max_tokens": protocol.ENGINEER_MAX_TOKENS[ctx.configuration]}
+               if modern and ctx.mode == TRAIN and purpose in ("propose", "repropose") else {})
     reply = ctx.roles.plain(ROLE, system, json.dumps(user, ensure_ascii=False, sort_keys=True),
-                            label=prefix + purpose)
+                            label=prefix + purpose, **options)
     return reply, ctx.roles.calls[-1]["request_sha256"]
 
 
@@ -805,6 +868,28 @@ def _structure(change, parent, taken, *, train=False):
     return None
 
 
+def _normalize(change):
+    """E4, before C1: order valid hooks and extend the scope of a QA-only bindings declaration."""
+    entry = change.entry
+    if change.kind not in CODED or not isinstance(entry, dict):
+        return
+    hooks = entry.get("hooks")
+    if (isinstance(hooks, list) and all(type(h) is str and h in HOOKS for h in hooks)
+            and len(set(hooks)) == len(hooks)):
+        ordered = [h for h in HOOKS if h in hooks]
+        if hooks != ordered:
+            entry["hooks"] = ordered
+            change.normalized.append({"field": "hooks", "before": hooks, "after": ordered})
+        excluded = entry.get("excluded_benches", [])
+        if "bindings" in hooks and isinstance(excluded, list) and all(type(b) is str and b in BENCHES
+                                                                        for b in excluded):
+            missing = [b for b in NO_CALC_BENCHES if b not in excluded]
+            if missing:
+                entry["excluded_benches"] = [b for b in BENCHES if b in excluded or b in missing]
+                change.normalized.append({"field": "excluded_benches", "added": missing,
+                                          "reason": "bindings_is_qa_only"})
+
+
 def _new_id(ctx, n):
     """The registrar's id of the n-th coded change: ``p-<bench>-<k>-<n>`` (``fx-`` for engineering fixtures), the next
     free one."""
@@ -842,7 +927,7 @@ def _build(change, ctx):
             excluded_benches=tuple(b for b in BENCHES if b in values["excluded_benches"]),
             replay_tests=tuple(values["replay_tests"]),
             lineage={"parent": old.sha256 if old else None, "revises": old.id if old else None,
-                     "engineer_call": change.call})
+                     "engineer_call": change.call}, policy_version=protocol.POLICY_VERSIONS[ctx.configuration])
         change.target = old.id if old else None
     else:
         change.target = entry["id"]
@@ -1133,6 +1218,25 @@ def _scope(ctx, candidate_package, procedure):
     return out
 
 
+def _firing(procedure, ctx):
+    """v2.3 Amendment 2, C6b: at least one fault-free True predicate on the exact train routing set. The report
+    carries counts and public field names only; predicate error messages and item contents never enter feedback."""
+    detail = {"fires_on": 0, "items": len(ctx.routing_items), "predicate_faults": 0,
+              "routing_view_keys": sorted({key for _, view in ctx.routing_items for key in view})}
+    if ctx.bench == "alfworld":
+        detail.update({"step_view_keys": list(ALFWORLD_STEP_VIEW_KEYS),
+                       "note": "applies() receives the routing view; hooks receive the step view"})
+    if not ctx.routing_items and ctx.mode == "single":
+        return True, {**detail, "skipped": True, "reason": "no_training_items"}
+    package = replay.solo(procedure)
+    for item, view in ctx.routing_items:
+        with ctx.routing_workers(package, item) as worker:
+            routed = router.route(package, ctx.bench, view, worker)
+        detail["fires_on"] += procedure.id in routed.enabled
+        detail["predicate_faults"] += bool(routed.faults)
+    return detail["fires_on"] > 0, detail
+
+
 def check(change, ctx, taken=()):
     """The fixed checks of one change (module docstring): ``{"n", "kind", "checks": [...], "passed", "failed"}``
     with the results in executed order, stopping at the first failure."""
@@ -1145,13 +1249,20 @@ def check(change, ctx, taken=()):
             report["failed"] = check_id
         return passed
 
+    if protocol.NORMALIZE_STRUCTURE[ctx.configuration]:
+        _normalize(change)
     problem = _structure(change, ctx.parent, taken, train=train)
     if not done("C1", problem is None, _structure_detail(change, problem) if train and problem else problem):
         return report
     if change.kind in CODED:
-        violations = [v.to_json() for v in policy.check(change.source)]
+        violations = [v.to_json() for v in policy.check(change.source,
+                                                       version=protocol.POLICY_VERSIONS[ctx.configuration])]
         banned = [v for v in violations if v["rule"] in STATIC_BANS]
         other = [v for v in violations if v["rule"] not in STATIC_BANS + ("size",)]
+        if protocol.NORMALIZE_STRUCTURE[ctx.configuration] and other:
+            lines = change.source.splitlines() if isinstance(change.source, str) else []
+            other = [{**v, "line_text": lines[v["line"] - 1] if 0 < v["line"] <= len(lines) else "",
+                      "fix_hint": "Move the call into a function, or write the literal value."} for v in other]
         if not done("C2", not other, other[:5]) or not done("C4", not banned, {"static_bans": banned[:5]}):
             return report
     try:
@@ -1179,6 +1290,8 @@ def check(change, ctx, taken=()):
     entries = _scope(ctx, single, procedure)
     crash, outcomes = replay.zero_crash(procedure, list(entries.values()), ctx.workers, inputs_dirs=ctx.inputs_dirs)
     if not done("C6", crash["passed"], crash):
+        return report
+    if protocol.CHECK_NON_FIRING[ctx.configuration] and not done("C6b", *_firing(procedure, ctx)):
         return report
     if not done("C4", *leak_check(change, ctx, outcomes, entries)):
         return report
@@ -1289,6 +1402,8 @@ def _fix(ctx, change, report, *, attempt=None, why=None):
     if fixed.kind != change.kind or (key is not None and fixed.entry.get(key) != change.entry.get(key)):
         return None, "another kind or target than the change to fix"
     fixed.n = change.n
+    if protocol.NORMALIZE_STRUCTURE[ctx.configuration]:
+        fixed.normalized = list(change.normalized)
     return fixed, None
 
 
@@ -1359,12 +1474,15 @@ def run(ctx):
             taken.add(final.target)
         outcomes.append({**final.to_json(), "attempts": attempts, "survived": survived})
     package, kept = _combined(ctx.parent, survivors, ctx.step)
-    sealed = record("engineer", ctx.evidence, {
+    modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
+    sealed = record(protocol.ENGINEER_RECORDS[ctx.configuration], ctx.evidence, {
         "bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
-        "prompt_sha256": ENGINEER_PROMPT_SHA256, "proposals": proposals, "changes": outcomes,
+        "prompt_sha256": ENGINEER_PROMPT_SINGLE_V23_SHA256 if modern else ENGINEER_PROMPT_SHA256,
+        "proposals": proposals, "changes": outcomes,
         "kept": [c.n for c in kept], "candidate_sha256": package.sha256 if package else None,
         "procedures": [p.to_json() for p in package.procedures] if package else [],
-        "calls": ctx.roles.count("engineer/%s/" % ctx.label), "earlier_calls": ctx.spent})
+        "calls": ctx.roles.count("engineer/%s/" % ctx.label), "earlier_calls": ctx.spent,
+        **({"payload_trimming": user["payload_trimming"]} if "payload_trimming" in user else {})})
     return package, sealed
 
 
@@ -1451,15 +1569,18 @@ def run_train(ctx):
         outcomes.append({**final.to_json(), "attempts": attempts, "survived": survived, "fix_calls": len(replies),
                          "fix_replies": replies, "summary": _summary(final)})
     package, kept = _combined_train(ctx, survivors)
-    sealed = record("engineer", ctx.evidence, {
+    modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
+    sealed = record(protocol.ENGINEER_RECORDS[ctx.configuration], ctx.evidence, {
         "bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
-        "prompt_sha256": ENGINEER_PROMPT_V2_SHA256, "proposals": proposals, "changes": outcomes,
+        "prompt_sha256": ENGINEER_PROMPT_V23_SHA256 if modern else ENGINEER_PROMPT_V2_SHA256,
+        "proposals": proposals, "changes": outcomes,
         "kept": [c.n for c in kept], "dropped": [c.n for c in survivors[len(kept):]],
         "candidate_sha256": package.sha256 if package else None,
         "procedures": [p.to_json() for p in package.procedures] if package else [],
         "calls": ctx.roles.count("engineer/%s/" % ctx.label), "earlier_calls": ctx.spent, "mode": TRAIN,
         "round": ctx.round, "base_sha256": ctx.base.sha256, "budget": budget(ctx), "lint": lint,
-        "analysis": analysis, "analyst_prompt_sha256": ANALYST_PROMPT_SHA256, "disclosed": _disclosed_items(ctx)})
+        "analysis": analysis, "analyst_prompt_sha256": ANALYST_PROMPT_SHA256, "disclosed": _disclosed_items(ctx),
+        **({"payload_trimming": user["payload_trimming"]} if "payload_trimming" in user else {})})
     return package, sealed
 
 

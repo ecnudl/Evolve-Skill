@@ -89,6 +89,7 @@ from skillopt.continual_eval.core import require
 from skillopt.validator_pilot.api import digest
 
 from . import compute, notes, router
+from .code_delivery import VERSION as CODE_EXTRACTION_V23
 from . import precheck as prechecks
 from .canonical import canonical
 from .errors import STOP_KINDS, CleanupUnconfirmed, ConfigurationError
@@ -197,8 +198,14 @@ def routing_view(bench, public, *, runtime=None):
     return view
 
 
-def _extract(response, extraction):
+def _extract(response, extraction, *, multiple="refuse"):
     """``(program or None, delivery)``: the frozen extraction (backends.py:427-436)."""
+    if extraction == CODE_EXTRACTION_V23:
+        from .code_delivery import extract_python
+
+        extracted = extract_python(response, multiple=multiple)
+        delivery = {"code_delivery": {key: value for key, value in extracted.items() if key != "code"}}
+        return (extracted["code"] if extracted["status"] == "available" else None), delivery
     if extraction == CODE_EXTRACTION_VERSION:
         from skillopt.continual_eval.code_delivery import extract_python
 
@@ -574,7 +581,7 @@ def solve(bench, public, card_text, package, call, *, runtime=None, worker=None,
 def _solve(shell, bench, public, card_text, runtime, stored):
     """Copy of the checks of ``backends.solve`` (backends.py:366-376)."""
     extraction = runtime.get("code_extraction_version")
-    if extraction is not None and (extraction != CODE_EXTRACTION_VERSION or bench != "spreadsheetbench"):
+    if extraction is not None and (extraction not in (CODE_EXTRACTION_VERSION, CODE_EXTRACTION_V23) or bench != "spreadsheetbench"):
         return shell.unknown("invalid_code_extraction_version")
     if not _layout_supported(bench, runtime):
         return shell.unknown("invalid_prompt_layout")
@@ -658,7 +665,7 @@ def _solve_sheet(shell, public, view, card_text, runtime, stored):
         if response is None:
             return shell.unknown(reason, costs=costs)
         shell.deciding = first
-        output, delivery = _extract(response, extraction)
+        output, delivery = _extract(response, extraction, multiple=runtime.get("multiple_python_blocks", "refuse"))
         if output is None:
             return shell.unknown("code_delivery:" + delivery["code_delivery"]["reason"], costs=costs, **delivery)
         # §2.5: every extracted program is pre-checked once on the public input, whether or not a sheet_feedback
@@ -674,7 +681,7 @@ def _solve_sheet(shell, public, view, card_text, runtime, stored):
             if notes_text:
                 repair["repair_notes"] = notes_text
             second, costs2, _, index = shell.request("repair", system, json.dumps(repair, ensure_ascii=False))
-            program, repaired = _extract(second, extraction) if second is not None else (None, {})
+            program, repaired = _extract(second, extraction, multiple=runtime.get("multiple_python_blocks", "refuse")) if second is not None else (None, {})
             if program is not None:
                 output, delivery, costs, shell.deciding = program, repaired, _two_calls(costs, costs2, True), index
             else:

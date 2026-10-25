@@ -1322,7 +1322,10 @@ def max_role_calls(configuration=protocol.PILOT):
 
 def engineer_request_floor(configuration=protocol.PILOT):
     """``ENGINEER_REQUEST_FLOOR`` with the configuration's engineer prompt (v2: the longer of ``ENGINEER_SYSTEM_V2``
-    and the analysts' ``ANALYST_SYSTEM``, both engineer-role calls)."""
+    and the analysts' ``ANALYST_SYSTEM``, both engineer-role calls). v2.3 also pins its single-mode smoke prompt."""
+    if configuration == protocol.MAIN_V2_3:
+        return protocol.ROLE_INPUT_BYTES + max(len(prompt.encode()) for prompt in (
+            engineer.ENGINEER_SYSTEM_V23, engineer.ENGINEER_SYSTEM_SINGLE_V23, engineer.ANALYST_SYSTEM))
     if protocol.LEARNING[configuration] != "train":
         return protocol.ROLE_INPUT_BYTES + len(engineer.ENGINEER_SYSTEM.encode())
     return protocol.ROLE_INPUT_BYTES + max(len(engineer.ENGINEER_SYSTEM_V2.encode()),
@@ -1572,7 +1575,8 @@ def glm_projection(measured, pilot=protocol.PILOT):
                 charged.setdefault(budgets.glm_scopes(chain, role, bench, k)[-1], []).append(role)
             for name, members in sorted(charged.items()):
                 settled = sum(per_call[role] * calls[role] for role in members)
-                reserve = reservation(max(size[role] for role in members), protocol.ROLE_MAX_TOKENS)
+                reserve = max(reservation(size[role], protocol.ENGINEER_MAX_TOKENS[pilot]
+                                          if role == "engineer" else protocol.ROLE_MAX_TOKENS) for role in members)
                 out[name] = {**_glm_fit(settled, reserve, caps[name]), "roles": members,
                              "assumed": [role for role in members if role in assumed]}
                 total += settled

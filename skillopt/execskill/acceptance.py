@@ -50,6 +50,25 @@ ALFWorld, else items -- than the blocks they fall in; ``_too_few_units``) is ``u
 undecided) instead of raising, and a harmful yoked sham is labelled ``harmful_sham_reported``, J1 no longer tightening
 its alpha.
 
+v2.3 (owner request 2026-10-25 T1 and Amendment 1): only rounds carrying ``reuse`` use the sealed exact-request
+classes from ``reuse.signature`` / ``from_signatures``. One representative per class runs; a fault-free single class
+(``identical_all``) has no physical or logical cells. Its differences are exact zeros in the original A* design and
+|A| denominator, and it remains answered. Each arm keeps its registered H/L score across different classes; only
+same-item/run contributions sharing one origin are exactly zero (Codex review finding 2, 2026-10-25). When C
+is the parent, its independent min(|A*|, 30) sample prefers already-dispatched S items, supplementing with additional
+S dispatches when necessary; J6 and the C contrasts name that sample (whole-batch projection None). S_dup is always
+independent. These instruments override identical_all. ``shared_unanswered`` considers physical cells only.
+
+J3 includes sealed zero-call faults and the logical source outcomes, over |A|. J4 counts S'/S violations only on
+their noninterchangeable items, retaining format_margin(|A*|). J5 infrastructure shares use dispatched real A*
+cells by representative (including a twin representative); reasoning mismatch uses dispatched real cells. Balance
+and block gaps use the entire physical schedule, including G_acc/probe-only dispatch; an arm with no dispatch has
+no timing median, and an entirely empty schedule passes these checks. ALFWorld keeps its full schedule. Without
+``reuse`` every recorded field and decision is historical. Virtual cells and ``reused_from`` links reconstruct from
+physical records and the sealed plan; decisions store the links, effective zero-cell counts and physical counts by
+arm. Provenance hashes physical evidence only. Removing independent re-sends of equal requests reduces noise; these
+new p-values are not directly comparable with the registered full-dispatch instrumentation.
+
 The sign-flip and Wilcoxon tests are recorded as sensitivity analyses and never decide; S' - C, S - C, P_y - S (by
 donor cluster) and P_i - S are descriptive; withholding and restoration twins give tau per procedure, never deciding.
 So is §6.2's 15-minute series (``series``; registrar decision 2026-10-22 on ticket PR-F2-1): per set and arm, the
@@ -85,6 +104,7 @@ import re
 import statistics
 import time
 from datetime import datetime
+from fractions import Fraction
 from pathlib import Path
 
 from skillopt.coevo5.evaluation import ATTEMPT, attempts
@@ -92,7 +112,7 @@ from skillopt.coevo5.step import answered
 from skillopt.continual_eval.core import read_json, require, safe_path, write_json
 from skillopt.validator_pilot.api import digest
 
-from . import donors, placebo, router, stats_ext
+from . import donors, placebo, router, stats_ext, reuse as request_reuse
 from .cells import Arm, Pause, cell_id, run_cell, run_parallel
 from .outcomes_ext import DELIVERED
 from .package import Package, empty, restore
@@ -152,7 +172,7 @@ def minimum_astar(rule, size, blocks, *, alfworld=False):
 
 
 def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks, workers, trajectories, rooms=None,
-            generate=None, dup=False, probe=(), freshness=None, mde=None, rule=None):
+            generate=None, dup=False, probe=(), freshness=None, mde=None, rule=None, reuse=None):
     """Seal one acceptance round (module docstring) and write it once to ``<root>/sealed.json``. ``views``: {item:
     routing view} of the acceptance slice A in slice order (``solver.routing_view``); ``blocks``: {item: block} for A
     (ALFWorld blocks are whole rooms); ``workers(package, item)``: a context manager yielding a started sandbox worker
@@ -160,7 +180,8 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
     trajectories (the donors); ``rooms``: {item: room} on ALFWorld; ``generate(astar views) -> [{"id",
     "source_item"}]``: the examiner's frozen generator on the A* public views (G_acc; None without a generator);
     ``dup``: the registered duplicate arm S_dup runs; ``probe``: LiveMath's J7 probe items; ``rule``: v2.2's
-    practical rule (``protocol.ACCEPT_RULES``), sealed with its |A*| floor, None for the registered J1-J7."""
+    practical rule (``protocol.ACCEPT_RULES``), sealed with its |A*| floor, None for the registered J1-J7. ``reuse``:
+    v2.3's {card_text, runtime, views: {G_acc/probe: {item: shell view}}}, None for the historical full dispatch."""
     require(set(blocks) == set(views), "Every acceptance item has a block")
     evidence = candidate.evidence
     corpus = donors.donor_corpus(candidate, parent, trajectories, workers)
@@ -192,14 +213,42 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
         "plan": plan, "corpus": corpus, "placebo_y": placebo_y, "placebo_i": placebo_i, "g_acc": g_acc}
     if rule is not None:  # v2.2: the practical rule ``decide`` reads
         fields["rule"] = dict(rule)
+    if reuse is not None:
+        fields["seeds"] = {"request_reuse": SEED}
     fields["seals"] = {
         "candidate": candidate.sha256, "parent": parent.sha256, "donor_corpus": corpus[RECORD_HASH],
         "placebo_y": digest(placebo_y), "placebo_i": None if placebo_i is None else digest(placebo_i),
         "plan_sha256": plan[RECORD_HASH], "twins_sha256": digest(plan["twins"]),
         "g_acc_sha256": None if g_acc is None else digest(g_acc)}
     sealed = record("acceptance-sealed", evidence, fields)
+    if reuse is not None:
+        signatures = {}
+        all_views = {"real": views, **reuse.get("views", {})}
+        if bench in request_reuse.BENCHES:
+            for jobs in schedule(sealed).values():
+                for job in jobs:
+                    cell_set, item, arm = job["set"], job["item"], job["arm"]
+                    rows = signatures.setdefault(cell_set, {}).setdefault(item, {})
+                    if arm in rows:
+                        continue
+                    key, _, keywords = cell_arm(sealed, job, cell=cell_id(unit, arm, item, job["run"]))
+                    require(item in all_views.get(cell_set, {}), "Every reuse item has its exact shell view")
+                    with workers(packages[key], item) as worker:
+                        rows[arm] = request_reuse.signature(bench, packages[key], all_views[cell_set][item], worker,
+                                                           card_text=reuse.get("card_text", ""),
+                                                           runtime=reuse.get("runtime"), **keywords)
+        sealed = with_reuse(sealed, request_reuse.from_signatures(sealed, signatures))
     write_json(safe_path(root) / "sealed.json", sealed)
     return sealed
+
+
+def with_reuse(sealed, plan):
+    """Seal v2.3's zero-call plan, or an explicitly labelled offline counterfactual, without changing an old file."""
+    require(plan.get("version") == request_reuse.VERSION, "The registered request reuse plan")
+    fields = {k: v for k, v in sealed.items() if k not in ("version", "evidence", RECORD_HASH)}
+    fields["reuse"] = plan
+    fields["seals"] = {**fields["seals"], "reuse_sha256": digest(plan)}
+    return record("acceptance-sealed-v2-3", sealed["evidence"], fields)
 
 
 def round_packages(candidate, parent, *, step, twins):
@@ -238,7 +287,7 @@ def _ordered(jobs, tag):
     return sorted(jobs, key=lambda job: _seeded(tag, job["set"], job["item"], job["run"], job["arm"]))
 
 
-def schedule(sealed):
+def schedule(sealed, *, logical=False):
     """{block: [job]} of the round, each block in its one seeded order (``_ordered``, §6.2). A job is ``{"arm",
     "item", "run", "set", "block", "source_item"}``; a G_acc item runs in its source item's block, the J7 probe items
     are dealt over the blocks in turn in their seeded order (no block of their own; statistics review 8). An item of A
@@ -268,7 +317,12 @@ def schedule(sealed):
     out = {}
     for job in jobs:
         out.setdefault(job["block"], []).append(job)
-    return {block: _ordered(out[block], round_tag(sealed["unit"]) + ":" + str(block)) for block in sorted(out, key=str)}
+    if sealed.get("reuse") is not None and not logical:
+        plan = sealed["reuse"]
+        out = {block: [job for job in jobs if request_reuse.reference(plan, job) is None
+                      and not request_reuse.skipped(plan, job)] for block, jobs in out.items()}
+    return {block: _ordered(out[block], round_tag(sealed["unit"]) + ":" + str(block)) for block in sorted(out, key=str)
+            if out[block]}
 
 
 def cell_arm(sealed, job, *, cell):
@@ -520,12 +574,72 @@ def _token(cell):
     return cell["judge"]["v2"]["token"]
 
 
-def table(cells, cell_set="real"):
+def table(cells, cell_set="real", *, identical=()):
     """{(arm, item): [v2 token per run]} of one set's cells."""
-    out = {}
+    out = _ReuseTable(identical, cell_set) if identical or any(c.get("reused_from") for c in cells) else {}
     for cell in sorted((c for c in cells if c["set"] == cell_set), key=lambda c: (c["arm"], c["task_id"], c["run"])):
         out.setdefault((cell["arm"], cell["task_id"]), []).append(_token(cell))
+        if isinstance(out, _ReuseTable):
+            origin = cell.get("reused_from") or cell
+            out.origins[(cell["arm"], cell["task_id"], cell["run"])] = (
+                origin["set"], origin["task_id"], origin["run"], origin["arm"])
+            out.runs.setdefault((cell["arm"], cell["task_id"]), {})[cell["run"]] = _token(cell)
     return out
+
+
+class _ReuseTable(dict):
+    """Each arm keeps its own H/L score; exact shared origins identify only the paired contributions set to zero."""
+    def __init__(self, identical=(), cell_set="real"):
+        super().__init__()
+        self.origins, self.runs = {}, {}
+        self.identical = frozenset(identical)
+        self.cell_set = cell_set
+
+
+def expanded_cells(cells, sealed):
+    """Materialize the sealed same-item/run references for scoring; provenance and timings use physical cells."""
+    plan = sealed.get("reuse")
+    if plan is None:
+        return cells
+    require(digest(plan) == sealed["seals"]["reuse_sha256"], "The sealed reuse plan is unchanged")
+    found = {_cell_key(cell): cell for cell in cells}
+    pending = [job for jobs in schedule(sealed, logical=True).values() for job in jobs
+               if request_reuse.reference(plan, job) is not None]
+    for _ in range(len(pending) + 1):
+        if not pending:
+            break
+        left = []
+        for job in pending:
+            reference = request_reuse.reference(plan, job)
+            require(reference != job["arm"], "An arm cannot reuse itself")
+            source_job = {**job, "arm": reference}
+            source = found.get(_job_key(source_job))
+            if source is None:
+                left.append(job)
+                continue
+            identities = plan["signatures"].get(job["set"], {}).get(job["item"], {})
+            require(request_reuse.interchangeable(identities.get(job["arm"]), identities.get(reference),
+                                                  bench=sealed["bench"]), "A sealed reuse pair is interchangeable")
+            origin = source.get("reused_from") or {"arm": reference, "task_id": job["item"],
+                                                   "run": job["run"], "set": job["set"]}
+            fields = {k: v for k, v in source.items() if k not in ("version", "evidence", RECORD_HASH)}
+            fields.update({"arm": job["arm"], "reused_from": dict(origin)})
+            package, kind, keywords = cell_arm(sealed, job, cell=cell_id(
+                sealed["unit"], job["arm"], job["item"], job["run"]))
+            if "package_sha256" in fields:
+                fields.update({"package_sha256": sealed["packages"][package], "arm_kind": kind,
+                               "withheld": sorted(keywords.get("withhold", [])),
+                               "restored": sorted(keywords.get("restore", []))})
+                if "enabled" in identities[job["arm"]]:
+                    fields["enabled"] = identities[job["arm"]]["enabled"]
+            if "cell" in fields:
+                fields["cell"] = {**fields["cell"], "arm": job["arm"],
+                                  "id": cell_id(sealed["unit"], job["arm"], job["item"], job["run"])}
+            found[_job_key(job)] = record("cell-v2-3", source.get("evidence", sealed["evidence"]), fields)
+        require(len(left) < len(pending), "The reuse plan has a missing source or a cycle")
+        pending = left
+    return [found[_job_key(job)] for jobs in schedule(sealed, logical=True).values() for job in jobs
+            if not request_reuse.skipped(plan, job)]
 
 
 def shared_unanswered(cells, items):
@@ -539,10 +653,26 @@ def shared_unanswered(cells, items):
 
 
 def differences(cells_table, first, second, items):
-    """Per-item differences first - second (each arm on its §6.3 side), in ``items`` order."""
-    a = stats_ext.item_scores(cells_table, first, items, side=side(first))
-    b = stats_ext.item_scores(cells_table, second, items, side=side(second))
-    return [a[i] - b[i] for i in items]
+    """Per-item differences first - second (each arm on its §6.3 side), in ``items`` order. V2.3 cancels only the
+    contribution of a run whose two arms share the same origin on that item/run, never changing cross-class bounds."""
+    identical = getattr(cells_table, "identical", frozenset())
+    measured = [item for item in items if item not in identical]
+    a = stats_ext.item_scores(cells_table, first, measured, side=side(first))
+    b = stats_ext.item_scores(cells_table, second, measured, side=side(second))
+    adjusted = {item: a[item] - b[item] for item in measured}
+    if isinstance(cells_table, _ReuseTable):
+        for item in measured:
+            first_runs, second_runs = cells_table.runs[(first, item)], cells_table.runs[(second, item)]
+            for run in first_runs.keys() & second_runs.keys():
+                origin = cells_table.origins[(first, item, run)]
+                other = cells_table.origins[(second, item, run)]
+                if origin != other or origin[:3] != (cells_table.cell_set, item, run):
+                    continue
+                require(first_runs.keys() == second_runs.keys(), "A shared pair has the same registered run indices")
+                left = stats_ext.item_scores({(first, item): [first_runs[run]]}, first, [item], side=side(first))[item]
+                right = stats_ext.item_scores({(second, item): [second_runs[run]]}, second, [item], side=side(second))[item]
+                adjusted[item] -= (left - right) / len(first_runs)
+    return [Fraction(0) if i in identical else adjusted[i] for i in items]
 
 
 def _design(sealed, items):
@@ -595,6 +725,12 @@ def _fault_items(cells, sealed):
         if cell["set"] == "real" and cell["arm"] in (CANDIDATE, PLACEBO_Y) and (
                 _token(cell) == "unknown_fault" or any(f.get("procedure") in changed for f in cell.get("faults", []))):
             items.add(cell["task_id"])
+    if sealed.get("reuse") is not None:
+        for item, arms in sealed["reuse"]["signatures"].get("real", {}).items():
+            if item in set(sealed["A"]) and any(f.get("procedure") in changed
+                                               for arm in (CANDIDATE, PLACEBO_Y)
+                                               for f in arms.get(arm, {}).get("faults", [])):
+                items.add(item)
     return sorted(items)
 
 
@@ -646,6 +782,13 @@ def _balance(cells, arms, sealed):
     redone across attempts (§9.3, owner decision #15) does not count the pause between them, so the 5 % band keeps
     its width (ticket C7c-2)."""
     real = [(index, cell) for index, cell in enumerate(cells) if cell["set"] == "real"]
+    if sealed.get("reuse") is not None:
+        real = list(enumerate(cells))
+        arms = sorted({cell["arm"] for cell in cells})
+        if not cells:
+            return {"ok": True, "reason": "no_dispatched_cells", "statistic": "median_delay_spread",
+                    "spread_s": 0.0, "raw_spread_s": 0.0, "order_spread_s": 0.0, "duration_s": 0.0,
+                    "attempt_spans": 0}
     if not real or any(c.get("dispatch_ts") is None or c.get("finish_ts") is None for c in cells):
         return {"ok": False, "reason": "dispatch or finish time not recorded"}
     places = {(j["set"], j["item"], j["run"], j["arm"]): (str(block), k)
@@ -746,10 +889,11 @@ def _twins(cells_table, sealed, items):
     return out
 
 
-def _probe(cells):
+def _probe(cells, *, identical=()):
     """J7 (LiveMath, formal chain): the options-only probe's S' - C; None without probe cells."""
-    probe_table = table(cells, "probe")
-    items = sorted({i for (a, i) in probe_table if a == CANDIDATE} & {i for (a, i) in probe_table if a == CARD})
+    probe_table = table(cells, "probe", identical=identical)
+    items = sorted(({i for (a, i) in probe_table if a == CANDIDATE} & {i for (a, i) in probe_table if a == CARD})
+                   | set(identical))
     if not items:
         return None
     d = differences(probe_table, CANDIDATE, CARD, items)
@@ -764,7 +908,7 @@ def not_run(sealed):
     least = plan.get("minimum")  # v2.2: the practical rule's floor
     floor = "the registered minimum" if least is None else "the minimum of %d items%s (%s)" % (
         least["items"], "" if least["rooms"] is None else " and %d rooms" % least["rooms"], sealed["rule"]["name"])
-    return record("decision", plan["evidence"], {
+    return record("decision-v2-3" if sealed.get("reuse") is not None else "decision", plan["evidence"], {
         **_header(sealed), "A_star": len(plan["astar"]), "A_star_rooms": plan["astar_rooms"],
         "decision": SMALL, "reason": "|A*| = %d%s below %s; S' archived, S passes on, every slice item released as "
                                      "routed_not_dispatched" % (
@@ -774,7 +918,18 @@ def not_run(sealed):
 
 def _header(sealed):
     seals = sealed["seals"]
+    dispatch_counts = {}
+    if sealed.get("reuse") is not None:
+        jobs = [job for block in schedule(sealed).values() for job in block]
+        names = sorted({job["arm"] for block in schedule(sealed, logical=True).values() for job in block})
+        dispatch_counts = {"physical_cells": len(jobs),
+                           "dispatched_by_arm": {arm: sum(job["arm"] == arm for job in jobs) for arm in names}}
     return {**({"rule": sealed["rule"]["name"]} if sealed.get("rule") else {}),  # v2.2
+            **({"reuse": {"plan_sha256": seals["reuse_sha256"], "card_sample": sealed["reuse"]["card_sample"],
+                           "timing": "physical_dispatch_schedule", "infrastructure": "dispatched_representatives",
+                           "identical_all": {name: len(items) for name, items in sealed["reuse"]["identical_all"].items()},
+                           **dispatch_counts}}
+               if sealed.get("reuse") is not None else {}),
             "step": sealed["step"], "bench": sealed["bench"], "chain": sealed["chain"], "unit": sealed["unit"],
             "freshness": sealed["freshness"], "evidence_kind": EVIDENCE_KIND, "A": len(sealed["A"]),
             "runs": sealed["runs"], "blocks": sorted(set(sealed["blocks"].values()), key=str),
@@ -798,34 +953,53 @@ def decide(cells, sealed):
         return not_run(sealed)
     astar, size_a = plan["astar"], len(sealed["A"])
     provenance = _provenance(cells, sealed)  # §9.3, owner #15: the whole schedule, each block from one attempt
-    cells_table = table(cells)
+    physical = cells
+    cells = expanded_cells(cells, sealed)
+    reuse = sealed.get("reuse")
+    identical = (reuse or {}).get("identical_all", {})
+    cells_table = table(cells, identical=identical.get("real", []))
     arms = sorted({a for (a, _) in cells_table if not a.startswith(("withhold:", "restore:"))})
-    unanswered = shared_unanswered(cells, astar)
+    if reuse is not None:
+        arms = sorted({job["arm"] for jobs in schedule(sealed, logical=True).values() for job in jobs
+                       if job["set"] == "real" and not job["arm"].startswith(("withhold:", "restore:"))})
+    unanswered = shared_unanswered(physical, astar)
     items = [i for i in astar if i not in set(unanswered)]
     if sealed.get("rule") is None:
         require(len(items) > len(set(sealed["blocks"][i] for i in items)), "Too few answered items for the t-test")
     else:  # v2.2 (Codex review MAJOR 1): the smaller floor can leave the t-test no degree of freedom
         short = _too_few_units(sealed, items)
         if short is not None:
-            return record("decision", plan["evidence"], {
+            return record("decision-v2-3" if sealed.get("reuse") is not None else "decision", plan["evidence"], {
                 **_header(sealed), "A_star": len(astar), "A_star_rooms": plan["astar_rooms"], "analysed": len(items),
                 "shared_unanswered": unanswered, "provenance": provenance, "decision": "undetermined",
                 "reason": short + "; the run pauses, the batch is consumed but undecided"})
     # §6.5 (Codex review 2026-10-22 #12): the twin-only items (A outside A*) hold S' and twin cells only; they enter
     # tau (``_twins``), J3 (S' runs on A) and the instrument checks over all real cells, never a decision contrast
     outside = twin_only(sealed)
-    twin_unanswered = shared_unanswered(cells, outside)
+    twin_unanswered = shared_unanswered(physical, outside)
     twin_items = items + [i for i in outside if i not in set(twin_unanswered)]
     in_astar, alone = set(astar), set(outside)
     design = _design(sealed, items)
     pairs = plan["donors"]["pairs"]
     gain, over_sham = (differences(cells_table, CANDIDATE, PARENT, items),
                        differences(cells_table, CANDIDATE, PLACEBO_Y, items))
+    sample = (sealed.get("reuse") or {}).get("card_sample")
+    card_items = [i for i in items if i in sample["items"]] if sample is not None else items
+    if sample is not None and _too_few_units(sealed, card_items) is not None:
+        return record("decision-v2-3", plan["evidence"], {
+            **_header(sealed), "A_star": len(astar), "A_star_rooms": plan["astar_rooms"], "analysed": len(items),
+            "shared_unanswered": unanswered, "provenance": provenance, "decision": "undetermined",
+            "reason": "too few answered C instrument sample items for the t-test; the run pauses"})
+    card_design = _design(sealed, card_items)
     contrasts = {
         "S'-S": contrast(gain, design=design, whole=size_a, sensitivity=True),
         "S'-P_y": contrast(over_sham, design=design, whole=size_a, sensitivity=True),
-        "S'-C": contrast(differences(cells_table, CANDIDATE, CARD, items), design=design, whole=size_a),
-        "S-C": contrast(differences(cells_table, PARENT, CARD, items), design=design, whole=size_a)}
+        "S'-C": contrast(differences(cells_table, CANDIDATE, CARD, card_items), design=card_design, whole=size_a),
+        "S-C": contrast(differences(cells_table, PARENT, CARD, card_items), design=card_design, whole=size_a)}
+    if sample is not None:
+        for name in ("S'-C", "S-C"):
+            contrasts[name].update({"sample": "sealed_C_instrument", "sample_items": card_items,
+                                    "sample_size": len(card_items), "whole_batch": None})
     sham = differences(cells_table, PLACEBO_Y, PARENT, items)
     contrasts["P_y-S"] = {**contrast(sham, whole=size_a), "ci95": list(stats_ext.bootstrap_ci(
         sham, clusters=[pairs[i] for i in items])), "by_donor": _by_donor(sham, items, pairs)}
@@ -848,23 +1022,35 @@ def decide(cells, sealed):
           "max_items": fault_items_max(size_a), "ok": len(faults) * FAULT_SHARE_MAX.denominator
           <= FAULT_SHARE_MAX.numerator * size_a}
     margin = format_margin(len(astar))
-    violating = {arm: _violating(cells, arm, astar) for arm in (CANDIDATE, PARENT)}
+    format_items = astar
+    if reuse is not None:
+        format_items = [i for i in astar if not request_reuse.interchangeable(
+            reuse["signatures"].get("real", {}).get(i, {}).get(CANDIDATE),
+            reuse["signatures"].get("real", {}).get(i, {}).get(PARENT), bench=sealed["bench"])]
+    violating = {arm: _violating(cells, arm, format_items) for arm in (CANDIDATE, PARENT)}
     j4 = {"S'": len(violating[CANDIDATE]), "S": len(violating[PARENT]), "margin": margin,
           "ok": len(violating[CANDIDATE]) <= len(violating[PARENT]) + margin}
-    infra = {arm: float(stats_ext.infrastructure_share(cells_table, arm, [i for i in astar if (arm, i) in cells_table]))
-             for arm in arms}
+    if reuse is not None:
+        j4.update({"compared_items": len(format_items), "interchangeable_items": len(astar) - len(format_items)})
+    infrastructure = table(physical) if reuse is not None else cells_table
+    measured_arms = sorted({a for (a, i) in infrastructure if i in astar}) if reuse is not None else arms
+    infra = {arm: float(stats_ext.infrastructure_share(infrastructure, arm,
+                                                       [i for i in astar if (arm, i) in infrastructure]))
+             for arm in measured_arms}
     real = [c for c in cells if c["set"] == "real"]
-    reasoning = sum("reasoning_mismatch" in c["judge"].get("flags", []) for c in real) / len(real)
-    balance = _balance(cells, arms, sealed)
-    gap = _block_gap(cells, sealed)
+    timing = [c for c in physical if c["set"] == "real"] if reuse is not None else real
+    reasoning = sum("reasoning_mismatch" in c["judge"].get("flags", []) for c in timing) / max(1, len(timing))
+    timing_arms = sorted({c["arm"] for c in timing}) if reuse is not None else arms
+    balance = _balance(physical, timing_arms, sealed)
+    gap = _block_gap(physical, sealed)
     j5 = {"infra": infra, "reasoning": reasoning, "unanswered": len(unanswered), "balance": balance,
           "block_gap": gap,
-          "ok": max(infra.values()) <= float(INFRA_UNKNOWN_MAX) and reasoning <= float(REASONING_MISMATCH_MAX)
+          "ok": max(infra.values(), default=0.0) <= float(INFRA_UNKNOWN_MAX) and reasoning <= float(REASONING_MISMATCH_MAX)
           and len(unanswered) * SHARED_UNANSWERED_MAX.denominator <= SHARED_UNANSWERED_MAX.numerator * len(astar)
           and balance["ok"] and gap["ok"]}
     j5["pause"] = not j5["ok"]  # §13: every broken-instrument case pauses (statistics review 4)
     j6 = _duplicate(cells_table, sealed, items, design)
-    j7 = _probe(cells)
+    j7 = _probe(cells, identical=identical.get("probe", []))
     failed = [name for name, check in (("J1", j1), ("J2", j2), ("J3", j3), ("J4", j4), ("J7", j7))
               if check is not None and not check["ok"]]
     if not j5["ok"] or (j6 is not None and not j6["ok"]):
@@ -880,7 +1066,7 @@ def decide(cells, sealed):
             reason = "J1 (%s: %+.1f points over the whole batch%s) and J3-J7 hold; placebo label %s" % (
                 gate["name"], 100 * first["whole_batch"], "" if j1["practical"] else ", significant", j2["label"])
     calls = (CANDIDATE, PLACEBO_Y) + ((PLACEBO_I,) if PLACEBO_I in arms else ())
-    return record("decision", plan["evidence"], {
+    return record("decision-v2-3" if sealed.get("reuse") is not None else "decision", plan["evidence"], {
         **_header(sealed), "A_star": len(astar), "A_star_rooms": plan["astar_rooms"], "analysed": len(items),
         "shared_unanswered": unanswered,
         "donors": {"corpus_sha256": sealed["seals"]["donor_corpus"],
@@ -900,6 +1086,17 @@ def decide(cells, sealed):
                                         "cells": sum(c["task_id"] in alone for c in real)}},
         "twins": _twins(cells_table, sealed, twin_items), "provenance": provenance,
         "series": series(cells),  # §6.2, ticket PR-F2-1: descriptive, after the verdict, read by no guard
+        **({"request_reuse": {"physical_cells": len(physical), "logical_cells": len(cells),
+                              "dispatched_by_arm": {arm: sum(c["arm"] == arm for c in physical)
+                                                    for arm in sorted({j["arm"] for jobs in schedule(
+                                                        sealed, logical=True).values() for j in jobs})},
+                              "identical_all": identical,
+                              "identical_all_items": sum(len(items) for items in identical.values()),
+                              "identical_all_real_astar_items": len(set(identical.get("real", [])) & set(astar)),
+                              "cells": [{"arm": c["arm"], "task_id": c["task_id"], "run": c["run"],
+                                         "set": c["set"], "reused_from": c["reused_from"]}
+                                        for c in cells if c.get("reused_from")]}}
+           if sealed.get("reuse") is not None else {}),
         "decision": verdict, "reason": reason})
 
 
@@ -936,9 +1133,13 @@ def _duplicate(cells_table, sealed, items, design):
         return None
     tested = []
     for first, second in pairs:
-        d = differences(cells_table, first, second, items)
-        p = _two_sided(stats_ext.paired_t(d, **design))
-        tested.append({"pair": "%s-%s" % (first, second), "p_two_sided": p, "ok": p >= DUP_ALPHA})
+        sample = (sealed.get("reuse") or {}).get("card_sample") if first == CARD else None
+        members = [i for i in items if i in sample["items"]] if sample is not None else items
+        d = differences(cells_table, first, second, members)
+        p = _two_sided(stats_ext.paired_t(d, **(_design(sealed, members) if sample is not None else design)))
+        tested.append({"pair": "%s-%s" % (first, second), "p_two_sided": p, "ok": p >= DUP_ALPHA,
+                       **({"sample": "sealed_C_instrument", "sample_items": members, "sample_size": len(members),
+                           "runs": sample["runs"]} if sample is not None else {})})
     return {"pairs": tested, "ok": all(t["ok"] for t in tested)}
 
 

@@ -17,6 +17,12 @@ while S has no procedure on the bench, later S and S_dup), whose differences sho
 - otherwise not_evaluable. With fewer than 8 rounds the status is not_evaluable whatever the disagreement; the pilot
   (one round per bench) therefore cannot evaluate validity.
 Only rounds with both numbers count (a round that did not run, or ran without G_acc, gives none).
+
+v2.3 (Codex review finding 5, coordinator fix request 2026-10-25): expand the round's sealed shared cells before
+reading either set, and keep each set's ``identical_all`` items as exact-zero differences. These unmeasured
+unchanged items retain their denominators and the real/generated covariance pairing; no accuracy is invented.
+Duplicate controls retain their existing item-set scope, including the added exact zeros. Rounds without a reuse
+plan follow the historical path and return the same fields and values.
 """
 from __future__ import annotations
 
@@ -45,11 +51,18 @@ def round_pair(cells, sealed):
     sealed = verified(sealed, "acceptance-sealed")
     if sealed["plan"]["decision"] == acceptance.SMALL or not sealed["g_acc"]:
         return None
-    real_table, gen_table = acceptance.table(cells), acceptance.table(cells, "G_acc")
-    unanswered = set(acceptance.shared_unanswered(cells, sealed["plan"]["astar"]))
+    physical = cells
+    identical = (sealed.get("reuse") or {}).get("identical_all", {})
+    if sealed.get("reuse") is not None:
+        physical = [cell for cell in cells if not cell.get("reused_from")]
+        cells = acceptance.expanded_cells(physical, sealed)
+    real_table = acceptance.table(cells, identical=identical.get("real", []))
+    gen_table = acceptance.table(cells, "G_acc", identical=identical.get("G_acc", []))
+    unanswered = set(acceptance.shared_unanswered(physical, sealed["plan"]["astar"]))
     real_items = [i for i in sealed["plan"]["astar"] if i not in unanswered]
     generated = [g for g in sealed["g_acc"]
-                 if (acceptance.CANDIDATE, g["id"]) in gen_table and (acceptance.PARENT, g["id"]) in gen_table]
+                 if g["id"] in identical.get("G_acc", [])
+                 or (acceptance.CANDIDATE, g["id"]) in gen_table and (acceptance.PARENT, g["id"]) in gen_table]
     if not real_items or not generated:
         return None
     real = dict(zip(real_items, acceptance.differences(real_table, acceptance.CANDIDATE, acceptance.PARENT,
@@ -79,10 +92,16 @@ def dup_control(cells, sealed):
         first, second = acceptance.CARD, acceptance.PARENT
     else:
         return None
+    identical = (sealed.get("reuse") or {}).get("identical_all", {})
+    if sealed.get("reuse") is not None:
+        cells = acceptance.expanded_cells([cell for cell in cells if not cell.get("reused_from")], sealed)
     out = {"pair": "%s-%s" % (first, second)}
     for name, cell_set in (("gen_ci95", "G_acc"), ("real_ci95", "real")):
-        found = acceptance.table(cells, cell_set)
-        items = sorted({i for (a, i) in found if a == first} & {i for (a, i) in found if a == second})
+        eligible = set(sealed["plan"]["astar"] if cell_set == "real" else [g["id"] for g in sealed["g_acc"] or []])
+        unchanged = set(identical.get(cell_set, [])) & eligible
+        found = acceptance.table(cells, cell_set, identical=unchanged)
+        items = sorted(({i for (a, i) in found if a == first} & {i for (a, i) in found if a == second})
+                       | unchanged)
         if not items:
             return None
         d = acceptance.differences(found, first, second, items)

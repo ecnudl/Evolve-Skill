@@ -690,12 +690,16 @@ def handle_load(request, state, policy):
     seq = request["seq"]
     if state["loaded"] is not None:
         return _refuse(seq, "a worker loads one package")
-    if request.get("policy_sha256") != policy.policy_sha256():
+    version = request.get("policy_version", policy.POLICY_VERSION)
+    if (type(version) is not str or version not in policy.POLICIES
+            or request.get("policy_sha256") != policy.policy_sha256(version=version)):
         return _refuse(seq, "policy_mismatch: the runner's policy.py differs from the host's")
     limits, entries = _limits(request.get("limits")), request.get("procedures")
     package = request.get("package_sha256")
     if limits is None or type(package) is not str or not isinstance(entries, list) or not all(
-            isinstance(e, dict) and set(e) == {"id", "source", "hooks"} and type(e["id"]) is str
+            isinstance(e, dict) and {"id", "source", "hooks"} <= set(e) <= {"id", "source", "hooks", "policy_version"}
+            and e.get("policy_version", policy.POLICY_VERSION) in (policy.POLICY_VERSION, version)
+            and type(e["id"]) is str
             and type(e["source"]) is str and isinstance(e["hooks"], list)
             and all(type(h) is str for h in e["hooks"]) for e in entries):
         return _refuse(seq, "malformed load request")
@@ -703,7 +707,7 @@ def handle_load(request, state, policy):
         return _refuse(seq, "duplicate procedure ids")
     loaded, rejected = {}, []
     for entry in entries:
-        violations = policy.check(entry["source"])
+        violations = policy.check(entry["source"], version=entry.get("policy_version", policy.POLICY_VERSION))
         if violations:
             rules = sorted({v.rule for v in violations})
             rejected.append({"id": entry["id"], "reason": "policy:" + ",".join(rules)})

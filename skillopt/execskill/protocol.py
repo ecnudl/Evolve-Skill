@@ -38,7 +38,7 @@ RECORD_HASH = "record_sha256"  # plan §2: the canonical digest of the record wi
 EVIDENCE = ("engineering_fixture", "smoke", "pilot_real_run", "historical_replay", "main_real_run",
             "main_v2_real_run",  # v2 (owner decision 2026-10-23 13:3x): the "train then accept" main experiment
             "main_v2_1_real_run",  # v2.1 (owner decision 2026-10-24 02:2x): main-v2 with two engineer rules
-            "main_v2_2_real_run")  # v2.2 (owner decision 2026-10-24 12:1x): main-v2-1 with the practical gates
+            "main_v2_2_real_run", "main_v2_3_real_run")  # v2.2 (owner decision 2026-10-24 12:1x): main-v2-1 with the practical gates
 IMPORTABLE = ("fivebench-coevolution-v3-sheet-qualification",)  # §1, owner #7, Codex F15: the one v3 record kind read
 TEXTS_IMPORT = "fivebench-coevolution-v3-texts-import"  # §2.2: the v3 task cards, imported by value (plan §6)
 
@@ -65,7 +65,11 @@ def verified(value, name=None):
     version = value.get("version")
     require(type(version) is str and version.startswith(VERSION + "-")
             and KIND.fullmatch(version[len(VERSION) + 1:]), "Not a %s record" % VERSION)
-    require(name is None or version == kind(name), "A record of another kind")
+    revised = {"engineer", "procedure", "acceptance-sealed", "decision", "unit", "unit-started", "unit-status",
+               "unit-completed", "manifest", "cell", "judge", "step"}
+    require(name is None or version == kind(name) or (name in revised and version == kind(name + "-v2-3"))
+            or (name == "engineer" and version == kind("engineer-v2-3-a2")),
+            "A record of another kind")
     require(value.get("evidence") in EVIDENCE, "Unknown evidence label")
     return value
 
@@ -104,7 +108,7 @@ SMOKE_SOLVER = CHAINS["D"]  # §0 (c), §10: the registered default smoke solver
 # registrar addendum 2026-10-23 02:3x ("smoke solver chain"): the smoke specification pins its solver chain -- "D",
 # the registered default (unchanged), or "G": GLM-5.3 through its frozen client with chain G's settings, and no S1
 SMOKE_SOLVER_CHAINS = ("D", "G")
-NAMESPACES = ("G", "D", "smoke", "G-v2", "D-v2", "G-v2-1", "D-v2-1", "G-v2-2", "D-v2-2")  # §3.4: one consumption namespace per chain,
+NAMESPACES = ("G", "D", "smoke", "G-v2", "D-v2", "G-v2-1", "D-v2-1", "G-v2-2", "D-v2-2", "G-v2-3", "D-v2-3")  # §3.4: one consumption namespace per chain,
 # the smoke its own;
 # v2 (owner decision 2026-10-23 13:3x): each chain of the main-v2 configuration consumes in its own namespace
 # (``V2_NAMESPACES``, ``namespace_of``), so it cuts the registered slices from the same fixed order again: its run
@@ -119,6 +123,7 @@ V21_NAMESPACES = {"G": "G-v2-1", "D": "D-v2-1"}
 # again; main-v2-1 did dispatch acceptance items (chain D's LiveMath round), so these slices are reused there
 # (``ACCEPT_FRESHNESS``)
 V22_NAMESPACES = {"G": "G-v2-2", "D": "D-v2-2"}
+V23_NAMESPACES = {"G": "G-v2-3", "D": "D-v2-3"}
 ROLE_MODEL = "glm-5.3"  # §4.2, §4.3, §7.2: every method role of both chains
 # §4.1 chain G: M = B = 65,536 on every bench and a 2,400 s read timeout (the frozen route, coevo5 protocol.py:327,
 # :92), so a chain G receipt is never over nominal.
@@ -921,6 +926,30 @@ TEST_READ_CELLS[MAIN_V2_2] = dict(TEST_READ_CELLS[MAIN_V2])
 CHAIN_NAMESPACES[MAIN_V2_2] = V22_NAMESPACES
 
 
+# v2.3 (owner 2026-10-24 21:5x; REQUEST-v23.md): repair engineer delivery and structure, widen only
+# pure module constants, version the sheet extractor, and seal zero-call request reuse before paired dispatch.
+# The fixed cut is reused again; acceptance is selection evidence, not independent method-effect evidence.
+MAIN_V2_3 = "main-v2-3"
+MAIN_V2_3_ROOT = "/data/execskill-20261025-main-v2-3"
+MAIN_V2_3_MANIFEST = "/data/execskill-20261025-main-v2-3-manifest.json"
+for _table in (PILOTS, STAGE_READ, TEST_READ_CELLS, LEARNING, FIX_ECHO, META_COUNTERFACTUAL,
+               TRAIN_SIGN, PRUNE_NON_FIRING, ACCEPT_RULES):
+    _table[MAIN_V2_3] = _table[MAIN_V2_2].copy() if isinstance(_table[MAIN_V2_2], dict) else _table[MAIN_V2_2]
+CHAIN_NAMESPACES[MAIN_V2_3] = V23_NAMESPACES
+ACCEPT_FRESHNESS[MAIN_V2_3] = "route_b_v2_2_slices_reused"
+ENGINEER_MAX_TOKENS = {name: 32_768 if name == MAIN_V2_3 else ROLE_MAX_TOKENS for name in CONFIGURATIONS}
+TRIM_CHARS = 6_000
+TRIM_PAYLOADS = {name: name == MAIN_V2_3 for name in CONFIGURATIONS}
+NORMALIZE_STRUCTURE = dict(TRIM_PAYLOADS)
+CHECK_NON_FIRING = dict(TRIM_PAYLOADS)  # Amendment 2: repairable C6b on the round's training routing views
+ENGINEER_RECORDS = {name: "engineer-v2-3-a2" if name == MAIN_V2_3 else "engineer" for name in CONFIGURATIONS}
+IDENTICAL_REQUEST_REUSE = dict(TRIM_PAYLOADS)
+POLICY_VERSIONS = {name: "fivebench-execskill-v2-3-policy" if name == MAIN_V2_3
+                   else "fivebench-execskill-v1-policy" for name in CONFIGURATIONS}
+CODE_EXTRACTION = {name: "explicit-python-fences-v2" if name == MAIN_V2_3
+                   else "explicit-python-fences-v1" for name in CONFIGURATIONS}
+MULTIPLE_PYTHON_BLOCKS = {name: "refuse" for name in CONFIGURATIONS}  # owner must choose before launch
+
 def namespace_of(setting, chain):
     """The consumption namespace of ``chain`` in the Setting's run configuration: the chain itself, or its own
     namespace in main-v2 (``V2_NAMESPACES``), main-v2-1 (``V21_NAMESPACES``) and main-v2-2 (``V22_NAMESPACES``)."""
@@ -945,6 +974,13 @@ REAL_RUN_EVIDENCE = {"default": "pilot_real_run", "recommended": "pilot_real_run
                      MAIN_V2: "main_v2_real_run", MAIN_V2_1: "main_v2_1_real_run", MAIN_V2_2: "main_v2_2_real_run"}
 RUN_ROOTS = {"default": PILOT_ROOT, "recommended": PILOT_ROOT, "main": MAIN_ROOT, MAIN_V2: MAIN_V2_ROOT,
              MAIN_V2_1: MAIN_V2_1_ROOT, MAIN_V2_2: MAIN_V2_2_ROOT}
+
+
+for _table in (CONFIG_STEP_CAPS, CONFIG_SCHEDULE_CELLS, CONFIG_ROLE_CAPS, CONFIG_GLM_CAP, CONFIG_CAP_FACTOR,
+               COST_CHECK_PAUSES):
+    _table[MAIN_V2_3] = _table[MAIN_V2_2]
+REAL_RUN_EVIDENCE[MAIN_V2_3] = "main_v2_3_real_run"
+RUN_ROOTS[MAIN_V2_3] = MAIN_V2_3_ROOT
 
 
 def configuration_of(setting):

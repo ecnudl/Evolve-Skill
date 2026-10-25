@@ -312,6 +312,11 @@ def _entries(package):
     ``source`` and ``hooks`` (the entry points the host may call) -- ``package.Package`` or a detector/generator
     bundle."""
     entries = [{"id": p.id, "source": p.source, "hooks": list(p.hooks)} for p in package.procedures]
+    # E3: carry a v2.3 procedure's policy through every replay/solver sandbox; old frames stay unchanged.
+    for entry, procedure in zip(entries, package.procedures):
+        version = getattr(procedure, "policy_version", policy.POLICY_VERSION)
+        if version != policy.POLICY_VERSION:
+            entry["policy_version"] = version
     require(type(package.sha256) is str and re.fullmatch(r"[0-9a-f]{64}", package.sha256) is not None
             and all(type(e["id"]) is str and type(e["source"]) is str and all(type(h) is str for h in e["hooks"])
                     for e in entries) and len({e["id"] for e in entries}) == len(entries),
@@ -499,8 +504,12 @@ class Worker:
             raise ConfigurationError("sandbox worker identity mismatch: %s" % {
                 k: ping.get(k) for k in ("worker", "worker_sha256", "hashseed", "policy_sha256")})
         entries = [e for e in self._entries if e["id"] not in self.dropped]
+        modern = any(e.get("policy_version") == policy.POLICY_VERSION_V23 for e in entries)
+        version = policy.POLICY_VERSION_V23 if modern else policy.POLICY_VERSION
         reply = self._exchange({"op": "load", "package_sha256": self.package.sha256,
-                                "policy_sha256": policy.policy_sha256(), "limits": self.limits[self.kind].worker(),
+                                "policy_sha256": policy.policy_sha256(version=version),
+                                **({"policy_version": version} if modern else {}),
+                                "limits": self.limits[self.kind].worker(),
                                 "procedures": entries}, SANDBOX_READY_SECONDS)
         rejected = reply.get("rejected")
         if (reply.get("ok") is not True or reply.get("package_sha256") != self.package.sha256

@@ -183,8 +183,8 @@ def test_registered_names_agree_across_the_b1_modules():
     assert set(package.SECOND_CALL_HOOKS) <= set(package.NOTE_HOOKS) <= set(protocol.HOOKS)
     assert set(notes.FIELD_TYPES) == set(notes.FIELD_ORDER) == set(protocol.NOTE_HEADERS)  # render indexes headers
     assert set(protocol.NAMESPACES) == set(protocol.CHAINS) | {budgets.SMOKE} | set(protocol.V2_NAMESPACES.values()) | set(
-        protocol.V21_NAMESPACES.values()) | set(protocol.V22_NAMESPACES.values())
-    assert set(protocol.V2_NAMESPACES) == set(protocol.V21_NAMESPACES) == set(protocol.V22_NAMESPACES) == set(
+        protocol.V21_NAMESPACES.values()) | set(protocol.V22_NAMESPACES.values()) | set(protocol.V23_NAMESPACES.values())
+    assert set(protocol.V2_NAMESPACES) == set(protocol.V21_NAMESPACES) == set(protocol.V22_NAMESPACES) == set(protocol.V23_NAMESPACES) == set(
         protocol.CHAINS)  # v2, v2.1, v2.2: their own
     assert set(protocol.SOLVERS) <= set(slots.POOL_SIZES) and protocol.ROLE_MODEL in slots.POOL_SIZES
 

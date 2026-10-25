@@ -71,7 +71,7 @@ from skillopt.continual_eval.core import read_json, require, safe_path, write_js
 from skillopt.validator_pilot.api import digest
 
 from . import (budgets, describer, detectors, engineer, examiner, fixtures, manifest, protocol, replay, research,
-               rounds, slots, smoke, step, trajectories, units)
+               rounds, slots, smoke, solver, step, trajectories, units)
 from .cells import Pause
 from .errors import BudgetStop, ConfigurationError
 from .generators import livemath
@@ -226,7 +226,7 @@ def role_set(setting, guard):
     for role in ROLES_USED:
         scopes = budgets.glm_scopes(budgets.SMOKE, role, None, None) + (METER_SCOPE,)
         endpoint = budgets.endpoint(setting, scopes, client=client, max_tokens_bound=protocol.ROLE_MAX_TOKENS)
-        out[role] = Roles(Metered(endpoint, guard, role))
+        out[role] = units.roles(Metered(endpoint, guard, role), configuration=protocol.configuration_of(setting))
     return out
 
 
@@ -260,12 +260,17 @@ def _engineer(roles, setting, workers, unit, run, evidence):
         reference = private.get("answer", private.get("answers"))
         if isinstance(reference, (str, list)) and reference:
             references[key] = reference
+    routing = {}
+    if protocol.CHECK_NON_FIRING[protocol.configuration_of(setting)]:
+        routing = {"routing_items": [(key, solver.routing_view(BENCH, by_key[key]["public"])) for key in keys],
+                   "routing_workers": lambda package, key: workers(package, kind="cell", inputs_dir=None)}
     ctx = engineer.Context(bench=BENCH, k=K, step=unit, evidence=evidence, parent=empty(step="smoke/s0",
                                                                                         evidence=evidence),
                            trajectories=run, corpora={BENCH: leakage.Corpus(BENCH, [by_key[k] for k in keys])},
                            workers=workers, roles=roles, label=unit, card=setting.cards.get(BENCH, ""),
-                           references=references, inputs_dirs=None,
-                           detectors=detectors.counts(detectors.diagnosis(parents, bench=BENCH)), previous=None)
+                           references=references, inputs_dirs=None, configuration=protocol.configuration_of(setting),
+                           detectors=detectors.counts(detectors.diagnosis(parents, bench=BENCH)), previous=None,
+                           **routing)
     candidate, sealed = engineer.run(ctx)
     checked = [c for c in sealed["changes"] if c["attempts"] and c["attempts"][-1]["checks"]]
     ran = (any(p["parsed"] for p in sealed["proposals"]) and bool(sealed["changes"])
