@@ -123,7 +123,7 @@ from .chain import EXIT_AWAITING, EXIT_COMPLETE, EXIT_PAUSED, unit_root as read_
 from .errors import CleanupUnconfirmed, stop_kind
 from .manifest import setting_of
 from .package import Package, empty, load
-from .profiles import (BENCHES, SUPPORTED_BENCHES, ZEBRA_PC_V1, is_zebra, read_benches, CANARIES, CHAINS, CONFIGURATIONS, CONSENT_FIELDS, FORMAL_ADDENDUM,
+from .profiles import (BENCHES, SUPPORTED_BENCHES, ZEBRA_PC_V1, is_zebra, is_alfworld, read_benches, CANARIES, CHAINS, CONFIGURATIONS, CONSENT_FIELDS, FORMAL_ADDENDUM,
                        FORMAL_ADDENDUM_DOCUMENT, INFRA_UNKNOWN_MAX, OFFICEQA_TEST_BLOCKS, ORDER, OWNER_CONTINUATION,
                        RECORD_HASH, STAGE_ARM, STAGE_READ, TEST_RUNS, configuration_of, discourage_tag, ledger_bound,
                        order_of, read_arms_of, record, round_tag, verified)
@@ -747,7 +747,7 @@ def _checked(value, *, configuration=None):
         isinstance(c, dict) and set(c) == {"chars", "sha256_16"} and type(c["chars"]) is int
         and c["chars"] >= MIN_CANARY_CHARS and re.fullmatch(r"[0-9a-f]{%d}" % CANARY_HEX, str(c["sha256_16"]))
         for c in found), "Registered canaries are lengths with sha256 prefixes")
-    benches = ("zebralogic",) if is_zebra(configuration) else BENCHES
+    benches = read_benches(configuration)
     require(isinstance(counts, dict) and counts and set(counts) <= set(benches) and all(
         type(n) is int and n > 0 for n in counts.values()) and sum(counts.values()) == len(found),
         "Registered canaries are counted per bench")
@@ -766,6 +766,12 @@ def _canary_records(root, *, read, configuration=None):
         isolated = verified(read_json(root / READ_CANARIES), "test-read-canaries")
         require(isolated.get("configuration") == configuration and set(isolated["counts"]) == {"zebralogic"}
                 and isolated.get("extends") is None, "The trusted ZebraLogic run needs isolated ZebraLogic canaries")
+        return _checked(isolated, configuration=configuration), None
+    if is_alfworld(configuration):
+        require((root / READ_CANARIES).is_file(), "The isolated ALFWorld test read's canaries are not made yet")
+        isolated = verified(read_json(root / READ_CANARIES), "test-read-canaries")
+        require(isolated.get("configuration") == configuration and set(isolated["counts"]) == {"alfworld"}
+                and isolated.get("extends") is None, "The trusted ALFWorld run needs isolated ALFWorld canaries")
         return _checked(isolated, configuration=configuration), None
     require((root / CANARIES).is_file(), "No registered test canaries in the run root")
     first = _checked(verified(read_json(root / CANARIES), "test-canaries"))
@@ -818,6 +824,10 @@ def make_read_canaries(root, pinned, *, pools, run, evidence, panel=data.test_pa
     if is_zebra(configuration):
         require(tuple(order) == ("zebralogic",), "The trusted ZebraLogic run has one benchmark")
         return _make_zebra_canaries(root, pinned, pools=pools, run=run, evidence=evidence, panel=panel, configuration=configuration)
+    if is_alfworld(configuration):
+        require(tuple(order) == ("alfworld",), "The trusted ALFWorld run has one benchmark")
+        return _make_alfworld_canaries(root, pinned, pools=pools, run=run, evidence=evidence, panel=panel,
+                                      configuration=configuration)
     allowed = consent(root / "shared")
     first, _ = _canary_records(root, read=False, configuration=configuration)
     path = root / READ_CANARIES
@@ -1819,6 +1829,39 @@ def _make_zebra_canaries(root, pinned, *, pools, run, evidence, panel, configura
                 "skipped": {"zebralogic": len(skip["zebralogic"])},
                 "training_pools": {"zebralogic": entry["sha256"]}, "unit": READ_CANARY_UNIT,
                 "run": run, "panels": {"zebralogic": report["panel_hash"]},
+                "consent_sha256": digest(allowed), "extends": None}))
+        value, second = _canary_records(root, read=True, configuration=configuration)
+    require(second is None and value.get("run") == run and value.get("consent_sha256") == digest(allowed),
+            "The isolated read canaries belong to this run and consent")
+    return value
+
+
+def _make_alfworld_canaries(root, pinned, *, pools, run, evidence, panel, configuration):
+    """ALF-only read canaries use the historical release-relative game paths, after owner consent only."""
+    from .exclusion import release_path
+    allowed = consent(root / "shared", configuration)
+    require(set(pools or {}) == {"alfworld"}, "Only the ALFWorld training pool is visible")
+    path = root / READ_CANARIES
+    with exclusive(root / "shared" / "test-read-canaries.lock", wait=True):
+        if not path.exists():
+            entry = pools["alfworld"]
+            pool_path = safe_path(entry["path"])
+            require(hashlib.sha256(pool_path.read_bytes()).hexdigest() == entry["sha256"],
+                    "The ALFWorld training pool differs from its pin")
+            training = read_json(pool_path)
+            require(isinstance(training, list) and training, "The ALFWorld pool lists training games")
+            tasks, report = panel(pinned, "alfworld", access=data.TestAccess(READ_CANARY_UNIT))
+            texts = {"alfworld": [release_path(task["public"]["game_file"])[1] for task in tasks]}
+            skip = training_duplicates(texts, {
+                "alfworld": [release_path(task["public"]["game_file"])[1] for task in training]})
+            found, counts = select_canaries(texts, skip=skip)
+            write_json(path, record("test-read-canaries", evidence, {
+                "configuration": configuration, "canaries": found, "counts": counts,
+                "per_bench": CANARIES_PER_BENCH, "seed_tag": CANARY_TAG,
+                "sources": {"alfworld": "the release-relative game path"},
+                "skipped": {"alfworld": len(skip["alfworld"])},
+                "training_pools": {"alfworld": entry["sha256"]}, "unit": READ_CANARY_UNIT,
+                "run": run, "panels": {"alfworld": report["panel_hash"]},
                 "consent_sha256": digest(allowed), "extends": None}))
         value, second = _canary_records(root, read=True, configuration=configuration)
     require(second is None and value.get("run") == run and value.get("consent_sha256") == digest(allowed),

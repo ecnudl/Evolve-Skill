@@ -55,7 +55,8 @@ from skillopt.continual_eval.core import require, safe_path
 
 from .errors import ConfigurationError
 from .profiles import (SUPPORTED_BENCHES, BENCHES, CHAINS, CONFIG_GLM_CAP, CONFIG_ROLE_CAPS, CONFIG_STEP_CAPS, FIRST_CALL_CAP, LEDGER,
-                       MAX_REDOS, PILOT, PILOTS, PROBE_CAP, ROLE_CAPS, SMOKE_CAPS, SMOKE_SX_CAPS)
+                       MAX_REDOS, PILOT, PILOTS, PROBE_CAP, ROLE_CAPS, SMOKE_CAPS, SMOKE_SX_CAPS,
+                       launchable_chains)
 
 ROOT = OVERALL
 SMOKE = "smoke"  # the smoke's namespace and scope prefix (registry.NAMESPACES)
@@ -172,10 +173,10 @@ def caps(pilot=PILOT):
     each chain's ledger declares its own ``chain_caps`` and ``first_call_caps``."""
     require(pilot in PILOTS, "Unknown pilot")
     out = {}
-    for chain in CHAINS:
+    for chain in launchable_chains(pilot):
         out.update({scope: cap for scope, cap in chain_caps(chain, pilot).items() if scope != ROOT})
         out.update(first_call_caps(chain))
-    out[ROOT] = sum(chain_caps(chain, pilot)[ROOT] for chain in CHAINS)
+    out[ROOT] = sum(chain_caps(chain, pilot)[ROOT] for chain in launchable_chains(pilot))
     return out
 
 

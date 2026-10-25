@@ -605,6 +605,7 @@ def make_manifest(args):
             "and configuration (plan §2.9; registrar 17:0x)")
     configuration = pins.pop("configuration")
     require(configuration in protocol.CONFIGURATIONS, "Unknown run configuration: %r" % (configuration,))
+    require(not protocol.is_alfworld(configuration), "Use alf-manifest with the registered ALFWorld S0 and smoke")
     require(pins["evidence"] not in protocol.REAL_RUN_EVIDENCE.values()
             or (pins["evidence"] == protocol.REAL_RUN_EVIDENCE[configuration]
                 and safe_path(pins["root"]) == safe_path((protocol.RUN_ROOTS if protocol.is_zebra(configuration)
@@ -797,6 +798,36 @@ def zpc_smoke(args):
     return 0 if result["result"]["passed"] else 3
 
 
+def alf_snapshot(args):
+    from skillopt.execskill import alf_smoke
+    _print(alf_smoke.snapshot(args.out, source=args.source, git_head=args.git_head))
+
+
+def alf_s0(args):
+    from skillopt.execskill import alf_smoke
+    value = alf_smoke.collect_s0(args.out, preparation_file=args.preparation, snapshot_root=args.snapshot,
+                                 selftest=args.selftest)
+    _print({"s0": str(Path(args.out) / alf_smoke.S0_FILE), "passed": value["passed"],
+            "slice_counts": value["slice_counts"], "sealed_reads": value["sealed_reads"]})
+    return 0 if value["passed"] else 3
+
+
+def alf_manifest(args):
+    from skillopt.execskill import alf_smoke
+    value = alf_smoke.make_manifest(args.out, root=args.root, s0_file=args.s0, provenance=args.provenance,
+        roles_repo=args.roles_repo, elucid_env=args.elucid_env, route_b_env=args.route_b_env,
+        smoke_chain=args.smoke_chain, smoke_results=args.smoke_result)
+    _print({"manifest": str(args.out), "run": value[protocol.RECORD_HASH], "root": value["root"],
+            "launchable_chains": value["data"]["launchable_chains"], "sealed_reads": 0})
+
+
+def alf_smoke(args):
+    from skillopt.execskill import alf_smoke as stages
+    value = stages.run_stage(args.manifest, args.stage, chain_id=args.chain)
+    _print({"stage": args.stage, "chain": args.chain, "passed": value["result"]["passed"]})
+    return 0 if value["result"]["passed"] else 3
+
+
 def parser():
     top = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = top.add_subparsers(dest="command", required=True)
@@ -969,6 +1000,29 @@ def parser():
     command.add_argument("--manifest", required=True)
     command.add_argument("--chain", choices=("G", "D"), required=True)
     command.add_argument("--stage", choices=("S1", "S2", "S3", "SE6"), required=True)
+    command = sub.add_parser("alf-snapshot")
+    command.add_argument("--source", default=str(PROJECT_ROOT))
+    command.add_argument("--out", required=True)
+    command.add_argument("--git-head", required=True)
+    command = sub.add_parser("alf-s0")
+    command.add_argument("--out", required=True)
+    command.add_argument("--preparation", required=True)
+    command.add_argument("--snapshot", default=str(PROJECT_ROOT))
+    command.add_argument("--selftest")
+    command = sub.add_parser("alf-manifest")
+    command.add_argument("--out", required=True)
+    command.add_argument("--root", required=True)
+    command.add_argument("--s0", required=True)
+    command.add_argument("--provenance", required=True)
+    command.add_argument("--roles-repo", required=True)
+    command.add_argument("--elucid-env", required=True)
+    command.add_argument("--route-b-env", required=True)
+    command.add_argument("--smoke-chain", choices=("D",))
+    command.add_argument("--smoke-result", action="append", default=[])
+    command = sub.add_parser("alf-smoke")
+    command.add_argument("--manifest", required=True)
+    command.add_argument("--chain", choices=("D",), default="D")
+    command.add_argument("--stage", choices=("S1", "S2", "S3", "SE6"), required=True)
     fixtures.add_arguments(sub)
     return top
 
@@ -976,7 +1030,8 @@ def parser():
 BENCH_OPTIONS = {"alfworld": ("data_root", "pool_games"),
                  "searchqa": ("fresh_manifest", "dataset", "revision", "exclude", "cache_sha256")}
 
-HANDLERS = {"zpc-snapshot": zpc_snapshot, "zpc-s0": zpc_s0, "zpc-manifest": zpc_manifest, "zpc-smoke": zpc_smoke,
+HANDLERS = {"alf-snapshot": alf_snapshot, "alf-s0": alf_s0, "alf-manifest": alf_manifest, "alf-smoke": alf_smoke,
+            "zpc-snapshot": zpc_snapshot, "zpc-s0": zpc_s0, "zpc-manifest": zpc_manifest, "zpc-smoke": zpc_smoke,
             "verify-snapshot": verify_snapshot, "zero-call-checks": zero_call_checks, "leftovers": leftovers,
             "sandbox-selftest": sandbox_selftest, "import-texts": import_texts,
             "import-sheet-qualification": import_sheet_qualification, "make-items": make_items,

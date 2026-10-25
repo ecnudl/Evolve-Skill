@@ -387,6 +387,57 @@ ENGINEER_SYSTEM_SINGLE_ZPC_V26 = (ENGINEER_SYSTEM_SINGLE_ZPC_V25.replace("zebra-
                                  + ENGINEER_FACTS_V26)
 ENGINEER_PROMPT_ZPC_V26_SHA256 = digest(ENGINEER_SYSTEM_ZPC_V26)
 ENGINEER_PROMPT_SINGLE_ZPC_V26_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_ZPC_V26)
+_ALF_COVERAGE_PARAGRAPH = ("training.procedures[].notes_coverage counts enabled run items, items with delivered notes, items with each delivered\n"
+                           "field, and items with procedure faults; identical_current rows use the incumbent's delivered notes.\n")
+
+
+def _alf_system(base):
+    """ALF-only evidence and output instructions; every inherited prompt remains frozen."""
+    replacements = (
+        ("stored trajectories of the solver (failures and successes; each failure with its reference answer)",
+         "stored game trajectories of the solver (failures and successes): observations, admissible commands, "
+         "actions, the notes the solver saw, and the outcome (won/lost, or unknown) and recorded steps"),
+        ("never copy a training task's reference answer into code, notes or the description",
+         "never encode an expert plan or hidden game state in code, notes or the description"),
+        ("with examples (the question, the notes the solver saw, the solver's final replies with the current package "
+         "and with the candidate, the reference answer)",
+         "with examples (the task text, the notes the solver saw, outcome summaries with the current package and "
+         "with the candidate, and their pass shares). Each outcome summary says won/not won and the number of steps"),
+        ("C6c requires a note-writing procedure to produce some non-empty facts, table, candidates, warnings or bindings on\n"
+         "at least one fired training item. Empty output on every fired item fails and enters the fix loop.",
+         "C6c requires a note-writing procedure to produce some screened note text on at least one fired training item.\n"
+         "Non-empty facts, table, candidates, warnings or bindings can supply it; for ALFWorld, a non-empty discourage\n"
+         "list of admissible commands also counts as output. Empty output on every fired item fails and enters the fix loop."),
+        ("training.unfixed_examples shows up to four run items the candidate did not fix, with its actual notes, final answer\n"
+         "excerpt and the already-visible run reference.",
+         "training.unfixed_examples shows up to four run games the candidate did not fix, with its actual notes and\n"
+         "outcome summary (won/not won and steps). Its reference field says reference unavailable; no reference answer is supplied."),
+        (_ALF_COVERAGE_PARAGRAPH, ""),
+    )
+    for old, new in replacements:
+        base = base.replace(old, new)
+    return base
+
+
+ENGINEER_FACTS_ALF_V1 = """
+ALFWorld single-benchmark configuration alfworld-v1. applies(view) receives exactly initial_observation,
+admissible_commands_at_reset, and task_text from the reset. It does not receive observation, recent_history, or
+admissible_commands. alf_before_step(view, state) receives initial_observation, observation, admissible_commands,
+and recent_history. alf_after_step(event, state) receives exactly step, action, observation, and admissible_commands;
+observation and admissible_commands describe the environment AFTER that action. Return the next JSON state.
+State starts as None for each game and is kept by the host between steps within that game.
+Use the hook_views sample for the exact public arguments. The existing action loop allows at most 50 actions.
+No expert plan, hidden game state, reference answer, or solution trajectory is supplied to the engineer.
+notes_coverage is not recorded for this configuration; training examples still show actual delivered notes.
+"""
+_ALF_V26_FACTS = ENGINEER_FACTS_V26.replace("Replay trajectory references (v2.6)",
+                                         "Replay trajectory references (ALFWorld v2.6)")
+ENGINEER_SYSTEM_ALF_V1 = (_alf_system(ENGINEER_SYSTEM_V25)
+                          + _ALF_V26_FACTS + ENGINEER_FACTS_ALF_V1)
+ENGINEER_SYSTEM_SINGLE_ALF_V1 = (_alf_system(ENGINEER_SYSTEM_SINGLE_V25)
+                                 + _ALF_V26_FACTS + ENGINEER_FACTS_ALF_V1)
+ENGINEER_PROMPT_ALF_V1_SHA256 = digest(ENGINEER_SYSTEM_ALF_V1)
+ENGINEER_PROMPT_SINGLE_ALF_V1_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_ALF_V1)
 # v2's analysts (owner suggestion 2026-10-23 15:1x; SkillOpt's minibatch reflection): engineer-role calls before each
 # round's proposal, on groups of the incumbent's failed run-slice items, whose findings the proposal call is shown
 ANALYST_SYSTEM = """\
@@ -594,7 +645,8 @@ class Context:
                 "Disclosed items keep their table-shape references")
         evaluated = {t["cell"]: t for t in self.evaluated}
         require(self.training is None or _training_ok(self.training, self.references, own, evaluated, self.bench,
-                                                      v24=v24, v25=v25, current={t["cell"]: t for t in self.current}),
+                                                      v24=v24, v25=v25 and not protocol.is_alfworld(self.configuration),
+                                                      current={t["cell"]: t for t in self.current}),
                 "The training feedback shows this step's run-slice items with their own references only")
         output_refs = {e["task_id"] for e in (self.training or {}).get("unfixed_examples", [])} if v24 else set()
         return ({t["task_id"] for t in list(self.current) + list(self.evaluated) if t["token"] == "fail"}
@@ -960,6 +1012,8 @@ def _ask(ctx, user, purpose):
             system = ENGINEER_SYSTEM_V25 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_V25
     if protocol.is_v26(ctx.configuration):
         system = ENGINEER_SYSTEM_ZPC_V26 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_ZPC_V26
+    if protocol.is_alfworld(ctx.configuration):
+        system = ENGINEER_SYSTEM_ALF_V1 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_ALF_V1
     options = ({"max_tokens": protocol.ENGINEER_MAX_TOKENS[ctx.configuration]}
                if modern and ctx.mode == TRAIN and purpose in ("propose", "repropose") else {})
     reply = ctx.roles.plain(ROLE, system, json.dumps(user, ensure_ascii=False, sort_keys=True),
@@ -1991,7 +2045,8 @@ def run(ctx):
     modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
     sealed = record(protocol.ENGINEER_RECORDS[ctx.configuration], ctx.evidence, {
         "bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
-        "prompt_sha256": (ENGINEER_PROMPT_SINGLE_ZPC_V26_SHA256 if protocol.is_v26(ctx.configuration) else
+        "prompt_sha256": (ENGINEER_PROMPT_SINGLE_ALF_V1_SHA256 if protocol.is_alfworld(ctx.configuration) else
+                          ENGINEER_PROMPT_SINGLE_ZPC_V26_SHA256 if protocol.is_v26(ctx.configuration) else
                           (ENGINEER_PROMPT_SINGLE_ZPC_V25_SHA256 if ctx.bench == "zebralogic" else
                            ENGINEER_PROMPT_SINGLE_V25_SHA256) if protocol.is_v25(ctx.configuration) else
                           (ENGINEER_PROMPT_SINGLE_ZPC_V24_SHA256 if ctx.bench == "zebralogic" else
@@ -2092,7 +2147,8 @@ def run_train(ctx):
     modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
     sealed = record(protocol.ENGINEER_RECORDS[ctx.configuration], ctx.evidence, {
         "bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
-        "prompt_sha256": (ENGINEER_PROMPT_ZPC_V26_SHA256 if protocol.is_v26(ctx.configuration) else
+        "prompt_sha256": (ENGINEER_PROMPT_ALF_V1_SHA256 if protocol.is_alfworld(ctx.configuration) else
+                          ENGINEER_PROMPT_ZPC_V26_SHA256 if protocol.is_v26(ctx.configuration) else
                           (ENGINEER_PROMPT_ZPC_V25_SHA256 if ctx.bench == "zebralogic" else ENGINEER_PROMPT_V25_SHA256)
                           if protocol.is_v25(ctx.configuration) else
                           (ENGINEER_PROMPT_ZPC_V24_SHA256 if ctx.bench == "zebralogic" else ENGINEER_PROMPT_V24_SHA256)

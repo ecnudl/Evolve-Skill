@@ -61,7 +61,7 @@ from skillopt.continual_eval.core import read_json, require, safe_path, write_js
 
 from . import evaluation, stats_ext
 from .package import empty, load
-from .profiles import (ALPHA, BENCHES, SUPPORTED_BENCHES, ZEBRA, ZEBRA_PC_V1, is_zebra, read_benches, CANNOT_ACT_FIRED, CHAINS, NI_MARGIN, NI_MIN_FIRED, RECORD_HASH, SIMILAR_PAIRS,
+from .profiles import (ALPHA, BENCHES, SUPPORTED_BENCHES, ZEBRA, ZEBRA_PC_V1, is_zebra, is_alfworld, read_benches, CANNOT_ACT_FIRED, CHAINS, NI_MARGIN, NI_MIN_FIRED, RECORD_HASH, SIMILAR_PAIRS,
                        STAGE_ARM, TIME_WINDOW_SECONDS, record, verified)
 
 __all__ = ("arm_table", "code_vs_text", "differences", "format_withholding", "labels", "placebo_contrast", "q1_home",
@@ -583,7 +583,7 @@ def report(manifest, *, out):
     root, run, evidence = safe_path(manifest["root"]), manifest[RECORD_HASH], manifest["evidence"]
     found, written = {}, {}
     chains = (manifest["data"].get("launchable_chains", CHAINS)
-              if is_zebra(manifest["configuration"]) else CHAINS)
+              if is_zebra(manifest["configuration"]) or is_alfworld(manifest["configuration"]) else CHAINS)
     for chain in sorted(chains):
         chain_root = root / chain
         if not (chain_root / "test-read.json").exists():  # terminated before its read
@@ -603,7 +603,7 @@ def report(manifest, *, out):
         units = [chain_root / "test" / b for b in roster if (chain_root / "test" / b / "unit.json").exists()]
         opened = evaluation.unseal(root, chain_root, chain, units, run=run, evidence=evidence,
                                    **({"configuration": manifest["configuration"]}
-                                      if is_zebra(manifest["configuration"]) else {}))
+                                      if is_zebra(manifest["configuration"]) or is_alfworld(manifest["configuration"]) else {}))
         rows = {tuple(found) for found in (opened.get("stages") or {}).values()}
         require(len(rows) <= 1 and (not rows or set(opened["stages"]) == set(opened["units"])),
                 "Every read unit of a stage read names the same rows")

@@ -94,6 +94,7 @@ RUNS = (*protocol.CHAINS, budgets.SMOKE)  # what ``setting_of`` builds: chain G,
 SMOKE_EVIDENCE = "smoke"  # §10: every smoke record's evidence label
 NATIVE_LOW_KIB = 2 * 1024 * 1024  # plan §5: native slots 3 -> 2 when the S0 native peak RSS exceeds 2 GiB
 RESEARCH_FIELDS = frozenset({"archive", "index_sha256"})
+ALFWORLD_CARD_IDENTITY = (2_301, "5ae6ea9b")  # frozen v3 import identity (CLI import-texts)
 
 
 def _sha(path):
@@ -210,6 +211,9 @@ def prompt_sha(configuration=None):
                                  engineer.ENGINEER_PROMPT_ZPC_V25_SHA256 if protocol.is_v25(configuration) else
                                  engineer.ENGINEER_PROMPT_ZPC_V24_SHA256 if protocol.is_v24(configuration)
                                  else engineer.ENGINEER_PROMPT_ZPC_SHA256)
+    if protocol.is_alfworld(configuration):
+        out["engineer"] = engineer.ENGINEER_PROMPT_SINGLE_ALF_V1_SHA256
+        out["v2"]["engineer"] = engineer.ENGINEER_PROMPT_ALF_V1_SHA256
     return out
 
 
@@ -325,11 +329,15 @@ def check(manifest):
             version=protocol.POLICY_VERSIONS[configuration]), "The v2.3 sandbox policy is pinned")
         sheet = value["runtime"].get("spreadsheetbench")
         if sheet is None:
+            if protocol.is_alfworld(configuration):
+                return _check_alfworld(value)
             require(protocol.is_zebra(configuration), "Only a registered text-only profile omits sheet runtime")
             return _check_zebra(value)
         require(sheet.get("code_extraction_version") == protocol.CODE_EXTRACTION[configuration]
                 and sheet.get("multiple_python_blocks") == protocol.MULTIPLE_PYTHON_BLOCKS[configuration],
                 "The v2.3 extraction and multiple-block decision are pinned")
+    if protocol.is_alfworld(configuration):
+        return _check_alfworld(value)
     return _check_zebra(value) if protocol.is_zebra(configuration) else value
 
 
@@ -363,6 +371,9 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
         from .zebralogic import CARD_VERSION
         given = {**given, "clients": {**given["clients"], "roles": role_settings(configuration)},
                  "data": {**given["data"], "zebra_pc_features": zebra_features(configuration)}}
+    if protocol.is_alfworld(configuration):
+        given = {**given, "clients": {**given["clients"], "roles": role_settings(configuration)},
+                 "data": {**given["data"], "alfworld_features": alfworld_features(configuration)}}
     from . import protocol as historical
     fields = {
         **given, **registered(configuration), "history_root": historical.HISTORY_ROOT, "slot_root": historical.SLOT_ROOT,
@@ -378,7 +389,8 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
                     "limits": {k: asdict(v) for k, v in sorted(limits.items())}, "measured": measured},
         "code": pin_code(), "loaded_code": sorted(loaded_code()),
         "environment": environment() if environment_found is None else environment_found}
-    suffix = ("-v2-6" if protocol.is_v26(configuration) else "-v2-5" if protocol.is_v25(configuration)
+    suffix = ("-alf-v1" if protocol.is_alfworld(configuration) else
+              "-v2-6" if protocol.is_v26(configuration) else "-v2-5" if protocol.is_v25(configuration)
               else "-v2-4" if protocol.is_v24(configuration)
               else "-v2-3" if protocol.is_v23(configuration) else "")
     record = check(protocol.record(KIND + suffix, evidence, fields))
@@ -547,12 +559,16 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
     (tests)."""
     require(chain in RUNS, "Chain G, chain D or the smoke")
     require((m["evidence"] == SMOKE_EVIDENCE) == (chain == budgets.SMOKE)
-            or (protocol.is_zebra(m["configuration"]) and m["evidence"] == SMOKE_EVIDENCE),
+            or ((protocol.is_zebra(m["configuration"]) or protocol.is_alfworld(m["configuration"]))
+                and m["evidence"] == SMOKE_EVIDENCE),
             "The smoke runs on a smoke manifest and the chains on a pilot manifest")
     require(m["lexicon_sha"] == notes.lexicon_sha256() and m["prompt_sha"] == prompt_sha(m["configuration"]),
             "The lexicon or a pinned prompt differs from the manifest")
     if protocol.is_zebra(m["configuration"]):
         require(chain in m["data"].get("launchable_chains", protocol.CHAINS), "This chain needs its own passed smoke")
+    if protocol.is_alfworld(m["configuration"]):
+        require(chain in protocol.launchable_chains(m["configuration"])
+                and chain in m["data"].get("launchable_chains", ()), "ALFWorld v1 launches only chain D")
     root, docker = safe_path(m["root"]), docker or sandbox.Docker()
     solver_chain = _solver_chain(chain, root)  # the smoke: its specification's (registrar addendum 2026-10-23 02:3x)
     route = routes.current(root / chain, run=m[protocol.RECORD_HASH], chain=chain) if chain in routes.ROUTED else None
@@ -650,7 +666,7 @@ def services_of(m, chain, *, setting, transport=None):
     solve of a set (ticket I1-2, registrar addendum 14:4x)."""
     require(chain in RUNS and setting.evidence == m["evidence"] and setting.run == m[protocol.RECORD_HASH],
             "The Setting of this manifest")
-    if protocol.is_zebra(m["configuration"]):
+    if protocol.is_zebra(m["configuration"]) or protocol.is_alfworld(m["configuration"]):
         workers = functools.partial(sandbox.with_worker, **setting.sandbox, live=setting.slots[slots.LIVE],
                                     per_call=setting.slots[slots.CALL])
         return Services(registry=Registry(m["history_root"], evidence=m["evidence"]), sources=None, workers=workers)
@@ -697,3 +713,73 @@ def zebra_features(configuration=protocol.ZEBRA_PC_V1):
                    "mde_points": p.MDE_POINTS["zebralogic"], "note_cap": p.MAX_NOTE_CHARS["zebralogic"],
                    "cell_anchors": p.CELL_ANCHORS["zebralogic"], "bindings": False,
                    "generator": "selection_only", "placebo_i": False, "j7": False})
+
+
+def alfworld_features(configuration=protocol.ALFWORLD_V1):
+    """The one-step ALFWorld registration; all learning features inherit v2.6."""
+    p = protocol
+    require(p.is_alfworld(configuration), "A registered ALFWorld configuration")
+    tables = ("LEARNING", "FIX_ECHO", "META_COUNTERFACTUAL", "TRAIN_SIGN", "PRUNE_NON_FIRING", "ACCEPT_RULES",
+              "ENGINEER_MAX_TOKENS", "TRIM_PAYLOADS", "NORMALIZE_STRUCTURE", "CHECK_NON_FIRING",
+              "ENGINEER_RECORDS", "IDENTICAL_REQUEST_REUSE", "POLICY_VERSIONS", "CODE_EXTRACTION",
+              "MULTIPLE_PYTHON_BLOCKS", "STAGE_READ", "ACCEPT_FRESHNESS")
+    return _plain({"family": p.FEATURE_FAMILIES[configuration],
+                   "features": {key: getattr(p, key)[configuration] for key in tables},
+                   "configuration": p.CONFIGURATIONS[configuration], "active": p.active_benches(configuration),
+                   "read": p.read_benches(configuration), "namespaces": p.CHAIN_NAMESPACES[configuration],
+                   "launchable_chains": p.launchable_chains(configuration), "slices": p.SLICES["alfworld"],
+                   "g_acc": p.G_ACC["alfworld"], "mde_points": p.MDE_POINTS["alfworld"],
+                   "note_cap": p.MAX_NOTE_CHARS["alfworld"], "cell_anchors": p.CELL_ANCHORS["alfworld"],
+                   "max_steps": p.ALFWORLD_MAX_STEPS, "routing_view": p.ALFWORLD_ROUTING_VIEW,
+                   "generator": "selection_only", "placebo_i": False, "j7": False, "notes_coverage": False})
+
+
+def _check_alfworld(value):
+    """Validate the preparation metadata linkage, without opening any test or pool file."""
+    data = value["data"]
+    require(data.get("alfworld_features") == alfworld_features(value["configuration"]),
+            "The ALFWorld feature family is pinned by value")
+    require(set(value["runtime"]) == set(value["contracts"]) == set(data.get("pools", {})) == {"alfworld"},
+            "The profile names only ALFWorld runtime, contract and pool")
+    require(value["sheet_qualification"] is None, "ALFWorld v1 has no spreadsheet qualification")
+    require(data.get("launchable_chains") == ["D"], "ALFWorld v1 launches only chain D")
+    require("research" not in data and "zebra_pc" not in data and "searchqa_tail" not in data,
+            "ALFWorld v1 has no unrelated benchmark data or research services")
+    registered = data.get("alfworld_v1")
+    require(isinstance(registered, dict) and set(registered) == {
+        "preparation", "card_sha256", "contract_sha256", "runtime_sha256", "pool", "test", "split"},
+        "ALFWorld v1 binds the main preparation metadata")
+    source = registered["preparation"]
+    require(isinstance(source, dict) and set(source) == {"path", "sha256", "record_sha256"}
+            and type(source["path"]) is str and source["path"]
+            and all(_sha_text(source[key]) for key in ("sha256", "record_sha256")),
+            "The main preparation file and record are pinned")
+    for name in ("pool", "test", "split"):
+        entry = registered[name]
+        require(isinstance(entry, dict) and set(entry) == {"path", "sha256"}
+                and type(entry["path"]) is str and entry["path"] and _sha_text(entry["sha256"]),
+                "The ALFWorld %s identity is pinned" % name)
+    card = value["cards"]["alfworld"]
+    require(registered["card_sha256"] == hashlib.sha256(card.encode()).hexdigest(),
+            "The ALFWorld card differs from its preparation pin")
+    contract = value["contracts"]["alfworld"]
+    require(isinstance(contract, dict) and set(contract) == {"text", "sha"}
+            and type(contract["text"]) is str
+            and contract["sha"] == registered["contract_sha256"] == hashlib.sha256(contract["text"].encode()).hexdigest(),
+            "The ALFWorld contract differs from its preparation pin")
+    require(registered["runtime_sha256"] == digest(value["runtime"]["alfworld"]),
+            "The ALFWorld runtime differs from its preparation pin")
+    require(data["pools"]["alfworld"] == registered["pool"], "The ALFWorld pool differs from its preparation pin")
+    require(data.get("pinned") == {
+        "paths": {"split": registered["split"]["path"], "test": {"alfworld": registered["test"]["path"]}},
+        "sha256": {registered[key]["path"]: registered[key]["sha256"] for key in ("split", "test")}},
+        "The ALFWorld test read has only its preparation split and test pins")
+    if value["evidence"] in (SMOKE_EVIDENCE, protocol.REAL_RUN_EVIDENCE[value["configuration"]]):
+        chars, prefix = ALFWORLD_CARD_IDENTITY
+        require(len(card) == chars and registered["card_sha256"].startswith(prefix),
+                "The frozen imported ALFWorld card")
+    return value
+
+
+def _sha_text(value):
+    return type(value) is str and len(value) == 64 and set(value) <= set("0123456789abcdef")

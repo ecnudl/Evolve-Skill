@@ -39,7 +39,7 @@ EVIDENCE = ("engineering_fixture", "smoke", "pilot_real_run", "historical_replay
             "main_v2_real_run",  # v2 (owner decision 2026-10-23 13:3x): the "train then accept" main experiment
             "main_v2_1_real_run",  # v2.1 (owner decision 2026-10-24 02:2x): main-v2 with two engineer rules
             "main_v2_2_real_run", "main_v2_3_real_run", "zebra_pc_v1_real_run", "zebra_pc_v2_real_run",
-            "zebra_pc_v3_real_run", "zebra_pc_v4_real_run")
+            "zebra_pc_v3_real_run", "zebra_pc_v4_real_run", "alfworld_v1_real_run")
 IMPORTABLE = ("fivebench-coevolution-v3-sheet-qualification",)  # §1, owner #7, Codex F15: the one v3 record kind read
 TEXTS_IMPORT = "fivebench-coevolution-v3-texts-import"  # §2.2: the v3 task cards, imported by value (plan §6)
 
@@ -72,7 +72,7 @@ def verified(value, name=None):
             or (name == "engineer" and version == kind("engineer-v2-3-a2"))
             or (name in {"engineer", "procedure", "manifest"}
                 and version in (kind(name + "-v2-4"), kind(name + "-v2-5")))
-            or (name in {"engineer", "manifest"} and version == kind(name + "-v2-6")),
+            or (name in {"engineer", "manifest"} and version in (kind(name + "-v2-6"), kind(name + "-alf-v1"))),
             "A record of another kind")
     require(value.get("evidence") in EVIDENCE, "Unknown evidence label")
     return value

@@ -15,6 +15,7 @@ ZEBRA_PC_V1 = "zebra-pc-v1"
 ZEBRA_PC_V2 = "zebra-pc-v2"
 ZEBRA_PC_V3 = "zebra-pc-v3"
 ZEBRA_PC_V4 = "zebra-pc-v4"
+ALFWORLD_V1 = "alfworld-v1"
 ZEBRA = "zebralogic"
 SUPPORTED_BENCHES = BENCHES + (ZEBRA,)
 FEATURE_FAMILIES = {name: ("v2.3" if name == MAIN_V2_3 else "historical") for name in CONFIGURATIONS}
@@ -22,6 +23,7 @@ FEATURE_FAMILIES[ZEBRA_PC_V1] = "v2.3"
 FEATURE_FAMILIES[ZEBRA_PC_V2] = "v2.4"
 FEATURE_FAMILIES[ZEBRA_PC_V3] = "v2.5"
 FEATURE_FAMILIES[ZEBRA_PC_V4] = "v2.6"
+FEATURE_FAMILIES[ALFWORLD_V1] = "v2.6"
 
 
 def is_v23(configuration):
@@ -52,6 +54,12 @@ def is_zebra(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
     return configuration in (ZEBRA_PC_V1, ZEBRA_PC_V2, ZEBRA_PC_V3, ZEBRA_PC_V4)
+
+
+def is_alfworld(configuration):
+    configuration = configuration or PILOT
+    require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
+    return configuration == ALFWORLD_V1
 
 
 def _extend(table, value, *, v2=None, v3=None, v4=None):
@@ -135,6 +143,63 @@ POLICY_VERSIONS[ZEBRA_PC_V3] = POLICY_VERSION_V25
 ENGINEER_RECORDS[ZEBRA_PC_V4] = "engineer-v2-6"
 POLICY_VERSIONS[ZEBRA_PC_V4] = POLICY_VERSION_V25
 
+# One ALFWorld step, with the historical maximum ALF schedule. The former
+# cross-benchmark self-test rows and intermediate stage reads have no work here.
+# The old acceptance row is conservative for an empty parent: 150 card + 750
+# procedure cells costs more than the actual 300 card + 600 procedure cells.
+ALFWORLD_V1_ROOT = "/data/execskill-20261026-alfworld-v1"
+ALFWORLD_V1_MANIFEST = ALFWORLD_V1_ROOT + "-manifest.json"
+ALFWORLD_V1_NAMESPACES = {"G": "G-alf1", "D": "D-alf1"}
+SUPPORTED_NAMESPACES += tuple(ALFWORLD_V1_NAMESPACES.values())
+ALFWORLD_V1_RESERVATION = 4 * (32_000 + PROMPT_OVERHEAD_MAX + GLM_SOLVER_TOKENS)
+ALFWORLD_V1_SCHEDULE = {"alfworld": {
+    name: {"alfworld": tuple(cells["alfworld"])}
+    for name, cells in legacy.CONFIG_SCHEDULE_CELLS[MAIN_V2_2]["alfworld"].items()}}
+
+
+def _alfworld_cap(cells, rounding):
+    return legacy._round_up(MAIN_CAP_FACTOR * (
+        sum(CELL_ANCHORS[bench][1] * (card + PROCEDURE_ARM_FACTOR[1] * proc)
+            for bench, (card, proc) in cells.items())
+        + MAIN_RESERVATIONS * ALFWORLD_V1_RESERVATION), rounding)
+
+
+ALFWORLD_V1_STEP_CAPS = {"alfworld": {
+    name: _alfworld_cap(cells, 100_000) for name, cells in ALFWORLD_V1_SCHEDULE["alfworld"].items()}}
+ALFWORLD_V1_READ_CELLS = {"alfworld": tuple(legacy.TEST_READ_CELLS["main"]["alfworld"])}
+ALFWORLD_V1_READ_CAP = _alfworld_cap(ALFWORLD_V1_READ_CELLS, MILLION)
+ALFWORLD_V1_REDO_CAP = max(
+    _alfworld_cap({bench: (Fraction(card, SLICES["alfworld"]["blocks"]),
+                          Fraction(proc, SLICES["alfworld"]["blocks"]))
+                  for bench, (card, proc) in cells.items()} if name == "accept" else cells, 100_000)
+    for name, cells in ALFWORLD_V1_SCHEDULE["alfworld"].items())
+ALFWORLD_V1_SOLVER_CAP = legacy._round_up(
+    sum(ALFWORLD_V1_STEP_CAPS["alfworld"].values()) + ALFWORLD_V1_READ_CAP + ALFWORLD_V1_REDO_CAP, 5 * MILLION)
+CONFIGURATIONS[ALFWORLD_V1] = {"order": ("alfworld",), "solver_cap": ALFWORLD_V1_SOLVER_CAP,
+                              "test_read_cap": ALFWORLD_V1_READ_CAP, "redo_reserve": ALFWORLD_V1_REDO_CAP}
+CONFIG_STEP_CAPS[ALFWORLD_V1] = ALFWORLD_V1_STEP_CAPS
+CONFIG_SCHEDULE_CELLS[ALFWORLD_V1] = ALFWORLD_V1_SCHEDULE
+CONFIG_ROLE_CAPS[ALFWORLD_V1] = deepcopy(MAIN_V2_ROLE_CAPS)
+CONFIG_GLM_CAP[ALFWORLD_V1] = MAIN_CAP_FACTOR * sum(MAIN_V2_ROLE_CAPS.values())
+CONFIG_CAP_FACTOR[ALFWORLD_V1] = Fraction(MAIN_CAP_FACTOR)
+COST_CHECK_PAUSES[ALFWORLD_V1] = False
+REAL_RUN_EVIDENCE[ALFWORLD_V1] = "alfworld_v1_real_run"
+RUN_ROOTS[ALFWORLD_V1] = ALFWORLD_V1_ROOT
+CHAIN_NAMESPACES[ALFWORLD_V1] = ALFWORLD_V1_NAMESPACES
+TEST_READ_CELLS[ALFWORLD_V1] = ALFWORLD_V1_READ_CELLS
+STAGE_READ[ALFWORLD_V1] = False
+ACCEPT_FRESHNESS[ALFWORLD_V1] = "alfworld_main_accept_slice_first_use"
+for _name in ("LEARNING", "FIX_ECHO", "META_COUNTERFACTUAL", "TRAIN_SIGN", "PRUNE_NON_FIRING", "ACCEPT_RULES",
+              "ENGINEER_MAX_TOKENS", "TRIM_PAYLOADS", "NORMALIZE_STRUCTURE", "CHECK_NON_FIRING",
+              "IDENTICAL_REQUEST_REUSE", "POLICY_VERSIONS", "CODE_EXTRACTION", "MULTIPLE_PYTHON_BLOCKS"):
+    globals()[_name][ALFWORLD_V1] = deepcopy(globals()[_name][ZEBRA_PC_V4])
+ENGINEER_RECORDS[ALFWORLD_V1] = "engineer-alf-v1"
+
+
+def launchable_chains(configuration):
+    require(configuration in CONFIGURATIONS, "Unknown run configuration")
+    return ("D",) if is_alfworld(configuration) else tuple(CHAINS)
+
 
 def supports_configuration(name):
     return name in CONFIGURATIONS
@@ -154,7 +219,7 @@ def active_benches(configuration):
     configuration = configuration or PILOT
     require(supports_configuration(configuration), "Unknown run configuration")
     # Historical clients/cards/read rosters were all five, even in two-step pilots.
-    return (ZEBRA,) if is_zebra(configuration) else BENCHES
+    return (ZEBRA,) if is_zebra(configuration) else ("alfworld",) if is_alfworld(configuration) else BENCHES
 
 
 def read_benches(configuration):
@@ -225,6 +290,9 @@ def ledger_bound(model, bench, *, branch=None, longest=None):
 
 
 def fired_share(bench, pilot=PILOT):
+    if is_alfworld(pilot):
+        require(bench == "alfworld", "Only the registered ALFWorld panel")
+        return FIRED_SHARES["home"]
     if not is_zebra(pilot):
         return legacy.fired_share(bench, pilot)
     require(bench == ZEBRA, "Only the registered ZebraLogic panel")
@@ -232,6 +300,16 @@ def fired_share(bench, pilot=PILOT):
 
 
 def read_estimate_terms(per_cell, ratio, pilot=PILOT):
+    if is_alfworld(pilot):
+        require(isinstance(per_cell, dict) and set(per_cell) == {"alfworld"}
+                and isinstance(per_cell["alfworld"], dict), "ALFWorld per-cell measurement required")
+        entry = per_cell["alfworld"]
+        card = legacy._exact(entry.get("card"), "card cell")
+        proc = (card * PROCEDURE_ARM_FACTOR[1]
+                if entry.get("procedure_assumed") is True or entry.get("procedure") is None
+                else legacy._exact(entry["procedure"], "procedure cell"))
+        return {"alfworld": legacy._exact(ratio, "ratio") * TEST_READ_CELLS[pilot]["alfworld"][0]
+                * (card + estimate_arms(pilot) * fired_share("alfworld", pilot) * proc)}
     if not is_zebra(pilot):
         return legacy.read_estimate_terms(per_cell, ratio, pilot)
     require(isinstance(per_cell, dict) and set(per_cell) == {ZEBRA}, "ZebraLogic per-cell measurement required")

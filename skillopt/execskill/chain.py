@@ -72,7 +72,7 @@ from .errors import AssumptionBroken, BudgetStop, ConfigurationError, LedgerFail
 from .package import empty
 from .profiles import (BENCHES, SUPPORTED_BENCHES, read_benches, CHAINS, CONFIGURATIONS, COST_CHECK_PAUSES, FIRST_CALL_SYSTEM, FIRST_CALL_USER, PILOT,
                        PROCEDURE_ARM_FACTOR, RECORD_HASH, SLOT_ROOT, STAGE_READ, TEST_READ_CELLS, TEST_START_FACTOR,
-                       configuration_of, estimate_arms, estimate_test_read, fired_share, first_call_bench,
+                       configuration_of, estimate_arms, estimate_test_read, fired_share, first_call_bench, is_alfworld,
                        ledger_bound, order_of, read_estimate_terms, record, verified)
 
 __all__ = ("EXIT_AWAITING", "EXIT_COMPLETE", "EXIT_PAUSED", "RUNNER_LOCK", "Terminated", "cap_check", "chain_root",
@@ -539,6 +539,8 @@ def run(setting, chain, *, learn, launch=launch_child):
     "paused" | "terminated", ...}. ``learn``: one step (``step.learn`` in a run). ``setting.budget`` is the chain's own
     ledger (``budgets.own_ledger``). The steps follow the order of the Setting's run configuration
     (``protocol.order_of``; registrar 17:0x), whose caps the ledger declares."""
+    if is_alfworld(configuration_of(setting)):
+        require(chain == "D", "alfworld-v1 launches chain D only")
     root = chain_root(setting, chain)
     root.mkdir(parents=True, exist_ok=True)
     identity = {"run": setting.run, "chain": chain}

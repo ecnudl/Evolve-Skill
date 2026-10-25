@@ -1627,7 +1627,7 @@ def _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells, made,
         procedures.append({"id": pid, "change": change, "enabled_items": len(on),
                            "fixed": sum(key in fixed for key in on), "broken": sum(key in broken for key in on),
                            "examples": shown})
-        if protocol.is_v25(configuration_of(st.setting)):
+        if protocol.is_v25(configuration_of(st.setting)) and not protocol.is_alfworld(configuration_of(st.setting)):
             enabled = [key for key in evaluated if pid in routed[key]["candidate"]]
             procedures[-1]["notes_coverage"] = _notes_coverage(
                 st, pid, enabled, candidate, cells, made, current,
@@ -1679,7 +1679,8 @@ def _train_eval(st, cut, r, incumbent, candidate, generated, *, current=None):
             signatures = _pair_signatures(st, trained, incumbent, publics,
                                          [(key, view) for key, view in views if key in differs],
                                          **({"note_coverage": captured}
-                                            if protocol.is_v25(configuration_of(st.setting)) else {}))
+                                            if protocol.is_v25(configuration_of(st.setting))
+                                            and not protocol.is_alfworld(configuration_of(st.setting)) else {}))
             identical = [key for key, arms in signatures.items()
                          if request_reuse.interchangeable(arms["S'"], arms["S"], bench=st.bench)]
             differs = [key for key in differs if key not in identical]
@@ -1706,7 +1707,7 @@ def _train_eval(st, cut, r, incumbent, candidate, generated, *, current=None):
         feedback_args = {}
         if protocol.is_v24(configuration_of(st.setting)):
             feedback_args["current"] = _run_trajectories(st, parent_only=True) if current is None else current
-        if protocol.is_v25(configuration_of(st.setting)):
+        if protocol.is_v25(configuration_of(st.setting)) and not protocol.is_alfworld(configuration_of(st.setting)):
             feedback_args["note_coverage"] = {
                 key: {"request_sha256": signatures[key]["S'"]["request_sha256"],
                       "fields": captured[key]["S'"]} for key in identical if key in items}
@@ -2016,6 +2017,9 @@ def run_step(setting, chain, bench, k, parent, *, services, chain_root=None, smo
         require(chain in CHAINS and bench in protocol.SUPPORTED_BENCHES and type(k) is int and k >= 1
                 and isinstance(parent, Package),
                 "A chain, a bench, a step position and the parent package")
+        if protocol.is_alfworld(configuration_of(setting)):
+            require(chain == "D" and bench == "alfworld" and k == 1 and not parent.order,
+                    "alfworld-v1 is chain D's single ALFWorld step from the empty parent")
     else:
         require(isinstance(smoke, SmokeStep) and chain == budgets.SMOKE and bench == SMOKE_BENCH and k == 1
                 and isinstance(parent, Package) and not parent.procedures and smoke.model in CHAINS.values()
