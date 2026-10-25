@@ -371,6 +371,22 @@ ENGINEER_PROMPT_V25_SHA256 = digest(ENGINEER_SYSTEM_V25)
 ENGINEER_PROMPT_SINGLE_V25_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_V25)
 ENGINEER_PROMPT_ZPC_V25_SHA256 = digest(ENGINEER_SYSTEM_ZPC_V25)
 ENGINEER_PROMPT_SINGLE_ZPC_V25_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_ZPC_V25)
+ENGINEER_FACTS_V26 = """
+Replay trajectory references (v2.6): copy a replay test's trajectory from a shown trajectory's cell field.
+A task_id (or its unique suffix) or a cell id with a small copying slip is resolved only when unambiguous within
+the replay scope; trajectory_resolution reports changed or unresolved references. A resolved test must still pass
+against the procedure's real replay output. Invalid references include valid_trajectories from shown in-scope cells.
+C6 determinism: every in-scope trajectory is replayed in one fresh worker with PYTHONHASHSEED=0 in order and in
+another with PYTHONHASHSEED=1 in reverse order. Every hook return must be identical; nothing may crash or time out
+(5 s). Mismatches commonly come from iterating over a set/frozenset or anything built from one, wall-clock search
+budgets, state carried across items, or id()/hash() ordering. Sort before iterating and use deterministic counters
+for limits. mismatch_explanation and shown-cell return examples explain a mismatched C6 result.
+"""
+ENGINEER_SYSTEM_ZPC_V26 = ENGINEER_SYSTEM_ZPC_V25.replace("zebra-pc-v3", "zebra-pc-v4") + ENGINEER_FACTS_V26
+ENGINEER_SYSTEM_SINGLE_ZPC_V26 = (ENGINEER_SYSTEM_SINGLE_ZPC_V25.replace("zebra-pc-v3", "zebra-pc-v4")
+                                 + ENGINEER_FACTS_V26)
+ENGINEER_PROMPT_ZPC_V26_SHA256 = digest(ENGINEER_SYSTEM_ZPC_V26)
+ENGINEER_PROMPT_SINGLE_ZPC_V26_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_ZPC_V26)
 # v2's analysts (owner suggestion 2026-10-23 15:1x; SkillOpt's minibatch reflection): engineer-role calls before each
 # round's proposal, on groups of the incumbent's failed run-slice items, whose findings the proposal call is shown
 ANALYST_SYSTEM = """\
@@ -405,13 +421,16 @@ class Change:
     benches: tuple = ()
     truncated: dict = field(default_factory=dict)  # v2: {field: its length} of a description or header cut to its cap
     normalized: list = field(default_factory=list)  # v2.3 E4: the structural changes made before C1
+    trajectory_resolution: list | None = None  # v2.6 only; None leaves every older change record unchanged
 
     def to_json(self):
         return {"n": self.n, "kind": self.kind, "target": self.target, "benches": list(self.benches),
                 "id": self.procedure.id if self.procedure else None,
                 "procedure_sha256": self.procedure.sha256 if self.procedure else None, "engineer_call": self.call,
                 **({"truncated": dict(self.truncated)} if self.truncated else {}),
-                **({"normalized": list(self.normalized)} if self.normalized else {})}
+                **({"normalized": list(self.normalized)} if self.normalized else {}),
+                **({"trajectory_resolution": list(self.trajectory_resolution)}
+                   if self.trajectory_resolution is not None else {})}
 
 
 @dataclass
@@ -563,7 +582,8 @@ class Context:
         v24, v25 = protocol.is_v24(self.configuration), protocol.is_v25(self.configuration)
         require(isinstance(self.history, list) and all(_history_line(entry, self.round, v24=v24) for entry in self.history),
                 "The history holds counts and flags only")
-        require(isinstance(self.lint, list) and all(_lint_entry(entry, v25=v25) for entry in self.lint),
+        require(isinstance(self.lint, list) and all(_lint_entry(entry, v25=v25,
+                **({"v26": True} if protocol.is_v26(self.configuration) else {})) for entry in self.lint),
                 "Lint entries are reports")
         require(isinstance(self.reserved, frozenset) and all(type(i) is str for i in self.reserved),
                 "Reserved procedure ids")
@@ -615,7 +635,7 @@ def _history_line(entry, before, *, v24=False):
                for p in entry["proposals"])
 
 
-def _lint_entry(entry, *, v25=False):
+def _lint_entry(entry, *, v25=False, v26=False):
     """v2 (Codex review 2026-10-23 #3, #4): an advisory replay-test report exactly as ``_lint`` writes it."""
     if not (isinstance(entry, dict) and set(entry) == LINT_FIELDS and _text(entry["id"], MAX_ID_CHARS, empty=False)
             and isinstance(entry["tests"], list) and len(entry["tests"]) <= MAX_TESTS
@@ -626,7 +646,11 @@ def _lint_entry(entry, *, v25=False):
                    and (t["mutated"] is None or type(t["mutated"]) is bool) for t in entry["tests"])
     return tests_ok and all(
         isinstance(p, dict) and p.get("reason") in LINT_REASONS
-        and set(p) <= ({"reason", "test", "detail", "rendered_note"} if v25 else {"reason", "test", "detail"})
+        and set(p) <= (({"reason", "test", "detail", "rendered_note"} if v25 else {"reason", "test", "detail"})
+                      | ({"valid_trajectories", "valid_trajectories_total"} if v26 else set()))
+        and (not ({"valid_trajectories", "valid_trajectories_total"} & set(p)) or
+             (p.get("reason") == "invalid_test" and p.get("detail") == "trajectory_not_in_scope"
+              and replay.valid_trajectories_shape(p)))
         and ("rendered_note" not in p or (_text(p["rendered_note"], 1500)
              and p["reason"] in ("test_failed", "vacuous_test") and type(p.get("test")) is int
              and 1 <= p["test"] <= MAX_TESTS))
@@ -934,6 +958,8 @@ def _ask(ctx, user, purpose):
             system = ENGINEER_SYSTEM_ZPC_V25 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_ZPC_V25
         else:
             system = ENGINEER_SYSTEM_V25 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_V25
+    if protocol.is_v26(ctx.configuration):
+        system = ENGINEER_SYSTEM_ZPC_V26 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_ZPC_V26
     options = ({"max_tokens": protocol.ENGINEER_MAX_TOKENS[ctx.configuration]}
                if modern and ctx.mode == TRAIN and purpose in ("propose", "repropose") else {})
     reply = ctx.roles.plain(ROLE, system, json.dumps(user, ensure_ascii=False, sort_keys=True),
@@ -1100,8 +1126,78 @@ def _new_id(ctx, n):
     return "%s-%s-%d-%d" % (prefix, ctx.bench, ctx.k, n)
 
 
+def _edit_distance(left, right, limit=7):
+    """Levenshtein distance capped at limit+1; enough to distinguish <=2, 3..7 and >=8."""
+    if abs(len(left) - len(right)) > limit:
+        return limit + 1
+    previous = list(range(len(right) + 1))
+    for n, char in enumerate(left, 1):
+        row = [n]
+        for m, other in enumerate(right, 1):
+            row.append(min(row[-1] + 1, previous[m] + 1, previous[m - 1] + (char != other)))
+        if min(row) > limit:
+            return limit + 1
+        previous = row
+    return min(previous[-1], limit + 1)
+
+
+def _resolve_reference(given, entries, shown, tasks):
+    """v2.6 first-match reference rules, with no candidates outside the actual replay scope."""
+    if given in entries:
+        return given, "exact"
+    by_task = {}
+    for cell, entry in entries.items():
+        by_task.setdefault(entry["item"], []).append(cell)
+    task = given if given in by_task else None
+    if task is None:
+        suffixes = [key for key in tasks if key.rsplit("/", 1)[-1] == given]
+        if len(suffixes) == 1 and suffixes[0] in by_task:
+            task = suffixes[0]
+    if task is not None:
+        cells = by_task[task]
+        visible = [cell for cell in cells if cell in shown]
+        return (visible[0] if len(visible) == 1 else cells[0] if len(cells) == 1 else given), "task_id"
+    if re.fullmatch(r"[0-9a-f]{32}", given):
+        distances = {cell: _edit_distance(given, cell) for cell in entries}
+        close = [cell for cell, distance in distances.items() if distance <= 2]
+        if len(close) == 1 and all(distance >= 8 for cell, distance in distances.items() if cell != close[0]):
+            return close[0], "near_cell"
+    return given, "unresolved"
+
+
+def _resolve_change(change, ctx):
+    """Resolve before any Procedure exists; new/revised procedures have only their declared exclusions.
+
+    package.with_ removes a replaced procedure's narrowing and a new registrar ID cannot have one. Thus this
+    excluded-set scope is exactly _scope(ctx, single, procedure), using the same input builder below. No routing,
+    generated or evaluated-only trajectory is a candidate. Invalid structure still fails the existing checks.
+    """
+    if not protocol.is_v26(ctx.configuration) or change.kind not in CODED or change.trajectory_resolution is not None:
+        return
+    change.trajectory_resolution = []
+    tests, excluded = change.entry.get("replay_tests", []), change.entry.get("excluded_benches", [])
+    if not (type(tests) is list and type(excluded) is list and all(type(bench) is str for bench in excluded)):
+        return
+    entries = _scope_entries(ctx, set(excluded))
+    shown = _feedback_cells(ctx)
+    tasks = {value["task_id"] for value in _verified_run_cells(ctx).values()}
+    for index, test in enumerate(tests, 1):
+        if not isinstance(test, dict) or type(test.get("trajectory")) is not str:
+            continue
+        given = test["trajectory"]
+        resolved, rule = _resolve_reference(given, entries, shown, tasks)
+        if resolved != given:
+            tests[index - 1] = {**test, "trajectory": resolved}
+        if (resolved != given or resolved not in entries) and len(change.trajectory_resolution) < MAX_TESTS:
+            change.trajectory_resolution.append({"test": str(test.get("id", index))[:256], "given": given[:256],
+                                                 "resolved": resolved[:256], "rule": rule})
+
+
 def _build(change, ctx):
     """C3: the procedure record and the one-change candidate."""
+    if protocol.is_v26(ctx.configuration):
+        _normalize(change, benches=protocol.SUPPORTED_BENCHES if ctx.bench == "zebralogic" else BENCHES)
+    _resolve_change(change, ctx)
     entry, parent = change.entry, ctx.parent
     benches = protocol.SUPPORTED_BENCHES if ctx.bench == "zebralogic" else BENCHES
     if change.kind in CODED:
@@ -1418,6 +1514,11 @@ def _scope(ctx, candidate_package, procedure):
     """{cell: inputs} of the stored run trajectories on the procedure's benches (v2: and of the incumbent's current
     cells, which the shown trajectories and so the replay tests name)."""
     excluded = set(candidate_package.excluded(procedure.id))
+    return _scope_entries(ctx, excluded)
+
+
+def _scope_entries(ctx, excluded):
+    """Shared scope construction for pre-hash reference resolution and the existing replay checks."""
     out = {}
     for trajectory in list(ctx.trajectories) + (list(ctx.current) if ctx.mode == TRAIN else []):
         if trajectory["bench"] not in excluded:
@@ -1615,6 +1716,10 @@ def check(change, ctx, taken=()):
     benches = protocol.SUPPORTED_BENCHES if ctx.bench == "zebralogic" else BENCHES
     if protocol.NORMALIZE_STRUCTURE[ctx.configuration]:
         _normalize(change, benches=benches)
+    if protocol.is_v26(ctx.configuration):
+        _resolve_change(change, ctx)
+        if change.trajectory_resolution is not None:
+            report["trajectory_resolution"] = list(change.trajectory_resolution)
     problem = _structure(change, ctx.parent, taken, train=train, benches=benches)
     if not done("C1", problem is None, _structure_detail(change, problem) if train and problem else problem):
         return report
@@ -1655,10 +1760,13 @@ def check(change, ctx, taken=()):
     entries = _scope(ctx, single, procedure)
     actual = {} if v24 else None
     crash, outcomes = replay.zero_crash(procedure, list(entries.values()), ctx.workers, inputs_dirs=ctx.inputs_dirs,
-                                       **({"actual": actual} if v24 else {}))
+                                       **({"actual": actual} if v24 else {}),
+                                       **({"diagnostic_cells": _feedback_cells(ctx)}
+                                          if protocol.is_v26(ctx.configuration) else {}))
     disclosure = {"shown_cells": _feedback_cells(ctx)} if protocol.is_v25(ctx.configuration) else {}
     if disclosure:
-        if not done("C5b", *replay.claimed_tests(procedure, entries, outcomes, actual, **disclosure)):
+        if not done("C5b", *replay.claimed_tests(procedure, entries, outcomes, actual, **disclosure,
+                    **({"reference_feedback": True} if protocol.is_v26(ctx.configuration) else {}))):
             return report
     else:
         if v24 and not done("C5b", *replay.claimed_tests(procedure, entries, outcomes, actual)):
@@ -1678,7 +1786,8 @@ def check(change, ctx, taken=()):
         if procedure.replay_tests:
             advice = replay.run_tests(procedure, entries, outcomes, ctx.workers, inputs_dirs=ctx.inputs_dirs)
             report["lint"] = _lint(procedure, advice, entries,
-                                   **({"outcomes": outcomes, **disclosure} if disclosure else {}))
+                                   **({"outcomes": outcomes, **disclosure} if disclosure else {}),
+                                   **({"reference_feedback": True} if protocol.is_v26(ctx.configuration) else {}))
     else:
         tests = replay.run_tests(procedure, entries, outcomes, ctx.workers, inputs_dirs=ctx.inputs_dirs)
     if not done("C7", tests["passed"], tests):
@@ -1693,7 +1802,7 @@ def check(change, ctx, taken=()):
     return report
 
 
-def _lint(procedure, advice, entries, *, outcomes=None, shown_cells=None):
+def _lint(procedure, advice, entries, *, outcomes=None, shown_cells=None, reference_feedback=False):
     """v2 (Codex review 2026-10-23 #3): the advisory replay-test report the next round sees -- the tests by position
     (1-based) with their flags, the problems of ``LINT_REASONS`` by reason, position and a registered detail (an
     invalid test's ``replay.validate_test`` reason, the test count) -- never a test's id or property, which no check
@@ -1711,6 +1820,8 @@ def _lint(procedure, advice, entries, *, outcomes=None, shown_cells=None):
             continue
         if reason == "invalid_test":
             entry.update(test=next(invalid, None), detail=problem["detail"] if problem["detail"] in LINT_DETAILS else None)
+            if reference_feedback and entry["detail"] == "trajectory_not_in_scope":
+                entry.update(replay.valid_trajectories(entries, shown_cells or ()))
         elif reason in ("test_failed", "vacuous_test"):
             entry["test"] = position.get(problem["test"]) if type(problem["test"]) is str else None
         elif reason == "test_count":
@@ -1780,6 +1891,8 @@ def _fix(ctx, change, report, *, attempt=None, why=None):
     failed = [c for c in report["checks"] if not c["passed"]]
     last = failed[-1] if failed else None
     user = {"request": "fix", "bench": ctx.bench, "change": entry, "failed": last if ctx.echo else _redacted(last)}
+    if protocol.is_v26(ctx.configuration):
+        user["trajectory_resolution"] = list(change.trajectory_resolution or ())
     if protocol.is_v24(ctx.configuration):
         user["hook_views"] = hook_views(ctx)
     if attempt is not None:
@@ -1800,6 +1913,11 @@ def _fix(ctx, change, report, *, attempt=None, why=None):
     fixed.n = change.n
     if protocol.NORMALIZE_STRUCTURE[ctx.configuration]:
         fixed.normalized = list(change.normalized)
+    if protocol.is_v26(ctx.configuration):
+        _normalize(fixed, benches=protocol.SUPPORTED_BENCHES if ctx.bench == "zebralogic" else BENCHES)
+        _resolve_change(fixed, ctx)
+        fixed.trajectory_resolution = ((change.trajectory_resolution or []) + (fixed.trajectory_resolution or []))[
+            :MAX_TESTS * (TRAIN_FIXES + 1)]
     return fixed, None
 
 
@@ -1873,7 +1991,8 @@ def run(ctx):
     modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
     sealed = record(protocol.ENGINEER_RECORDS[ctx.configuration], ctx.evidence, {
         "bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
-        "prompt_sha256": ((ENGINEER_PROMPT_SINGLE_ZPC_V25_SHA256 if ctx.bench == "zebralogic" else
+        "prompt_sha256": (ENGINEER_PROMPT_SINGLE_ZPC_V26_SHA256 if protocol.is_v26(ctx.configuration) else
+                          (ENGINEER_PROMPT_SINGLE_ZPC_V25_SHA256 if ctx.bench == "zebralogic" else
                            ENGINEER_PROMPT_SINGLE_V25_SHA256) if protocol.is_v25(ctx.configuration) else
                           (ENGINEER_PROMPT_SINGLE_ZPC_V24_SHA256 if ctx.bench == "zebralogic" else
                            ENGINEER_PROMPT_SINGLE_V24_SHA256) if protocol.is_v24(ctx.configuration) else
@@ -1973,7 +2092,8 @@ def run_train(ctx):
     modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
     sealed = record(protocol.ENGINEER_RECORDS[ctx.configuration], ctx.evidence, {
         "bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
-        "prompt_sha256": ((ENGINEER_PROMPT_ZPC_V25_SHA256 if ctx.bench == "zebralogic" else ENGINEER_PROMPT_V25_SHA256)
+        "prompt_sha256": (ENGINEER_PROMPT_ZPC_V26_SHA256 if protocol.is_v26(ctx.configuration) else
+                          (ENGINEER_PROMPT_ZPC_V25_SHA256 if ctx.bench == "zebralogic" else ENGINEER_PROMPT_V25_SHA256)
                           if protocol.is_v25(ctx.configuration) else
                           (ENGINEER_PROMPT_ZPC_V24_SHA256 if ctx.bench == "zebralogic" else ENGINEER_PROMPT_V24_SHA256)
                           if protocol.is_v24(ctx.configuration) else

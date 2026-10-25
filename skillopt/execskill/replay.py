@@ -430,19 +430,68 @@ def crash_faults(outcomes):
     return _faults(outcomes, CRASH_KINDS, "crash:")
 
 
-def zero_crash(procedure, entries, workers, *, inputs_dirs=None, actual=None):
+MISMATCH_EXPLANATION = (
+    "C6 replays every in-scope trajectory in a fresh worker with PYTHONHASHSEED=0 in order and another with "
+    "PYTHONHASHSEED=1 in reverse order. Every hook return must be identical; nothing may crash or time out (5 s). "
+    "Sort unordered collections before iterating and use deterministic counters for limits."
+)
+
+
+def zero_crash(procedure, entries, workers, *, inputs_dirs=None, actual=None, diagnostic_cells=None):
     """C6: ``(report, outcomes of the first worker)``. Every in-scope trajectory runs in a fresh worker with
     PYTHONHASHSEED 0 in the given order and in one with PYTHONHASHSEED 1 in the reverse order; the check passes when
-    there is at least one trajectory, no crash-type fault and every hook value hash is identical."""
+    there is at least one trajectory, no crash-type fault and every hook value hash is identical. v2.6's optional
+    ``diagnostic_cells`` captures bounded results from these same two passes and permits one shown mismatch example;
+    None preserves historical reports and capture behavior."""
+    diagnosing = diagnostic_cells is not None
+    first_actual = actual if actual is not None else {} if diagnosing else None
+    second_actual = {} if diagnosing else None
     first = replay_many(procedure, entries, workers, hashseed=0, inputs_dirs=inputs_dirs,
-                        **({"actual": actual} if actual is not None else {}))
-    second = replay_many(procedure, entries[::-1], workers, hashseed=1, inputs_dirs=inputs_dirs)
+                        **({"actual": first_actual} if first_actual is not None else {}))
+    second = replay_many(procedure, entries[::-1], workers, hashseed=1, inputs_dirs=inputs_dirs,
+                         **({"actual": second_actual} if diagnosing else {}))
     crashes = crash_faults(first) + crash_faults(second)
     mismatched = [cell for cell in first if first[cell].values != second[cell].values]
     report = {"check": "C6", "passed": bool(entries) and not crashes and not mismatched,
               "trajectories": len(entries), "fault_count": len(crashes), "faults": crashes[:10],
               "mismatched": mismatched[:10], "applied": sum(1 for o in first.values() if o.applies)}
+    if diagnosing and mismatched:
+        report.update(_mismatch_diagnostics(entries, mismatched, first, second, first_actual, second_actual,
+                                            diagnostic_cells))
     return report, first
+
+
+def _mismatch_diagnostics(entries, mismatched, first, second, first_actual, second_actual, shown):
+    """v2.6 report metadata and at most one already-captured, shown cell's first differing hook."""
+    by_cell = {entry["cell"]: entry for entry in entries}
+    ordered = sorted(mismatched, key=lambda cell: (by_cell[cell]["item"], cell))
+    detail = {"mismatch_explanation": MISMATCH_EXPLANATION,
+              "mismatched_task_ids": sorted({by_cell[cell]["item"] for cell in mismatched})[:20],
+              "mismatched_total": len(mismatched)}
+    eligible = [cell for cell in ordered if cell in shown]
+    if not eligible:
+        return detail
+    cell = eligible[0]
+    left, right = first[cell].values, second[cell].values
+    for index in range(max(len(left), len(right))):
+        a = left[index] if index < len(left) else None
+        b = right[index] if index < len(right) else None
+        if a == b:
+            continue
+        # A missing or differently located hook has no pair of actual returns to display.
+        if a is None or b is None or a[:2] != b[:2]:
+            return detail
+        hook, step = a[:2]
+        pair = []
+        for captured in (first_actual, second_actual):
+            found = [call for call in captured.get(cell, ()) if call["hook"] == hook and call["step"] == step]
+            if not found:
+                return detail
+            pair.append({key: value for key, value in found[-1].items() if key not in ("hook", "step")})
+        detail["mismatch_example"] = {"cell": cell, "task_id": by_cell[cell]["item"], "hook": hook, "step": step,
+                                      "first": pair[0], "second": pair[1]}
+        return detail
+    return detail
 
 
 def bounded_result(result):
@@ -491,7 +540,27 @@ def rendered_note(test, entries, outcomes, shown_cells):
     return text[:1500] if text else NO_RENDERED_NOTE
 
 
-def claimed_tests(procedure, entries, outcomes, actual, *, shown_cells=None):
+def valid_trajectories(entries, shown_cells):
+    """v2.6 reference help: IDs already shown, filtered by the exact procedure replay scope."""
+    allowed = set(shown_cells) & entries.keys()
+    ordered = sorted(allowed, key=lambda cell: (entries[cell]["item"], cell))
+    return {"valid_trajectories": [{"trajectory": cell, "task_id": entries[cell]["item"]} for cell in ordered[:20]],
+            "valid_trajectories_total": len(ordered)}
+
+
+def valid_trajectories_shape(problem):
+    """Bounded, counts-and-IDs-only shape of the persisted v2.6 lint reference help."""
+    values, total = problem.get("valid_trajectories"), problem.get("valid_trajectories_total")
+    if not (isinstance(values, list) and len(values) <= 20 and type(total) is int and total >= len(values)):
+        return False
+    if not all(isinstance(row, dict) and set(row) == {"trajectory", "task_id"}
+               and all(type(row[key]) is str and 0 < len(row[key]) <= 512 for key in row) for row in values):
+        return False
+    keys = [(row["task_id"], row["trajectory"]) for row in values]
+    return keys == sorted(set(keys)) and len({row["trajectory"] for row in values}) == len(values)
+
+
+def claimed_tests(procedure, entries, outcomes, actual, *, shown_cells=None, reference_feedback=False):
     """v2.4 C5b: every declared fix claim holds under the same validation/property evaluator as lint."""
     claimed, failed = 0, []
     for test in procedure.replay_tests:
@@ -516,6 +585,8 @@ def claimed_tests(procedure, entries, outcomes, actual, *, shown_cells=None):
             text = rendered_note(test, entries, outcomes, shown_cells)
             if text is not None:
                 failure["rendered_note"] = text
+        if reference_feedback and why == "trajectory_not_in_scope":
+            failure.update(valid_trajectories(entries, shown_cells or ()))
         failed.append(failure)
     return not failed, {"claimed": claimed, "failed": failed}
 
