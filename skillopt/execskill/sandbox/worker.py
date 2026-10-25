@@ -696,9 +696,11 @@ def handle_load(request, state, policy):
         return _refuse(seq, "policy_mismatch: the runner's policy.py differs from the host's")
     limits, entries = _limits(request.get("limits")), request.get("procedures")
     package = request.get("package_sha256")
+    versions = ((policy.POLICY_VERSION, policy.POLICY_VERSION_V23, policy.POLICY_VERSION_V24)
+                if version == policy.POLICY_VERSION_V24 else (policy.POLICY_VERSION, version))
     if limits is None or type(package) is not str or not isinstance(entries, list) or not all(
             isinstance(e, dict) and {"id", "source", "hooks"} <= set(e) <= {"id", "source", "hooks", "policy_version"}
-            and e.get("policy_version", policy.POLICY_VERSION) in (policy.POLICY_VERSION, version)
+            and e.get("policy_version", policy.POLICY_VERSION) in versions
             and type(e["id"]) is str
             and type(e["source"]) is str and isinstance(e["hooks"], list)
             and all(type(h) is str for h in e["hooks"]) for e in entries):

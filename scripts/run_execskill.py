@@ -607,14 +607,14 @@ def make_manifest(args):
     require(configuration in protocol.CONFIGURATIONS, "Unknown run configuration: %r" % (configuration,))
     require(pins["evidence"] not in protocol.REAL_RUN_EVIDENCE.values()
             or (pins["evidence"] == protocol.REAL_RUN_EVIDENCE[configuration]
-                and safe_path(pins["root"]) == safe_path((protocol.RUN_ROOTS if configuration == protocol.ZEBRA_PC_V1
+                and safe_path(pins["root"]) == safe_path((protocol.RUN_ROOTS if protocol.is_zebra(configuration)
                                                                else historical_protocol.RUN_ROOTS)[configuration])),
             "A real run's manifest names its configuration's evidence label and run root (registrar 17:0x)")
     runtime = pins.get("runtime")
     sheet = runtime.get("spreadsheetbench") if isinstance(runtime, dict) else None
     if isinstance(sheet, dict) and sheet.get("spreadsheet_scorer") == qualify.SCORER:
         qualify.revalidate(sheet)  # ticket C7b1-3: before anything is written; zero calls
-    if configuration == protocol.ZEBRA_PC_V1:
+    if protocol.is_zebra(configuration):
         require(pins["data"].get("zebra_pc") is not None, "ZebraLogic requires its by-value registration")
         limits = {kind: sandbox.Limits(**value) for kind, value in pins.pop("limits").items()}
         record = manifest.make(args.out, evidence=pins.pop("evidence"), measured=pins.pop("measured"), limits=limits,
@@ -771,12 +771,12 @@ def monitor(args):
 
 def zpc_snapshot(args):
     from skillopt.execskill import zebra_smoke
-    _print(zebra_smoke.snapshot(args.out, source=args.source, git_head=args.git_head))
+    _print(zebra_smoke.snapshot(args.out, source=args.source, git_head=args.git_head, configuration=args.configuration))
 
 
 def zpc_s0(args):
     result = s0.zebra_collect(args.out, pool=args.pool, split_manifest=args.split_manifest,
-                             snapshot_root=args.snapshot, selftest=args.selftest)
+                             snapshot_root=args.snapshot, selftest=args.selftest, configuration=args.configuration)
     _print({"s0": str(Path(args.out) / "zebra-s0.json"), "passed": result["passed"],
             "slice_counts": result["slice_counts"], "sealed_reads": result["sealed_reads"]})
     return 0 if result["passed"] else 3
@@ -786,13 +786,13 @@ def zpc_manifest(args):
     from skillopt.execskill import zebra_smoke
     result = zebra_smoke.make_manifest(args.out, root=args.root, s0_file=args.s0, provenance=args.provenance,
         roles_repo=args.roles_repo, elucid_env=args.elucid_env, route_b_env=args.route_b_env,
-        smoke_chain=args.smoke_chain, smoke_results=args.smoke_result)
+        smoke_chain=args.smoke_chain, smoke_results=args.smoke_result, configuration=args.configuration)
     _print({"manifest": str(args.out), "run": result[protocol.RECORD_HASH], "root": result["root"],
             "launchable_chains": result["data"]["launchable_chains"], "sealed_reads": 0})
 
 
 def zpc_smoke(args):
-    result = smoke.zebra_stage(args.manifest, args.chain, args.stage)
+    result = smoke.zebra_stage(args.manifest, args.chain, args.stage, configuration=args.configuration)
     _print({"stage": args.stage, "chain": args.chain, "passed": result["result"]["passed"]})
     return 0 if result["result"]["passed"] else 3
 
@@ -934,16 +934,22 @@ def parser():
     sub.add_parser("show-package").add_argument("--package", required=True)
     sub.add_parser("monitor").add_argument("--root", required=True)
     command = sub.add_parser("zpc-snapshot")
+    command.add_argument("--configuration", choices=(protocol.ZEBRA_PC_V1, protocol.ZEBRA_PC_V2),
+                         default=protocol.ZEBRA_PC_V1)
     command.add_argument("--source", default=str(PROJECT_ROOT))
     command.add_argument("--out", required=True)
     command.add_argument("--git-head", required=True)
     command = sub.add_parser("zpc-s0")
+    command.add_argument("--configuration", choices=(protocol.ZEBRA_PC_V1, protocol.ZEBRA_PC_V2),
+                         default=protocol.ZEBRA_PC_V1)
     command.add_argument("--out", required=True)
     command.add_argument("--snapshot", default=str(PROJECT_ROOT))
     command.add_argument("--pool", default="/data/probe-data-20261025/split-v1/zebralogic/pool.json")
     command.add_argument("--split-manifest", default="/data/probe-data-20261025/split-v1/split-manifest.json")
     command.add_argument("--selftest")
     command = sub.add_parser("zpc-manifest")
+    command.add_argument("--configuration", choices=(protocol.ZEBRA_PC_V1, protocol.ZEBRA_PC_V2),
+                         default=protocol.ZEBRA_PC_V1)
     command.add_argument("--out", required=True)
     command.add_argument("--root", required=True)
     command.add_argument("--s0", required=True)
@@ -954,6 +960,8 @@ def parser():
     command.add_argument("--smoke-chain", choices=("G", "D"))
     command.add_argument("--smoke-result", action="append", default=[])
     command = sub.add_parser("zpc-smoke")
+    command.add_argument("--configuration", choices=(protocol.ZEBRA_PC_V1, protocol.ZEBRA_PC_V2),
+                         default=protocol.ZEBRA_PC_V1)
     command.add_argument("--manifest", required=True)
     command.add_argument("--chain", choices=("G", "D"), required=True)
     command.add_argument("--stage", choices=("S1", "S2", "S3", "SE6"), required=True)

@@ -22,7 +22,7 @@ from skillopt.execskill import zebralogic as z
 def test_feature_family_inherits_every_main_v23_feature(name):
     assert p.is_v23(p.ZEBRA_PC_V1) and p.is_v23(p.MAIN_V2_3)
     assert getattr(p, name)[p.ZEBRA_PC_V1] == getattr(old, name)[old.MAIN_V2_3]
-    assert {key: value for key, value in getattr(p, name).items() if key != p.ZEBRA_PC_V1} == getattr(old, name)
+    assert {key: value for key, value in getattr(p, name).items() if key in old.CONFIGURATIONS} == getattr(old, name)
 
 
 def test_explicit_active_read_and_historical_registration_rosters():

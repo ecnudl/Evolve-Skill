@@ -201,9 +201,11 @@ def prompt_sha(configuration=None):
         out["v2"] = {"engineer": (engineer.ENGINEER_PROMPT_V23_SHA256 if protocol.is_v23(configuration)
                                           else engineer.ENGINEER_PROMPT_V2_SHA256), "analyst": engineer.ANALYST_PROMPT_SHA256,
                      "examiner": dict(examiner.PROMPT_V2_SHA256)}
-    if configuration == protocol.ZEBRA_PC_V1:
-        out["engineer"] = engineer.ENGINEER_PROMPT_SINGLE_ZPC_SHA256
-        out["v2"]["engineer"] = engineer.ENGINEER_PROMPT_ZPC_SHA256
+    if protocol.is_zebra(configuration):
+        out["engineer"] = (engineer.ENGINEER_PROMPT_SINGLE_ZPC_V24_SHA256 if protocol.is_v24(configuration)
+                           else engineer.ENGINEER_PROMPT_SINGLE_ZPC_SHA256)
+        out["v2"]["engineer"] = (engineer.ENGINEER_PROMPT_ZPC_V24_SHA256 if protocol.is_v24(configuration)
+                                 else engineer.ENGINEER_PROMPT_ZPC_SHA256)
     return out
 
 
@@ -222,7 +224,7 @@ def _plain(value):
 def registered(configuration=None):
     """The registered seeds, sizes and thresholds the manifest binds (values of ``protocol``)."""
     from . import protocol as historical
-    p = protocol if configuration == protocol.ZEBRA_PC_V1 else historical
+    p = protocol if protocol.is_zebra(configuration) else historical
     return _plain({
         "seeds": {"seed": p.SEED, "rooms_tag": p.ROOMS_TAG, "alfworld_env_seed": p.ALFWORLD_ENV_SEED,
                   "searchqa_fresh_seed": p.SEARCHQA_FRESH_SEED},
@@ -319,12 +321,12 @@ def check(manifest):
             version=protocol.POLICY_VERSIONS[configuration]), "The v2.3 sandbox policy is pinned")
         sheet = value["runtime"].get("spreadsheetbench")
         if sheet is None:
-            require(configuration == protocol.ZEBRA_PC_V1, "Only a registered text-only profile omits sheet runtime")
+            require(protocol.is_zebra(configuration), "Only a registered text-only profile omits sheet runtime")
             return _check_zebra(value)
         require(sheet.get("code_extraction_version") == protocol.CODE_EXTRACTION[configuration]
                 and sheet.get("multiple_python_blocks") == protocol.MULTIPLE_PYTHON_BLOCKS[configuration],
                 "The v2.3 extraction and multiple-block decision are pinned")
-    return _check_zebra(value) if configuration == protocol.ZEBRA_PC_V1 else value
+    return _check_zebra(value) if protocol.is_zebra(configuration) else value
 
 
 def _card_texts(cards, configuration=None):
@@ -353,10 +355,10 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
                      **given["runtime"]["spreadsheetbench"],
                      "code_extraction_version": protocol.CODE_EXTRACTION[configuration],
                      "multiple_python_blocks": protocol.MULTIPLE_PYTHON_BLOCKS[configuration]}}}
-    if configuration == protocol.ZEBRA_PC_V1:
+    if protocol.is_zebra(configuration):
         from .zebralogic import CARD_VERSION
         given = {**given, "clients": {**given["clients"], "roles": role_settings(configuration)},
-                 "data": {**given["data"], "zebra_pc_features": zebra_features()}}
+                 "data": {**given["data"], "zebra_pc_features": zebra_features(configuration)}}
     from . import protocol as historical
     fields = {
         **given, **registered(configuration), "history_root": historical.HISTORY_ROOT, "slot_root": historical.SLOT_ROOT,
@@ -365,14 +367,14 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
         "placebo_corpus_sha": protocol.PLACEBO_CORPUS_SHA256, "configuration": configuration,
         "caps": budgets.caps(configuration),
         "importable_versions": ([*protocol.IMPORTABLE, CARD_VERSION]
-                                if configuration == protocol.ZEBRA_PC_V1 else [*protocol.IMPORTABLE, protocol.TEXTS_IMPORT]),
+                                if protocol.is_zebra(configuration) else [*protocol.IMPORTABLE, protocol.TEXTS_IMPORT]),
         "sandbox": {"image_id": sandbox.IMAGE, "worker_sha256": sandbox.worker_sha256(),
                     "policy_sha256": policy.policy_sha256(version=protocol.POLICY_VERSIONS[configuration]),
                     "docker_argv_template_sha": digest({k: sandbox.argv_template(k, v) for k, v in limits.items()}),
                     "limits": {k: asdict(v) for k, v in sorted(limits.items())}, "measured": measured},
         "code": pin_code(), "loaded_code": sorted(loaded_code()),
         "environment": environment() if environment_found is None else environment_found}
-    record = check(protocol.record(KIND + ("-v2-3" if protocol.is_v23(configuration) else ""), evidence, fields))
+    record = check(protocol.record(KIND + ("-v2-4" if protocol.is_v24(configuration) else "-v2-3" if protocol.is_v23(configuration) else ""), evidence, fields))
     write_json(out, record)
     return record
 
@@ -538,11 +540,11 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
     (tests)."""
     require(chain in RUNS, "Chain G, chain D or the smoke")
     require((m["evidence"] == SMOKE_EVIDENCE) == (chain == budgets.SMOKE)
-            or (m["configuration"] == protocol.ZEBRA_PC_V1 and m["evidence"] == SMOKE_EVIDENCE),
+            or (protocol.is_zebra(m["configuration"]) and m["evidence"] == SMOKE_EVIDENCE),
             "The smoke runs on a smoke manifest and the chains on a pilot manifest")
     require(m["lexicon_sha"] == notes.lexicon_sha256() and m["prompt_sha"] == prompt_sha(m["configuration"]),
             "The lexicon or a pinned prompt differs from the manifest")
-    if m["configuration"] == protocol.ZEBRA_PC_V1:
+    if protocol.is_zebra(m["configuration"]):
         require(chain in m["data"].get("launchable_chains", protocol.CHAINS), "This chain needs its own passed smoke")
     root, docker = safe_path(m["root"]), docker or sandbox.Docker()
     solver_chain = _solver_chain(chain, root)  # the smoke: its specification's (registrar addendum 2026-10-23 02:3x)
@@ -641,7 +643,7 @@ def services_of(m, chain, *, setting, transport=None):
     solve of a set (ticket I1-2, registrar addendum 14:4x)."""
     require(chain in RUNS and setting.evidence == m["evidence"] and setting.run == m[protocol.RECORD_HASH],
             "The Setting of this manifest")
-    if m["configuration"] == protocol.ZEBRA_PC_V1:
+    if protocol.is_zebra(m["configuration"]):
         workers = functools.partial(sandbox.with_worker, **setting.sandbox, live=setting.slots[slots.LIVE],
                                     per_call=setting.slots[slots.CALL])
         return Services(registry=Registry(m["history_root"], evidence=m["evidence"]), sources=None, workers=workers)
@@ -662,9 +664,9 @@ def services_of(m, chain, *, setting, transport=None):
 def _check_zebra(value):
     """The profile's experiment and sealed identities, checked by value without opening the panel."""
     from . import zebralogic
-    require(value["data"].get("zebra_pc_features") == zebra_features(), "The ZebraLogic feature family is pinned by value")
+    require(value["data"].get("zebra_pc_features") == zebra_features(value["configuration"]), "The ZebraLogic feature family is pinned by value")
     require(value["data"].get("zebra_pc") == zebralogic.identity(), "The ZebraLogic registration is pinned by value")
-    if value["evidence"] in (SMOKE_EVIDENCE, protocol.REAL_RUN_EVIDENCE[protocol.ZEBRA_PC_V1]):
+    if value["evidence"] in (SMOKE_EVIDENCE, protocol.REAL_RUN_EVIDENCE[value["configuration"]]):
         require(value["data"]["pools"]["zebralogic"]["sha256"] == zebralogic.POOL_SHA256, "The registered pool hash")
     require(value["cards"] == {"zebralogic": zebralogic.CARD_TEXT}, "The registered grid card is pinned by value")
     require(set(value["runtime"]) == {"zebralogic"}, "The profile has only its grid runtime")
@@ -673,9 +675,10 @@ def _check_zebra(value):
     return value
 
 
-def zebra_features():
+def zebra_features(configuration=protocol.ZEBRA_PC_V1):
     """The new profile's inherited behavior, benchmark gates and active/read roster by value."""
-    p, name = protocol, protocol.ZEBRA_PC_V1
+    p, name = protocol, configuration
+    require(p.is_zebra(name), "A registered ZebraLogic configuration")
     tables = ("LEARNING", "FIX_ECHO", "META_COUNTERFACTUAL", "TRAIN_SIGN", "PRUNE_NON_FIRING", "ACCEPT_RULES",
               "ENGINEER_MAX_TOKENS", "TRIM_PAYLOADS", "NORMALIZE_STRUCTURE", "CHECK_NON_FIRING",
               "ENGINEER_RECORDS", "IDENTICAL_REQUEST_REUSE", "POLICY_VERSIONS", "CODE_EXTRACTION",

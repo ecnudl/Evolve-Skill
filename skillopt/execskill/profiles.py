@@ -5,30 +5,50 @@ including its iterable rosters (and therefore its historical identity serializat
 """
 from __future__ import annotations
 
+from copy import deepcopy
+
 from .protocol import *  # re-export the historical vocabulary, without mutating its tables
 from . import protocol as legacy
+from .policy import POLICY_VERSION_V24
 
 ZEBRA_PC_V1 = "zebra-pc-v1"
+ZEBRA_PC_V2 = "zebra-pc-v2"
 ZEBRA = "zebralogic"
 SUPPORTED_BENCHES = BENCHES + (ZEBRA,)
 FEATURE_FAMILIES = {name: ("v2.3" if name == MAIN_V2_3 else "historical") for name in CONFIGURATIONS}
 FEATURE_FAMILIES[ZEBRA_PC_V1] = "v2.3"
+FEATURE_FAMILIES[ZEBRA_PC_V2] = "v2.4"
 
 
 def is_v23(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return FEATURE_FAMILIES[configuration] == "v2.3"
+    return FEATURE_FAMILIES[configuration] in ("v2.3", "v2.4")
 
 
-def _extend(table, value):
-    return {**table, ZEBRA_PC_V1: value}
+def is_v24(configuration):
+    configuration = configuration or PILOT
+    require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
+    return FEATURE_FAMILIES[configuration] == "v2.4"
+
+
+def is_zebra(configuration):
+    configuration = configuration or PILOT
+    require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
+    return configuration in (ZEBRA_PC_V1, ZEBRA_PC_V2)
+
+
+def _extend(table, value, *, v2=None):
+    return {**table, ZEBRA_PC_V1: value, ZEBRA_PC_V2: deepcopy(value if v2 is None else v2)}
 
 
 ZEBRA_PC_ROOT = "/data/execskill-20261025-zebra-pc-v1"
 ZEBRA_PC_MANIFEST = "/data/execskill-20261025-zebra-pc-v1-manifest.json"
 ZEBRA_PC_NAMESPACES = {"G": "G-zpc1", "D": "D-zpc1"}
-SUPPORTED_NAMESPACES = NAMESPACES + tuple(ZEBRA_PC_NAMESPACES.values())
+ZEBRA_PC_V2_ROOT = "/data/execskill-20261025-zebra-pc-v2"
+ZEBRA_PC_V2_MANIFEST = "/data/execskill-20261025-zebra-pc-v2-manifest.json"
+ZEBRA_PC_V2_NAMESPACES = {"G": "G-zpc2", "D": "D-zpc2"}
+SUPPORTED_NAMESPACES = NAMESPACES + tuple(ZEBRA_PC_NAMESPACES.values()) + tuple(ZEBRA_PC_V2_NAMESPACES.values())
 SLICES = {**SLICES, ZEBRA: {"run": (60, 1), "accept": (100, 1), "blocks": 1}}
 G_ACC = {**G_ACC, ZEBRA: 0}
 MDE_POINTS = {**MDE_POINTS, ZEBRA: 10.0}
@@ -64,18 +84,21 @@ CONFIG_ROLE_CAPS = _extend(CONFIG_ROLE_CAPS, dict(MAIN_V2_ROLE_CAPS))
 CONFIG_GLM_CAP = _extend(CONFIG_GLM_CAP, MAIN_CAP_FACTOR * sum(MAIN_V2_ROLE_CAPS.values()))
 CONFIG_CAP_FACTOR = _extend(CONFIG_CAP_FACTOR, Fraction(MAIN_CAP_FACTOR))
 COST_CHECK_PAUSES = _extend(COST_CHECK_PAUSES, False)
-REAL_RUN_EVIDENCE = _extend(REAL_RUN_EVIDENCE, "zebra_pc_v1_real_run")
-RUN_ROOTS = _extend(RUN_ROOTS, ZEBRA_PC_ROOT)
-CHAIN_NAMESPACES = _extend(CHAIN_NAMESPACES, ZEBRA_PC_NAMESPACES)
+REAL_RUN_EVIDENCE = _extend(REAL_RUN_EVIDENCE, "zebra_pc_v1_real_run", v2="zebra_pc_v2_real_run")
+RUN_ROOTS = _extend(RUN_ROOTS, ZEBRA_PC_ROOT, v2=ZEBRA_PC_V2_ROOT)
+CHAIN_NAMESPACES = _extend(CHAIN_NAMESPACES, ZEBRA_PC_NAMESPACES, v2=ZEBRA_PC_V2_NAMESPACES)
 TEST_READ_CELLS = _extend(TEST_READ_CELLS, {ZEBRA: (200, 1_000)})
 STAGE_READ = _extend(STAGE_READ, False)  # one step has no intermediate stage
-ACCEPT_FRESHNESS = _extend(ACCEPT_FRESHNESS, "zebra_split_v1_slices_first_use_probe_items_excluded")
+ACCEPT_FRESHNESS = _extend(ACCEPT_FRESHNESS, "zebra_split_v1_slices_first_use_probe_items_excluded",
+                           v2="zebra_split_v1_slices_reused_zpc1_acceptance_unused")
 for _name in ("LEARNING", "FIX_ECHO", "META_COUNTERFACTUAL", "TRAIN_SIGN", "PRUNE_NON_FIRING", "ACCEPT_RULES",
               "ENGINEER_MAX_TOKENS", "TRIM_PAYLOADS", "NORMALIZE_STRUCTURE", "CHECK_NON_FIRING",
               "ENGINEER_RECORDS", "IDENTICAL_REQUEST_REUSE", "POLICY_VERSIONS", "CODE_EXTRACTION",
               "MULTIPLE_PYTHON_BLOCKS"):
     _old = getattr(legacy, _name)
     globals()[_name] = _extend(_old, _old[MAIN_V2_3])
+ENGINEER_RECORDS[ZEBRA_PC_V2] = "engineer-v2-4"
+POLICY_VERSIONS[ZEBRA_PC_V2] = POLICY_VERSION_V24
 
 
 def supports_configuration(name):
@@ -96,7 +119,7 @@ def active_benches(configuration):
     configuration = configuration or PILOT
     require(supports_configuration(configuration), "Unknown run configuration")
     # Historical clients/cards/read rosters were all five, even in two-step pilots.
-    return (ZEBRA,) if configuration == ZEBRA_PC_V1 else BENCHES
+    return (ZEBRA,) if is_zebra(configuration) else BENCHES
 
 
 def read_benches(configuration):
@@ -167,14 +190,14 @@ def ledger_bound(model, bench, *, branch=None, longest=None):
 
 
 def fired_share(bench, pilot=PILOT):
-    if pilot != ZEBRA_PC_V1:
+    if not is_zebra(pilot):
         return legacy.fired_share(bench, pilot)
     require(bench == ZEBRA, "Only the registered ZebraLogic panel")
     return Fraction(1)
 
 
 def read_estimate_terms(per_cell, ratio, pilot=PILOT):
-    if pilot != ZEBRA_PC_V1:
+    if not is_zebra(pilot):
         return legacy.read_estimate_terms(per_cell, ratio, pilot)
     require(isinstance(per_cell, dict) and set(per_cell) == {ZEBRA}, "ZebraLogic per-cell measurement required")
     entry = per_cell[ZEBRA]

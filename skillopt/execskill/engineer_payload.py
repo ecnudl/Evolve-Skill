@@ -23,6 +23,23 @@ COMMON = frozenset({"which", "where", "there", "their", "these", "those", "about
                     "between", "following", "according", "please", "calculate", "question", "answer"})
 
 
+def reference_excerpt(value):
+    """v2.4's bounded run-reference representation shared by feedback construction and validation."""
+    text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return text[:1000]
+
+
+def view_excerpt(value, *, chars=1500):
+    """A detached public view with the registered per-string/list caps; field names and scalar types stay intact."""
+    if isinstance(value, str):
+        return value[:chars]
+    if isinstance(value, list):
+        return [view_excerpt(child, chars=chars) for child in value[:20]]
+    if isinstance(value, dict):
+        return {key: view_excerpt(child, chars=chars) for key, child in value.items()}
+    return value
+
+
 def _texts(value):
     if isinstance(value, str):
         return [value] if value.strip() else []

@@ -267,8 +267,9 @@ class Outcome:
 class _Run:
     """One procedure's hooks on one trajectory, with the shell's fault rule."""
 
-    def __init__(self, worker, procedure, inputs):
+    def __init__(self, worker, procedure, inputs, actual=None):
         self.worker, self.procedure, self.inputs = worker, procedure, inputs
+        self.actual = actual
         self.outcome = Outcome(inputs["cell"], inputs["bench"])
         self.dead = False
 
@@ -280,6 +281,8 @@ class _Run:
         """``(ok, value)`` of one sandbox call; a failed call is a crash fault."""
         timeout = SANDBOX_TIMEOUTS["predicate" if hook == "applies" else "hook"]
         result = self.worker.call(self.procedure.id, hook, list(args), timeout_s=timeout)
+        if self.actual is not None:
+            self.actual.append({"hook": hook, "step": step, **bounded_result(result)})
         if result.get("ok") is not True:
             self.outcome.values.append([hook, step, "fault:%s" % result.get("fault")])
             self.fault(hook, step, "crash:%s" % result.get("fault"), result.get("message") or "")
@@ -377,12 +380,12 @@ class _Run:
                         entry.update(state=value, after=True)
 
 
-def replay(worker, procedure, inputs, *, mutation=None):
+def replay(worker, procedure, inputs, *, mutation=None, actual=None):
     """The ``Outcome`` of ``procedure`` on one trajectory's ``inputs`` (``inputs_of``) through a started worker holding
     it: its predicate on the routing view, then -- where it applies -- its hooks as the shell calls them."""
     if mutation is not None:
         inputs = mutate(inputs, mutation)
-    run = _Run(worker, procedure, inputs)
+    run = _Run(worker, procedure, inputs, actual)
     ok, value = run.call("applies", [inputs["view"]])
     if ok and type(value) is not bool:
         run.fault("applies", None, "predicate:not_bool", type(value).__name__)
@@ -400,7 +403,7 @@ def solo(procedure):
     return Package((procedure,), "replay", procedure.evidence)
 
 
-def replay_many(procedure, entries, workers, *, hashseed=0, inputs_dirs=None, mutation=None):
+def replay_many(procedure, entries, workers, *, hashseed=0, inputs_dirs=None, mutation=None, actual=None):
     """{cell: Outcome} of ``procedure`` on ``entries`` (``inputs_of`` values), in their order within each worker group:
     one worker per bench kind and input directory, opened by ``workers(package, kind=, hashseed=, inputs_dir=)`` (a
     context manager yielding a started worker, e.g. ``sandbox.client.with_worker`` with its options bound).
@@ -412,7 +415,9 @@ def replay_many(procedure, entries, workers, *, hashseed=0, inputs_dirs=None, mu
     for (kind, directory), group in groups.items():
         with workers(package, kind=kind, hashseed=hashseed, inputs_dir=directory) as worker:
             for entry in group:
-                out[entry["cell"]] = replay(worker, procedure, entry, mutation=mutation)
+                captured = None if actual is None else actual.setdefault(entry["cell"], [])
+                out[entry["cell"]] = replay(worker, procedure, entry, mutation=mutation,
+                                          **({"actual": captured} if captured is not None else {}))
     return out
 
 
@@ -425,11 +430,12 @@ def crash_faults(outcomes):
     return _faults(outcomes, CRASH_KINDS, "crash:")
 
 
-def zero_crash(procedure, entries, workers, *, inputs_dirs=None):
+def zero_crash(procedure, entries, workers, *, inputs_dirs=None, actual=None):
     """C6: ``(report, outcomes of the first worker)``. Every in-scope trajectory runs in a fresh worker with
     PYTHONHASHSEED 0 in the given order and in one with PYTHONHASHSEED 1 in the reverse order; the check passes when
     there is at least one trajectory, no crash-type fault and every hook value hash is identical."""
-    first = replay_many(procedure, entries, workers, hashseed=0, inputs_dirs=inputs_dirs)
+    first = replay_many(procedure, entries, workers, hashseed=0, inputs_dirs=inputs_dirs,
+                        **({"actual": actual} if actual is not None else {}))
     second = replay_many(procedure, entries[::-1], workers, hashseed=1, inputs_dirs=inputs_dirs)
     crashes = crash_faults(first) + crash_faults(second)
     mismatched = [cell for cell in first if first[cell].values != second[cell].values]
@@ -437,6 +443,54 @@ def zero_crash(procedure, entries, workers, *, inputs_dirs=None):
               "trajectories": len(entries), "fault_count": len(crashes), "faults": crashes[:10],
               "mismatched": mismatched[:10], "applied": sum(1 for o in first.values() if o.applies)}
     return report, first
+
+
+def bounded_result(result):
+    """v2.4 repair evidence from an actual worker call, never a re-execution or inferred return."""
+    if result.get("ok") is not True:
+        return {"status": "raised", "exc_type": str(result.get("exc_type") or result.get("fault") or "unknown")[:300],
+                "message": str(result.get("message") or "")[:300]}
+    value = result.get("value")
+    text = ("returned nothing ({})" if value == {} else
+            json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))[:1500])
+    return {"status": "returned", "value": text}
+
+
+def screened_note(procedure, bench, view, result):
+    """v2.4 C6c: the shell-visible note from one existing before_call response, without another hook call.
+
+    _Run.render uses the shell's notes.screen/type/lexicon and check_bindings/render path. The final assembly is
+    notes.assemble itself, so both the procedure's declared cap and the benchmark request cap apply.
+    """
+    if result.get("ok") is not True:
+        return ""
+    fields = shaped(result.get("value"), None)
+    if fields is None:
+        return ""
+    run = _Run(None, procedure, {"cell": "routing-output", "bench": bench})
+    text, _ = run.render("before_call", fields[0], public_text(view))
+    visible, _ = notes.assemble([(procedure.id + "/before_call", text, procedure.max_note_chars)], bench=bench)
+    return visible
+
+
+def claimed_tests(procedure, entries, outcomes, actual):
+    """v2.4 C5b: every declared fix claim holds under the same validation/property evaluator as lint."""
+    claimed, failed = 0, []
+    for test in procedure.replay_tests:
+        if not isinstance(test, dict) or test.get("claims_fix") is not True:
+            continue
+        claimed += 1
+        why = validate_test(test, procedure, entries)
+        if why is None and holds(test["property"], test["hook"], outcomes.get(test["trajectory"])):
+            continue
+        prop = test.get("property") if isinstance(test.get("property"), dict) else {}
+        calls = actual.get(test.get("trajectory"), ()) if type(test.get("trajectory")) is str else ()
+        found = [call for call in calls if call["hook"] == test.get("hook") and call["step"] == prop.get("step")]
+        failed.append({"id": test.get("id"), "hook": test.get("hook"), "property": prop,
+                       "reason": why or "test_failed", "actual":
+                       {k: v for k, v in found[0].items() if k not in ("hook", "step")} if found else
+                       {"status": "not_called", "reason": "hook_not_reached"}})
+    return not failed, {"claimed": claimed, "failed": failed}
 
 
 # ------------------------------------------------------------------------------------------------- replay tests

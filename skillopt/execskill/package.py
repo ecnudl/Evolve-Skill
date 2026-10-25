@@ -186,7 +186,8 @@ class Procedure:
                       replay_tests=_plain(list(self.replay_tests)), lineage=dict(self.lineage))
         if self.policy_version != policy.POLICY_VERSION:
             fields["policy_version"] = self.policy_version
-            return record("procedure-v2-3", self.evidence, fields)
+            stamp = "procedure-v2-4" if self.policy_version == policy.POLICY_VERSION_V24 else "procedure-v2-3"
+            return record(stamp, self.evidence, fields)
         return record("procedure", self.evidence, fields)
 
     @property
@@ -195,9 +196,12 @@ class Procedure:
 
     @classmethod
     def from_json(cls, value):
-        modern = value.get("policy_version") == policy.POLICY_VERSION_V23 if isinstance(value, dict) else False
+        version = value.get("policy_version") if isinstance(value, dict) else None
+        modern = version in (policy.POLICY_VERSION_V23, policy.POLICY_VERSION_V24)
+        stamp = ("procedure-v2-4" if version == policy.POLICY_VERSION_V24
+                 else "procedure-v2-3" if modern else "procedure")
         try:
-            value = verified(value, "procedure-v2-3" if modern else "procedure")
+            value = verified(value, stamp)
         except ValueError as error:
             raise PackageInvalid("Not a sealed procedure record: %s" % error) from None
         ensure(set(value) == set(PROCEDURE_FIELDS) | set(STAMP) | ({"policy_version"} if modern else set()),

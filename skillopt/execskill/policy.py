@@ -48,6 +48,8 @@ from pathlib import Path
 POLICY_VERSION = "fivebench-execskill-v1-policy"
 POLICY_PATH = Path(__file__).resolve().parent / "sandbox" / "policy.json"
 POLICY_VERSION_V23 = "fivebench-execskill-v2-3-policy"
+POLICY_VERSION_V24 = POLICY_VERSION_V23.replace("v2-3", "v2-4")
+POLICY_PATH_V24 = POLICY_PATH.with_name("policy-v2-4.json")
 POLICY_PATH_V23 = POLICY_PATH.with_name("policy-v2-3.json")
 BENCHES = ("searchqa", "officeqa", "livemath", "spreadsheetbench", "alfworld")
 MAX_SOURCE_BYTES = 6000
@@ -150,7 +152,9 @@ POLICY_V23 = {**POLICY, "version": POLICY_VERSION_V23,
               "constant_bindings": "whole-module, all-scope binding audit; plain import re exempt; constructors, "
                                    "re, compile and used flags must be unbound elsewhere; referenced constants "
                                    "must have one defining assignment and audited dependencies; otherwise literal-only"}
-POLICIES = {POLICY_VERSION: POLICY, POLICY_VERSION_V23: POLICY_V23}
+POLICY_V24 = {**POLICY_V23, "version": POLICY_VERSION_V24,
+              "registration": "Route B v2.4 request 2026-10-25 item 5", "max_source_bytes": 10_000}
+POLICIES = {POLICY_VERSION: POLICY, POLICY_VERSION_V23: POLICY_V23, POLICY_VERSION_V24: POLICY_V24}
 
 BULLETIN = re.compile("|".join("(?:%s)" % p for p in BULLETIN_PATTERNS), re.I)
 RECEPTACLE = re.compile(RECEPTACLE_PATTERN, re.I)
@@ -186,10 +190,18 @@ def policy_sha256(*, version=POLICY_VERSION):
     return hashlib.sha256(_canonical(POLICIES[version])).hexdigest()
 
 
+def source_limit(version=POLICY_VERSION):
+    """The UTF-8 source byte limit of the explicitly selected policy."""
+    if type(version) is not str or version not in POLICIES:
+        raise ValueError("Unknown policy version")
+    return POLICIES[version]["max_source_bytes"]
+
+
 def write_policy_json(path=None, *, version=POLICY_VERSION):
     """Write ``POLICY`` as canonical JSON, so the file's sha256 is ``policy_sha256()``. An existing file must hold the
     same bytes: a changed policy is a new protocol version, never an overwrite."""
-    path = Path(path) if path is not None else (POLICY_PATH_V23 if version == POLICY_VERSION_V23 else POLICY_PATH)
+    paths = {POLICY_VERSION: POLICY_PATH, POLICY_VERSION_V23: POLICY_PATH_V23, POLICY_VERSION_V24: POLICY_PATH_V24}
+    path = Path(path) if path is not None else paths[version]
     data = _canonical(POLICIES[version])
     if path.exists():
         if path.read_bytes() != data:
@@ -479,7 +491,7 @@ def check(source, *, bench=None, version=POLICY_VERSION):
     if type(source) is not str:
         return [Violation("size", "source is not text")]
     size = len(source.encode("utf-8"))
-    if size > MAX_SOURCE_BYTES:
+    if size > source_limit(version):
         return [Violation("size", "%d bytes" % size)]
     try:
         tree = ast.parse(source)
@@ -487,7 +499,7 @@ def check(source, *, bench=None, version=POLICY_VERSION):
         return [Violation("syntax", type(error).__name__, getattr(error, "lineno", 0) or 0)]
     parents = {child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)}
     numpy_names = _numpy_names(tree)
-    out = (_module_level_v23 if version == POLICY_VERSION_V23 else _module_level)(source, tree)
+    out = (_module_level_v23 if version in (POLICY_VERSION_V23, POLICY_VERSION_V24) else _module_level)(source, tree)
     for node in ast.walk(tree):
         out.extend(_node(node, parents, numpy_names))
     if bench in (None, "livemath"):

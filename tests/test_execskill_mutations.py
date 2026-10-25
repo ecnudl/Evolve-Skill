@@ -648,6 +648,16 @@ MUTATIONS = {
         "parents\n", "    path = safe_path(root) / name\n",
         [T + "smoke_waiver.py::test_a_symlink_to_a_valid_draft_elsewhere_is_refused",
          T + "smoke_waiver.py::test_a_symlinked_shared_directory_is_refused"]),
+    "137-v24-claimed-tests-do-not-gate": (
+        PE + "engineer.py",
+        '    if v24 and not done("C5b", *replay.claimed_tests(procedure, entries, outcomes, actual)):\n',
+        '    if False and not done("C5b", *replay.claimed_tests(procedure, entries, outcomes, actual)):\n',
+        [T + "v24_engineer.py::test_claimed_empty_result_fails_c5b_with_actual_return_and_enters_fix_loop"]),
+    "138-v24-empty-output-does-not-gate": (
+        PE + "engineer.py",
+        '        if not done("C6b", *routed["C6b"]) or not done("C6c", *routed["C6c"]):\n',
+        '        if not done("C6b", *routed["C6b"]):\n',
+        [T + "v24_engineer.py::test_swallowed_heading_defect_fails_c6c_then_repair_passes_both_gates"]),
 }
 
 

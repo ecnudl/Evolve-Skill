@@ -103,7 +103,7 @@ from .donors import public_text
 from .errors import PackageInvalid
 from .package import EDIT_KINDS, FIXTURE, Package, Procedure, edits, validate, with_
 from .profiles import (ANALYST_TAG, BENCHES, ENGINEER_CALLS, ENGINEER_SHOWN, HOOKS, MAX_CHANGES, MAX_DESCRIPTION_CHARS,
-                       MAX_TESTS,
+                       MAX_TESTS, SANDBOX_TIMEOUTS,
                        MAX_HEADER_CHARS, MAX_PACKAGE_BYTES, MAX_PROCEDURE_BYTES, QA, ROLE_INPUT_BYTES, SEED, SHOWN_TAG,
                        TRAIN_ANALYST_BATCH, TRAIN_ANALYST_CALLS, TRAIN_ENGINEER_CALLS, TRAIN_FINDING_CHARS,
                        TRAIN_EXAMPLES, TRAIN_FINDINGS, TRAIN_FIXES, TRAIN_PROPOSAL_CHARS, TRAIN_ROUNDS,
@@ -316,6 +316,38 @@ ENGINEER_SYSTEM_ZPC = ENGINEER_SYSTEM_V23 + ENGINEER_FACTS_ZPC
 ENGINEER_SYSTEM_SINGLE_ZPC = ENGINEER_SYSTEM_SINGLE_V23 + ENGINEER_FACTS_ZPC
 ENGINEER_PROMPT_ZPC_SHA256 = digest(ENGINEER_SYSTEM_ZPC)
 ENGINEER_PROMPT_SINGLE_ZPC_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_ZPC)
+ENGINEER_FACTS_V24 = """
+Executable feedback (v2.4). Every replay test with claims_fix: true must hold: a failed claim fails C5b and receives
+the hook's actual bounded return or exception in the fix call. Tests with claims_fix: false remain advisory lint.
+C6c requires a note-writing procedure to produce some non-empty facts, table, candidates, warnings or bindings on
+at least one fired training item. Empty output on every fired item fails and enters the fix loop.
+What your hooks receive. The user message's hook_views section shows one deterministic run item's exact public
+view arguments as JSON, with strings cut to 1500 characters and lists to 20 entries. These are the hook arguments;
+the solver prompt wraps the public view in other text. For ALFWorld routing_view is for applies, and hook_view is
+the first stored per-step view for alf_before_step. Use these actual keys and text when writing parsers.
+Training patience counts only rounds where a candidate survives the checks. The limit remains six rounds.
+training.unfixed_examples shows up to four run items the candidate did not fix, with its actual notes, final answer
+excerpt and the already-visible run reference. A row marked identical_current reuses an identical incumbent request.
+"""
+_V24_ADVISORY = ('registrar runs them and reports their problems to you as "lint" in the next round; they never block a change.')
+ENGINEER_SYSTEM_V24 = (ENGINEER_SYSTEM_V23.replace("6000", "10000").replace(
+    _V24_ADVISORY, 'registrar reports these tests as "lint"; claims_fix: true tests also gate C5b.') + ENGINEER_FACTS_V24)
+ENGINEER_SYSTEM_SINGLE_V24 = ((ENGINEER_SYSTEM[:ENGINEER_SYSTEM.index("Replay tests (1 to 8")]
+    + TRAIN_TAIL[:TRAIN_TAIL.index("Training rounds.")].replace(
+        _V24_ADVISORY, 'registrar reports these tests as "lint"; claims_fix: true tests also gate C5b.')
+    + ENGINEER_SYSTEM[ENGINEER_SYSTEM.index("Reply with one ```json block"):] + ENGINEER_FACTS_V23)
+    .replace("6000", "10000") + ENGINEER_FACTS_V24)
+ENGINEER_FACTS_ZPC_V24 = ENGINEER_FACTS_ZPC.replace("zebra-pc-v1", "zebra-pc-v2") + """
+view["question"] is the raw puzzle text beginning "There are N houses, numbered 1 to N ...". The solver's prompt
+adds an instruction template with a worked example and headings such as "# Puzzle to Solve"; hooks never see those
+headings or that example. Parse the raw question and the public columns directly.
+"""
+ENGINEER_SYSTEM_ZPC_V24 = ENGINEER_SYSTEM_V24 + ENGINEER_FACTS_ZPC_V24
+ENGINEER_SYSTEM_SINGLE_ZPC_V24 = ENGINEER_SYSTEM_SINGLE_V24 + ENGINEER_FACTS_ZPC_V24
+ENGINEER_PROMPT_V24_SHA256 = digest(ENGINEER_SYSTEM_V24)
+ENGINEER_PROMPT_SINGLE_V24_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_V24)
+ENGINEER_PROMPT_ZPC_V24_SHA256 = digest(ENGINEER_SYSTEM_ZPC_V24)
+ENGINEER_PROMPT_SINGLE_ZPC_V24_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_ZPC_V24)
 # v2's analysts (owner suggestion 2026-10-23 15:1x; SkillOpt's minibatch reflection): engineer-role calls before each
 # round's proposal, on groups of the incumbent's failed run-slice items, whose findings the proposal call is shown
 ANALYST_SYSTEM = """\
@@ -505,7 +537,8 @@ class Context:
                     and trajectory["bench"] == self.bench and trajectory["task_id"] in own,
                     "Training trajectories are this step's run-slice cells of its run unit or an earlier training "
                     "unit")
-        require(isinstance(self.history, list) and all(_history_line(entry, self.round) for entry in self.history),
+        v24 = protocol.is_v24(self.configuration)
+        require(isinstance(self.history, list) and all(_history_line(entry, self.round, v24=v24) for entry in self.history),
                 "The history holds counts and flags only")
         require(isinstance(self.lint, list) and all(_lint_entry(entry) for entry in self.lint),
                 "Lint entries are reports")
@@ -517,9 +550,12 @@ class Context:
         require(all(isinstance(self.references.get(i), dict) for i in self.disclosed),
                 "Disclosed items keep their table-shape references")
         evaluated = {t["cell"]: t for t in self.evaluated}
-        require(self.training is None or _training_ok(self.training, self.references, own, evaluated, self.bench),
+        require(self.training is None or _training_ok(self.training, self.references, own, evaluated, self.bench,
+                                                      v24=v24, current={t["cell"]: t for t in self.current}),
                 "The training feedback shows this step's run-slice items with their own references only")
-        return {t["task_id"] for t in list(self.current) + list(self.evaluated) if t["token"] == "fail"} | self.disclosed
+        output_refs = {e["task_id"] for e in (self.training or {}).get("unfixed_examples", [])} if v24 else set()
+        return ({t["task_id"] for t in list(self.current) + list(self.evaluated) if t["token"] == "fail"}
+                | self.disclosed | output_refs)
 
 
 def _text(value, limit, *, empty=True):
@@ -539,13 +575,16 @@ def _verdict_fields(entry):
             and (entry["reason"] is None or _text(entry["reason"], MAX_REASON_CHARS)))
 
 
-def _history_line(entry, before):
+def _history_line(entry, before, *, v24=False):
     """v2 (Codex review 2026-10-23 #4): a line of an earlier round exactly as ``step._line`` writes it -- counts,
     flags, the net, p and reason -- with its ``proposals`` (the step buffer): kind, registrar id, target, a description
     excerpt and the fate."""
-    if not (isinstance(entry, dict) and set(entry) == HISTORY_FIELDS and type(entry["round"]) is int
+    fields = HISTORY_FIELDS | ({"patience_counted"} if v24 else set())
+    if not (isinstance(entry, dict) and set(entry) == fields and type(entry["round"]) is int
             and 1 <= entry["round"] < before and type(entry["candidate"]) is bool and _count(entry["generated"])
             and _verdict_fields(entry) and isinstance(entry["proposals"], list)):
+        return False
+    if v24 and (type(entry["patience_counted"]) is not bool or entry["patience_counted"] != entry["candidate"]):
         return False
     return all(isinstance(p, dict) and set(p) == PROPOSAL_FIELDS and (p["kind"] is None or p["kind"] in EDIT_KINDS)
                and all(p[k] is None or _text(p[k], MAX_ID_CHARS) for k in ("id", "target"))
@@ -570,12 +609,13 @@ def _lint_entry(entry):
         for p in entry["problems"])
 
 
-def _training_ok(training, references, own, evaluated, bench):
+def _training_ok(training, references, own, evaluated, bench, *, v24=False, current=None):
     """v2 (Codex review 2026-10-23 #4): the last round's feedback exactly as ``step._feedback`` writes it; each
     example names one of this step's run-slice items (``own``) and that item's candidate-arm cell of the last training
     unit (``evaluated``: {cell: trajectory}), its texts within ``TRAIN_TEXT_CHARS``, and a reference only off ALFWorld
     and only the item's own (``Context.references``)."""
-    if not (isinstance(training, dict) and set(training) == TRAINING_FIELDS and _verdict_fields(training)
+    fields = TRAINING_FIELDS | ({"unfixed_examples", "identical_items"} if v24 else set())
+    if not (isinstance(training, dict) and set(training) == fields and _verdict_fields(training)
             and training["p_sign"] is not None and type(training["need"]) is int and training["need"] >= 1
             and isinstance(training["guards"], dict) and set(training["guards"]) == GUARD_FIELDS
             and all(type(v) is bool for v in training["guards"].values())
@@ -590,6 +630,31 @@ def _training_ok(training, references, own, evaluated, bench):
             return False
         if not all(_example_ok(example, references, own, evaluated, bench) for example in entry["examples"]):
             return False
+    if v24:
+        identical = training["identical_items"]
+        if (not isinstance(identical, list) or not all(type(key) is str and key in own for key in identical)
+                or identical != sorted(set(identical)) or not isinstance(training["unfixed_examples"], list)
+                or len(training["unfixed_examples"]) > 4):
+            return False
+        seen = set()
+        for example in training["unfixed_examples"]:
+            if (not isinstance(example, dict) or set(example) != {"task_id", "cell", "token", "source", "notes", "answer", "reference"}
+                    or type(example["task_id"]) is not str or example["task_id"] not in own
+                    or example["task_id"] in seen or type(example["cell"]) is not str
+                    or example["source"] not in ("candidate", "identical_current")
+                    or not all(_text(example[key], bound) for key, bound in (("notes", 1000), ("answer", 500), ("reference", 1000)))):
+                return False
+            seen.add(example["task_id"])
+            cells = evaluated if example["source"] == "candidate" else current or {}
+            cell = cells.get(example["cell"])
+            if (cell is None or cell["task_id"] != example["task_id"] or cell["token"] != example["token"]
+                    or (example["source"] == "candidate" and cell.get("arm_kind") != "candidate")
+                    or (example["source"] == "identical_current" and example["task_id"] not in identical)):
+                return False
+            reference = (engineer_payload.reference_excerpt(references[example["task_id"]])
+                         if example["task_id"] in references else "reference unavailable")
+            if example["reference"] != reference:
+                return False
     return True
 
 
@@ -686,6 +751,8 @@ def payload(ctx, analyses=None):
             "package": [_listed(p, ctx.parent) for p in ctx.parent.procedures],
             "trajectories": [_shown_view(kind, t, ctx.references, ctx.echo) for kind, t in shown(ctx)],
             "detectors": ctx.detectors, "previous": ctx.previous}
+    if protocol.is_v24(ctx.configuration):
+        user["hook_views"] = hook_views(ctx)
     if ctx.mode != TRAIN:
         if protocol.TRIM_PAYLOADS[ctx.configuration]:
             user = engineer_payload.trim(user)
@@ -716,6 +783,12 @@ def _fit_train(user):
             while entry["examples"] and message_bytes(user) > ROLE_INPUT_BYTES:
                 entry["examples"].pop()
                 user["examples_omitted"] += 1
+        if "unfixed_examples" in user["training"]:
+            user["training"]["unfixed_examples"] = list(user["training"]["unfixed_examples"])
+            user["unfixed_examples_omitted"] = 0
+            while user["training"]["unfixed_examples"] and message_bytes(user) > ROLE_INPUT_BYTES:
+                user["training"]["unfixed_examples"].pop()
+                user["unfixed_examples_omitted"] += 1
     while user["analyses"] and message_bytes(user) > ROLE_INPUT_BYTES:
         user["analyses"].pop()
         user["analyses_omitted"] += 1
@@ -811,6 +884,11 @@ def _ask(ctx, user, purpose):
         system = ENGINEER_SYSTEM_V23 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_V23
     if ctx.configuration == protocol.ZEBRA_PC_V1:
         system = ENGINEER_SYSTEM_ZPC if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_ZPC
+    if protocol.is_v24(ctx.configuration):
+        if ctx.bench == "zebralogic":
+            system = ENGINEER_SYSTEM_ZPC_V24 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_ZPC_V24
+        else:
+            system = ENGINEER_SYSTEM_V24 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_V24
     options = ({"max_tokens": protocol.ENGINEER_MAX_TOKENS[ctx.configuration]}
                if modern and ctx.mode == TRAIN and purpose in ("propose", "repropose") else {})
     reply = ctx.roles.plain(ROLE, system, json.dumps(user, ensure_ascii=False, sort_keys=True),
@@ -1126,6 +1204,16 @@ def _shown_references(user):
     return found
 
 
+def _output_references(ctx, user):
+    """v2.4: track fitted output examples for later C4 checks, including clipped workbook references.
+    The full registered run map is checked conservatively when its excerpt was shown."""
+    if not protocol.is_v24(ctx.configuration):
+        return []
+    return [(entry["cell"], ctx.references[entry["task_id"]])
+            for entry in (user.get("training") or {}).get("unfixed_examples", [])
+            if isinstance(ctx.references.get(entry["task_id"]), dict)]
+
+
 def disclosed(ctx):
     """Codex review 2026-10-22 #2: {key: the value as written} of the SpreadsheetBench reference values the proposal
     payload disclosed -- exactly those ``run`` sent (``payload`` recomputed, deterministically, for a direct check) --
@@ -1138,7 +1226,8 @@ def disclosed(ctx):
     if "disclosed" not in ctx.sheet:
         shown = ctx.sheet.get("shown")
         if shown is None:
-            shown = ctx.sheet["shown"] = _shown_references(payload(ctx))
+            user = payload(ctx)
+            shown = ctx.sheet["shown"] = _shown_references(user) + _output_references(ctx, user)
         by_cell, out = {t["cell"]: t for t in list(ctx.trajectories) + list(ctx.current) + list(ctx.evaluated)}, {}
         for cell, reference in shown:
             own = None
@@ -1280,11 +1369,158 @@ def _firing(procedure, ctx):
     return detail["fires_on"] > 0, detail
 
 
+def _run_entries(ctx, *, membership=None):
+    """Every verified public replay input of this step's run slice, in deterministic item/cell order."""
+    out = []
+    for trajectory in sorted(ctx.trajectories, key=lambda t: (t["task_id"], t["cell"])):
+        verified(trajectory, "trajectory")
+        found = RUN_UNIT.fullmatch(str(trajectory.get("unit", "")))
+        if (trajectory["bench"] != ctx.bench or found is None or int(found["k"]) != ctx.k):
+            continue
+        if membership is not None:
+            membership.add(trajectory["task_id"])
+        entry = replay.inputs_of(trajectory)
+        if entry is not None:
+            out.append(entry)
+    return out
+
+
+def _run_views(ctx):
+    """One deterministic public hook input per run item (the prompt and failure samples)."""
+    out = {}
+    for entry in _run_entries(ctx):
+        out.setdefault(entry["item"], entry)
+    return out
+
+
+def hook_views(ctx):
+    """v2.4 prompt sample of actual public arguments, never a solver wrapper or a private reference."""
+    entries, routed = _run_views(ctx), dict(ctx.routing_items)
+    if not entries:
+        return {"status": "unavailable", "reason": "no_stored_run_view"}
+    key = sorted(entries)[0]
+    entry = entries[key]
+    routing = routed.get(key, entry["view"])
+    hook = entry["steps"][0]["view"] if ctx.bench == "alfworld" else entry["request_view"]
+    return {"item": key, "routing_view": engineer_payload.view_excerpt(routing),
+            "hook_view": engineer_payload.view_excerpt(hook),
+            "string_chars": 1500, "list_entries": 20,
+            "meaning": "Exact hook view arguments, truncated only at the stated caps; not the solver prompt."}
+
+
+def _routing_checks(procedure, ctx, *, outcomes=None, actual=None):
+    """v2.4 C6b/C6c on the same views and workers. Callable by the zero-call handoff with a Context-like object."""
+    require(len(ctx.routing_items) <= 60, "C6c evaluates at most 60 registered routing items")
+    firing = {"fires_on": 0, "items": len(ctx.routing_items), "predicate_faults": 0,
+              "routing_view_keys": sorted({key for _, view in ctx.routing_items for key in view})}
+    hook = "alf_before_step" if ctx.bench == "alfworld" else "before_call"
+    run_items = set()
+    run_entries = _run_entries(ctx, membership=run_items)
+    entries, cells, current_views = {}, {}, {}
+    for entry in run_entries:
+        entries.setdefault(entry["item"], entry)
+        cells.setdefault(entry["item"], []).append(entry["cell"])
+    if ctx.bench == "alfworld" and ctx.mode == TRAIN:
+        # C6 also replays the incumbent's current trajectories of these same run items. Keep samples anchored to
+        # the original run, but allow any already-replayed current cell to demonstrate stateful note output.
+        chain = str(ctx.label).split("/", 1)[0]
+        for trajectory in ctx.current:
+            verified(trajectory, "trajectory")
+            unit = str(trajectory["unit"])
+            run, train = RUN_UNIT.fullmatch(unit), TRAIN_UNIT.fullmatch(unit)
+            found = run or train
+            require(found is not None and found["chain"] == chain and found["bench"] == ctx.bench
+                    and int(found["k"]) == ctx.k and (train is None or int(train["r"]) < ctx.round)
+                    and trajectory["bench"] == ctx.bench and trajectory["task_id"] in run_items,
+                    "C6c current trajectories belong to this step's verified run items and prior training rounds")
+            item, cell = trajectory["task_id"], trajectory["cell"]
+            current = replay.inputs_of(trajectory)
+            if cell in (outcomes or {}) and current is not None:
+                if cell not in cells.setdefault(item, []):
+                    cells[item].append(cell)
+                if current["steps"]:
+                    current_views.setdefault(item, current["steps"][0]["view"])
+    detail = {"hook": hook, "fired": 0, "empty": 0, "exceptions": 0, "nonempty": 0,
+              "first_exception": None, "view_keys": [], "sample": None}
+    applicable = hook in procedure.hooks
+    if not applicable:
+        detail.update(status="not_applicable", reason="no_note_writing_hook")
+    if ctx.bench == "alfworld":
+        firing.update(step_view_keys=list(ALFWORLD_STEP_VIEW_KEYS),
+                      note="applies() receives the routing view; hooks receive the step view")
+    package = replay.solo(procedure)
+
+    def count(item, view, worker):
+        routed = router.route(package, ctx.bench, view, worker)
+        firing["predicate_faults"] += bool(routed.faults)
+        if procedure.id not in routed.enabled:
+            return
+        firing["fires_on"] += 1
+        detail["fired"] += 1
+        if not applicable:
+            return
+        if ctx.bench == "alfworld":
+            entry = entries.get(item)
+            step_view = entry["steps"][0]["view"] if entry is not None and entry["steps"] else current_views.get(item)
+            if step_view is None:
+                detail["empty"] += 1
+                detail["missing_step_views"] = detail.get("missing_step_views", 0) + 1
+                return
+            view = step_view
+        detail["view_keys"] = sorted(set(detail["view_keys"]) | set(view))
+        if detail["sample"] is None and item in entries:
+            detail["sample"] = engineer_payload.view_excerpt(view, chars=300)
+        if ctx.bench == "alfworld":
+            # Use all existing stateful C6 replays of this verified run item. No new step hooks or containers.
+            own = [(cell, (outcomes or {}).get(cell)) for cell in cells[item]]
+            own = [(cell, outcome) for cell, outcome in own if outcome is not None
+                   and outcome.cell == cell and outcome.bench == ctx.bench]
+            if not own:
+                detail["missing_replays"] = detail.get("missing_replays", 0) + 1
+            present = any(note["hook"] == hook and bool(note["text"].strip())
+                          for _, outcome in own for note in outcome.notes)
+            detail["nonempty" if present else "empty"] += 1
+            for cell, outcome in own:
+                failures = [fault for fault in outcome.faults if fault["kind"].startswith("crash:")
+                            and fault["hook"] in replay.STEP_HOOKS]
+                detail["exceptions"] += len(failures)
+                if failures and detail["first_exception"] is None and item in entries:
+                    captured = [call for call in (actual or {}).get(cell, ())
+                                if call["hook"] in replay.STEP_HOOKS and call.get("status") == "raised"]
+                    if captured:
+                        detail["first_exception"] = {key: captured[0][key] for key in ("status", "exc_type", "message")}
+            return
+        result = worker.call(procedure.id, hook, [view, None], timeout_s=SANDBOX_TIMEOUTS["hook"])
+        if result.get("ok") is not True:
+            detail["exceptions"] += 1
+            if detail["first_exception"] is None and item in entries:
+                detail["first_exception"] = replay.bounded_result(result)
+            return
+        present = bool(replay.screened_note(procedure, ctx.bench, view, result).strip())
+        detail["nonempty" if present else "empty"] += 1
+
+    if ctx.routing_items and ctx.routing_shared_worker:
+        with ctx.routing_workers(package, ctx.routing_items[0][0]) as worker:
+            for item, view in ctx.routing_items:
+                count(item, view, worker)
+    else:
+        for item, view in ctx.routing_items:
+            with ctx.routing_workers(package, item) as worker:
+                count(item, view, worker)
+    skipped = not ctx.routing_items and ctx.mode == "single"
+    if skipped:
+        firing.update(skipped=True, reason="no_training_items")
+        detail.update(status="not_applicable", reason="no_training_items")
+    return {"C6b": (firing["fires_on"] > 0 or skipped, firing),
+            "C6c": (not applicable or detail["nonempty"] > 0 or skipped, detail)}
+
+
 def check(change, ctx, taken=()):
     """The fixed checks of one change (module docstring): ``{"n", "kind", "checks": [...], "passed", "failed"}``
     with the results in executed order, stopping at the first failure."""
     report = {"n": change.n, "kind": change.kind, "checks": [], "passed": False, "failed": None}
     train = ctx.mode == TRAIN
+    v24 = protocol.is_v24(ctx.configuration)
 
     def done(check_id, passed, detail=None):
         report["checks"].append(_result(check_id, passed, detail))
@@ -1312,7 +1548,8 @@ def check(change, ctx, taken=()):
     try:
         single = _build(change, ctx)
     except PackageInvalid as error:
-        done("C3", False, _size_detail(change, error) if train else str(error)[:300])
+        done("C3", False, _size_detail(change, error, **({"configuration": ctx.configuration} if v24 else {}))
+             if train else str(error)[:300])
         return report
     if train:  # v2: the step's edit budget against S (``rebase``); a change beyond it gets no fix call
         try:
@@ -1332,14 +1569,22 @@ def check(change, ctx, taken=()):
     if not done("C5", rejected is None, rejected):
         return report
     entries = _scope(ctx, single, procedure)
-    crash, outcomes = replay.zero_crash(procedure, list(entries.values()), ctx.workers, inputs_dirs=ctx.inputs_dirs)
+    actual = {} if v24 else None
+    crash, outcomes = replay.zero_crash(procedure, list(entries.values()), ctx.workers, inputs_dirs=ctx.inputs_dirs,
+                                       **({"actual": actual} if v24 else {}))
+    if v24 and not done("C5b", *replay.claimed_tests(procedure, entries, outcomes, actual)):
+        return report
     if not done("C6", crash["passed"], crash):
         return report
-    if protocol.CHECK_NON_FIRING[ctx.configuration] and not done("C6b", *_firing(procedure, ctx)):
+    if v24:
+        routed = _routing_checks(procedure, ctx, outcomes=outcomes, actual=actual)
+        if not done("C6b", *routed["C6b"]) or not done("C6c", *routed["C6c"]):
+            return report
+    elif protocol.CHECK_NON_FIRING[ctx.configuration] and not done("C6b", *_firing(procedure, ctx)):
         return report
     if not done("C4", *leak_check(change, ctx, outcomes, entries)):
         return report
-    if train:  # v2: the registrar's own checks block; the engineer's replay tests are advice (``lint``)
+    if train or v24:  # v2.4 adds claimed-test gating above; other replay tests remain advisory in both modes
         tests = replay.registrar_checks(procedure, entries, outcomes)
         if procedure.replay_tests:
             advice = replay.run_tests(procedure, entries, outcomes, ctx.workers, inputs_dirs=ctx.inputs_dirs)
@@ -1400,7 +1645,7 @@ def _structure_detail(change, problem):
     return detail
 
 
-def _size_detail(change, error):
+def _size_detail(change, error, *, configuration=None):
     """v2: C3's error with the measured sizes against their caps, for the fix call."""
     detail, entry = {"error": str(error)[:MAX_DETAIL_CHARS]}, change.entry
     if change.kind in CODED:
@@ -1413,6 +1658,8 @@ def _size_detail(change, error):
         detail["caps"] = {"description_chars": MAX_DESCRIPTION_CHARS, "header_chars": MAX_HEADER_CHARS,
                           "source_bytes": MAX_PROCEDURE_BYTES, "package_source_bytes": MAX_PACKAGE_BYTES,
                           "max_note_chars": "1-4000 when a hook writes notes, else 0"}
+        if configuration is not None and protocol.is_v24(configuration):
+            detail["caps"]["source_bytes"] = policy.source_limit(protocol.POLICY_VERSIONS[configuration])
     return detail
 
 
@@ -1430,6 +1677,8 @@ def _fix(ctx, change, report, *, attempt=None, why=None):
     failed = [c for c in report["checks"] if not c["passed"]]
     last = failed[-1] if failed else None
     user = {"request": "fix", "bench": ctx.bench, "change": entry, "failed": last if ctx.echo else _redacted(last)}
+    if protocol.is_v24(ctx.configuration):
+        user["hook_views"] = hook_views(ctx)
     if attempt is not None:
         user.update({"attempt": attempt, "attempts": TRAIN_FIXES, **({"previous_reply": why} if why else {})})
     reply, call = _ask(ctx, user, "fix/%d" % change.n if attempt is None else "fix/%d/%d" % (change.n, attempt))
@@ -1490,7 +1739,7 @@ def _combined(parent, survivors, step):
 def run(ctx):
     """The engineer's step: ``(candidate package or None, the sealed engineer record)``."""
     user, proposals, changes = payload(ctx), [], []
-    ctx.sheet["shown"] = _shown_references(user)  # C4 checks exactly the references this payload discloses (#2)
+    ctx.sheet["shown"] = _shown_references(user) + _output_references(ctx, user)
     ctx.sheet.pop("disclosed", None)
     for purpose in ("propose", "repropose"):
         reply, call = _ask(ctx, user, purpose)
@@ -1521,7 +1770,9 @@ def run(ctx):
     modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
     sealed = record(protocol.ENGINEER_RECORDS[ctx.configuration], ctx.evidence, {
         "bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
-        "prompt_sha256": (ENGINEER_PROMPT_SINGLE_ZPC_SHA256 if ctx.configuration == protocol.ZEBRA_PC_V1 else
+        "prompt_sha256": ((ENGINEER_PROMPT_SINGLE_ZPC_V24_SHA256 if ctx.bench == "zebralogic" else
+                           ENGINEER_PROMPT_SINGLE_V24_SHA256) if protocol.is_v24(ctx.configuration) else
+                          ENGINEER_PROMPT_SINGLE_ZPC_SHA256 if ctx.configuration == protocol.ZEBRA_PC_V1 else
                           ENGINEER_PROMPT_SINGLE_V23_SHA256 if modern else ENGINEER_PROMPT_SHA256),
         "proposals": proposals, "changes": outcomes,
         "kept": [c.n for c in kept], "candidate_sha256": package.sha256 if package else None,
@@ -1581,7 +1832,7 @@ def run_train(ctx):
     user, proposals, changes = payload(ctx, findings), [], []
     # C4 checks exactly the references this (fitted) payload discloses (#2), those the analysts saw, whose findings it
     # shows, and those earlier rounds of the step disclosed (Codex review 2026-10-23 #3)
-    ctx.sheet["shown"] = _shown_references(user) + analysed_refs + _earlier_references(ctx)
+    ctx.sheet["shown"] = _shown_references(user) + analysed_refs + _earlier_references(ctx) + _output_references(ctx, user)
     ctx.sheet.pop("disclosed", None)
     for purpose in ("propose", "repropose"):
         reply, call = _ask(ctx, user, purpose)
@@ -1617,7 +1868,9 @@ def run_train(ctx):
     modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
     sealed = record(protocol.ENGINEER_RECORDS[ctx.configuration], ctx.evidence, {
         "bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
-        "prompt_sha256": (ENGINEER_PROMPT_ZPC_SHA256 if ctx.configuration == protocol.ZEBRA_PC_V1 else
+        "prompt_sha256": ((ENGINEER_PROMPT_ZPC_V24_SHA256 if ctx.bench == "zebralogic" else ENGINEER_PROMPT_V24_SHA256)
+                          if protocol.is_v24(ctx.configuration) else
+                          ENGINEER_PROMPT_ZPC_SHA256 if ctx.configuration == protocol.ZEBRA_PC_V1 else
                           ENGINEER_PROMPT_V23_SHA256 if modern else ENGINEER_PROMPT_V2_SHA256),
         "proposals": proposals, "changes": outcomes,
         "kept": [c.n for c in kept], "dropped": [c.n for c in survivors[len(kept):]],

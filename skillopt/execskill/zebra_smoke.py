@@ -1,4 +1,4 @@
-"""The zebra-pc-v1 preparation and lean smoke, independent of frozen five-bench recipes.
+"""The ZebraLogic profile preparation and lean smoke, independent of frozen five-bench recipes.
 
 Only S1/S2/S3 send requests. S0 and manifest preparation never open a sealed panel.
 The manifest names all registration values and the smoke records are restartable.
@@ -43,8 +43,9 @@ def fixture_items():
     return found
 
 
-def snapshot(out, *, source, git_head):
+def snapshot(out, *, source, git_head, configuration=p.ZEBRA_PC_V1):
     """Copy the registered code/test trees only, rejecting links and private file names."""
+    require(p.is_zebra(configuration), "A registered ZebraLogic configuration")
     source, out = safe_path(source), safe_path(out)
     require(not out.exists() and not out.is_relative_to(source), "A snapshot is a new directory outside the checkout")
     paths = prelaunch._files(source)
@@ -75,8 +76,9 @@ def _split_pins(path):
 
 
 def collect_s0(out, *, pool=z.POOL_PATH, split_manifest=z.SPLIT_MANIFEST_PATH, snapshot_root=manifest.REPO,
-               selftest=None, checks=None):
+               selftest=None, checks=None, configuration=p.ZEBRA_PC_V1):
     """Zero-call import, slice/card/panel-pin checks and actual sandbox selftest on Linux."""
+    require(p.is_zebra(configuration), "A registered ZebraLogic configuration")
     out = safe_path(out)
     require(not (out / S0_FILE).exists(), "S0 is written once")
     tasks = z.load_pool(pool)
@@ -93,7 +95,7 @@ def collect_s0(out, *, pool=z.POOL_PATH, split_manifest=z.SPLIT_MANIFEST_PATH, s
     measured["view_bytes_p99"] = max(measured["view_bytes_p99"], max(
         len(json.dumps(z.public_view(t["public"]), ensure_ascii=False).encode()) for t in tasks))
     measured["native_peak_rss_kib"] = 1  # no native sheet scorer in this profile
-    value = p.record("zebra-s0", "smoke", {"configuration": p.ZEBRA_PC_V1, "registration": z.identity(),
+    value = p.record("zebra-s0", "smoke", {"configuration": configuration, "registration": z.identity(),
         "pool": {"path": str(safe_path(pool)), "sha256": z.POOL_SHA256}, "split_manifest": pinned,
         "slice_ids": {key: [t["task_id"] for t in value] for key, value in slices.items()},
         "slice_counts": {key: len(value) for key, value in slices.items()}, "fixtures_sha256": digest(fixture_items()),
@@ -107,8 +109,9 @@ def collect_s0(out, *, pool=z.POOL_PATH, split_manifest=z.SPLIT_MANIFEST_PATH, s
 
 
 def make_manifest(out, *, root, s0_file, provenance, roles_repo, elucid_env, route_b_env, smoke_chain=None,
-                  smoke_results=(), environment_found=None):
+                  smoke_results=(), environment_found=None, configuration=p.ZEBRA_PC_V1):
     """Build an isolated smoke or run manifest; real runs require measured, passing chain smokes."""
+    require(p.is_zebra(configuration), "A registered ZebraLogic configuration")
     checked = p.verified(read_json(s0_file), "zebra-s0")
     require(checked["passed"] and checked["registration"] == z.identity(), "Passing S0 of this registration")
     provenance_value = read_json(provenance)
@@ -117,18 +120,19 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, elucid_env, rou
             and safe_path(checked["snapshot_root"]) == manifest.REPO
             and safe_path(provenance_value["snapshot_root"]) == manifest.REPO,
             "S0 and snapshot provenance must certify the current code/test snapshot")
+    require(checked.get("configuration", p.ZEBRA_PC_V1) == configuration, "S0 belongs to this configuration")
     require(smoke_chain is None or smoke_chain in p.CHAINS, "A registered smoke chain")
     root = safe_path(root)
-    require(smoke_chain is not None or str(root) == p.ZEBRA_PC_ROOT, "The registered real run root")
+    require(smoke_chain is not None or str(root) == p.RUN_ROOTS[configuration], "The registered real run root")
     estimates, terms, smoke_pins = {}, {}, {}
     for result_path in smoke_results:
         result = p.verified(read_json(result_path), "zebra-smoke-result")
-        require(result["passed"] and result["configuration"] == p.ZEBRA_PC_V1, "A passed measured zebra smoke")
+        require(result["passed"] and result["configuration"] == configuration, "A passed measured zebra smoke")
         chain = result["chain"]
         require(chain in p.CHAINS and chain not in smoke_pins and result.get("s0") == checked[p.RECORD_HASH]
                 and result.get("snapshot_sha256") == current_sha, "The smoke result belongs to this S0 and snapshot")
         smoked = manifest.load(result["manifest_path"], verify=False)
-        require(smoked[p.RECORD_HASH] == result["manifest"] and smoked["configuration"] == p.ZEBRA_PC_V1
+        require(smoked[p.RECORD_HASH] == result["manifest"] and smoked["configuration"] == configuration
                 and smoked["evidence"] == "smoke" and smoked["data"]["s0_sha256"] == checked[p.RECORD_HASH]
                 and smoked["code"] == manifest.pin_code() and chain in smoked["data"]["launchable_chains"],
                 "The measured smoke used this code, registration, S0 and chain")
@@ -143,24 +147,25 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, elucid_env, rou
             anchor = 5_300 if chain == "G" else 3_400
             estimates[chain] = math.ceil(anchor * (200 + 1_000 * float(p.PROCEDURE_ARM_FACTOR[1])))
             terms[chain] = {z.BENCH: str(estimates[chain])}
-    blocks = {"G": manifest.solver_block("G", env_path=roles_repo, configuration=p.ZEBRA_PC_V1),
-              "D": manifest.solver_block("D", env_path=elucid_env, branch="E", configuration=p.ZEBRA_PC_V1)}
-    route = routes.pin("D", "B", env_path=route_b_env, solver_block=blocks["D"], configuration=p.ZEBRA_PC_V1)
+    blocks = {"G": manifest.solver_block("G", env_path=roles_repo, configuration=configuration),
+              "D": manifest.solver_block("D", env_path=elucid_env, branch="E", configuration=configuration)}
+    route = routes.pin("D", "B", env_path=route_b_env, solver_block=blocks["D"], configuration=configuration)
     kwargs = {"root": str(root), "data": {"pools": {z.BENCH: checked["pool"]}, "pinned": z.identity()["sealed"],
         "zebra_pc": z.identity(), "split_manifest": checked["split_manifest"], "s0_sha256": checked[p.RECORD_HASH],
         "test_read_estimate": estimates, "test_read_terms": terms, "launchable_chains": launchable,
         "snapshot_sha256": current_sha,
         "smoke_results": smoke_pins}, "sheet_qualification": None, "cards": {z.BENCH: z.CARD_TEXT},
         "contracts": {z.BENCH: {"text": z.CONTRACT, "sha": hashlib.sha256(z.CONTRACT.encode()).hexdigest()}},
-        "runtime": {z.BENCH: dict(RUNTIME)}, "clients": {"solver": blocks, "roles": manifest.role_settings(p.ZEBRA_PC_V1),
+        "runtime": {z.BENCH: dict(RUNTIME)}, "clients": {"solver": blocks, "roles": manifest.role_settings(configuration),
         "routes": {"D": {"B": route}}}, "fixtures": {"sha256": digest(fixture_items())},
         "provenance": provenance_value}
-    return manifest.make(out, evidence="smoke" if smoke_chain else p.REAL_RUN_EVIDENCE[p.ZEBRA_PC_V1],
+    return manifest.make(out, evidence="smoke" if smoke_chain else p.REAL_RUN_EVIDENCE[configuration],
                          measured=checked["measured"], limits={k: sandbox.Limits(**v) for k, v in checked["limits"].items()},
-                         configuration=p.ZEBRA_PC_V1, environment_found=environment_found, **kwargs)
+                         configuration=configuration, environment_found=environment_found, **kwargs)
 
 
 def _s1(setting, chain):
+    configuration = p.configuration_of(setting)
     first = chains.first_call(setting, chain)
     roles = {}
     for role in ("engineer", "examiner", "describer", "leakage"):
@@ -168,7 +173,7 @@ def _s1(setting, chain):
         def work(attempt, role=role, name=name):
             endpoint = units.role_endpoint(setting, chain, role, z.BENCH, 1)
             if role == "engineer":
-                endpoint = units._bounded_endpoint(endpoint, p.ENGINEER_MAX_TOKENS[p.ZEBRA_PC_V1])
+                endpoint = units._bounded_endpoint(endpoint, p.ENGINEER_MAX_TOKENS[configuration])
             recorder = endpoint.recorder(label=name)
             receipt = endpoint.send(p.FIRST_CALL_SYSTEM, p.FIRST_CALL_USER, recorder)
             result = {"passed": receipt.get("ok") is True and receipt.get("returned_model") == p.ROLE_MODEL,
@@ -179,13 +184,14 @@ def _s1(setting, chain):
             return result
         done = units.run_unit(safe_path(setting.root) / chain / "lean-smoke" / "S1-roles" / role,
                               run=setting.run, identity={"unit": name}, work=work, evidence=setting.evidence,
-                              configuration=p.ZEBRA_PC_V1)
+                              configuration=configuration)
         roles[role] = done["result"]
     return {"passed": first["passed"] and all(row["passed"] for row in roles.values()), "roles": roles,
             "solver_confirmation": first[p.RECORD_HASH]}
 
 
 def _s2(setting, chain):
+    configuration = p.configuration_of(setting)
     tasks = z.slices(setting.pools[z.BENCH])["smoke"]
     name = "%s/zebra-smoke/S2" % chain
     base = safe_path(setting.root) / chain / "lean-smoke" / "S2"
@@ -209,20 +215,20 @@ def _s2(setting, chain):
                 "tokens_per_cell": measured["actual"] / 10,
                 "settled_tokens": sum(s.get("charged", 0) for c in cells for s in c["sends"])}
     return units.run_unit(base, run=setting.run, identity={"unit": name}, work=work, evidence=setting.evidence,
-                          configuration=p.ZEBRA_PC_V1, drain=units.drainer(setting, chain, name))["result"]
+                          configuration=configuration, drain=units.drainer(setting, chain, name))["result"]
 
 
-def _scope_cells(chain):
+def _scope_cells(chain, configuration=p.ZEBRA_PC_V1):
     """The Zebra schedule prices every redo kind, including all six paired training rounds."""
-    scopes = smoke._scope_cells(chain, p.ZEBRA_PC_V1)
+    scopes = smoke._scope_cells(chain, configuration)
     redo, totals = [], {}
-    for k, bench in enumerate(p.PILOTS[p.ZEBRA_PC_V1]["order"], 1):
+    for k, bench in enumerate(p.PILOTS[configuration]["order"], 1):
         for kind in budgets.STEP_KINDS:
             redo.extend(cells for cells in scopes[budgets.solver_scopes(chain, bench, k, kind, 2)[-1]] if cells)
-            for b, (card, proc) in p.CONFIG_SCHEDULE_CELLS[p.ZEBRA_PC_V1][bench][kind].items():
+            for b, (card, proc) in p.CONFIG_SCHEDULE_CELLS[configuration][bench][kind].items():
                 was = totals.get(b, (0, 0))
                 totals[b] = (was[0] + card, was[1] + proc)
-    for b, (card, proc) in p.TEST_READ_CELLS[p.ZEBRA_PC_V1].items():
+    for b, (card, proc) in p.TEST_READ_CELLS[configuration].items():
         was = totals.get(b, (0, 0))
         totals[b] = (was[0] + card, was[1] + proc)
     scopes[chain + ":redo"] = redo
@@ -231,33 +237,34 @@ def _scope_cells(chain):
     return scopes
 
 
-def projection(s2, chain):
+def projection(s2, chain, configuration=p.ZEBRA_PC_V1):
     """Measured card-cell costs; procedure costs remain explicitly assumed at the registered high factor."""
+    require(p.is_zebra(configuration), "A registered ZebraLogic configuration")
     card = s2["tokens_per_cell"]
     require(card > 0 and s2["items"] == 10, "S-E6 needs ten measured cells")
     ratio = s2["settled_tokens"] / s2["measurements"]["actual"]
     proc = card * float(p.PROCEDURE_ARM_FACTOR[1])
     size = s2["measurements"]["request_bytes"][z.BENCH]
     reserve = reservation(size, p.ledger_bound(p.CHAINS[chain], z.BENCH, branch="E" if chain == "D" else None))
-    caps = budgets.chain_caps(chain, p.ZEBRA_PC_V1)
+    caps = budgets.chain_caps(chain, configuration)
     scopes = {}
-    for scope, alternatives in _scope_cells(chain).items():
+    for scope, alternatives in _scope_cells(chain, configuration).items():
         estimate = max((sum(card * c + proc * q for c, q in cells.values()) for cells in alternatives), default=0)
         need = math.ceil(estimate * ratio + reserve)
         scopes[scope] = {"projected": need, "cap": caps[scope], "passed": need <= caps[scope]}
-    return {"passed": all(v["passed"] for v in scopes.values()), "configuration": p.ZEBRA_PC_V1,
+    return {"passed": all(v["passed"] for v in scopes.values()), "configuration": configuration,
             "chain": chain, "per_cell": {z.BENCH: {"card": card, "procedure": proc, "procedure_assumed": True}},
             "ratio": ratio, "scopes": scopes, "read_estimate": math.ceil(ratio * (200 * card + 1_000 * proc)),
             "other_chain": "not_projected; requires its own smoke"}
 
 
-def run_stage(manifest_path, chain, stage, *, docker=None, transport=None):
+def run_stage(manifest_path, chain, stage, *, docker=None, transport=None, configuration=p.ZEBRA_PC_V1):
     """S1 first calls; S2 ten card cells; S3 one fixture training round; SE6 measured projection."""
     require(stage in STAGES and chain in p.CHAINS, "A lean smoke stage and chain")
     m = manifest.load(manifest_path, docker=docker)
-    require(m["configuration"] == p.ZEBRA_PC_V1 and m["evidence"] == "smoke", "An isolated zebra smoke manifest")
+    require(p.is_zebra(configuration) and m["configuration"] == configuration and m["evidence"] == "smoke", "An isolated zebra smoke manifest")
     setting = manifest.setting_of(m, chain, path=manifest_path, docker=docker, transport=transport)
-    setting.budget.declare({**budgets.chain_caps(chain, p.ZEBRA_PC_V1), **budgets.first_call_caps(chain)})
+    setting.budget.declare({**budgets.chain_caps(chain, configuration), **budgets.first_call_caps(chain)})
     root = safe_path(setting.root) / chain / "lean-smoke"
     with exclusive(root / ".stage-lock"):
         path = root / (stage + ".json")
@@ -275,13 +282,13 @@ def run_stage(manifest_path, chain, stage, *, docker=None, transport=None):
             services = manifest.services_of(m, chain, setting=setting, transport=transport)
             value = smoke_roles.zebra_training(setting, services, chain, fixture_items())
         else:
-            value = projection(previous["S2"], chain)
-        written = p.record("zebra-smoke-stage", "smoke", {"configuration": p.ZEBRA_PC_V1, "chain": chain,
+            value = projection(previous["S2"], chain, configuration)
+        written = p.record("zebra-smoke-stage", "smoke", {"configuration": configuration, "chain": chain,
                             "manifest": m[p.RECORD_HASH], "stage": stage, "result": value})
         write_json(path, written)
         if stage == "SE6":
             write_json(root / "result.json", p.record("zebra-smoke-result", "smoke", {
-                "configuration": p.ZEBRA_PC_V1, "chain": chain, "manifest": m[p.RECORD_HASH],
+                "configuration": configuration, "chain": chain, "manifest": m[p.RECORD_HASH],
                 "stages": list(STAGES), "passed": value["passed"], "read_estimate": value["read_estimate"],
                 "s0": m["data"]["s0_sha256"], "manifest_path": str(safe_path(manifest_path)),
                 "snapshot_sha256": m["data"]["snapshot_sha256"], "sealed_reads": 0}))
@@ -290,7 +297,7 @@ def run_stage(manifest_path, chain, stage, *, docker=None, transport=None):
 
 def _checked_stage(path, m, chain, stage):
     value = p.verified(read_json(path), "zebra-smoke-stage")
-    require(value.get("configuration") == p.ZEBRA_PC_V1 and value.get("manifest") == m[p.RECORD_HASH]
+    require(value.get("configuration") == m.get("configuration", p.ZEBRA_PC_V1) and value.get("manifest") == m[p.RECORD_HASH]
             and value.get("chain") == chain and value.get("stage") == stage,
             "A smoke stage belongs to this manifest, chain, configuration and stage")
     return value

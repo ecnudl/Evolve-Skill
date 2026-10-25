@@ -123,7 +123,7 @@ from .chain import EXIT_AWAITING, EXIT_COMPLETE, EXIT_PAUSED, unit_root as read_
 from .errors import CleanupUnconfirmed, stop_kind
 from .manifest import setting_of
 from .package import Package, empty, load
-from .profiles import (BENCHES, SUPPORTED_BENCHES, ZEBRA_PC_V1, read_benches, CANARIES, CHAINS, CONFIGURATIONS, CONSENT_FIELDS, FORMAL_ADDENDUM,
+from .profiles import (BENCHES, SUPPORTED_BENCHES, ZEBRA_PC_V1, is_zebra, read_benches, CANARIES, CHAINS, CONFIGURATIONS, CONSENT_FIELDS, FORMAL_ADDENDUM,
                        FORMAL_ADDENDUM_DOCUMENT, INFRA_UNKNOWN_MAX, OFFICEQA_TEST_BLOCKS, ORDER, OWNER_CONTINUATION,
                        RECORD_HASH, STAGE_ARM, STAGE_READ, TEST_RUNS, configuration_of, discourage_tag, ledger_bound,
                        order_of, read_arms_of, record, round_tag, verified)
@@ -747,7 +747,7 @@ def _checked(value, *, configuration=None):
         isinstance(c, dict) and set(c) == {"chars", "sha256_16"} and type(c["chars"]) is int
         and c["chars"] >= MIN_CANARY_CHARS and re.fullmatch(r"[0-9a-f]{%d}" % CANARY_HEX, str(c["sha256_16"]))
         for c in found), "Registered canaries are lengths with sha256 prefixes")
-    benches = ("zebralogic",) if configuration == ZEBRA_PC_V1 else BENCHES
+    benches = ("zebralogic",) if is_zebra(configuration) else BENCHES
     require(isinstance(counts, dict) and counts and set(counts) <= set(benches) and all(
         type(n) is int and n > 0 for n in counts.values()) and sum(counts.values()) == len(found),
         "Registered canaries are counted per bench")
@@ -761,7 +761,7 @@ def _canary_records(root, *, read, configuration=None):
     before it is made (refused when ``read``). ``configuration`` comes from the verified run manifest or Setting;
     without one the historical two-record validation applies, never a branch selected by record content."""
     root = safe_path(root)
-    if configuration == ZEBRA_PC_V1:
+    if is_zebra(configuration):
         require((root / READ_CANARIES).is_file(), "The isolated test read's canaries are not made yet")
         isolated = verified(read_json(root / READ_CANARIES), "test-read-canaries")
         require(isolated.get("configuration") == configuration and set(isolated["counts"]) == {"zebralogic"}
@@ -815,9 +815,9 @@ def make_read_canaries(root, pinned, *, pools, run, evidence, panel=data.test_pa
     record (``extends``: its record hash) and names the run, the consent's hash and each panel's hash. Prints nothing;
     returns the record. ``panel``: the frozen ``data.test_panel`` (a unit test passes a synthetic one)."""
     root = safe_path(root)
-    if configuration == ZEBRA_PC_V1:
+    if is_zebra(configuration):
         require(tuple(order) == ("zebralogic",), "The trusted ZebraLogic run has one benchmark")
-        return _make_zebra_canaries(root, pinned, pools=pools, run=run, evidence=evidence, panel=panel)
+        return _make_zebra_canaries(root, pinned, pools=pools, run=run, evidence=evidence, panel=panel, configuration=configuration)
     allowed = consent(root / "shared")
     first, _ = _canary_records(root, read=False, configuration=configuration)
     path = root / READ_CANARIES
@@ -1796,10 +1796,10 @@ def unseal(root, chain_root, chain, unit_roots, *, run, evidence, clock=_now, co
             **({"stages": stages} if stages else {})}
 
 
-def _make_zebra_canaries(root, pinned, *, pools, run, evidence, panel):
+def _make_zebra_canaries(root, pinned, *, pools, run, evidence, panel, configuration=ZEBRA_PC_V1):
     """The single-panel canary record is created only under end-of-chain read consent."""
     from . import zebralogic
-    allowed = consent(root / "shared", ZEBRA_PC_V1)
+    allowed = consent(root / "shared", configuration)
     require(set(pools or {}) == {"zebralogic"}, "Only the ZebraLogic training pool is visible")
     if panel is data.test_panel:
         panel = zebralogic.test_panel
@@ -1813,14 +1813,14 @@ def _make_zebra_canaries(root, pinned, *, pools, run, evidence, panel):
             skip = training_duplicates(texts, {"zebralogic": [t["public"]["question"] for t in training]})
             found, counts = select_canaries(texts, skip=skip)
             write_json(path, record("test-read-canaries", evidence, {
-                "configuration": ZEBRA_PC_V1, "canaries": found, "counts": counts,
+                "configuration": configuration, "canaries": found, "counts": counts,
                 "per_bench": CANARIES_PER_BENCH, "seed_tag": CANARY_TAG,
                 "sources": {"zebralogic": "the public question"},
                 "skipped": {"zebralogic": len(skip["zebralogic"])},
                 "training_pools": {"zebralogic": entry["sha256"]}, "unit": READ_CANARY_UNIT,
                 "run": run, "panels": {"zebralogic": report["panel_hash"]},
                 "consent_sha256": digest(allowed), "extends": None}))
-        value, second = _canary_records(root, read=True, configuration=ZEBRA_PC_V1)
+        value, second = _canary_records(root, read=True, configuration=configuration)
     require(second is None and value.get("run") == run and value.get("consent_sha256") == digest(allowed),
             "The isolated read canaries belong to this run and consent")
     return value

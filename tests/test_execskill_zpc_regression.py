@@ -3,6 +3,7 @@
 Golden values were generated from /tmp/zebra-pc-writer-baseline before this patch;
 future runs need no external checkout. All items, responses, procedures and cells
 are engineering fixtures. No subprocess, socket, Docker or model is used by tests.
+Zebra v1 goldens were separately generated from /tmp/zpc-v24-before before v2.4 edits.
 """
 from __future__ import annotations
 
@@ -68,7 +69,8 @@ def legacy_snapshot(root):
     structures = {"parent": parent.to_json(), "candidate": candidate.to_json(),
                   "procedures": [p.to_json() for p in candidate.procedures],
                   "scope": {p.id: describer._scope(p, ()) for p in candidate.procedures},
-                  "policy": {v: policy.policy_sha256(version=v) for v in policy.POLICIES},
+                  "policy": {v: policy.policy_sha256(version=v)
+                             for v in (policy.POLICY_VERSION, policy.POLICY_VERSION_V23)},
                   "lexicon": notes.lexicon_record()}
     requests = {}
     for bench, view in {
@@ -118,6 +120,80 @@ def byte_sha(value):
                                      allow_nan=False).encode()).hexdigest()
 
 
+def zebra_v1_snapshot(root):
+    """By-value v1 registration, requests and records captured before the v2.4 extension."""
+    from contextlib import contextmanager
+    from skillopt.execskill import (acceptance, budgets, describer, engineer, manifest, policy,
+                                    profiles as p, reuse, solver, zebralogic as z)
+    from skillopt.execskill.package import empty, with_
+    from tests.execskill_fakes_env import FakeSandbox, Script
+    from tests.test_execskill_acceptance import make_cells
+    from tests.test_execskill_v23_engineer import context
+    from tests.test_execskill_zpc_adapter import answer, pool_rows
+    from tests.test_execskill_zpc_profile import procedure
+
+    name = p.ZEBRA_PC_V1
+    cuts = z.slices([z.normalize(item) for item in pool_rows()])
+    proc = procedure(z.BENCH, p.BENCHES)
+    parent = empty(step="D/s0", evidence="engineering_fixture")
+    candidate = with_(parent, step="D/s1-zebralogic/t1", add=[proc])
+    hook_table = {proc.id: {"applies": lambda view: True,
+                           "before_call": lambda view, state: {"table": [["House 1", "value 1 1"]]}}}
+
+    @contextmanager
+    def workers(package, item):
+        worker = FakeSandbox(hook_table).start(package, kind="cell")
+        try:
+            yield worker
+        finally:
+            worker.close()
+
+    records = {}
+    for mode in ("train", "single"):
+        base_ctx = context(name)
+        ctx = replace(base_ctx, bench=z.BENCH, mode=mode, round=1 if mode == "train" else 0,
+                      base=base_ctx.base if mode == "train" else None,
+                      label="D/s1-zebralogic/engineer")
+        _, result = (engineer.run_train if mode == "train" else engineer.run)(ctx)
+        records[mode] = {"record": result, "requests": ctx.roles.seen}
+
+    item = cuts["run"][0]
+    requests = {}
+    for arm, package in (("C", parent), ("S'", candidate)):
+        with workers(package, item["task_id"]) as worker:
+            requests[arm] = reuse.signature(z.BENCH, package, item["public"], worker,
+                                            card_text=z.CARD_TEXT, runtime={})
+            call = Script([answer(item)])
+            solved = solver.solve(z.BENCH, item["public"], z.CARD_TEXT, package, call,
+                                  worker=FakeSandbox(hook_table))
+            requests[arm].update(requests=call.requests, prediction=solved,
+                                 score=z.score(item["public"], item["private"], solved))
+
+    views = {item["task_id"]: item["public"] for item in cuts["accept"]}
+    trajectories = [{"cell": "D/s1-zebralogic/run/S/" + item["task_id"] + "/0",
+                     "task_id": item["task_id"], "bench": z.BENCH, "arm_kind": "parent",
+                     "calls": [{"purpose": "first", "user": z.render_user(item["public"])}],
+                     "shell": {"precheck": None}} for item in cuts["run"]]
+    sealed = acceptance.prepare(root.resolve() / "zpc-v1", chain="D", bench=z.BENCH,
+        step=candidate.step, unit="D/s1-zebralogic/accept", candidate=candidate, parent=parent,
+        views=views, blocks={item: "b1" for item in views}, workers=workers, trajectories=trajectories,
+        freshness=p.ACCEPT_FRESHNESS[name], mde=p.MDE_POINTS[z.BENCH], rule=p.ACCEPT_RULES[name],
+        reuse={"card_text": z.CARD_TEXT, "runtime": {}})
+    cells = make_cells(sealed, token=lambda job: "fail")
+    return {"registration": manifest._plain({
+                "features": {key: getattr(p, key).get(name, {"unregistered": True}) for key in FEATURES},
+                "registered": manifest.registered(name), "roles": manifest.role_settings(name),
+                "prompts": manifest.prompt_sha(name), "data": z.identity(),
+                "budgets": {chain: budgets.chain_caps(chain, name) for chain in p.CHAINS},
+                "slice_ids": {key: [item["task_id"] for item in items] for key, items in cuts.items()}}),
+            "engineer": records, "requests_and_score": requests,
+            "packages": {"parent": parent.to_json(), "candidate": candidate.to_json(),
+                         "procedure": proc.to_json(), "scope": describer._scope(proc, ()),
+                         "policy": policy.policy_sha256(version=policy.POLICY_VERSION_V23)},
+            "acceptance": {"sealed": sealed, "schedule": acceptance.schedule(sealed),
+                           "decision": acceptance.decide(cells, sealed)}}
+
+
 # Generated on the untouched base, not on the implementation being tested.
 BASELINE_SHA256 = {
   "acceptance": "60819c09496a395743a3ba26066f315a3efcbc7180e854c25ceb78db451a05bf",
@@ -130,6 +206,15 @@ BASELINE_SHA256 = {
   "training": "e3ed2a0cdb4242f4b2bf40ac5157f7f74ff50d34f433153db4614b56f92904c5"
 }
 
+# Generated with zebra_v1_snapshot against /tmp/zpc-v24-before, before v2.4 source edits.
+ZEBRA_V1_SHA256 = {
+    "registration": "131aa50cf006e6a3ed25abb3106196ad43930e29202e6c6a4809c4d38c47add1",
+    "engineer": "69618ad3cf7b68bf0d098387a772c6d53ebf74cef89bdb99b3bf8f28cc32da89",
+    "requests_and_score": "b43a39cb9e94cd7e607e4a756bdfa049776a9d829bdddde945eed4476d229e4d",
+    "packages": "d514195037bd073bb420bc22a33012c92742694cb00a21b88ecd367def93a171",
+    "acceptance": "528c5894e448c97c3e7fcec57e6c8c296cef49c0cf1c7e3a076166f60f2c75c3",
+}
+
 
 @pytest.fixture(scope="module")
 def legacy_bytes(tmp_path_factory):
@@ -139,6 +224,16 @@ def legacy_bytes(tmp_path_factory):
 @pytest.mark.parametrize("name", tuple(BASELINE_SHA256))
 def test_main_v23_and_all_older_profiles_keep_their_baseline_bytes(name, legacy_bytes):
     assert legacy_bytes[name] == BASELINE_SHA256[name]
+
+
+@pytest.fixture(scope="module")
+def zebra_v1_bytes(tmp_path_factory):
+    return {name: byte_sha(value) for name, value in zebra_v1_snapshot(tmp_path_factory.mktemp("zpc-v1")).items()}
+
+
+@pytest.mark.parametrize("name", tuple(ZEBRA_V1_SHA256))
+def test_zebra_v1_keeps_its_pre_v24_bytes(name, zebra_v1_bytes):
+    assert zebra_v1_bytes[name] == ZEBRA_V1_SHA256[name]
 
 
 def test_old_procedure_scope_does_not_expand_to_zebralogic():

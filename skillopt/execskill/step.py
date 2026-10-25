@@ -199,6 +199,7 @@ QUESTION_FIELDS = {"searchqa": "question", "officeqa": "question", "livemath": "
                    "spreadsheetbench": "instruction", "alfworld": "task_text",
                    "zebralogic": "question"}  # v2 feedback: the item's question
 FEEDBACK_TAG = "execskill-v2:feedback"  # the seeded order of a round's examples
+UNFIXED_FEEDBACK_TAG = "execskill-v2-4:unfixed"  # fixed seeded ordering, independent of pool/cell iteration
 EXERCISE = "exercise_last_candidate"  # SX only: no round adopted; the last evaluated candidate takes the acceptance
 
 
@@ -1286,6 +1287,9 @@ def _engineer_train(st, cut, r, incumbent, *, done, fed, history, training, lint
         stored += own
         parents = [t for t in own if t["arm_kind"] == "parent"]
         current, evaluated = _current(st, done), _evaluated(st, cut, fed)
+        reference_items = disclosed
+        if protocol.is_v24(configuration_of(st.setting)) and training is not None:
+            reference_items = disclosed | {entry["task_id"] for entry in training["unfixed_examples"]}
         routing = {}
         if protocol.CHECK_NON_FIRING[configuration_of(st.setting)]:
             _, _, publics = _training_publics(cut, generated, st.bench)
@@ -1298,7 +1302,7 @@ def _engineer_train(st, cut, r, incumbent, *, done, fed, history, training, lint
             ctx = engineer.Context(bench=st.bench, k=st.k, step=st.name, evidence=st.evidence, parent=incumbent,
                                    trajectories=stored, corpora=_corpora(st, cut), workers=st.services.workers,
                                    roles=st.roles("engineer"), label=name, card=st.setting.cards.get(st.bench, ""),
-                                   references=_references(st, cut, parents + current + evaluated, also=disclosed),
+                                   references=_references(st, cut, parents + current + evaluated, also=reference_items),
                                    inputs_dirs=inputs,
                                    detectors=detectors.counts(detectors.diagnosis(parents, bench=st.bench)),
                                    previous=_previous(st), mode=TRAIN, round=r, base=st.parent, current=current,
@@ -1446,7 +1450,50 @@ def _last_reply(trajectory):
     return replies[-1] if replies else ""
 
 
-def _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells, made):
+def _unfixed_examples(st, cut, unit, verdict, cells, made, current):
+    """v2.4: actual candidate outputs on unresolved run items, with explicitly identical-current requests labelled.
+
+    Generated and non-run trajectories are never eligible. A T2 skip has no new response; its equal request can show
+    the incumbent's already delivered notes and answer, without presenting that response as a new candidate call.
+    """
+    from .engineer_payload import reference_excerpt
+
+    keys = _run_keys(st, cut)
+    fixed = set(verdict["fixed"])
+    identical = set(verdict.get("identical", ())) & keys
+    candidates = {}
+    for (arm, key), found in cells.items():
+        if arm == "S'" and key in keys and key not in fixed:
+            candidates[key] = [(made[c["cell"]["id"]], "candidate") for c in found
+                               if c["cell"]["id"] in made]
+    for trajectory in current:
+        key = trajectory["task_id"]
+        if key in identical and key not in fixed:
+            candidates.setdefault(key, []).append((trajectory, "identical_current"))
+    chosen = {}
+    for key, entries in candidates.items():
+        # Prefer an actually failed run when an item has more than one registered run.
+        ordered = sorted(entries, key=lambda entry: (entry[0]["token"] != "fail", entry[0].get("run", 0),
+                                                       entry[0]["cell"]))
+        if ordered:
+            chosen[key] = ordered[0]
+    order = ranked([{"task_id": key} for key in chosen], SEED, UNFIXED_FEEDBACK_TAG + ":" + st.label(unit))
+    order.sort(key=lambda entry: (chosen[entry["task_id"]][1] != "candidate"
+                                  or chosen[entry["task_id"]][0]["token"] != "fail",
+                                  chosen[entry["task_id"]][0]["token"] != "fail"))
+    selected = [entry["task_id"] for entry in order[:4]]
+    references = _references(st, cut, [chosen[key][0] for key in selected], also=selected)
+    out = []
+    for key in selected:
+        trajectory, source = chosen[key]
+        out.append({"task_id": key, "cell": trajectory["cell"], "token": trajectory["token"], "source": source,
+                    "notes": (_notes_text(trajectory) or "no notes")[:1000],
+                    "answer": _last_reply(trajectory)[:500],
+                    "reference": reference_excerpt(references[key]) if key in references else "reference unavailable"})
+    return out
+
+
+def _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells, made, *, current=()):
     """v2: the engineer's view of one training round (module docstring): the totals and, per procedure the candidate
     adds, removes or narrows against the incumbent, the evaluated run-slice items it is enabled on (the candidate's
     routing; the incumbent's for a removed or narrowed one) with how many it fixed and broke and up to
@@ -1497,15 +1544,19 @@ def _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells, made)
                            "fixed": sum(key in fixed for key in on), "broken": sum(key in broken for key in on),
                            "examples": shown})
     generated = [i for i in verdict["fixed"] + verdict["broken"] if i not in by_key]
-    return {"adopted": verdict["adopted"], "reason": verdict["reason"], "items": verdict["items"],
+    value = {"adopted": verdict["adopted"], "reason": verdict["reason"], "items": verdict["items"],
             "fixed": len(fixed), "broken": len(broken), "net": verdict["net"], "need": verdict["need"],
             "p_sign": verdict["p_sign"], "guards": verdict["guards"],
             "generated": {"items": verdict["generated"], "fixed": sum(i in set(verdict["fixed"]) for i in generated),
                           "broken": sum(i in set(verdict["broken"]) for i in generated)},
             "procedures": procedures}
+    if protocol.is_v24(configuration_of(st.setting)):
+        value.update({"unfixed_examples": _unfixed_examples(st, cut, unit, verdict, cells, made, current),
+                      "identical_items": sorted(set(verdict.get("identical", ())) & set(by_key))})
+    return value
 
 
-def _train_eval(st, cut, r, incumbent, candidate, generated):
+def _train_eval(st, cut, r, incumbent, candidate, generated, *, current=None):
     """v2's unit ``train-r<r>`` (module docstring): the routing pass, both packages on the items they route
     differently (run items with the registered runs, the admitted G_self items once), ``train_verdict`` and the
     feedback. Returns the unit's result."""
@@ -1561,8 +1612,11 @@ def _train_eval(st, cut, r, incumbent, candidate, generated):
                                                  if any(f.get("procedure") in changed for f in arms["S'"]["faults"])]
                                                 if signatures is not None else None),
                                 **({"identical": identical, "runs": runs} if signatures is not None else {}))
+        feedback_args = {}
+        if protocol.is_v24(configuration_of(st.setting)):
+            feedback_args["current"] = _run_trajectories(st, parent_only=True) if current is None else current
         feedback = _feedback(st, cut, unit, verdict, routed, incumbent, trained, cells,
-                             _attempt_trajectories(attempt))
+                             _attempt_trajectories(attempt), **feedback_args)
         out = {"learning": TRAIN, "round": r, "incumbent_sha256": incumbent.sha256,
                "candidate_sha256": trained.sha256, "routed": len(views), "differs": len(differs),
                "cells": len(found), "adopted": verdict["adopted"], "verdict": verdict, "feedback": feedback}
@@ -1624,7 +1678,9 @@ def _train(st, cut, generated):
         lint, evaluated = list(sealed["lint"]), None
         if engineered["candidate_sha256"] is not None:
             candidate = _package(st, engineered["candidate_sha256"])
-            evaluated = _train_eval(st, cut, r, incumbent, candidate, generated)
+            evaluated = _train_eval(st, cut, r, incumbent, candidate, generated,
+                                    **({"current": _current(st, done)}
+                                       if protocol.is_v24(configuration_of(st.setting)) else {}))
             if evaluated["candidate_sha256"] != candidate.sha256:  # v2.2: idle procedures were pruned
                 candidate = _package(st, evaluated["candidate_sha256"])
             done.append(("train-r%d" % r, evaluated["adopted"]))
@@ -1634,13 +1690,18 @@ def _train(st, cut, generated):
             if evaluated["adopted"]:
                 incumbent = candidate
         line = _line(r, engineered, evaluated)
+        if protocol.is_v24(configuration_of(st.setting)):
+            line["patience_counted"] = line["candidate"]
         history.append(line)
         out.append({**line, "candidate_sha256": engineered["candidate_sha256"] if evaluated is None
                     else evaluated["candidate_sha256"],  # v2.2 (Codex review MINOR 2): the package the cells ran
                     **({key: evaluated[key] for key in ("proposed_sha256", "pruned")}
                        if evaluated is not None and "proposed_sha256" in evaluated else {}),
                     "incumbent_sha256": incumbent.sha256})
-        misses = 0 if line["adopted"] else misses + 1
+        if protocol.is_v24(configuration_of(st.setting)):
+            misses = 0 if line["adopted"] else misses + int(line["patience_counted"])
+        else:
+            misses = 0 if line["adopted"] else misses + 1
         if misses >= TRAIN_PATIENCE:
             break
     return incumbent, out, last

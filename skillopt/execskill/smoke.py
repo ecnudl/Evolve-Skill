@@ -1231,7 +1231,7 @@ def run_stage(spec, manifest_path, stage, *, fake=False, env_path=None, roles_re
     require(stage in BUILT_STAGES, "Smoke stage %s is not run by run_stage (built: %s)" % (stage, BUILT_STAGES))
     require(not (safe_path(spec["root"]) / STAGES_DIR / (stage + ".json")).exists(), "Stage %s is recorded" % stage)
     m = manifest.load(manifest_path, verify=False)
-    require(m["configuration"] != protocol.ZEBRA_PC_V1, "Use zpc-smoke for the ZebraLogic profile")
+    require(not protocol.is_zebra(m["configuration"]), "Use zpc-smoke for the ZebraLogic profile")
     require(m["evidence"] == manifest.SMOKE_EVIDENCE and m["root"] == spec["root"], "The smoke manifest of this spec")
     if fake:
         rehearsal_roots(spec)  # registrar addendum 15:0x: a rehearsal never records into the registered smoke root
@@ -1327,6 +1327,9 @@ def max_role_calls(configuration=protocol.PILOT):
 def engineer_request_floor(configuration=protocol.PILOT):
     """``ENGINEER_REQUEST_FLOOR`` with the configuration's engineer prompt (v2: the longer of ``ENGINEER_SYSTEM_V2``
     and the analysts' ``ANALYST_SYSTEM``, both engineer-role calls). v2.3 also pins its single-mode smoke prompt."""
+    if protocol.is_v24(configuration):
+        return protocol.ROLE_INPUT_BYTES + max(len(prompt.encode()) for prompt in (
+            engineer.ENGINEER_SYSTEM_ZPC_V24, engineer.ENGINEER_SYSTEM_SINGLE_ZPC_V24, engineer.ANALYST_SYSTEM))
     if configuration == protocol.ZEBRA_PC_V1:
         return protocol.ROLE_INPUT_BYTES + max(len(prompt.encode()) for prompt in (
             engineer.ENGINEER_SYSTEM_ZPC, engineer.ENGINEER_SYSTEM_SINGLE_ZPC, engineer.ANALYST_SYSTEM))
