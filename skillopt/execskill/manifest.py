@@ -202,9 +202,11 @@ def prompt_sha(configuration=None):
                                           else engineer.ENGINEER_PROMPT_V2_SHA256), "analyst": engineer.ANALYST_PROMPT_SHA256,
                      "examiner": dict(examiner.PROMPT_V2_SHA256)}
     if protocol.is_zebra(configuration):
-        out["engineer"] = (engineer.ENGINEER_PROMPT_SINGLE_ZPC_V24_SHA256 if protocol.is_v24(configuration)
+        out["engineer"] = (engineer.ENGINEER_PROMPT_SINGLE_ZPC_V25_SHA256 if protocol.is_v25(configuration) else
+                           engineer.ENGINEER_PROMPT_SINGLE_ZPC_V24_SHA256 if protocol.is_v24(configuration)
                            else engineer.ENGINEER_PROMPT_SINGLE_ZPC_SHA256)
-        out["v2"]["engineer"] = (engineer.ENGINEER_PROMPT_ZPC_V24_SHA256 if protocol.is_v24(configuration)
+        out["v2"]["engineer"] = (engineer.ENGINEER_PROMPT_ZPC_V25_SHA256 if protocol.is_v25(configuration) else
+                                 engineer.ENGINEER_PROMPT_ZPC_V24_SHA256 if protocol.is_v24(configuration)
                                  else engineer.ENGINEER_PROMPT_ZPC_SHA256)
     return out
 
@@ -374,7 +376,9 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
                     "limits": {k: asdict(v) for k, v in sorted(limits.items())}, "measured": measured},
         "code": pin_code(), "loaded_code": sorted(loaded_code()),
         "environment": environment() if environment_found is None else environment_found}
-    record = check(protocol.record(KIND + ("-v2-4" if protocol.is_v24(configuration) else "-v2-3" if protocol.is_v23(configuration) else ""), evidence, fields))
+    suffix = ("-v2-5" if protocol.is_v25(configuration) else "-v2-4" if protocol.is_v24(configuration)
+              else "-v2-3" if protocol.is_v23(configuration) else "")
+    record = check(protocol.record(KIND + suffix, evidence, fields))
     write_json(out, record)
     return record
 

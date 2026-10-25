@@ -25,7 +25,8 @@ VERSION = "identical-request-classes-v2-3"
 BENCHES = ("searchqa", "officeqa", "livemath", "spreadsheetbench", "zebralogic")
 
 
-def signature(bench, package, view, worker, *, card_text="", runtime=None, withhold=(), restore=(), placebo=None):
+def signature(bench, package, view, worker, *, card_text="", runtime=None, withhold=(), restore=(), placebo=None,
+              note_observer=None):
     """The exact first request hash, post-call identity and faults using an already started item worker."""
     require(bench in BENCHES, "ALFWorld has no zero-call request identity")
 
@@ -37,6 +38,9 @@ def signature(bench, package, view, worker, *, card_text="", runtime=None, withh
     shell.started = worker is not None
     shell.route_on(view)
     text, names = shell.before(view, solver._public_text(view))
+    if note_observer is not None:
+        # v2.5 training observes this already executed shell transiently; request identity stays unchanged.
+        note_observer(shell, text)
     request = dict(view)
     if text:
         request[NOTES_KEY] = text

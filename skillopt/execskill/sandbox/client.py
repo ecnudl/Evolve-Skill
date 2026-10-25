@@ -505,7 +505,8 @@ class Worker:
                 k: ping.get(k) for k in ("worker", "worker_sha256", "hashseed", "policy_sha256")})
         entries = [e for e in self._entries if e["id"] not in self.dropped]
         versions = {e.get("policy_version", policy.POLICY_VERSION) for e in entries}
-        version = (policy.POLICY_VERSION_V24 if policy.POLICY_VERSION_V24 in versions else
+        version = (policy.POLICY_VERSION_V25 if policy.POLICY_VERSION_V25 in versions else
+                   policy.POLICY_VERSION_V24 if policy.POLICY_VERSION_V24 in versions else
                    policy.POLICY_VERSION_V23 if policy.POLICY_VERSION_V23 in versions else policy.POLICY_VERSION)
         modern = version != policy.POLICY_VERSION
         reply = self._exchange({"op": "load", "package_sha256": self.package.sha256,

@@ -473,7 +473,25 @@ def screened_note(procedure, bench, view, result):
     return visible
 
 
-def claimed_tests(procedure, entries, outcomes, actual):
+NO_RENDERED_NOTE = "no rendered note (nothing survived screening and rendering)"
+
+
+def rendered_note(test, entries, outcomes, shown_cells):
+    """v2.5: the exact original-outcome text tested by holds, only for a shown, verified run cell."""
+    if not isinstance(test, dict) or not isinstance(test.get("property"), dict):
+        return None
+    prop, cell = test["property"], test.get("trajectory")
+    if (prop.get("kind") not in ("note_contains", "note_matches") or type(cell) is not str
+            or cell not in shown_cells or cell not in entries):
+        return None
+    outcome = outcomes.get(cell)
+    if outcome is None or outcome.cell != cell or outcome.bench != entries[cell]["bench"]:
+        return None
+    text = outcome.note(test.get("hook"), prop.get("step"))
+    return text[:1500] if text else NO_RENDERED_NOTE
+
+
+def claimed_tests(procedure, entries, outcomes, actual, *, shown_cells=None):
     """v2.4 C5b: every declared fix claim holds under the same validation/property evaluator as lint."""
     claimed, failed = 0, []
     for test in procedure.replay_tests:
@@ -484,12 +502,21 @@ def claimed_tests(procedure, entries, outcomes, actual):
         if why is None and holds(test["property"], test["hook"], outcomes.get(test["trajectory"])):
             continue
         prop = test.get("property") if isinstance(test.get("property"), dict) else {}
-        calls = actual.get(test.get("trajectory"), ()) if type(test.get("trajectory")) is str else ()
+        cell = test.get("trajectory")
+        disclose = shown_cells is None or (type(cell) is str and cell in shown_cells and cell in entries)
+        calls = actual.get(cell, ()) if type(cell) is str and disclose else ()
         found = [call for call in calls if call["hook"] == test.get("hook") and call["step"] == prop.get("step")]
-        failed.append({"id": test.get("id"), "hook": test.get("hook"), "property": prop,
+        failure = {"id": test.get("id"), "hook": test.get("hook"), "property": prop,
                        "reason": why or "test_failed", "actual":
                        {k: v for k, v in found[0].items() if k not in ("hook", "step")} if found else
-                       {"status": "not_called", "reason": "hook_not_reached"}})
+                       {"status": "not_called", "reason": "hook_not_reached"}}
+        if not disclose:
+            failure["actual"] = {"status": "withheld", "reason": "trajectory_not_shown"}
+        if shown_cells is not None and why is None:
+            text = rendered_note(test, entries, outcomes, shown_cells)
+            if text is not None:
+                failure["rendered_note"] = text
+        failed.append(failure)
     return not failed, {"claimed": claimed, "failed": failed}
 
 

@@ -698,6 +698,9 @@ def handle_load(request, state, policy):
     package = request.get("package_sha256")
     versions = ((policy.POLICY_VERSION, policy.POLICY_VERSION_V23, policy.POLICY_VERSION_V24)
                 if version == policy.POLICY_VERSION_V24 else (policy.POLICY_VERSION, version))
+    if version == policy.POLICY_VERSION_V25:
+        versions = (policy.POLICY_VERSION, policy.POLICY_VERSION_V23, policy.POLICY_VERSION_V24,
+                    policy.POLICY_VERSION_V25)
     if limits is None or type(package) is not str or not isinstance(entries, list) or not all(
             isinstance(e, dict) and {"id", "source", "hooks"} <= set(e) <= {"id", "source", "hooks", "policy_version"}
             and e.get("policy_version", policy.POLICY_VERSION) in versions

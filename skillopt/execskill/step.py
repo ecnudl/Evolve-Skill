@@ -156,7 +156,7 @@ from skillopt.continual_eval import spreadsheet_compat
 from skillopt.continual_eval.core import read_json, require, safe_path, write_json
 from skillopt.validator_pilot.api import digest
 
-from . import (acceptance, budgets, describer, detectors, donors, engineer, examiner, exclusion, generators,
+from . import (acceptance, budgets, describer, detectors, donors, engineer, examiner, exclusion, generators, notes,
                profiles as protocol,
                replay, research, rounds, router, solver, supply, trajectories, units, reuse as request_reuse)
 from .corpus import Corpus
@@ -1137,7 +1137,7 @@ def selftest_verdict(cells, sets, changed, *, identical=None, request_faults=Non
                                    if identical is not None else {})}
 
 
-def _pair_signatures(st, candidate, parent, publics, views):
+def _pair_signatures(st, candidate, parent, publics, views, *, note_coverage=None):
     """v2.3: the two exact requests and post-call identities on full public views, with zero model calls."""
     if st.bench not in request_reuse.BENCHES:
         return {}
@@ -1146,8 +1146,15 @@ def _pair_signatures(st, candidate, parent, publics, views):
         out[item] = {}
         for arm, package in (("S'", candidate), ("S", parent)):
             with workers(package, item) as worker:
+                observe = {}
+                if note_coverage is not None:
+                    def capture(shell, text):
+                        note_coverage.setdefault(item, {})[arm] = _shown_note_fields(
+                            st.bench, package, shell.notes, view, text)
+                    observe = {"note_observer": capture}
                 out[item][arm] = request_reuse.signature(st.bench, package, view, worker,
-                                                       card_text=st.setting.cards.get(st.bench, ""), runtime=st.runtime())
+                                                       card_text=st.setting.cards.get(st.bench, ""), runtime=st.runtime(),
+                                                       **observe)
     return out
 
 
@@ -1450,6 +1457,83 @@ def _last_reply(trajectory):
     return replies[-1] if replies else ""
 
 
+def _shown_note_fields(bench, package, stored, view, delivered):
+    """v2.5 Zebra: attribute the exact final request's notes using stored screened fields, never executing hooks.
+
+    Shell note records precede assembly, so a rendered note can still be omitted by either cap. Reconstruct that
+    deterministic assembly in stored package order and require its text to match the request before counting it.
+    """
+    require(bench == "zebralogic", "v2.5 note coverage is registered only for ZebraLogic")
+    entries, fields = [], {}
+    for note in stored:
+        require(note["hook"] == "before_call" and note["id"] in package.order,
+                "Zebra coverage uses the source package's first-note hooks")
+        procedure = package.get(note["id"])
+        kept = notes.Screened(note["fields"], solver._public_text(view))
+        text = notes.render(kept, bench=bench, header=procedure.header) if kept else ""
+        label = procedure.id + "/" + note["hook"]
+        entries.append((label, text, procedure.max_note_chars))
+        fields[label] = {name for name in notes.FIELD_ORDER if kept.get(name)}
+    assembled, skipped = notes.assemble(entries, bench=bench)
+    require(assembled == delivered, "Coverage notes must match the actual solver request")
+    omitted, shown = {entry["procedure"] for entry in skipped}, {}
+    for label, text, _ in entries:
+        if text and label not in omitted:
+            shown.setdefault(label.split("/")[0], set()).update(fields[label])
+    return shown
+
+
+def _coverage_request(trajectory):
+    """A delivered first request (including a truncated response), else no evidence that notes reached the solver."""
+    calls = trajectory.get("calls") or []
+    if not calls or (calls[0].get("receipt") or {}).get("delivery") not in ("delivered", "truncated"):
+        return None
+    return calls[0]
+
+
+def _notes_coverage(st, pid, enabled, candidate, cells, made, current, identical, captured):
+    """Counts per distinct candidate-enabled run item, unioning repeated cells; faults are own-fault items.
+
+    T2 rows use the incumbent's actual delivered request, with candidate attribution observed during the existing
+    zero-call signature shell. This handles changed procedure IDs without crediting an unrelated incumbent note.
+    The transient capture contains field names only and never enters a record or engineer prompt.
+    """
+    out = {"items": len(enabled), "with_notes": 0, "fields": {name: 0 for name in notes.FIELD_ORDER}, "faults": 0}
+    for key in enabled:
+        fields, fault = set(), False
+        if key in identical:
+            same = captured.get(key)
+            require(same is not None, "An identical coverage row needs its candidate signature observation")
+            for trajectory in current:
+                if trajectory["task_id"] != key:
+                    continue
+                request = _coverage_request(trajectory)
+                if request is not None and request["request_sha256"] == same["request_sha256"]:
+                    fields.update(same["fields"].get(pid, ()))
+                # A reusable request was fault-free for both packages; later cell faults remain procedure-specific.
+                fault |= any(f.get("procedure") == pid for f in (trajectory.get("shell") or {}).get("faults", ()))
+        else:
+            for cell in cells.get(("S'", key), ()):
+                fault |= any(f.get("procedure") == pid for f in cell.get("faults", ()))
+                trajectory = made.get(cell["cell"]["id"])
+                if trajectory is None:
+                    continue
+                shell = trajectory.get("shell") or {}
+                fault |= any(f.get("procedure") == pid for f in shell.get("faults", ()))
+                request = _coverage_request(trajectory)
+                if request is None:
+                    continue
+                view = solver.zebralogic.parse_user(request["user"])
+                delivered = str(view.pop(NOTES_KEY, ""))
+                shown = _shown_note_fields(st.bench, candidate, shell.get("notes", ()), view, delivered)
+                fields.update(shown.get(pid, ()))
+        out["with_notes"] += bool(fields)
+        out["faults"] += bool(fault)
+        for name in fields:
+            out["fields"][name] += 1
+    return out
+
+
 def _unfixed_examples(st, cut, unit, verdict, cells, made, current):
     """v2.4: actual candidate outputs on unresolved run items, with explicitly identical-current requests labelled.
 
@@ -1493,7 +1577,7 @@ def _unfixed_examples(st, cut, unit, verdict, cells, made, current):
     return out
 
 
-def _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells, made, *, current=()):
+def _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells, made, *, current=(), note_coverage=None):
     """v2: the engineer's view of one training round (module docstring): the totals and, per procedure the candidate
     adds, removes or narrows against the incumbent, the evaluated run-slice items it is enabled on (the candidate's
     routing; the incumbent's for a removed or narrowed one) with how many it fixed and broke and up to
@@ -1543,6 +1627,11 @@ def _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells, made,
         procedures.append({"id": pid, "change": change, "enabled_items": len(on),
                            "fixed": sum(key in fixed for key in on), "broken": sum(key in broken for key in on),
                            "examples": shown})
+        if protocol.is_v25(configuration_of(st.setting)):
+            enabled = [key for key in evaluated if pid in routed[key]["candidate"]]
+            procedures[-1]["notes_coverage"] = _notes_coverage(
+                st, pid, enabled, candidate, cells, made, current,
+                set(verdict.get("identical", ())) & set(by_key), note_coverage or {})
     generated = [i for i in verdict["fixed"] + verdict["broken"] if i not in by_key]
     value = {"adopted": verdict["adopted"], "reason": verdict["reason"], "items": verdict["items"],
             "fixed": len(fixed), "broken": len(broken), "net": verdict["net"], "need": verdict["need"],
@@ -1585,10 +1674,12 @@ def _train_eval(st, cut, r, incumbent, candidate, generated, *, current=None):
                   for key, _ in views}
         differs = [key for key, _ in views if before[key].enabled != after[key].enabled]
         evaluated = list(differs)
-        identical, signatures = [], None
+        identical, signatures, captured = [], None, {}
         if IDENTICAL_REQUEST_REUSE[configuration_of(st.setting)]:
             signatures = _pair_signatures(st, trained, incumbent, publics,
-                                         [(key, view) for key, view in views if key in differs])
+                                         [(key, view) for key, view in views if key in differs],
+                                         **({"note_coverage": captured}
+                                            if protocol.is_v25(configuration_of(st.setting)) else {}))
             identical = [key for key, arms in signatures.items()
                          if request_reuse.interchangeable(arms["S'"], arms["S"], bench=st.bench)]
             differs = [key for key in differs if key not in identical]
@@ -1615,6 +1706,10 @@ def _train_eval(st, cut, r, incumbent, candidate, generated, *, current=None):
         feedback_args = {}
         if protocol.is_v24(configuration_of(st.setting)):
             feedback_args["current"] = _run_trajectories(st, parent_only=True) if current is None else current
+        if protocol.is_v25(configuration_of(st.setting)):
+            feedback_args["note_coverage"] = {
+                key: {"request_sha256": signatures[key]["S'"]["request_sha256"],
+                      "fields": captured[key]["S'"]} for key in identical if key in items}
         feedback = _feedback(st, cut, unit, verdict, routed, incumbent, trained, cells,
                              _attempt_trajectories(attempt), **feedback_args)
         out = {"learning": TRAIN, "round": r, "incumbent_sha256": incumbent.sha256,

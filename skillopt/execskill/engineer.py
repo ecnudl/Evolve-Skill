@@ -98,7 +98,7 @@ from skillopt.coevo5.roles import Invalid, fit, message_bytes, parse as parse_re
 from skillopt.continual_eval.core import require
 from skillopt.validator_pilot.api import digest
 
-from . import engineer_payload, policy, profiles as protocol, replay, router
+from . import engineer_payload, notes, policy, profiles as protocol, replay, router
 from .donors import public_text
 from .errors import PackageInvalid
 from .package import EDIT_KINDS, FIXTURE, Package, Procedure, edits, validate, with_
@@ -348,6 +348,29 @@ ENGINEER_PROMPT_V24_SHA256 = digest(ENGINEER_SYSTEM_V24)
 ENGINEER_PROMPT_SINGLE_V24_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_V24)
 ENGINEER_PROMPT_ZPC_V24_SHA256 = digest(ENGINEER_SYSTEM_ZPC_V24)
 ENGINEER_PROMPT_SINGLE_ZPC_V24_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_ZPC_V24)
+RENDER_SAMPLE_FIELDS_V25 = {"facts": ["Two attributes are registered.", "Each value is used once."],
+                          "table": [["House", "Color"], ["1", "blue"], ["2", "red"]],
+                          "warnings": ["Some assignments remain unresolved."]}
+RENDER_SAMPLE_HEADER_V25 = "Synthetic rendering example"
+RENDER_SAMPLE_V25 = notes.render(RENDER_SAMPLE_FIELDS_V25, bench="zebralogic", header=RENDER_SAMPLE_HEADER_V25)
+ENGINEER_FACTS_V25 = """
+Rendered-note feedback (v2.5). note_contains and note_matches properties are matched against the rendered note text
+below, not against the returned JSON. Failed C5b claims and advisory lint provide rendered_note, cut to 1500
+characters, only for verified run trajectories shown to you. This synthetic example uses the ZebraLogic renderer;
+other benches render the same way:
+""" + RENDER_SAMPLE_V25 + """
+training.procedures[].notes_coverage counts enabled run items, items with delivered notes, items with each delivered
+field, and items with procedure faults; identical_current rows use the incumbent's delivered notes.
+"""
+ENGINEER_SYSTEM_V25 = ENGINEER_SYSTEM_V24.replace("10000", "16000") + ENGINEER_FACTS_V25
+ENGINEER_SYSTEM_SINGLE_V25 = ENGINEER_SYSTEM_SINGLE_V24.replace("10000", "16000") + ENGINEER_FACTS_V25
+ENGINEER_SYSTEM_ZPC_V25 = ENGINEER_SYSTEM_V25 + ENGINEER_FACTS_ZPC_V24.replace("zebra-pc-v2", "zebra-pc-v3")
+ENGINEER_SYSTEM_SINGLE_ZPC_V25 = (ENGINEER_SYSTEM_SINGLE_V25
+                                + ENGINEER_FACTS_ZPC_V24.replace("zebra-pc-v2", "zebra-pc-v3"))
+ENGINEER_PROMPT_V25_SHA256 = digest(ENGINEER_SYSTEM_V25)
+ENGINEER_PROMPT_SINGLE_V25_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_V25)
+ENGINEER_PROMPT_ZPC_V25_SHA256 = digest(ENGINEER_SYSTEM_ZPC_V25)
+ENGINEER_PROMPT_SINGLE_ZPC_V25_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_ZPC_V25)
 # v2's analysts (owner suggestion 2026-10-23 15:1x; SkillOpt's minibatch reflection): engineer-role calls before each
 # round's proposal, on groups of the incumbent's failed run-slice items, whose findings the proposal call is shown
 ANALYST_SYSTEM = """\
@@ -537,10 +560,10 @@ class Context:
                     and trajectory["bench"] == self.bench and trajectory["task_id"] in own,
                     "Training trajectories are this step's run-slice cells of its run unit or an earlier training "
                     "unit")
-        v24 = protocol.is_v24(self.configuration)
+        v24, v25 = protocol.is_v24(self.configuration), protocol.is_v25(self.configuration)
         require(isinstance(self.history, list) and all(_history_line(entry, self.round, v24=v24) for entry in self.history),
                 "The history holds counts and flags only")
-        require(isinstance(self.lint, list) and all(_lint_entry(entry) for entry in self.lint),
+        require(isinstance(self.lint, list) and all(_lint_entry(entry, v25=v25) for entry in self.lint),
                 "Lint entries are reports")
         require(isinstance(self.reserved, frozenset) and all(type(i) is str for i in self.reserved),
                 "Reserved procedure ids")
@@ -551,7 +574,7 @@ class Context:
                 "Disclosed items keep their table-shape references")
         evaluated = {t["cell"]: t for t in self.evaluated}
         require(self.training is None or _training_ok(self.training, self.references, own, evaluated, self.bench,
-                                                      v24=v24, current={t["cell"]: t for t in self.current}),
+                                                      v24=v24, v25=v25, current={t["cell"]: t for t in self.current}),
                 "The training feedback shows this step's run-slice items with their own references only")
         output_refs = {e["task_id"] for e in (self.training or {}).get("unfixed_examples", [])} if v24 else set()
         return ({t["task_id"] for t in list(self.current) + list(self.evaluated) if t["token"] == "fail"}
@@ -592,7 +615,7 @@ def _history_line(entry, before, *, v24=False):
                for p in entry["proposals"])
 
 
-def _lint_entry(entry):
+def _lint_entry(entry, *, v25=False):
     """v2 (Codex review 2026-10-23 #3, #4): an advisory replay-test report exactly as ``_lint`` writes it."""
     if not (isinstance(entry, dict) and set(entry) == LINT_FIELDS and _text(entry["id"], MAX_ID_CHARS, empty=False)
             and isinstance(entry["tests"], list) and len(entry["tests"]) <= MAX_TESTS
@@ -602,14 +625,18 @@ def _lint_entry(entry):
                    and 1 <= t["test"] <= MAX_TESTS and all(type(t[k]) is bool for k in ("holds", "withheld", "nonvacuous"))
                    and (t["mutated"] is None or type(t["mutated"]) is bool) for t in entry["tests"])
     return tests_ok and all(
-        isinstance(p, dict) and p.get("reason") in LINT_REASONS and set(p) <= {"reason", "test", "detail"}
+        isinstance(p, dict) and p.get("reason") in LINT_REASONS
+        and set(p) <= ({"reason", "test", "detail", "rendered_note"} if v25 else {"reason", "test", "detail"})
+        and ("rendered_note" not in p or (_text(p["rendered_note"], 1500)
+             and p["reason"] in ("test_failed", "vacuous_test") and type(p.get("test")) is int
+             and 1 <= p["test"] <= MAX_TESTS))
         and (p.get("test") is None or (type(p["test"]) is int and p["test"] >= 1))
         and (p.get("detail") is None or p["detail"] in LINT_DETAILS
              or (p["reason"] == "test_count" and _count(p["detail"])))
         for p in entry["problems"])
 
 
-def _training_ok(training, references, own, evaluated, bench, *, v24=False, current=None):
+def _training_ok(training, references, own, evaluated, bench, *, v24=False, v25=False, current=None):
     """v2 (Codex review 2026-10-23 #4): the last round's feedback exactly as ``step._feedback`` writes it; each
     example names one of this step's run-slice items (``own``) and that item's candidate-arm cell of the last training
     unit (``evaluated``: {cell: trajectory}), its texts within ``TRAIN_TEXT_CHARS``, and a reference only off ALFWorld
@@ -623,10 +650,13 @@ def _training_ok(training, references, own, evaluated, bench, *, v24=False, curr
             and all(_count(v) for v in training["generated"].values()) and isinstance(training["procedures"], list)):
         return False
     for entry in training["procedures"]:
-        if not (isinstance(entry, dict) and set(entry) == FEEDBACK_FIELDS and _text(entry["id"], MAX_ID_CHARS, empty=False)
+        if not (isinstance(entry, dict) and set(entry) == (FEEDBACK_FIELDS | ({"notes_coverage"} if v25 else set()))
+                and _text(entry["id"], MAX_ID_CHARS, empty=False)
                 and entry["change"] in ("added", "removed", "narrowed")
                 and all(_count(entry[k]) for k in ("enabled_items", "fixed", "broken"))
                 and isinstance(entry["examples"], list) and len(entry["examples"]) <= 2 * TRAIN_EXAMPLES):
+            return False
+        if v25 and not _coverage_ok(entry["notes_coverage"], entry["enabled_items"]):
             return False
         if not all(_example_ok(example, references, own, evaluated, bench) for example in entry["examples"]):
             return False
@@ -656,6 +686,16 @@ def _training_ok(training, references, own, evaluated, bench, *, v24=False, curr
             if example["reference"] != reference:
                 return False
     return True
+
+
+def _coverage_ok(value, enabled):
+    """v2.5 delivered-note coverage is counts only, once per enabled run item and field."""
+    return (isinstance(value, dict) and set(value) == {"items", "with_notes", "fields", "faults"}
+            and all(_count(value[key]) for key in ("items", "with_notes", "faults"))
+            and value["items"] <= enabled and value["with_notes"] <= value["items"]
+            and value["faults"] <= value["items"] and isinstance(value["fields"], dict)
+            and set(value["fields"]) == {"facts", "table", "candidates", "warnings", "bindings"}
+            and all(_count(count) and count <= value["with_notes"] for count in value["fields"].values()))
 
 
 def _example_ok(example, references, own, evaluated, bench):
@@ -889,11 +929,55 @@ def _ask(ctx, user, purpose):
             system = ENGINEER_SYSTEM_ZPC_V24 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_ZPC_V24
         else:
             system = ENGINEER_SYSTEM_V24 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_V24
+    if protocol.is_v25(ctx.configuration):
+        if ctx.bench == "zebralogic":
+            system = ENGINEER_SYSTEM_ZPC_V25 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_ZPC_V25
+        else:
+            system = ENGINEER_SYSTEM_V25 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_V25
     options = ({"max_tokens": protocol.ENGINEER_MAX_TOKENS[ctx.configuration]}
                if modern and ctx.mode == TRAIN and purpose in ("propose", "repropose") else {})
     reply = ctx.roles.plain(ROLE, system, json.dumps(user, ensure_ascii=False, sort_keys=True),
                             label=prefix + purpose, **options)
+    if protocol.is_v25(ctx.configuration) and purpose in ("propose", "repropose"):
+        _remember_shown(ctx, user)
     return reply, ctx.roles.calls[-1]["request_sha256"]
+
+
+def _verified_run_cells(ctx):
+    """Current-step run membership, retaining exact verified original/current cell identities."""
+    chain = str(ctx.label).split("/", 1)[0]
+    original = {}
+    for trajectory in ctx.trajectories:
+        verified(trajectory, "trajectory")
+        found = RUN_UNIT.fullmatch(str(trajectory["unit"]))
+        if (found is not None and found["chain"] == chain and found["bench"] == ctx.bench
+                and int(found["k"]) == ctx.k and trajectory["bench"] == ctx.bench):
+            original[trajectory["cell"]] = trajectory
+    own, cells = {value["task_id"] for value in original.values()}, dict(original)
+    for trajectory in ctx.current if ctx.mode == TRAIN else ():
+        verified(trajectory, "trajectory")
+        unit = str(trajectory["unit"])
+        run, train = RUN_UNIT.fullmatch(unit), TRAIN_UNIT.fullmatch(unit)
+        found = run or train
+        if (found is not None and found["chain"] == chain and found["bench"] == ctx.bench
+                and int(found["k"]) == ctx.k and (train is None or int(found["r"]) < ctx.round)
+                and trajectory["bench"] == ctx.bench and trajectory["task_id"] in own):
+            cells[trajectory["cell"]] = trajectory
+    return cells
+
+
+def _remember_shown(ctx, user):
+    """Only complete trajectory entries retained in an actually sent, fitted proposal authorize replay text."""
+    verified_cells = _verified_run_cells(ctx)
+    shown_cells = ctx.sheet.setdefault("shown_cells_v25", set())
+    for entry in user.get("trajectories", []):
+        source = verified_cells.get(entry.get("cell"))
+        if source is not None and all(entry.get(key) == source[key] for key in ("bench", "task_id", "unit")):
+            shown_cells.add(source["cell"])
+
+
+def _feedback_cells(ctx):
+    return frozenset(ctx.sheet.get("shown_cells_v25", ())) & _verified_run_cells(ctx).keys()
 
 
 # ------------------------------------------------------------------------------------------------------ parsing
@@ -1549,7 +1633,7 @@ def check(change, ctx, taken=()):
         single = _build(change, ctx)
     except PackageInvalid as error:
         done("C3", False, _size_detail(change, error, **({"configuration": ctx.configuration} if v24 else {}))
-             if train else str(error)[:300])
+             if train or protocol.is_v25(ctx.configuration) else str(error)[:300])
         return report
     if train:  # v2: the step's edit budget against S (``rebase``); a change beyond it gets no fix call
         try:
@@ -1572,8 +1656,13 @@ def check(change, ctx, taken=()):
     actual = {} if v24 else None
     crash, outcomes = replay.zero_crash(procedure, list(entries.values()), ctx.workers, inputs_dirs=ctx.inputs_dirs,
                                        **({"actual": actual} if v24 else {}))
-    if v24 and not done("C5b", *replay.claimed_tests(procedure, entries, outcomes, actual)):
-        return report
+    disclosure = {"shown_cells": _feedback_cells(ctx)} if protocol.is_v25(ctx.configuration) else {}
+    if disclosure:
+        if not done("C5b", *replay.claimed_tests(procedure, entries, outcomes, actual, **disclosure)):
+            return report
+    else:
+        if v24 and not done("C5b", *replay.claimed_tests(procedure, entries, outcomes, actual)):
+            return report
     if not done("C6", crash["passed"], crash):
         return report
     if v24:
@@ -1588,7 +1677,8 @@ def check(change, ctx, taken=()):
         tests = replay.registrar_checks(procedure, entries, outcomes)
         if procedure.replay_tests:
             advice = replay.run_tests(procedure, entries, outcomes, ctx.workers, inputs_dirs=ctx.inputs_dirs)
-            report["lint"] = _lint(procedure, advice, entries)
+            report["lint"] = _lint(procedure, advice, entries,
+                                   **({"outcomes": outcomes, **disclosure} if disclosure else {}))
     else:
         tests = replay.run_tests(procedure, entries, outcomes, ctx.workers, inputs_dirs=ctx.inputs_dirs)
     if not done("C7", tests["passed"], tests):
@@ -1603,7 +1693,7 @@ def check(change, ctx, taken=()):
     return report
 
 
-def _lint(procedure, advice, entries):
+def _lint(procedure, advice, entries, *, outcomes=None, shown_cells=None):
     """v2 (Codex review 2026-10-23 #3): the advisory replay-test report the next round sees -- the tests by position
     (1-based) with their flags, the problems of ``LINT_REASONS`` by reason, position and a registered detail (an
     invalid test's ``replay.validate_test`` reason, the test count) -- never a test's id or property, which no check
@@ -1625,6 +1715,13 @@ def _lint(procedure, advice, entries):
             entry["test"] = position.get(problem["test"]) if type(problem["test"]) is str else None
         elif reason == "test_count":
             entry["detail"] = problem["detail"] if _count(problem["detail"]) else None
+        number = entry.get("test")
+        if shown_cells is not None and type(number) is int and 1 <= number <= len(tests):
+            test = tests[number - 1]
+            if replay.validate_test(test, procedure, entries) is None:
+                text = replay.rendered_note(test, entries, outcomes or {}, shown_cells)
+                if text is not None:
+                    entry["rendered_note"] = text
         problems.append(entry)
     return {"id": procedure.id, "problems": problems[:MAX_LINT], "tests": [
         {"test": n, "holds": bool(result["holds"]), "withheld": bool(result["withheld"]),
@@ -1660,6 +1757,12 @@ def _size_detail(change, error, *, configuration=None):
                           "max_note_chars": "1-4000 when a hook writes notes, else 0"}
         if configuration is not None and protocol.is_v24(configuration):
             detail["caps"]["source_bytes"] = policy.source_limit(protocol.POLICY_VERSIONS[configuration])
+        if configuration is not None and protocol.is_v25(configuration):
+            cap, size = detail["caps"]["source_bytes"], detail["measured"]["source_bytes"]
+            if size > cap:
+                detail.update(bytes_to_remove=size - cap, recommended_source_bytes=cap * 9 // 10,
+                              fix_hint="Remove at least %d source bytes; aim to finish at or below 90%% of the cap "
+                                       "(%d bytes)." % (size - cap, cap * 9 // 10))
     return detail
 
 
@@ -1770,7 +1873,9 @@ def run(ctx):
     modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
     sealed = record(protocol.ENGINEER_RECORDS[ctx.configuration], ctx.evidence, {
         "bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
-        "prompt_sha256": ((ENGINEER_PROMPT_SINGLE_ZPC_V24_SHA256 if ctx.bench == "zebralogic" else
+        "prompt_sha256": ((ENGINEER_PROMPT_SINGLE_ZPC_V25_SHA256 if ctx.bench == "zebralogic" else
+                           ENGINEER_PROMPT_SINGLE_V25_SHA256) if protocol.is_v25(ctx.configuration) else
+                          (ENGINEER_PROMPT_SINGLE_ZPC_V24_SHA256 if ctx.bench == "zebralogic" else
                            ENGINEER_PROMPT_SINGLE_V24_SHA256) if protocol.is_v24(ctx.configuration) else
                           ENGINEER_PROMPT_SINGLE_ZPC_SHA256 if ctx.configuration == protocol.ZEBRA_PC_V1 else
                           ENGINEER_PROMPT_SINGLE_V23_SHA256 if modern else ENGINEER_PROMPT_SHA256),
@@ -1868,7 +1973,9 @@ def run_train(ctx):
     modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
     sealed = record(protocol.ENGINEER_RECORDS[ctx.configuration], ctx.evidence, {
         "bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
-        "prompt_sha256": ((ENGINEER_PROMPT_ZPC_V24_SHA256 if ctx.bench == "zebralogic" else ENGINEER_PROMPT_V24_SHA256)
+        "prompt_sha256": ((ENGINEER_PROMPT_ZPC_V25_SHA256 if ctx.bench == "zebralogic" else ENGINEER_PROMPT_V25_SHA256)
+                          if protocol.is_v25(ctx.configuration) else
+                          (ENGINEER_PROMPT_ZPC_V24_SHA256 if ctx.bench == "zebralogic" else ENGINEER_PROMPT_V24_SHA256)
                           if protocol.is_v24(ctx.configuration) else
                           ENGINEER_PROMPT_ZPC_SHA256 if ctx.configuration == protocol.ZEBRA_PC_V1 else
                           ENGINEER_PROMPT_V23_SHA256 if modern else ENGINEER_PROMPT_V2_SHA256),

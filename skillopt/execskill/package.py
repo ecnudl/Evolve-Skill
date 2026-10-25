@@ -186,7 +186,8 @@ class Procedure:
                       replay_tests=_plain(list(self.replay_tests)), lineage=dict(self.lineage))
         if self.policy_version != policy.POLICY_VERSION:
             fields["policy_version"] = self.policy_version
-            stamp = "procedure-v2-4" if self.policy_version == policy.POLICY_VERSION_V24 else "procedure-v2-3"
+            stamp = ("procedure-v2-5" if self.policy_version == policy.POLICY_VERSION_V25 else
+                     "procedure-v2-4" if self.policy_version == policy.POLICY_VERSION_V24 else "procedure-v2-3")
             return record(stamp, self.evidence, fields)
         return record("procedure", self.evidence, fields)
 
@@ -197,8 +198,9 @@ class Procedure:
     @classmethod
     def from_json(cls, value):
         version = value.get("policy_version") if isinstance(value, dict) else None
-        modern = version in (policy.POLICY_VERSION_V23, policy.POLICY_VERSION_V24)
-        stamp = ("procedure-v2-4" if version == policy.POLICY_VERSION_V24
+        modern = version in (policy.POLICY_VERSION_V23, policy.POLICY_VERSION_V24, policy.POLICY_VERSION_V25)
+        stamp = ("procedure-v2-5" if version == policy.POLICY_VERSION_V25 else
+                 "procedure-v2-4" if version == policy.POLICY_VERSION_V24
                  else "procedure-v2-3" if modern else "procedure")
         try:
             value = verified(value, stamp)
