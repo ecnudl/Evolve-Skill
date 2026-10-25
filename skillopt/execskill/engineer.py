@@ -146,6 +146,7 @@ EXAMPLE_TEXTS = (("question", "question"), ("notes", "note"), ("current_reply", 
 FRACTION = re.compile(r"-?\d+/\d+")
 MAX_REASON_CHARS = 64  # a verdict's reason, a proposal's fate
 MAX_ID_CHARS = 64
+MAX_FIX_PARSE_CHARS = 600  # v2.7 only: deterministic fix-reply failure details, including their prefix
 PREVIOUS_FIELDS = frozenset({"decision", "faults", "format"})  # §4.2: accepted / not accepted + fault, format counts
 OPTION_LETTER = re.compile(r"\b(?i:option|choice)\s*\(?[A-E]\)?(?![A-Za-z])|^\s*(?:-\s*)?\(?[A-E]\)?[.)]?\s*$", re.M)
 CODED = ("new", "revision")
@@ -387,6 +388,20 @@ ENGINEER_SYSTEM_SINGLE_ZPC_V26 = (ENGINEER_SYSTEM_SINGLE_ZPC_V25.replace("zebra-
                                  + ENGINEER_FACTS_V26)
 ENGINEER_PROMPT_ZPC_V26_SHA256 = digest(ENGINEER_SYSTEM_ZPC_V26)
 ENGINEER_PROMPT_SINGLE_ZPC_V26_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_ZPC_V26)
+REPLAY_TEST_LIMITS_V27 = replay.test_format_limits()
+FIX_TESTS_V27 = ("The corrected change may also correct its replay tests, remove a test, or set claims_fix to false "
+                 "for a claim the procedure cannot satisfy. Every remaining claimed test must hold on the "
+                 "procedure's real replay output; an attached actual output is not a verdict on a malformed test.")
+ENGINEER_FACTS_V27 = "\n" + REPLAY_TEST_LIMITS_V27 + "\n\nFix requests (v2.7). " + FIX_TESTS_V27 + "\n"
+# Keep the frozen v2.6 paragraph distinct while retaining all its reference and determinism instructions.
+ENGINEER_SYSTEM_ZPC_V27 = (ENGINEER_SYSTEM_ZPC_V26.replace("zebra-pc-v4", "zebra-pc-v5")
+    .replace("Replay trajectory references (v2.6)", "Replay trajectory references (v2.7; inherited v2.6)")
+    + ENGINEER_FACTS_V27)
+ENGINEER_SYSTEM_SINGLE_ZPC_V27 = (ENGINEER_SYSTEM_SINGLE_ZPC_V26.replace("zebra-pc-v4", "zebra-pc-v5")
+    .replace("Replay trajectory references (v2.6)", "Replay trajectory references (v2.7; inherited v2.6)")
+    + ENGINEER_FACTS_V27)
+ENGINEER_PROMPT_ZPC_V27_SHA256 = digest(ENGINEER_SYSTEM_ZPC_V27)
+ENGINEER_PROMPT_SINGLE_ZPC_V27_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_ZPC_V27)
 _ALF_COVERAGE_PARAGRAPH = ("training.procedures[].notes_coverage counts enabled run items, items with delivered notes, items with each delivered\n"
                            "field, and items with procedure faults; identical_current rows use the incumbent's delivered notes.\n")
 
@@ -438,6 +453,13 @@ ENGINEER_SYSTEM_SINGLE_ALF_V1 = (_alf_system(ENGINEER_SYSTEM_SINGLE_V25)
                                  + _ALF_V26_FACTS + ENGINEER_FACTS_ALF_V1)
 ENGINEER_PROMPT_ALF_V1_SHA256 = digest(ENGINEER_SYSTEM_ALF_V1)
 ENGINEER_PROMPT_SINGLE_ALF_V1_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_ALF_V1)
+REFERENCE_TRACKER_ALF_V2 = replay.tracker_format_rules()
+ENGINEER_SYSTEM_ALF_V2 = (ENGINEER_SYSTEM_ALF_V1.replace("configuration alfworld-v1", "configuration alfworld-v2")
+                        + ENGINEER_FACTS_V27 + "\n" + REFERENCE_TRACKER_ALF_V2 + "\n")
+ENGINEER_SYSTEM_SINGLE_ALF_V2 = (ENGINEER_SYSTEM_SINGLE_ALF_V1.replace("configuration alfworld-v1", "configuration alfworld-v2")
+                               + ENGINEER_FACTS_V27 + "\n" + REFERENCE_TRACKER_ALF_V2 + "\n")
+ENGINEER_PROMPT_ALF_V2_SHA256 = digest(ENGINEER_SYSTEM_ALF_V2)
+ENGINEER_PROMPT_SINGLE_ALF_V2_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_ALF_V2)
 # v2's analysts (owner suggestion 2026-10-23 15:1x; SkillOpt's minibatch reflection): engineer-role calls before each
 # round's proposal, on groups of the incumbent's failed run-slice items, whose findings the proposal call is shown
 ANALYST_SYSTEM = """\
@@ -634,7 +656,8 @@ class Context:
         require(isinstance(self.history, list) and all(_history_line(entry, self.round, v24=v24) for entry in self.history),
                 "The history holds counts and flags only")
         require(isinstance(self.lint, list) and all(_lint_entry(entry, v25=v25,
-                **({"v26": True} if protocol.is_v26(self.configuration) else {})) for entry in self.lint),
+                **({"v26": True} if protocol.is_v26(self.configuration) else {}),
+                **({"v27": True} if protocol.is_v27(self.configuration) else {})) for entry in self.lint),
                 "Lint entries are reports")
         require(isinstance(self.reserved, frozenset) and all(type(i) is str for i in self.reserved),
                 "Reserved procedure ids")
@@ -687,7 +710,7 @@ def _history_line(entry, before, *, v24=False):
                for p in entry["proposals"])
 
 
-def _lint_entry(entry, *, v25=False, v26=False):
+def _lint_entry(entry, *, v25=False, v26=False, v27=False):
     """v2 (Codex review 2026-10-23 #3, #4): an advisory replay-test report exactly as ``_lint`` writes it."""
     if not (isinstance(entry, dict) and set(entry) == LINT_FIELDS and _text(entry["id"], MAX_ID_CHARS, empty=False)
             and isinstance(entry["tests"], list) and len(entry["tests"]) <= MAX_TESTS
@@ -699,7 +722,11 @@ def _lint_entry(entry, *, v25=False, v26=False):
     return tests_ok and all(
         isinstance(p, dict) and p.get("reason") in LINT_REASONS
         and set(p) <= (({"reason", "test", "detail", "rendered_note"} if v25 else {"reason", "test", "detail"})
-                      | ({"valid_trajectories", "valid_trajectories_total"} if v26 else set()))
+                      | ({"valid_trajectories", "valid_trajectories_total"} if v26 else set())
+                      | ({"evaluated", "validation_explanation"} if v27 else set()))
+        and (not ({"evaluated", "validation_explanation"} & set(p)) or
+             (p["reason"] in ("invalid_test", "test_count") and p.get("evaluated") is False
+              and _text(p.get("validation_explanation"), replay.VALIDATION_EXPLANATION_CHARS, empty=False)))
         and (not ({"valid_trajectories", "valid_trajectories_total"} & set(p)) or
              (p.get("reason") == "invalid_test" and p.get("detail") == "trajectory_not_in_scope"
               and replay.valid_trajectories_shape(p)))
@@ -1012,8 +1039,12 @@ def _ask(ctx, user, purpose):
             system = ENGINEER_SYSTEM_V25 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_V25
     if protocol.is_v26(ctx.configuration):
         system = ENGINEER_SYSTEM_ZPC_V26 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_ZPC_V26
+    if protocol.is_v27(ctx.configuration) and protocol.is_zebra(ctx.configuration):
+        system = ENGINEER_SYSTEM_ZPC_V27 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_ZPC_V27
     if protocol.is_alfworld(ctx.configuration):
         system = ENGINEER_SYSTEM_ALF_V1 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_ALF_V1
+    if protocol.is_alfworld_v2(ctx.configuration):
+        system = ENGINEER_SYSTEM_ALF_V2 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_ALF_V2
     options = ({"max_tokens": protocol.ENGINEER_MAX_TOKENS[ctx.configuration]}
                if modern and ctx.mode == TRAIN and purpose in ("propose", "repropose") else {})
     reply = ctx.roles.plain(ROLE, system, json.dumps(user, ensure_ascii=False, sort_keys=True),
@@ -1061,24 +1092,35 @@ def _feedback_cells(ctx):
 
 
 # ------------------------------------------------------------------------------------------------------ parsing
-def parse(reply, *, lenient=False):
+def parse(reply, *, lenient=False, fix_change=None, parent_ids=(), normalizations=None, diagnostics=False):
     """``(changes, sources)``: the manifest's change entries and the python blocks, one per new or revised change in
     order. Raises ``Unparseable``. ``lenient`` (v2): a "source" text in a coded entry (the fix request shows the change
-    so) is taken out of the entry, and used as its code when the reply has no python block."""
+    so) is taken out of the entry, and used as its code when the reply has no python block. Only v2.7 fix calls
+    supply fix_change and diagnostics; proposal parsing and every older default remain unchanged."""
+    def malformed(reason, explanation):
+        raise Unparseable((reason + ": " + explanation)[:MAX_FIX_PARSE_CHARS] if diagnostics else reason)
+
     if type(reply) is not str:
-        raise Unparseable("no_reply")
+        malformed("no_reply", "expected one JSON manifest and the corrected change's code; received %s" % type(reply).__name__)
     blocks = BLOCK.findall(reply)
     manifests = [body for lang, body in blocks if lang.lower() == "json"]
     sources = [body for lang, body in blocks if lang.lower() in ("python", "py")]
     if len(manifests) != 1:
-        raise Unparseable("manifest_blocks:%d" % len(manifests))
+        malformed("manifest_blocks:%d" % len(manifests), "%d JSON block(s); exactly one ```json manifest block required" % len(manifests))
     try:
         manifest = json.loads(manifests[0])
     except ValueError:
+        if diagnostics:
+            raise Unparseable("manifest_json: the one JSON block must contain valid JSON; use an object with exactly the changes key") from None
         raise Unparseable("manifest_json") from None
     changes = manifest.get("changes") if isinstance(manifest, dict) and set(manifest) == {"changes"} else None
     if type(changes) is not list or len(changes) > MAX_CHANGES or not all(isinstance(c, dict) for c in changes):
-        raise Unparseable("manifest_shape")
+        count = len(changes) if isinstance(changes, (list, tuple)) else None
+        malformed("manifest_shape", "expected exactly {\"changes\": [change objects]} with at most %d changes; "
+                  "received manifest type %s, changes type %s, change count %s" %
+                  (MAX_CHANGES, type(manifest).__name__, type(changes).__name__, count))
+    if fix_change is not None and len(changes) == 1:
+        _normalize_fix_reply(changes[0], fix_change, parent_ids, normalizations)
     if lenient:
         inline = [c.get("source") for c in changes if c.get("kind") in CODED]
         for c in changes:
@@ -1086,8 +1128,31 @@ def parse(reply, *, lenient=False):
         if not sources and inline and all(type(s) is str and s.strip() for s in inline):
             sources = inline
     if len(sources) != sum(1 for c in changes if c.get("kind") in CODED):
-        raise Unparseable("code_blocks")
+        malformed("code_blocks", "%d python block(s) for %d coded change(s); keep the change's \"kind\" and put "
+                  "its code in exactly one ```python block per new or revised change" %
+                  (len(sources), sum(1 for c in changes if c.get("kind") in CODED)))
     return changes, sources
+
+
+def _normalize_fix_reply(entry, change, parent_ids, normalizations):
+    """v2.7: repair only the unambiguous envelope of one reply to one identified change."""
+    edits = []
+    if "kind" not in entry:
+        entry["kind"] = change.kind
+        edit = {"rule": "fix_kind_inferred", "kind": change.kind}
+        target = TARGET_KEYS.get(change.kind) if type(change.kind) is str else None
+        if target is not None and target not in entry:
+            entry[target] = change.entry.get(target)
+            edit["target_key"] = target
+            edit["target"] = str(entry[target])[:MAX_ID_CHARS]
+        edits.append(edit)
+    elif change.kind == "new" and entry["kind"] == "revision" and entry.get("revises") not in parent_ids:
+        given = entry.pop("revises", None)
+        entry["kind"] = "new"
+        edits.append({"rule": "fix_revision_of_new_mapped", "given_kind": "revision", "kind": "new",
+                      "given_revises": json.dumps(given, ensure_ascii=True, sort_keys=True)[:200]})
+    if normalizations is not None:
+        normalizations.extend(edits)
 
 
 def changes_of(entries, sources, call):
@@ -1775,7 +1840,9 @@ def check(change, ctx, taken=()):
         if change.trajectory_resolution is not None:
             report["trajectory_resolution"] = list(change.trajectory_resolution)
     problem = _structure(change, ctx.parent, taken, train=train, benches=benches)
-    if not done("C1", problem is None, _structure_detail(change, problem) if train and problem else problem):
+    if not done("C1", problem is None, _structure_detail(change, problem,
+                **({"configuration": ctx.configuration, "train": train} if protocol.is_v27(ctx.configuration) else {}))
+                if (train or protocol.is_v27(ctx.configuration)) and problem else problem):
         return report
     if change.kind in CODED:
         violations = [v.to_json() for v in policy.check(change.source,
@@ -1820,7 +1887,8 @@ def check(change, ctx, taken=()):
     disclosure = {"shown_cells": _feedback_cells(ctx)} if protocol.is_v25(ctx.configuration) else {}
     if disclosure:
         if not done("C5b", *replay.claimed_tests(procedure, entries, outcomes, actual, **disclosure,
-                    **({"reference_feedback": True} if protocol.is_v26(ctx.configuration) else {}))):
+                    **({"reference_feedback": True} if protocol.is_v26(ctx.configuration) else {}),
+                    **({"validation_feedback": True} if protocol.is_v27(ctx.configuration) else {}))):
             return report
     else:
         if v24 and not done("C5b", *replay.claimed_tests(procedure, entries, outcomes, actual)):
@@ -1837,11 +1905,15 @@ def check(change, ctx, taken=()):
         return report
     if train or v24:  # v2.4 adds claimed-test gating above; other replay tests remain advisory in both modes
         tests = replay.registrar_checks(procedure, entries, outcomes)
+        if (protocol.is_alfworld_v2(ctx.configuration)
+                and any(problem["reason"] == "reference_tracker" for problem in tests["problems"])):
+            tests.update(replay.tracker_feedback(procedure, entries, outcomes, _feedback_cells(ctx)))
         if procedure.replay_tests:
             advice = replay.run_tests(procedure, entries, outcomes, ctx.workers, inputs_dirs=ctx.inputs_dirs)
             report["lint"] = _lint(procedure, advice, entries,
                                    **({"outcomes": outcomes, **disclosure} if disclosure else {}),
-                                   **({"reference_feedback": True} if protocol.is_v26(ctx.configuration) else {}))
+                                   **({"reference_feedback": True} if protocol.is_v26(ctx.configuration) else {}),
+                                   **({"validation_feedback": True} if protocol.is_v27(ctx.configuration) else {}))
     else:
         tests = replay.run_tests(procedure, entries, outcomes, ctx.workers, inputs_dirs=ctx.inputs_dirs)
     if not done("C7", tests["passed"], tests):
@@ -1856,11 +1928,13 @@ def check(change, ctx, taken=()):
     return report
 
 
-def _lint(procedure, advice, entries, *, outcomes=None, shown_cells=None, reference_feedback=False):
+def _lint(procedure, advice, entries, *, outcomes=None, shown_cells=None, reference_feedback=False,
+          validation_feedback=False):
     """v2 (Codex review 2026-10-23 #3): the advisory replay-test report the next round sees -- the tests by position
     (1-based) with their flags, the problems of ``LINT_REASONS`` by reason, position and a registered detail (an
     invalid test's ``replay.validate_test`` reason, the test count) -- never a test's id or property, which no check
-    reads for leakage."""
+    reads for leakage. v2.7 also explains malformed tests using their engineer-authored values and fixed rules,
+    never stored item text."""
     tests = list(procedure.replay_tests)
     invalid = iter([n for n, test in enumerate(tests, 1) if replay.validate_test(test, procedure, entries)])
     position = {}
@@ -1881,6 +1955,13 @@ def _lint(procedure, advice, entries, *, outcomes=None, shown_cells=None, refere
         elif reason == "test_count":
             entry["detail"] = problem["detail"] if _count(problem["detail"]) else None
         number = entry.get("test")
+        if validation_feedback and reason == "invalid_test" and type(number) is int:
+            test = tests[number - 1]
+            cell = test.get("trajectory") if isinstance(test, dict) else None
+            entry.update(replay.test_validation_feedback(test, entry["detail"], procedure=procedure,
+                         entry=entries.get(cell) if type(cell) is str else None))
+        elif validation_feedback and reason == "test_count":
+            entry.update(replay.test_validation_feedback(tests, "test_count"))
         if shown_cells is not None and type(number) is int and 1 <= number <= len(tests):
             test = tests[number - 1]
             if replay.validate_test(test, procedure, entries) is None:
@@ -1894,16 +1975,19 @@ def _lint(procedure, advice, entries, *, outcomes=None, shown_cells=None, refere
          "nonvacuous": bool(result["nonvacuous"])} for n, result in enumerate(advice["tests"], 1)]}
 
 
-def _structure_detail(change, problem):
+def _structure_detail(change, problem, *, configuration=None, train=True):
     """v2: C1's reason with what it measured, for the fix call."""
     detail, given = {"problem": problem}, sorted(str(k) for k in change.entry)
     if change.kind in CODED and problem in ("keys", "types"):
-        required, allowed = _keys(change.kind, True)
+        required, allowed = _keys(change.kind, train)
         detail.update({"required": sorted(required), "allowed": sorted(allowed), "given": given,
                        "types": {k: t.__name__ for k, t in PROCEDURE_KEYS.items()}})
     elif problem == "keys":
         detail.update({"allowed": sorted({"kind", "id", *(("benches",) if change.kind == "narrowing" else ())}),
                        "given": given})
+    if (configuration is not None and protocol.is_v27(configuration) and change.kind in CODED
+            and "replay_tests" in change.entry and type(change.entry["replay_tests"]) is not list):
+        detail["replay_test_validation"] = replay.test_validation_feedback(change.entry["replay_tests"], "test_list")
     return detail
 
 
@@ -1928,6 +2012,10 @@ def _size_detail(change, error, *, configuration=None):
                 detail.update(bytes_to_remove=size - cap, recommended_source_bytes=cap * 9 // 10,
                               fix_hint="Remove at least %d source bytes; aim to finish at or below 90%% of the cap "
                                        "(%d bytes)." % (size - cap, cap * 9 // 10))
+        if configuration is not None and protocol.is_v27(configuration):
+            feedback = replay.test_list_feedback(entry.get("replay_tests", []), hooks=entry.get("hooks", ()))
+            if feedback is not None:
+                detail["replay_test_validation"] = feedback
     return detail
 
 
@@ -1947,6 +2035,8 @@ def _fix(ctx, change, report, *, attempt=None, why=None):
     user = {"request": "fix", "bench": ctx.bench, "change": entry, "failed": last if ctx.echo else _redacted(last)}
     if protocol.is_v26(ctx.configuration):
         user["trajectory_resolution"] = list(change.trajectory_resolution or ())
+    if protocol.is_v27(ctx.configuration):
+        user["replay_test_instruction"] = FIX_TESTS_V27
     if protocol.is_v24(ctx.configuration):
         user["hook_views"] = hook_views(ctx)
     if attempt is not None:
@@ -1954,10 +2044,14 @@ def _fix(ctx, change, report, *, attempt=None, why=None):
     reply, call = _ask(ctx, user, "fix/%d" % change.n if attempt is None else "fix/%d/%d" % (change.n, attempt))
     if reply is None and call is None:
         return None, "no_calls_left"
+    normalizations = []
     try:
-        entries, sources = parse(reply, lenient=attempt is not None)
+        entries, sources = parse(reply, lenient=attempt is not None,
+            **({"fix_change": change, "parent_ids": ctx.parent.order, "normalizations": normalizations,
+                "diagnostics": True} if protocol.is_v27(ctx.configuration) else {}))
     except Unparseable as error:
-        return None, "unparseable: %s" % error
+        reason = "unparseable: %s" % error
+        return None, reason[:MAX_FIX_PARSE_CHARS] if protocol.is_v27(ctx.configuration) else reason
     if len(entries) != 1:
         return None, "changes: %d, expected exactly the one change" % len(entries)
     fixed = changes_of(entries, sources, call)[0]
@@ -1967,6 +2061,8 @@ def _fix(ctx, change, report, *, attempt=None, why=None):
     fixed.n = change.n
     if protocol.NORMALIZE_STRUCTURE[ctx.configuration]:
         fixed.normalized = list(change.normalized)
+    if protocol.is_v27(ctx.configuration):
+        fixed.normalized.extend(normalizations)
     if protocol.is_v26(ctx.configuration):
         _normalize(fixed, benches=protocol.SUPPORTED_BENCHES if ctx.bench == "zebralogic" else BENCHES)
         _resolve_change(fixed, ctx)
@@ -2045,7 +2141,9 @@ def run(ctx):
     modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
     sealed = record(protocol.ENGINEER_RECORDS[ctx.configuration], ctx.evidence, {
         "bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
-        "prompt_sha256": (ENGINEER_PROMPT_SINGLE_ALF_V1_SHA256 if protocol.is_alfworld(ctx.configuration) else
+        "prompt_sha256": (ENGINEER_PROMPT_SINGLE_ALF_V2_SHA256 if protocol.is_alfworld_v2(ctx.configuration) else
+                          ENGINEER_PROMPT_SINGLE_ALF_V1_SHA256 if protocol.is_alfworld(ctx.configuration) else
+                          ENGINEER_PROMPT_SINGLE_ZPC_V27_SHA256 if protocol.is_v27(ctx.configuration) else
                           ENGINEER_PROMPT_SINGLE_ZPC_V26_SHA256 if protocol.is_v26(ctx.configuration) else
                           (ENGINEER_PROMPT_SINGLE_ZPC_V25_SHA256 if ctx.bench == "zebralogic" else
                            ENGINEER_PROMPT_SINGLE_V25_SHA256) if protocol.is_v25(ctx.configuration) else
@@ -2147,7 +2245,9 @@ def run_train(ctx):
     modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
     sealed = record(protocol.ENGINEER_RECORDS[ctx.configuration], ctx.evidence, {
         "bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
-        "prompt_sha256": (ENGINEER_PROMPT_ALF_V1_SHA256 if protocol.is_alfworld(ctx.configuration) else
+        "prompt_sha256": (ENGINEER_PROMPT_ALF_V2_SHA256 if protocol.is_alfworld_v2(ctx.configuration) else
+                          ENGINEER_PROMPT_ALF_V1_SHA256 if protocol.is_alfworld(ctx.configuration) else
+                          ENGINEER_PROMPT_ZPC_V27_SHA256 if protocol.is_v27(ctx.configuration) else
                           ENGINEER_PROMPT_ZPC_V26_SHA256 if protocol.is_v26(ctx.configuration) else
                           (ENGINEER_PROMPT_ZPC_V25_SHA256 if ctx.bench == "zebralogic" else ENGINEER_PROMPT_V25_SHA256)
                           if protocol.is_v25(ctx.configuration) else

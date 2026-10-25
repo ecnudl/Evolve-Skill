@@ -2013,13 +2013,18 @@ def run_step(setting, chain, bench, k, parent, *, services, chain_root=None, smo
     by default. ``smoke``: a ``SmokeStep`` -- the S4 mini-step (chain ``budgets.SMOKE``, SearchQA step 1 from the
     empty parent; run, accept and freeze with the given candidate). Raises ``cells.Pause`` (a unit paused; nothing
     resumes by itself) or ``chain.Terminated``."""
+    require(smoke is None or not protocol.is_v27(configuration_of(setting)),
+            "The v2.7 benchmark profiles require their dedicated smoke stages")
     if smoke is None:
         require(chain in CHAINS and bench in protocol.SUPPORTED_BENCHES and type(k) is int and k >= 1
                 and isinstance(parent, Package),
                 "A chain, a bench, a step position and the parent package")
         if protocol.is_alfworld(configuration_of(setting)):
             require(chain == "D" and bench == "alfworld" and k == 1 and not parent.order,
-                    "alfworld-v1 is chain D's single ALFWorld step from the empty parent")
+                    configuration_of(setting) + " is chain D's single ALFWorld step from the empty parent")
+        if protocol.is_zebra(configuration_of(setting)) and protocol.is_v27(configuration_of(setting)):
+            require(chain == "D" and bench == "zebralogic" and k == 1 and not parent.order,
+                    "zebra-pc-v5 is chain D's single ZebraLogic step from the empty parent")
     else:
         require(isinstance(smoke, SmokeStep) and chain == budgets.SMOKE and bench == SMOKE_BENCH and k == 1
                 and isinstance(parent, Package) and not parent.procedures and smoke.model in CHAINS.values()

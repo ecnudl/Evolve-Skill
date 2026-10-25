@@ -280,7 +280,7 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, elucid_env, rou
               "D": manifest.solver_block("D", env_path=elucid_env, branch="E", configuration=configuration)}
     route = routes.pin("D", "B", env_path=route_b_env, solver_block=blocks["D"], configuration=configuration)
     given = {"root": str(root), "data": {"pools": {BENCH: imported["pool"]}, "pinned": imported["pinned"],
-        "alfworld_v1": imported["registration"], "s0_sha256": checked[p.RECORD_HASH],
+        manifest.alfworld_registration_key(configuration): imported["registration"], "s0_sha256": checked[p.RECORD_HASH],
         "test_read_estimate": {"D": estimate}, "test_read_terms": {"D": {BENCH: str(estimate)}},
         "launchable_chains": ["D"], "snapshot_sha256": current_sha, "smoke_results": pins},
         "cards": imported["cards"], "contracts": imported["contracts"], "runtime": imported["runtime"],

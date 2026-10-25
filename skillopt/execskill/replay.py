@@ -68,6 +68,10 @@ SANDBOX_KINDS = {"alfworld": "episode"}  # the sandbox kind of a bench's worker;
 TEST_KEYS = ("claims_fix", "hook", "id", "nonvacuity", "property", "trajectory")
 TEST_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,39}")
 STEP_HOOKS = ("alf_before_step", "alf_after_step")
+VALIDATION_EXPLANATION_CHARS = 1200
+TRACKER_FEEDBACK_EXAMPLES = 3
+TRACKER_FACTS_CHARS = 1000
+TRACKER_EVENT_CHARS = 200
 NOTHING = "Nothing happens."
 CRASH_KINDS = ("predicate:not_bool", "output_shape", "state_over_declared_bytes", "undeclared_second_call")
 BINDING_KINDS = ("note_name", "note_duplicate_name", "note_value", "note_not_verbatim")
@@ -153,6 +157,28 @@ def facts_agree(state, reference):
         elif (sorted(set(value)) if key == "reached" else sorted(value)) != reference[key]:
             return False
     return True
+
+
+def tracker_format_rules():
+    """ALF v2's registrar description, with tables/threshold generated and update rules behavior-tested."""
+    percentage = "%g" % (100 * TRACKER_AGREEMENT)
+    return ("Reference tracker (alfworld-v2): facts start with empty reached/carrying and nothing_happens=0. "
+            "Actions and observations are stripped; matches are case-sensitive. If the observation starts with "
+            "'Nothing happens', increment nothing_happens and change nothing else. Otherwise go to X + "
+            "'You arrive at', or open X + 'You open', adds X to reached. take X from Y + 'You pick up' appends X "
+            "to carrying, retaining duplicates; it does not add Y to reached. move X to Y or put X in/on Y "
+            "(also put X in Y / put X on Y), with 'You move' or 'You put', removes every X from carrying and "
+            "adds Y to reached. Other actions or observation prefixes do not change these facts. Object and "
+            "receptacle captures are stripped, with no case or internal-whitespace normalization. state['facts'] "
+            "must be a nonempty mapping containing only %s; compare only keys present. reached must be a list "
+            "of strings, compared as a set; carrying must be a list of strings, compared sorted with duplicates "
+            "retained; nothing_happens must be an exact integer (not bool) equal to the count. Agreement must be "
+            ">= %s%% of stored steps with a post-action event on applied ALF trajectories for which alf_after_step "
+            "ran successfully. Missing or failed after hooks are excluded from this denominator. An action has "
+            "a post-action replay event exactly when a following step request/view exists, even if its response "
+            "was unavailable; actions without a following view have no event and are excluded. Only stored public "
+            "actions/observations are used."
+            % ("/".join(STATE_FACTS), percentage))
 
 
 # ------------------------------------------------------------------------------------------------------ inputs
@@ -560,7 +586,8 @@ def valid_trajectories_shape(problem):
     return keys == sorted(set(keys)) and len({row["trajectory"] for row in values}) == len(values)
 
 
-def claimed_tests(procedure, entries, outcomes, actual, *, shown_cells=None, reference_feedback=False):
+def claimed_tests(procedure, entries, outcomes, actual, *, shown_cells=None, reference_feedback=False,
+                  validation_feedback=False):
     """v2.4 C5b: every declared fix claim holds under the same validation/property evaluator as lint."""
     claimed, failed = 0, []
     for test in procedure.replay_tests:
@@ -581,17 +608,219 @@ def claimed_tests(procedure, entries, outcomes, actual, *, shown_cells=None, ref
                        {"status": "not_called", "reason": "hook_not_reached"}}
         if not disclose:
             failure["actual"] = {"status": "withheld", "reason": "trajectory_not_shown"}
+        elif validation_feedback and why is None and not found and shown_cells is not None:
+            failure["actual"] = _not_called(test, outcomes.get(cell))
         if shown_cells is not None and why is None:
             text = rendered_note(test, entries, outcomes, shown_cells)
             if text is not None:
                 failure["rendered_note"] = text
         if reference_feedback and why == "trajectory_not_in_scope":
             failure.update(valid_trajectories(entries, shown_cells or ()))
+        if validation_feedback and why is not None:
+            failure.update(test_validation_feedback(test, why, procedure=procedure,
+                entry=entries.get(cell) if type(cell) is str else None))
         failed.append(failure)
     return not failed, {"claimed": claimed, "failed": failed}
 
 
+def _not_called(test, outcome):
+    """Explain a missing valid claimed hook from its already-computed, explicitly disclosed outcome only."""
+    missing = {"status": "not_called", "reason": "hook_not_reached"}
+    if outcome is None or outcome.cell != test["trajectory"]:
+        return missing
+    if outcome.applies is False:
+        return {"status": "not_called", "reason": "applies_false"}
+    index = test["property"].get("step")
+    if outcome.faults:
+        first = outcome.faults[0]
+        fault_step = first.get("step")
+        if test["hook"] not in STEP_HOOKS or fault_step is None or (type(fault_step) is int and fault_step <= index):
+            return {"status": "not_called", "reason": "stopped_by_fault", "fault": {
+                "hook": str(first.get("hook") or "")[:200], "step": fault_step,
+                "kind": str(first.get("kind") or "")[:200], "detail": str(first.get("detail") or "")[:200]}}
+    if test["hook"] in STEP_HOOKS and index >= len(outcome.steps):
+        return {"status": "not_called", "reason": "step_out_of_range", "recorded_steps": len(outcome.steps)}
+    return missing
+
+
 # ------------------------------------------------------------------------------------------------- replay tests
+def test_format_limits():
+    """v2.7 prompt rules generated from the same tables and bounds used by the validators."""
+    properties = "; ".join("%s: %s, keys {%s}" % (kind, "/".join(hooks), ",".join(("kind", *keys)))
+                           for kind, (hooks, keys) in PROPERTY_KINDS.items())
+    mutations = "; ".join("%s (%s)" % (name, "/".join(benches))
+                          for name, benches in SUPPORTED_MUTATIONS.items())
+    return ("Replay-test format limits (v2.7): replay_tests is a list of objects with distinct nonempty string IDs "
+            "and declared hooks (optional in train). An empty list is allowed and skips modern "
+            "advisory checks; the full evaluator requires 1-%d tests per change "
+            "(count errors are advisory). Each test has exactly {%s}; id matches %s; trajectory is "
+            "a string naming an in-scope stored cell. Kinds, hooks and exact property keys: %s. Add the "
+            "required step key only for %s INSIDE property, never at test top level; e.g. "
+            "{\"kind\":\"note_contains\",\"value\":\"...\",\"step\":3}. step is the 0-based index of the stored step "
+            "request/view; for every stored action it equals alfworld_steps[].i: "
+            "alf_before_step at i is the note before action i; alf_after_step at i is state after action i. "
+            "ALFWorld only; step must be a nonnegative integer (not bool). note_matches.value is a list of "
+            "1-%d literal fragments in order, each 1-%d characters; "
+            "note_contains/discourage_contains/discourage_excludes.value, binding_equals.name/value and "
+            "state_equals.key are strings of 1-%d characters. repair_requested.value is boolean; "
+            "state_equals.value is JSON whose json.dumps(value) output (default ASCII escaping and separators) "
+            "is at most %d characters, not bytes. claims_fix is boolean; nonvacuity has exactly {mutation,"
+            "withheld_expect}, with withheld_expect=false. mutation is null or a registered name applicable to "
+            "the trajectory benchmark: %s. applies_true/applies_false require a non-null mutation. Remaining "
+            "claims_fix=true tests must hold on replay output. Full evaluation requires every test "
+            "to hold and be nonvacuous (false when withheld or mutated; predicates need mutation false), plus one "
+            "holding nonvacuous fix claim on a failed trajectory; these latter checks are advisory in modern modes."
+            % (MAX_TESTS, ",".join(TEST_KEYS), TEST_ID.pattern, properties, "/".join(STEP_HOOKS),
+               MAX_FRAGMENTS, MAX_PROPERTY_TEXT, MAX_PROPERTY_TEXT, MAX_PROPERTY_TEXT, mutations))
+
+
+def _observed(value):
+    """Bounded descriptions of engineer-authored values only; never inspect a trajectory's content."""
+    if type(value) is str:
+        text = repr(value)
+    else:
+        try:
+            text = json.dumps(value, ensure_ascii=True, sort_keys=True)
+        except (TypeError, ValueError):
+            text = "<%s>" % type(value).__name__
+    return text if len(text) <= 180 else text[:177] + "..."
+
+
+def _text_measure(value):
+    return ("%d characters (%s)" % (len(value), _observed(value)) if type(value) is str
+            else "%s %s" % (type(value).__name__, _observed(value)))
+
+
+def test_validation_feedback(test, reason, *, procedure=None, entry=None):
+    """v2.7 malformed-test evidence from the authored test and fixed rules, never replay/item content.
+
+    ``test_count`` and the package-level list reasons accept the whole replay_tests value. ``procedure`` supplies
+    only its declared hooks; ``entry`` supplies only its benchmark. No actual output is interpreted here.
+    """
+    own = test if isinstance(test, dict) else {}
+    prop = own.get("property") if isinstance(own.get("property"), dict) else {}
+    hooks = tuple(getattr(procedure, "hooks", ()))
+    kind, hook = prop.get("kind"), own.get("hook")
+    text_rule = "1-%d characters" % MAX_PROPERTY_TEXT
+    if reason == "keys":
+        observed = sorted(str(key) for key in test) if isinstance(test, dict) else test
+        rule = "Test must be an object with exactly {%s}; observed %s." % (",".join(TEST_KEYS), _observed(observed))
+        present = set(test) if isinstance(test, dict) else set()
+        missing, unexpected = set(TEST_KEYS) - present, present - set(TEST_KEYS)
+        rule += " Missing top-level keys %s; unexpected top-level keys %s." % (
+            _observed(sorted(str(key) for key in missing)), _observed(sorted(str(key) for key in unexpected)))
+        property_keys = {"kind", "step", *(key for _, keys in PROPERTY_KINDS.values() for key in keys)}
+        misplaced = sorted(str(key) for key in unexpected & property_keys)
+        if misplaced:
+            rule += " Move %s inside property, not at test top level." % _observed(misplaced)
+    elif reason == "id":
+        rule = "id %s does not match %s (a string is required)." % (_observed(own.get("id")), TEST_ID.pattern)
+    elif reason == "trajectory_not_in_scope":
+        rule = "trajectory %s must be a string naming an in-scope stored cell." % _observed(own.get("trajectory"))
+    elif reason == "hook_or_kind":
+        rule = ("hook %s must be a declared hook %s; property must be an object with a registered string kind "
+                "%s; observed property %s." % (_observed(hook), _observed(hooks),
+                    _observed(list(PROPERTY_KINDS)), _observed(own.get("property"))))
+    elif reason == "property_shape":
+        allowed_hooks, keys = PROPERTY_KINDS.get(kind, ((), ())) if type(kind) is str else ((), ())
+        expected = ["kind", *keys, *(("step",) if hook in STEP_HOOKS else ())]
+        rule = ("Property %s allows hooks %s and exactly keys %s for hook %s; observed keys %s. "
+                "step is required only for %s and forbidden on other hooks." % (_observed(kind),
+                    _observed(allowed_hooks), _observed(expected), _observed(hook),
+                    _observed(sorted(str(key) for key in prop)), "/".join(STEP_HOOKS)))
+    elif reason == "step":
+        rule = ("ALF hook step must be a nonnegative integer (not bool) on an alfworld trajectory; "
+                "observed step %s (%s), benchmark %s." % (_observed(prop.get("step")),
+                    type(prop.get("step")).__name__, _observed(entry.get("bench") if entry else None)))
+    elif reason == "value":
+        value = prop.get("value")
+        if kind == "note_matches":
+            size = str(len(value)) if type(value) is list else "a non-list %s" % type(value).__name__
+            measured = ([len(part) if type(part) is str else type(part).__name__ for part in value]
+                        if type(value) is list else value)
+            rule = ("note_matches has %s fragments; 1-%d allowed, each %s; observed fragment lengths/types %s."
+                    % (size, MAX_FRAGMENTS, text_rule, _observed(measured)))
+        elif kind == "binding_equals":
+            rule = ("binding_equals.name and value must each be strings of %s; observed name %s; value %s."
+                    % (text_rule, _text_measure(prop.get("name")), _text_measure(value)))
+        elif kind == "repair_requested":
+            rule = "repair_requested.value must be boolean; observed %s (%s)." % (_observed(value), type(value).__name__)
+        elif kind == "state_equals":
+            try:
+                size = str(len(json.dumps(value)))
+            except (TypeError, ValueError):
+                size = "not JSON serializable"
+            rule = ("state_equals.key must be a string of %s; value json.dumps(value) length must be <=%d "
+                    "characters (default ASCII escaping and separators, not bytes); observed key %s and "
+                    "serialized value length %s." % (text_rule, MAX_PROPERTY_TEXT, _text_measure(prop.get("key")), size))
+        else:
+            rule = "%s.value must be a string of %s; observed %s." % (_observed(kind), text_rule, _text_measure(value))
+    elif reason == "nonvacuity":
+        rule = ("claims_fix must be boolean and nonvacuity exactly {mutation,withheld_expect}, with "
+                "withheld_expect=false; observed claims_fix %s (%s), nonvacuity %s." % (
+                    _observed(own.get("claims_fix")), type(own.get("claims_fix")).__name__,
+                    _observed(own.get("nonvacuity"))))
+    elif reason in ("mutation", "predicate_needs_mutation"):
+        nonvacuity = own.get("nonvacuity") if isinstance(own.get("nonvacuity"), dict) else {}
+        mutation = nonvacuity.get("mutation")
+        if reason == "predicate_needs_mutation":
+            rule = "%s requires a non-null mutation; observed %s." % (_observed(kind), _observed(mutation))
+        else:
+            bench = entry.get("bench") if entry else None
+            allowed = [name for name, benches in SUPPORTED_MUTATIONS.items() if bench in benches]
+            rule = ("mutation must be null or a registered string applicable to benchmark %s; allowed %s; observed %s."
+                    % (_observed(bench), _observed(allowed), _observed(mutation)))
+    elif reason == "test_count":
+        count = len(test) if isinstance(test, (list, tuple)) else test
+        rule = ("Full replay-test evaluation requires 1-%d tests per change; observed %s. Empty lists are allowed "
+                "at registration and skip modern advisory checks; this count result is not a procedure-output verdict."
+                % (MAX_TESTS, _observed(count)))
+    elif reason == "test_list":
+        rule = "replay_tests must be a list (a stored tuple is also accepted); observed %s %s." % (
+            type(test).__name__, _observed(test))
+    elif reason == "test_entries":
+        invalid = [[n, type(value).__name__] for n, value in enumerate(test, 1) if type(value) is not dict]
+        rule = "Every replay_tests entry must be an object; observed [position,type] %s." % _observed(invalid)
+    elif reason == "test_ids":
+        invalid = [[n, value.get("id")] for n, value in enumerate(test, 1)
+                   if type(value.get("id")) is not str or not value.get("id")]
+        rule = "Replay-test IDs must be nonempty strings; observed [position,id] %s." % _observed(invalid)
+    elif reason == "duplicate_ids":
+        ids = [value.get("id") for value in test]
+        duplicates = sorted({value for value in ids if ids.count(value) > 1})
+        rule = "Replay-test IDs must be distinct within a change; duplicated IDs %s." % _observed(duplicates)
+    elif reason == "test_hooks":
+        invalid = [[n, value.get("hook")] for n, value in enumerate(test, 1) if value.get("hook") not in hooks]
+        rule = "Every replay test must name a declared hook %s; observed [position,hook] %s." % (
+            _observed(hooks), _observed(invalid))
+    else:
+        raise ValueError("Unknown replay-test validation reason: %s" % reason)
+    explanation = "Replay test(s) not evaluated because the test format is malformed. " + rule
+    return {"evaluated": False, "validation_explanation": explanation[:VALIDATION_EXPLANATION_CHARS]}
+
+
+def test_list_feedback(tests, *, hooks):
+    """Explain the first package-level replay-test admission failure, using only authored tests and hooks."""
+    if not isinstance(tests, (list, tuple)):
+        reason = "test_list"
+    elif any(type(test) is not dict for test in tests):
+        reason = "test_entries"
+    elif any(type(test.get("id")) is not str or not test.get("id") for test in tests):
+        reason = "test_ids"
+    elif len({test["id"] for test in tests}) != len(tests):
+        reason = "duplicate_ids"
+    elif any(test.get("hook") not in hooks for test in tests):
+        reason = "test_hooks"
+    else:
+        return None
+    # A tiny context carries only the already-authored hook declaration, never a stored trajectory.
+    class Declared:
+        pass
+    declared = Declared()
+    declared.hooks = hooks
+    return test_validation_feedback(tests, reason, procedure=declared)
+
+
 def _text(value):
     return type(value) is str and 0 < len(value) <= MAX_PROPERTY_TEXT
 
@@ -707,6 +936,54 @@ def reference_tracker_agreement(entries, outcomes):
                 total += 1
                 agree += facts_agree(outcome.steps[i]["state"], tracker.facts())
     return agree, total
+
+
+def tracker_feedback(procedure, entries, outcomes, shown_cells):
+    """ALF v2: counts over the unchanged tracker denominator, examples only from explicitly disclosed cells.
+
+    The facts are JSON text capped in characters, so a truncated value cannot be mistaken for a complete mapping.
+    No replay or hook call is performed; the first examples are selected by cell id and then stored step index.
+    """
+    counts = {key: 0 for key in (*STATE_FACTS, "facts_shape")}
+    examples = []
+    if "alf_after_step" not in procedure.hooks:
+        return {"tracker_disagreement_counts": counts, "tracker_disagreements": examples}
+    allowed = set(shown_cells or ()) & entries.keys()
+    for cell in sorted(entries):
+        entry, outcome = entries[cell], outcomes.get(cell)
+        if (entry["bench"] != "alfworld" or outcome is None or not outcome.applies
+                or outcome.cell != cell or outcome.bench != "alfworld"):
+            continue
+        tracker = ReferenceTracker(str(entry["steps"][0]["view"].get("initial_observation")))
+        for index, stored in enumerate(entry["steps"]):
+            event = stored["event"]
+            if event is None:
+                continue
+            tracker.update(event["action"], event["observation"])
+            reference = tracker.facts()
+            compared = outcome.steps[index] if index < len(outcome.steps) else None
+            ran = compared is not None and compared["after"]
+            if not ran:
+                continue
+            state = compared["state"]
+            facts = state.get("facts") if isinstance(state, dict) else None
+            if facts_agree(state, reference):
+                continue
+            if not isinstance(facts, dict) or not facts or not set(facts) <= set(STATE_FACTS):
+                counts["facts_shape"] += 1
+            if isinstance(facts, dict):
+                for key in STATE_FACTS:
+                    if key in facts and not facts_agree({"facts": {key: facts[key]}}, reference):
+                        counts[key] += 1
+            if cell in allowed and len(examples) < TRACKER_FEEDBACK_EXAMPLES:
+                examples.append({"trajectory": cell, "step": index,
+                    "action": str(event["action"])[:TRACKER_EVENT_CHARS],
+                    "observation": str(event["observation"] or "")[:TRACKER_EVENT_CHARS],
+                    "procedure_facts": json.dumps(facts, sort_keys=True, ensure_ascii=False,
+                        separators=(",", ":"))[:TRACKER_FACTS_CHARS],
+                    "reference_facts": json.dumps(reference, sort_keys=True, ensure_ascii=False,
+                        separators=(",", ":"))[:TRACKER_FACTS_CHARS]})
+    return {"tracker_disagreement_counts": counts, "tracker_disagreements": examples}
 
 
 def run_tests(procedure, entries, outcomes, workers, *, inputs_dirs=None):

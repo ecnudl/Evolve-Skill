@@ -800,13 +800,14 @@ def zpc_smoke(args):
 
 def alf_snapshot(args):
     from skillopt.execskill import alf_smoke
-    _print(alf_smoke.snapshot(args.out, source=args.source, git_head=args.git_head))
+    _print(alf_smoke.snapshot(args.out, source=args.source, git_head=args.git_head,
+                             configuration=getattr(args, "configuration", protocol.ALFWORLD_V1)))
 
 
 def alf_s0(args):
     from skillopt.execskill import alf_smoke
     value = alf_smoke.collect_s0(args.out, preparation_file=args.preparation, snapshot_root=args.snapshot,
-                                 selftest=args.selftest)
+                                 selftest=args.selftest, configuration=getattr(args, "configuration", protocol.ALFWORLD_V1))
     _print({"s0": str(Path(args.out) / alf_smoke.S0_FILE), "passed": value["passed"],
             "slice_counts": value["slice_counts"], "sealed_reads": value["sealed_reads"]})
     return 0 if value["passed"] else 3
@@ -816,14 +817,16 @@ def alf_manifest(args):
     from skillopt.execskill import alf_smoke
     value = alf_smoke.make_manifest(args.out, root=args.root, s0_file=args.s0, provenance=args.provenance,
         roles_repo=args.roles_repo, elucid_env=args.elucid_env, route_b_env=args.route_b_env,
-        smoke_chain=args.smoke_chain, smoke_results=args.smoke_result)
+        smoke_chain=args.smoke_chain, smoke_results=args.smoke_result,
+        configuration=getattr(args, "configuration", protocol.ALFWORLD_V1))
     _print({"manifest": str(args.out), "run": value[protocol.RECORD_HASH], "root": value["root"],
             "launchable_chains": value["data"]["launchable_chains"], "sealed_reads": 0})
 
 
 def alf_smoke(args):
     from skillopt.execskill import alf_smoke as stages
-    value = stages.run_stage(args.manifest, args.stage, chain_id=args.chain)
+    value = stages.run_stage(args.manifest, args.stage, chain_id=args.chain,
+                            configuration=getattr(args, "configuration", protocol.ALFWORLD_V1))
     _print({"stage": args.stage, "chain": args.chain, "passed": value["result"]["passed"]})
     return 0 if value["result"]["passed"] else 3
 
@@ -966,14 +969,14 @@ def parser():
     sub.add_parser("monitor").add_argument("--root", required=True)
     command = sub.add_parser("zpc-snapshot")
     command.add_argument("--configuration", choices=(protocol.ZEBRA_PC_V1, protocol.ZEBRA_PC_V2,
-                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4),
+                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5),
                          default=protocol.ZEBRA_PC_V1)
     command.add_argument("--source", default=str(PROJECT_ROOT))
     command.add_argument("--out", required=True)
     command.add_argument("--git-head", required=True)
     command = sub.add_parser("zpc-s0")
     command.add_argument("--configuration", choices=(protocol.ZEBRA_PC_V1, protocol.ZEBRA_PC_V2,
-                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4),
+                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5),
                          default=protocol.ZEBRA_PC_V1)
     command.add_argument("--out", required=True)
     command.add_argument("--snapshot", default=str(PROJECT_ROOT))
@@ -982,7 +985,7 @@ def parser():
     command.add_argument("--selftest")
     command = sub.add_parser("zpc-manifest")
     command.add_argument("--configuration", choices=(protocol.ZEBRA_PC_V1, protocol.ZEBRA_PC_V2,
-                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4),
+                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5),
                          default=protocol.ZEBRA_PC_V1)
     command.add_argument("--out", required=True)
     command.add_argument("--root", required=True)
@@ -995,21 +998,27 @@ def parser():
     command.add_argument("--smoke-result", action="append", default=[])
     command = sub.add_parser("zpc-smoke")
     command.add_argument("--configuration", choices=(protocol.ZEBRA_PC_V1, protocol.ZEBRA_PC_V2,
-                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4),
+                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5),
                          default=protocol.ZEBRA_PC_V1)
     command.add_argument("--manifest", required=True)
     command.add_argument("--chain", choices=("G", "D"), required=True)
     command.add_argument("--stage", choices=("S1", "S2", "S3", "SE6"), required=True)
     command = sub.add_parser("alf-snapshot")
+    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V1, protocol.ALFWORLD_V2),
+                         default=protocol.ALFWORLD_V1)
     command.add_argument("--source", default=str(PROJECT_ROOT))
     command.add_argument("--out", required=True)
     command.add_argument("--git-head", required=True)
     command = sub.add_parser("alf-s0")
+    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V1, protocol.ALFWORLD_V2),
+                         default=protocol.ALFWORLD_V1)
     command.add_argument("--out", required=True)
     command.add_argument("--preparation", required=True)
     command.add_argument("--snapshot", default=str(PROJECT_ROOT))
     command.add_argument("--selftest")
     command = sub.add_parser("alf-manifest")
+    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V1, protocol.ALFWORLD_V2),
+                         default=protocol.ALFWORLD_V1)
     command.add_argument("--out", required=True)
     command.add_argument("--root", required=True)
     command.add_argument("--s0", required=True)
@@ -1020,6 +1029,8 @@ def parser():
     command.add_argument("--smoke-chain", choices=("D",))
     command.add_argument("--smoke-result", action="append", default=[])
     command = sub.add_parser("alf-smoke")
+    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V1, protocol.ALFWORLD_V2),
+                         default=protocol.ALFWORLD_V1)
     command.add_argument("--manifest", required=True)
     command.add_argument("--chain", choices=("D",), default="D")
     command.add_argument("--stage", choices=("S1", "S2", "S3", "SE6"), required=True)

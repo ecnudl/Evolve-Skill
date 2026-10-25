@@ -1328,9 +1328,15 @@ def max_role_calls(configuration=protocol.PILOT):
 def engineer_request_floor(configuration=protocol.PILOT):
     """``ENGINEER_REQUEST_FLOOR`` with the configuration's engineer prompt (v2: the longer of ``ENGINEER_SYSTEM_V2``
     and the analysts' ``ANALYST_SYSTEM``, both engineer-role calls). v2.3 also pins its single-mode smoke prompt."""
+    if protocol.is_alfworld_v2(configuration):
+        return protocol.ROLE_INPUT_BYTES + max(len(prompt.encode()) for prompt in (
+            engineer.ENGINEER_SYSTEM_ALF_V2, engineer.ENGINEER_SYSTEM_SINGLE_ALF_V2, engineer.ANALYST_SYSTEM))
     if protocol.is_alfworld(configuration):
         return protocol.ROLE_INPUT_BYTES + max(len(prompt.encode()) for prompt in (
             engineer.ENGINEER_SYSTEM_ALF_V1, engineer.ENGINEER_SYSTEM_SINGLE_ALF_V1, engineer.ANALYST_SYSTEM))
+    if protocol.is_v27(configuration):
+        return protocol.ROLE_INPUT_BYTES + max(len(prompt.encode()) for prompt in (
+            engineer.ENGINEER_SYSTEM_ZPC_V27, engineer.ENGINEER_SYSTEM_SINGLE_ZPC_V27, engineer.ANALYST_SYSTEM))
     if protocol.is_v26(configuration):
         return protocol.ROLE_INPUT_BYTES + max(len(prompt.encode()) for prompt in (
             engineer.ENGINEER_SYSTEM_ZPC_V26, engineer.ENGINEER_SYSTEM_SINGLE_ZPC_V26, engineer.ANALYST_SYSTEM))
