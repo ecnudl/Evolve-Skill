@@ -236,7 +236,7 @@ ENGINEER_RECORDS[ZEBRA_PC_V5] = "engineer-v2-7"
 ALFWORLD_V2_ROOT = "/data/execskill-20261026-alfworld-v2"
 ALFWORLD_V2_MANIFEST = ALFWORLD_V2_ROOT + "-manifest.json"
 ALFWORLD_V2_NAMESPACES = {"G": "G-alf2", "D": "D-alf2"}
-ALFWORLD_V2_FRESHNESS = "alfworld_split_v1_slices_reused_alf1_acceptance_unused"
+ALFWORLD_V2_FRESHNESS = "alfworld_split_v1_slices_reused_alf1_acceptance_used_once"
 SUPPORTED_NAMESPACES += tuple(ALFWORLD_V2_NAMESPACES.values())
 for _name in ("CONFIGURATIONS", "CONFIG_STEP_CAPS", "CONFIG_SCHEDULE_CELLS", "CONFIG_ROLE_CAPS", "CONFIG_GLM_CAP",
               "CONFIG_CAP_FACTOR", "COST_CHECK_PAUSES", "TEST_READ_CELLS", "STAGE_READ", "LEARNING", "FIX_ECHO",

@@ -57,7 +57,7 @@ def test_alf_v2_identity_caps_and_policy_are_registered_independently():
     assert p.REAL_RUN_EVIDENCE[CONFIG] == "alfworld_v2_real_run"
     assert p.REAL_RUN_EVIDENCE[CONFIG] in protocol.EVIDENCE
     assert p.ACCEPT_FRESHNESS[CONFIG] == p.ALFWORLD_V2_FRESHNESS
-    assert p.ALFWORLD_V2_FRESHNESS == "alfworld_split_v1_slices_reused_alf1_acceptance_unused"
+    assert p.ALFWORLD_V2_FRESHNESS == "alfworld_split_v1_slices_reused_alf1_acceptance_used_once"
     assert p.ENGINEER_RECORDS[CONFIG] == "engineer-alf-v2"
     assert p.POLICY_VERSIONS[CONFIG] == policy.POLICY_VERSION_V25
     assert policy.source_limit(p.POLICY_VERSIONS[CONFIG]) == 16000
