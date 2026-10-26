@@ -123,6 +123,7 @@ class Procedure:
         return hash(self.sha256)
 
     def _validate(self):
+        outcome_judged = self.policy_version == policy.POLICY_VERSION_V28
         learned = LEARNED_ID.fullmatch(self.id) if type(self.id) is str else None
         ensure(_is_procedure_id(self.id), "A procedure id is p-<bench>-<step>-<n> or fx-<name>")
         ensure(self.origin in SUPPORTED_BENCHES and (learned is None or learned.group(1) == self.origin),
@@ -132,26 +133,29 @@ class Procedure:
         ensure(type(self.description) is str and 0 < len(self.description) <= MAX_DESCRIPTION_CHARS,
                "A description is 1-600 characters")
         ensure(type(self.hooks) is tuple and self.hooks == tuple(h for h in HOOKS if h in self.hooks)
-               and len(set(self.hooks)) == len(self.hooks) and "applies" in self.hooks and len(self.hooks) >= 2,
+               and len(set(self.hooks)) == len(self.hooks)
+               and (outcome_judged or ("applies" in self.hooks and len(self.hooks) >= 2)),
                "Hooks are distinct registered hooks in registered order: applies and at least one more")
         ensure(type(self.policy_version) is str and self.policy_version in policy.POLICIES,
                "A registered procedure policy")
         violations = policy.check(self.source, version=self.policy_version)
         ensure(not violations, "Policy violations: %s" % [v.to_json() for v in violations[:5]])
         functions = _hook_functions(self.source)
-        ensure(all(functions.get(h) == HOOK_PARAMETERS[h] for h in self.hooks),
+        ensure(outcome_judged or all(functions.get(h) == HOOK_PARAMETERS[h] for h in self.hooks),
                "Every declared hook is a module-level function with its registered parameters")
-        ensure(not [name for name in functions if name in HOOKS and name not in self.hooks],
+        ensure(outcome_judged or not [name for name in functions if name in HOOKS and name not in self.hooks],
                "A module-level hook function must be declared")
         ensure(type(self.excluded_benches) is tuple and self.excluded_benches == _benches(self.excluded_benches)
                and len(set(self.excluded_benches)) == len(self.excluded_benches)
                and set(self.excluded_benches) <= set(procedure_benches(self))
-               and len(self.excluded_benches) < len(procedure_benches(self)), "Excluded benches are known, ordered and not all")
+               and (outcome_judged or len(self.excluded_benches) < len(procedure_benches(self))),
+               "Excluded benches are known, ordered and not all")
         scope = [b for b in procedure_benches(self) if b not in self.excluded_benches]
-        ensure(self.origin != ZEBRA or (self.hooks == ("applies", "before_call")
+        ensure(outcome_judged or self.origin != ZEBRA or (self.hooks == ("applies", "before_call")
                and not self.requests_second_call), "ZebraLogic procedures use applies and before_call only")
         ensure(type(self.header) is str and len(self.header) <= MAX_HEADER_CHARS
-               and not header_hits(self.header, benches=scope), "A header is at most 200 lexicon-clean characters")
+               and (outcome_judged or not header_hits(self.header, benches=scope)),
+               "A header is at most 200 lexicon-clean characters")
         notes = any(h in NOTE_HOOKS for h in self.hooks)
         ensure(type(self.max_note_chars) is int and 0 <= self.max_note_chars <= max(MAX_NOTE_CHARS.values())
                and (self.max_note_chars > 0) == notes, "A note cap is 1-4000 exactly when a hook writes notes")
@@ -186,7 +190,8 @@ class Procedure:
                       replay_tests=_plain(list(self.replay_tests)), lineage=dict(self.lineage))
         if self.policy_version != policy.POLICY_VERSION:
             fields["policy_version"] = self.policy_version
-            stamp = ("procedure-v2-5" if self.policy_version == policy.POLICY_VERSION_V25 else
+            stamp = ("procedure-v2-8" if self.policy_version == policy.POLICY_VERSION_V28 else
+                     "procedure-v2-5" if self.policy_version == policy.POLICY_VERSION_V25 else
                      "procedure-v2-4" if self.policy_version == policy.POLICY_VERSION_V24 else "procedure-v2-3")
             return record(stamp, self.evidence, fields)
         return record("procedure", self.evidence, fields)
@@ -198,8 +203,9 @@ class Procedure:
     @classmethod
     def from_json(cls, value):
         version = value.get("policy_version") if isinstance(value, dict) else None
-        modern = version in (policy.POLICY_VERSION_V23, policy.POLICY_VERSION_V24, policy.POLICY_VERSION_V25)
-        stamp = ("procedure-v2-5" if version == policy.POLICY_VERSION_V25 else
+        modern = version in (policy.POLICY_VERSION_V23, policy.POLICY_VERSION_V24, policy.POLICY_VERSION_V25, policy.POLICY_VERSION_V28)
+        stamp = ("procedure-v2-8" if version == policy.POLICY_VERSION_V28 else
+                 "procedure-v2-5" if version == policy.POLICY_VERSION_V25 else
                  "procedure-v2-4" if version == policy.POLICY_VERSION_V24
                  else "procedure-v2-3" if modern else "procedure")
         try:

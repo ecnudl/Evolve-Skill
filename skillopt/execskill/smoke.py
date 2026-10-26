@@ -1317,7 +1317,9 @@ def max_role_calls(configuration=protocol.PILOT):
     ``BAND_ROUNDS`` builds."""
     if protocol.LEARNING[configuration] != "train":
         return dict(MAX_ROLE_CALLS)
-    return {"engineer": protocol.TRAIN_ROUNDS * (protocol.TRAIN_ENGINEER_CALLS + protocol.TRAIN_ANALYST_CALLS),
+    train_calls = (protocol.TRAIN_ENGINEER_CALL_BUDGETS[configuration]
+                   if protocol.is_v28(configuration) else protocol.TRAIN_ENGINEER_CALLS)
+    return {"engineer": protocol.TRAIN_ROUNDS * (train_calls + protocol.TRAIN_ANALYST_CALLS),
             "leakage": protocol.TRAIN_ROUNDS * (protocol.MAX_CHANGES + protocol.TRAIN_ENGINEER_CALLS - 1),
             "describer": DESCRIBER_CALLS,
             "examiner": MAX_ROLE_CALLS["examiner"]
@@ -1328,6 +1330,13 @@ def max_role_calls(configuration=protocol.PILOT):
 def engineer_request_floor(configuration=protocol.PILOT):
     """``ENGINEER_REQUEST_FLOOR`` with the configuration's engineer prompt (v2: the longer of ``ENGINEER_SYSTEM_V2``
     and the analysts' ``ANALYST_SYSTEM``, both engineer-role calls). v2.3 also pins its single-mode smoke prompt."""
+    if protocol.is_v28(configuration):
+        prompts = ((engineer.ENGINEER_SYSTEM_ALF_V3, engineer.ENGINEER_SYSTEM_SINGLE_ALF_V3)
+                   if protocol.is_alfworld(configuration) else
+                   (engineer.ENGINEER_SYSTEM_ZPC_V28, engineer.ENGINEER_SYSTEM_SINGLE_ZPC_V28))
+        suffixes = ("", engineer.engineer_v28.FIX_SYSTEM, engineer.engineer_v28.FORMAT_RETRY_SYSTEM)
+        candidates = [prompt + suffix for prompt in prompts for suffix in suffixes] + [engineer.ANALYST_SYSTEM]
+        return protocol.ROLE_INPUT_BYTES + max(len(prompt.encode()) for prompt in candidates)
     if protocol.is_alfworld_v2(configuration):
         return protocol.ROLE_INPUT_BYTES + max(len(prompt.encode()) for prompt in (
             engineer.ENGINEER_SYSTEM_ALF_V2, engineer.ENGINEER_SYSTEM_SINGLE_ALF_V2, engineer.ANALYST_SYSTEM))

@@ -69,7 +69,7 @@ def test_alf_v1_identity_family_and_features_are_distinct_from_all_older_configs
     assert p.FEATURE_FAMILIES[CONFIG] == "v2.6"
     assert all(fn(CONFIG) for fn in (p.is_alfworld, p.is_v23, p.is_v24, p.is_v25, p.is_v26))
     assert not p.is_zebra(CONFIG) and not p.is_alfworld(None)
-    assert all(not p.is_alfworld(name) for name in p.CONFIGURATIONS if name not in (CONFIG, p.ALFWORLD_V2))
+    assert all(not p.is_alfworld(name) for name in p.CONFIGURATIONS if name not in (CONFIG, p.ALFWORLD_V2) and not p.is_v28(name))
     for table in ("LEARNING", "FIX_ECHO", "META_COUNTERFACTUAL", "TRAIN_SIGN", "PRUNE_NON_FIRING", "ACCEPT_RULES",
                   "ENGINEER_MAX_TOKENS", "TRIM_PAYLOADS", "NORMALIZE_STRUCTURE", "CHECK_NON_FIRING",
                   "IDENTICAL_REQUEST_REUSE", "POLICY_VERSIONS", "CODE_EXTRACTION", "MULTIPLE_PYTHON_BLOCKS"):

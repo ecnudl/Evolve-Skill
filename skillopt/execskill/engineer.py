@@ -460,6 +460,17 @@ ENGINEER_SYSTEM_SINGLE_ALF_V2 = (ENGINEER_SYSTEM_SINGLE_ALF_V1.replace("configur
                                + ENGINEER_FACTS_V27 + "\n" + REFERENCE_TRACKER_ALF_V2 + "\n")
 ENGINEER_PROMPT_ALF_V2_SHA256 = digest(ENGINEER_SYSTEM_ALF_V2)
 ENGINEER_PROMPT_SINGLE_ALF_V2_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_ALF_V2)
+from . import engineer_v28
+ENGINEER_SYSTEM_ZPC_V28 = engineer_v28.system(protocol.ZEBRA_PC_V6, train=True)
+ENGINEER_SYSTEM_SINGLE_ZPC_V28 = engineer_v28.system(protocol.ZEBRA_PC_V6, train=False)
+ENGINEER_SYSTEM_ALF_V3 = engineer_v28.system(protocol.ALFWORLD_V3, train=True)
+ENGINEER_SYSTEM_SINGLE_ALF_V3 = engineer_v28.system(protocol.ALFWORLD_V3, train=False)
+ENGINEER_PROMPT_ZPC_V28_SHA256 = digest(ENGINEER_SYSTEM_ZPC_V28)
+ENGINEER_PROMPT_SINGLE_ZPC_V28_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_ZPC_V28)
+ENGINEER_PROMPT_ALF_V3_SHA256 = digest(ENGINEER_SYSTEM_ALF_V3)
+ENGINEER_PROMPT_SINGLE_ALF_V3_SHA256 = digest(ENGINEER_SYSTEM_SINGLE_ALF_V3)
+ENGINEER_PROMPT_FIX_V28_SHA256 = digest(engineer_v28.FIX_SYSTEM)
+ENGINEER_PROMPT_FORMAT_RETRY_V28_SHA256 = digest(engineer_v28.FORMAT_RETRY_SYSTEM)
 # v2's analysts (owner suggestion 2026-10-23 15:1x; SkillOpt's minibatch reflection): engineer-role calls before each
 # round's proposal, on groups of the incumbent's failed run-slice items, whose findings the proposal call is shown
 ANALYST_SYSTEM = """\
@@ -495,6 +506,7 @@ class Change:
     truncated: dict = field(default_factory=dict)  # v2: {field: its length} of a description or header cut to its cap
     normalized: list = field(default_factory=list)  # v2.3 E4: the structural changes made before C1
     trajectory_resolution: list | None = None  # v2.6 only; None leaves every older change record unchanged
+    repairs: list | None = None  # v2.8 only: generic reader/system repairs, absent from frozen records
 
     def to_json(self):
         return {"n": self.n, "kind": self.kind, "target": self.target, "benches": list(self.benches),
@@ -503,7 +515,8 @@ class Change:
                 **({"truncated": dict(self.truncated)} if self.truncated else {}),
                 **({"normalized": list(self.normalized)} if self.normalized else {}),
                 **({"trajectory_resolution": list(self.trajectory_resolution)}
-                   if self.trajectory_resolution is not None else {})}
+                   if self.trajectory_resolution is not None else {}),
+                **({"repairs": list(self.repairs)} if self.repairs is not None else {})}
 
 
 @dataclass
@@ -584,7 +597,8 @@ class Context:
     @property
     def calls_cap(self):
         """The engineer calls of one step (v1, ``ENGINEER_CALLS``) or of one ``engineer-r<r>`` unit (v2)."""
-        return TRAIN_ENGINEER_CALLS if self.mode == TRAIN else ENGINEER_CALLS
+        return (protocol.TRAIN_ENGINEER_CALL_BUDGETS[self.configuration] if self.mode == TRAIN
+                else protocol.ENGINEER_CALL_BUDGETS[self.configuration])
 
     def __post_init__(self):
         require(self.bench in protocol.SUPPORTED_BENCHES and type(self.k) is int and 0 <= self.k <= 999,
@@ -653,11 +667,13 @@ class Context:
                     "Training trajectories are this step's run-slice cells of its run unit or an earlier training "
                     "unit")
         v24, v25 = protocol.is_v24(self.configuration), protocol.is_v25(self.configuration)
-        require(isinstance(self.history, list) and all(_history_line(entry, self.round, v24=v24) for entry in self.history),
+        require(isinstance(self.history, list) and all(_history_line(entry, self.round, v24=v24,
+                v28=protocol.is_v28(self.configuration)) for entry in self.history),
                 "The history holds counts and flags only")
         require(isinstance(self.lint, list) and all(_lint_entry(entry, v25=v25,
                 **({"v26": True} if protocol.is_v26(self.configuration) else {}),
-                **({"v27": True} if protocol.is_v27(self.configuration) else {})) for entry in self.lint),
+                **({"v27": True} if protocol.is_v27(self.configuration) else {}),
+                **({"v28": True} if protocol.is_v28(self.configuration) else {})) for entry in self.lint),
                 "Lint entries are reports")
         require(isinstance(self.reserved, frozenset) and all(type(i) is str for i in self.reserved),
                 "Reserved procedure ids")
@@ -669,6 +685,7 @@ class Context:
         evaluated = {t["cell"]: t for t in self.evaluated}
         require(self.training is None or _training_ok(self.training, self.references, own, evaluated, self.bench,
                                                       v24=v24, v25=v25 and not protocol.is_alfworld(self.configuration),
+                                                      v28=protocol.is_v28(self.configuration),
                                                       current={t["cell"]: t for t in self.current}),
                 "The training feedback shows this step's run-slice items with their own references only")
         output_refs = {e["task_id"] for e in (self.training or {}).get("unfixed_examples", [])} if v24 else set()
@@ -693,11 +710,15 @@ def _verdict_fields(entry):
             and (entry["reason"] is None or _text(entry["reason"], MAX_REASON_CHARS)))
 
 
-def _history_line(entry, before, *, v24=False):
+def _history_line(entry, before, *, v24=False, v28=False):
     """v2 (Codex review 2026-10-23 #4): a line of an earlier round exactly as ``step._line`` writes it -- counts,
     flags, the net, p and reason -- with its ``proposals`` (the step buffer): kind, registrar id, target, a description
     excerpt and the fate."""
     fields = HISTORY_FIELDS | ({"patience_counted"} if v24 else set())
+    if v28 and "inert" in entry:
+        if not isinstance(entry["inert"], list) or not all(_text(i, MAX_ID_CHARS) for i in entry["inert"]):
+            return False
+        fields |= {"inert"}
     if not (isinstance(entry, dict) and set(entry) == fields and type(entry["round"]) is int
             and 1 <= entry["round"] < before and type(entry["candidate"]) is bool and _count(entry["generated"])
             and _verdict_fields(entry) and isinstance(entry["proposals"], list)):
@@ -710,9 +731,21 @@ def _history_line(entry, before, *, v24=False):
                for p in entry["proposals"])
 
 
-def _lint_entry(entry, *, v25=False, v26=False, v27=False):
+def _lint_entry(entry, *, v25=False, v26=False, v27=False, v28=False):
     """v2 (Codex review 2026-10-23 #3, #4): an advisory replay-test report exactly as ``_lint`` writes it."""
-    if not (isinstance(entry, dict) and set(entry) == LINT_FIELDS and _text(entry["id"], MAX_ID_CHARS, empty=False)
+    if not isinstance(entry, dict):
+        return False
+    if v28 and "information" in entry:
+        info = entry["information"]
+        if not (isinstance(info, list) and len(info) <= 6 and all(isinstance(row, dict)
+                and set(row) == {"check", "passed", "counts"}
+                and row["check"] in ("C5b", "C6", "C6b", "C6c", "C7", "C9")
+                and type(row["passed"]) is bool and isinstance(row["counts"], dict)
+                and set(row["counts"]) <= engineer_v28.INFORMATION_COUNTS
+                and all(_count(v) for v in row["counts"].values()) for row in info)):
+            return False
+    fields = LINT_FIELDS | ({"information"} if v28 and "information" in entry else set())
+    if not (isinstance(entry, dict) and set(entry) == fields and _text(entry["id"], MAX_ID_CHARS, empty=False)
             and isinstance(entry["tests"], list) and len(entry["tests"]) <= MAX_TESTS
             and isinstance(entry["problems"], list) and len(entry["problems"]) <= MAX_LINT):
         return False
@@ -739,12 +772,16 @@ def _lint_entry(entry, *, v25=False, v26=False, v27=False):
         for p in entry["problems"])
 
 
-def _training_ok(training, references, own, evaluated, bench, *, v24=False, v25=False, current=None):
+def _training_ok(training, references, own, evaluated, bench, *, v24=False, v25=False, current=None, v28=False):
     """v2 (Codex review 2026-10-23 #4): the last round's feedback exactly as ``step._feedback`` writes it; each
     example names one of this step's run-slice items (``own``) and that item's candidate-arm cell of the last training
     unit (``evaluated``: {cell: trajectory}), its texts within ``TRAIN_TEXT_CHARS``, and a reference only off ALFWorld
     and only the item's own (``Context.references``)."""
     fields = TRAINING_FIELDS | ({"unfixed_examples", "identical_items"} if v24 else set())
+    if v28:
+        fields |= {"informational_guards"}
+        if training.get("informational_guards") != ["own_faults", "predicate_faults"]:
+            return False
     if not (isinstance(training, dict) and set(training) == fields and _verdict_fields(training)
             and training["p_sign"] is not None and type(training["need"]) is int and training["need"] >= 1
             and isinstance(training["guards"], dict) and set(training["guards"]) == GUARD_FIELDS
@@ -1045,6 +1082,12 @@ def _ask(ctx, user, purpose):
         system = ENGINEER_SYSTEM_ALF_V1 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_ALF_V1
     if protocol.is_alfworld_v2(ctx.configuration):
         system = ENGINEER_SYSTEM_ALF_V2 if ctx.mode == TRAIN else ENGINEER_SYSTEM_SINGLE_ALF_V2
+    if protocol.is_v28(ctx.configuration):
+        system = engineer_v28.system(ctx.configuration, train=ctx.mode == TRAIN)
+        if user.get("request") == "fix":
+            system += engineer_v28.FIX_SYSTEM
+        elif user.get("request") == "format_retry":
+            system += engineer_v28.FORMAT_RETRY_SYSTEM
     options = ({"max_tokens": protocol.ENGINEER_MAX_TOKENS[ctx.configuration]}
                if modern and ctx.mode == TRAIN and purpose in ("propose", "repropose") else {})
     reply = ctx.roles.plain(ROLE, system, json.dumps(user, ensure_ascii=False, sort_keys=True),
@@ -1662,7 +1705,12 @@ def _firing(procedure, ctx):
         routed = router.route(package, ctx.bench, view, worker)
         detail["fires_on"] += procedure.id in routed.enabled
         detail["predicate_faults"] += bool(routed.faults)
-    if ctx.routing_items and ctx.routing_shared_worker:
+        return routed
+    if ctx.routing_items and ctx.routing_shared_worker and protocol.is_v28(ctx.configuration):
+        for _ in replay.run_worker_pass(ctx.routing_items, lambda entry: ctx.routing_workers(package, entry[0]),
+                                        lambda entry, worker: count(entry[1], worker)):
+            pass
+    elif ctx.routing_items and ctx.routing_shared_worker:
         with ctx.routing_workers(package, ctx.routing_items[0][0]) as worker:
             for _, view in ctx.routing_items:
                 count(view, worker)
@@ -1756,20 +1804,21 @@ def _routing_checks(procedure, ctx, *, outcomes=None, actual=None):
 
     def count(item, view, worker):
         routed = router.route(package, ctx.bench, view, worker)
+        faults = list(routed.faults)
         firing["predicate_faults"] += bool(routed.faults)
         if procedure.id not in routed.enabled:
-            return
+            return faults
         firing["fires_on"] += 1
         detail["fired"] += 1
         if not applicable:
-            return
+            return faults
         if ctx.bench == "alfworld":
             entry = entries.get(item)
             step_view = entry["steps"][0]["view"] if entry is not None and entry["steps"] else current_views.get(item)
             if step_view is None:
                 detail["empty"] += 1
                 detail["missing_step_views"] = detail.get("missing_step_views", 0) + 1
-                return
+                return faults
             view = step_view
         detail["view_keys"] = sorted(set(detail["view_keys"]) | set(view))
         if detail["sample"] is None and item in entries:
@@ -1793,17 +1842,22 @@ def _routing_checks(procedure, ctx, *, outcomes=None, actual=None):
                                 if call["hook"] in replay.STEP_HOOKS and call.get("status") == "raised"]
                     if captured:
                         detail["first_exception"] = {key: captured[0][key] for key in ("status", "exc_type", "message")}
-            return
+            return faults
         result = worker.call(procedure.id, hook, [view, None], timeout_s=SANDBOX_TIMEOUTS["hook"])
         if result.get("ok") is not True:
             detail["exceptions"] += 1
             if detail["first_exception"] is None and item in entries:
                 detail["first_exception"] = replay.bounded_result(result)
-            return
+            return faults + [{"kind": result.get("fault")}]
         present = bool(replay.screened_note(procedure, ctx.bench, view, result).strip())
         detail["nonempty" if present else "empty"] += 1
+        return faults
 
-    if ctx.routing_items and ctx.routing_shared_worker:
+    if ctx.routing_items and ctx.routing_shared_worker and protocol.is_v28(ctx.configuration):
+        for _ in replay.run_worker_pass(ctx.routing_items, lambda entry: ctx.routing_workers(package, entry[0]),
+                                        lambda entry, worker: count(*entry, worker), faults_of=lambda faults: faults):
+            pass
+    elif ctx.routing_items and ctx.routing_shared_worker:
         with ctx.routing_workers(package, ctx.routing_items[0][0]) as worker:
             for item, view in ctx.routing_items:
                 count(item, view, worker)
@@ -1825,14 +1879,23 @@ def check(change, ctx, taken=()):
     report = {"n": change.n, "kind": change.kind, "checks": [], "passed": False, "failed": None}
     train = ctx.mode == TRAIN
     v24 = protocol.is_v24(ctx.configuration)
+    v28 = protocol.is_v28(ctx.configuration)
 
     def done(check_id, passed, detail=None):
-        report["checks"].append(_result(check_id, passed, detail))
-        if not passed:
+        informational = v28 and check_id in ("C5b", "C6", "C6b", "C6c", "C9")
+        report["checks"].append({**_result(check_id, passed, detail),
+                                **({"informational": True} if informational else {})})
+        if not passed and not informational:
             report["failed"] = check_id
-        return passed
+        return passed or informational
 
     benches = protocol.SUPPORTED_BENCHES if ctx.bench == "zebralogic" else BENCHES
+    if v28:
+        try:
+            report["dropped_tests"] = engineer_v28.prepare(change, ctx)
+        except engineer_v28.reader.Unusable as error:
+            done("C1", False, {"reason": "unparseable", "detail": str(error)})
+            return report
     if protocol.NORMALIZE_STRUCTURE[ctx.configuration]:
         _normalize(change, benches=benches)
     if protocol.is_v26(ctx.configuration):
@@ -1840,6 +1903,10 @@ def check(change, ctx, taken=()):
         if change.trajectory_resolution is not None:
             report["trajectory_resolution"] = list(change.trajectory_resolution)
     problem = _structure(change, ctx.parent, taken, train=train, benches=benches)
+    if v28 and problem in ("target_edited_twice", "target_not_in_parent", "benches"):
+        done("C1", True, {"system_noop": problem})
+        report.update(passed=True, deferred=True)
+        return report
     if not done("C1", problem is None, _structure_detail(change, problem,
                 **({"configuration": ctx.configuration, "train": train} if protocol.is_v27(ctx.configuration) else {}))
                 if (train or protocol.is_v27(ctx.configuration)) and problem else problem):
@@ -1858,6 +1925,11 @@ def check(change, ctx, taken=()):
     try:
         single = _build(change, ctx)
     except PackageInvalid as error:
+        if v28 and not any(v.rule == "size" for v in policy.check(change.source,
+                version=protocol.POLICY_VERSIONS[ctx.configuration])):
+            done("C3", True, {"system_deferred": str(error)[:MAX_DETAIL_CHARS]})
+            report.update(passed=True, deferred=True)
+            return report
         done("C3", False, _size_detail(change, error, **({"configuration": ctx.configuration} if v24 else {}))
              if train or protocol.is_v25(ctx.configuration) else str(error)[:300])
         return report
@@ -1865,9 +1937,12 @@ def check(change, ctx, taken=()):
         try:
             rebase(single, ctx.base, ctx.parent, step=ctx.step)
         except PackageInvalid as error:
-            report["unfixable"] = True
-            done("C3", False, {"edit_budget": str(error)[:MAX_DETAIL_CHARS], **budget(ctx)})
-            return report
+            if v28:
+                report["system_budget"] = {"deferred": True, "reason": str(error)[:MAX_DETAIL_CHARS]}
+            else:
+                report["unfixable"] = True
+                done("C3", False, {"edit_budget": str(error)[:MAX_DETAIL_CHARS], **budget(ctx)})
+                return report
     done("C3", True, {"truncated": dict(change.truncated)} if change.truncated else None)
     if change.kind not in CODED:
         report["passed"] = True
@@ -1899,6 +1974,18 @@ def check(change, ctx, taken=()):
         routed = _routing_checks(procedure, ctx, outcomes=outcomes, actual=actual)
         if not done("C6b", *routed["C6b"]) or not done("C6c", *routed["C6c"]):
             return report
+        if v28:
+            from_replay = bool(outcomes) and all(not o.applies or any(
+                f["kind"].startswith("crash:") or f["kind"] in replay.CRASH_KINDS for f in o.faults)
+                for o in outcomes.values())
+            from_routing = bool(ctx.routing_items) and not routed["C6b"][1]["fires_on"]
+            empty_notes = bool(ctx.routing_items) and routed["C6c"][1].get("status") != "not_applicable" and not routed["C6c"][1]["nonempty"]
+            effect_hooks = (("alf_before_step",) if ctx.bench == "alfworld" else
+                            ("before_call", "sheet_feedback") if ctx.bench == "spreadsheetbench" else
+                            ("before_call", "bindings") if ctx.bench in QA else ("before_call",))
+            no_effect = not set(effect_hooks).intersection(procedure.hooks) or ctx.bench in procedure.excluded_benches
+            report["inert"] = bool((from_replay and not routed["C6c"][1]["nonempty"])
+                                   or from_routing or empty_notes or no_effect)
     elif protocol.CHECK_NON_FIRING[ctx.configuration] and not done("C6b", *_firing(procedure, ctx)):
         return report
     if not done("C4", *leak_check(change, ctx, outcomes, entries)):
@@ -1919,11 +2006,16 @@ def check(change, ctx, taken=()):
     if not done("C7", tests["passed"], tests):
         return report
     guard = replay.format_guard(outcomes)
+    if v28:
+        guard += [{"hook": "header", "marker": marker} for marker in replay.CHANNEL_MARKERS
+                  if marker in change.entry.get("header", "").lower()]
     if not done("C8", not guard, guard[:10]):
         return report
     screen = replay.output_faults(outcomes)
-    if not done("C9", not screen, screen[:10]):
+    if not done("C9", not screen, screen if v28 else screen[:10]):
         return report
+    if v28:
+        engineer_v28.advisory_feedback(change, report)
     report["passed"] = True
     return report
 
@@ -2029,6 +2121,8 @@ def fix(ctx, change, report):
 def _fix(ctx, change, report, *, attempt=None, why=None):
     """``(the corrected Change or None, why not)`` of one fix call. v2 (``attempt``: the change's n-th fix call of
     ``TRAIN_FIXES``) also says why the previous fix reply was not usable (``why``) and reads the reply leniently."""
+    if protocol.is_v28(ctx.configuration):
+        return engineer_v28.fix(ctx, change, report, attempt=attempt, why=why)
     entry = dict(change.entry, **({"source": change.source} if change.source is not None else {}))
     failed = [c for c in report["checks"] if not c["passed"]]
     last = failed[-1] if failed else None
@@ -2109,6 +2203,8 @@ def _combined(parent, survivors, step):
 
 def run(ctx):
     """The engineer's step: ``(candidate package or None, the sealed engineer record)``."""
+    if protocol.is_v28(ctx.configuration):
+        return engineer_v28.run(ctx)
     user, proposals, changes = payload(ctx), [], []
     ctx.sheet["shown"] = _shown_references(user) + _output_references(ctx, user)
     ctx.sheet.pop("disclosed", None)
@@ -2205,6 +2301,8 @@ def run_train(ctx):
     each change's ``fix_calls`` and ``fix_replies`` (why a fix reply was not usable; None for a usable one) and the
     surviving changes the budget dropped (``dropped``)."""
     require(ctx.mode == TRAIN, "The engineer unit of a training round")
+    if protocol.is_v28(ctx.configuration):
+        return engineer_v28.run(ctx)
     findings, analysed_refs, analysis = analyse(ctx)
     user, proposals, changes = payload(ctx, findings), [], []
     # C4 checks exactly the references this (fitted) payload discloses (#2), those the analysts saw, whose findings it

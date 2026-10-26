@@ -203,21 +203,28 @@ def prompt_sha(configuration=None):
                                           else engineer.ENGINEER_PROMPT_V2_SHA256), "analyst": engineer.ANALYST_PROMPT_SHA256,
                      "examiner": dict(examiner.PROMPT_V2_SHA256)}
     if protocol.is_zebra(configuration):
-        out["engineer"] = (engineer.ENGINEER_PROMPT_SINGLE_ZPC_V27_SHA256 if protocol.is_v27(configuration) else
+        out["engineer"] = (engineer.ENGINEER_PROMPT_SINGLE_ZPC_V28_SHA256 if protocol.is_v28(configuration) else
+                           engineer.ENGINEER_PROMPT_SINGLE_ZPC_V27_SHA256 if protocol.is_v27(configuration) else
                            engineer.ENGINEER_PROMPT_SINGLE_ZPC_V26_SHA256 if protocol.is_v26(configuration) else
                            engineer.ENGINEER_PROMPT_SINGLE_ZPC_V25_SHA256 if protocol.is_v25(configuration) else
                            engineer.ENGINEER_PROMPT_SINGLE_ZPC_V24_SHA256 if protocol.is_v24(configuration)
                            else engineer.ENGINEER_PROMPT_SINGLE_ZPC_SHA256)
-        out["v2"]["engineer"] = (engineer.ENGINEER_PROMPT_ZPC_V27_SHA256 if protocol.is_v27(configuration) else
+        out["v2"]["engineer"] = (engineer.ENGINEER_PROMPT_ZPC_V28_SHA256 if protocol.is_v28(configuration) else
+                                 engineer.ENGINEER_PROMPT_ZPC_V27_SHA256 if protocol.is_v27(configuration) else
                                  engineer.ENGINEER_PROMPT_ZPC_V26_SHA256 if protocol.is_v26(configuration) else
                                  engineer.ENGINEER_PROMPT_ZPC_V25_SHA256 if protocol.is_v25(configuration) else
                                  engineer.ENGINEER_PROMPT_ZPC_V24_SHA256 if protocol.is_v24(configuration)
                                  else engineer.ENGINEER_PROMPT_ZPC_SHA256)
     if protocol.is_alfworld(configuration):
-        out["engineer"] = (engineer.ENGINEER_PROMPT_SINGLE_ALF_V2_SHA256 if protocol.is_alfworld_v2(configuration)
+        out["engineer"] = (engineer.ENGINEER_PROMPT_SINGLE_ALF_V3_SHA256 if protocol.is_v28(configuration) else
+                           engineer.ENGINEER_PROMPT_SINGLE_ALF_V2_SHA256 if protocol.is_alfworld_v2(configuration)
                            else engineer.ENGINEER_PROMPT_SINGLE_ALF_V1_SHA256)
-        out["v2"]["engineer"] = (engineer.ENGINEER_PROMPT_ALF_V2_SHA256 if protocol.is_alfworld_v2(configuration)
+        out["v2"]["engineer"] = (engineer.ENGINEER_PROMPT_ALF_V3_SHA256 if protocol.is_v28(configuration) else
+                                 engineer.ENGINEER_PROMPT_ALF_V2_SHA256 if protocol.is_alfworld_v2(configuration)
                                  else engineer.ENGINEER_PROMPT_ALF_V1_SHA256)
+    if protocol.is_v28(configuration):
+        out["v28"] = {"fix": engineer.ENGINEER_PROMPT_FIX_V28_SHA256,
+                      "format_retry": engineer.ENGINEER_PROMPT_FORMAT_RETRY_V28_SHA256}
     return out
 
 
@@ -393,7 +400,7 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
                     "limits": {k: asdict(v) for k, v in sorted(limits.items())}, "measured": measured},
         "code": pin_code(), "loaded_code": sorted(loaded_code()),
         "environment": environment() if environment_found is None else environment_found}
-    suffix = ("-alf-v2" if protocol.is_alfworld_v2(configuration) else "-alf-v1" if protocol.is_alfworld(configuration) else
+    suffix = ("-v2-8" if protocol.is_v28(configuration) else "-alf-v2" if protocol.is_alfworld_v2(configuration) else "-alf-v1" if protocol.is_alfworld(configuration) else
               "-v2-7" if protocol.is_v27(configuration) else "-v2-6" if protocol.is_v26(configuration)
               else "-v2-5" if protocol.is_v25(configuration)
               else "-v2-4" if protocol.is_v24(configuration)
@@ -726,7 +733,8 @@ def zebra_features(configuration=protocol.ZEBRA_PC_V1):
                    "mde_points": p.MDE_POINTS["zebralogic"], "note_cap": p.MAX_NOTE_CHARS["zebralogic"],
                    "cell_anchors": p.CELL_ANCHORS["zebralogic"], "bindings": False,
                    "generator": "selection_only", "placebo_i": False, "j7": False,
-                   **({"launchable_chains": p.launchable_chains(name)} if p.is_v27(name) else {})})
+                   **({"launchable_chains": p.launchable_chains(name)} if p.is_v27(name) else {}),
+                   **({"outcome_engineer": outcome_engineer_features(name)} if p.is_v28(name) else {})})
 
 
 def alfworld_features(configuration=protocol.ALFWORLD_V1):
@@ -745,19 +753,41 @@ def alfworld_features(configuration=protocol.ALFWORLD_V1):
                    "g_acc": p.G_ACC["alfworld"], "mde_points": p.MDE_POINTS["alfworld"],
                    "note_cap": p.MAX_NOTE_CHARS["alfworld"], "cell_anchors": p.CELL_ANCHORS["alfworld"],
                    "max_steps": p.ALFWORLD_MAX_STEPS, "routing_view": p.ALFWORLD_ROUTING_VIEW,
-                   "generator": "selection_only", "placebo_i": False, "j7": False, "notes_coverage": False})
+                   "generator": "selection_only", "placebo_i": False, "j7": False, "notes_coverage": False,
+                   **({"outcome_engineer": outcome_engineer_features(configuration)}
+                      if p.is_v28(configuration) else {})})
+
+
+
+def outcome_engineer_features(configuration):
+    """V2.8 execution and admission contract, pinned only for new configurations."""
+    require(protocol.is_v28(configuration), "A v2.8 configuration")
+    return {
+        "source_bytes": policy.source_limit(protocol.POLICY_VERSIONS[configuration]),
+        "single_call_budget": protocol.ENGINEER_CALL_BUDGETS[configuration],
+        "train_call_budget": protocol.TRAIN_ENGINEER_CALL_BUDGETS[configuration],
+        "train_fixes": protocol.TRAIN_FIXES, "format_retries_per_reply": 1,
+        "hashseed": protocol.V28_HASHSEED, "namespace": "fresh_per_item_or_episode",
+        "replay_tests": "advisory", "replay_mismatches": "information",
+        "faults": "no_note_on_item", "inert": "skip_training",
+        "lexicon": "drop_reply_form_directives_only",
+        "note_screen_sha256": notes.v28_screen_sha256(),
+        "train_fault_guards": "information", "acceptance_j3": "information",
+    }
 
 
 def alfworld_registration_key(configuration):
     """The configuration's preparation metadata field; v1 retains its original schema."""
     require(protocol.is_alfworld(configuration), "A registered ALFWorld configuration")
-    return "alfworld_v2" if protocol.is_alfworld_v2(configuration) else "alfworld_v1"
+    return ("alfworld_v3" if protocol.is_v28(configuration) else
+            "alfworld_v2" if protocol.is_alfworld_v2(configuration) else "alfworld_v1")
 
 
 def _check_alfworld(value):
     """Validate the preparation metadata linkage, without opening any test or pool file."""
     data = value["data"]
-    label = "ALFWorld v2" if protocol.is_alfworld_v2(value["configuration"]) else "ALFWorld v1"
+    label = ("ALFWorld v3" if protocol.is_v28(value["configuration"]) else
+             "ALFWorld v2" if protocol.is_alfworld_v2(value["configuration"]) else "ALFWorld v1")
     require(data.get("alfworld_features") == alfworld_features(value["configuration"]),
             "The ALFWorld feature family is pinned by value")
     require(set(value["runtime"]) == set(value["contracts"]) == set(data.get("pools", {})) == {"alfworld"},

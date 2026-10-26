@@ -256,8 +256,8 @@ def _scope_cells(chain, configuration=p.ZEBRA_PC_V1):
     return scopes
 
 
-def projection(s2, chain, configuration=p.ZEBRA_PC_V1):
-    """Measured card-cell costs; procedure costs remain explicitly assumed at the registered high factor."""
+def projection(s2, chain, configuration=p.ZEBRA_PC_V1, *, s3=None):
+    """Measured solver costs and, for v2.8, role costs at the registered call caps."""
     require(p.is_zebra(configuration), "A registered ZebraLogic configuration")
     if p.is_v27(configuration):
         require(chain in p.launchable_chains(configuration), "zebra-pc-v5 launches chain D only")
@@ -273,15 +273,24 @@ def projection(s2, chain, configuration=p.ZEBRA_PC_V1):
         estimate = max((sum(card * c + proc * q for c, q in cells.values()) for cells in alternatives), default=0)
         need = math.ceil(estimate * ratio + reserve)
         scopes[scope] = {"projected": need, "cap": caps[scope], "passed": need <= caps[scope]}
-    return {"passed": all(v["passed"] for v in scopes.values()), "configuration": configuration,
+    roles = None
+    if p.is_v28(configuration):
+        require(isinstance(s3, dict) and s3.get("role_measurements"), "S-E6 needs S3 measured role calls")
+        roles = {name: row for name, row in smoke.glm_projection(s3["role_measurements"], configuration).items()
+                 if name.startswith(chain + ":")}
+    return {"passed": all(v["passed"] for v in scopes.values())
+            and (roles is None or all(row["fits"] for row in roles.values())), "configuration": configuration,
             "chain": chain, "per_cell": {z.BENCH: {"card": card, "procedure": proc, "procedure_assumed": True}},
             "ratio": ratio, "scopes": scopes, "read_estimate": math.ceil(ratio * (200 * card + 1_000 * proc)),
+            **({"roles": roles} if roles is not None else {}),
             "other_chain": ("not_launchable_in_this_configuration" if p.is_v27(configuration)
                             else "not_projected; requires its own smoke")}
 
 
 def _fixture_step(setting, services, chain, substage):
-    require(p.configuration_of(setting) == p.ZEBRA_PC_V5 and chain == "D", "Zebra v5 role smoke on chain D")
+    configuration = p.configuration_of(setting)
+    require(p.is_zebra(configuration) and p.is_v27(configuration) and chain == "D",
+            "Zebra v5/v6 role smoke on chain D")
     root = safe_path(setting.root) / chain / "role-smoke" / substage
     items = fixture_items()
     services = replace(services, registry=Registry(root / "fixture-history", evidence=setting.evidence))
@@ -453,10 +462,11 @@ def run_stage(manifest_path, chain, stage, *, docker=None, transport=None, confi
             value = _s2(setting, chain)
         elif stage == "S3":
             services = manifest.services_of(m, chain, setting=setting, transport=transport)
-            value = (_s3(setting, services, chain) if configuration == p.ZEBRA_PC_V5 else
+            value = (_s3(setting, services, chain) if p.is_v27(configuration) else
                      smoke_roles.zebra_training(setting, services, chain, fixture_items()))
         else:
-            value = projection(previous["S2"], chain, configuration)
+            value = projection(previous["S2"], chain, configuration,
+                               **({"s3": previous["S3"]} if p.is_v28(configuration) else {}))
         written = p.record("zebra-smoke-stage", "smoke", {"configuration": configuration, "chain": chain,
                             "manifest": m[p.RECORD_HASH], "stage": stage, "result": value})
         write_json(path, written)

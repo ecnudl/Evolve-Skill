@@ -112,7 +112,7 @@ from skillopt.coevo5.step import answered
 from skillopt.continual_eval.core import read_json, require, safe_path, write_json
 from skillopt.validator_pilot.api import digest
 
-from . import donors, placebo, router, stats_ext, reuse as request_reuse
+from . import donors, placebo, router, stats_ext, reuse as request_reuse, profiles
 from .cells import Arm, Pause, cell_id, run_cell, run_parallel
 from .outcomes_ext import DELIVERED
 from .package import Package, empty, restore
@@ -172,7 +172,7 @@ def minimum_astar(rule, size, blocks, *, alfworld=False):
 
 
 def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks, workers, trajectories, rooms=None,
-            generate=None, dup=False, probe=(), freshness=None, mde=None, rule=None, reuse=None):
+            generate=None, dup=False, probe=(), freshness=None, mde=None, rule=None, reuse=None, configuration=None):
     """Seal one acceptance round (module docstring) and write it once to ``<root>/sealed.json``. ``views``: {item:
     routing view} of the acceptance slice A in slice order (``solver.routing_view``); ``blocks``: {item: block} for A
     (ALFWorld blocks are whole rooms); ``workers(package, item)``: a context manager yielding a started sandbox worker
@@ -181,7 +181,8 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
     "source_item"}]``: the examiner's frozen generator on the A* public views (G_acc; None without a generator);
     ``dup``: the registered duplicate arm S_dup runs; ``probe``: LiveMath's J7 probe items; ``rule``: v2.2's
     practical rule (``protocol.ACCEPT_RULES``), sealed with its |A*| floor, None for the registered J1-J7. ``reuse``:
-    v2.3's {card_text, runtime, views: {G_acc/probe: {item: shell view}}}, None for the historical full dispatch."""
+    v2.3's {card_text, runtime, views: {G_acc/probe: {item: shell view}}}, None for the historical full dispatch.
+    v2.8 seals its configuration so J3 is reported without deciding; earlier records keep their exact shape."""
     require(set(blocks) == set(views), "Every acceptance item has a block")
     if bench == "zebralogic":
         require(generate is None and not dup and not probe,
@@ -216,6 +217,8 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
         "plan": plan, "corpus": corpus, "placebo_y": placebo_y, "placebo_i": placebo_i, "g_acc": g_acc}
     if rule is not None:  # v2.2: the practical rule ``decide`` reads
         fields["rule"] = dict(rule)
+    if profiles.is_v28(configuration):
+        fields["configuration"] = configuration
     if bench == "zebralogic":
         fields["j6_registered"] = False
     if reuse is not None:
@@ -930,6 +933,7 @@ def _header(sealed):
         dispatch_counts = {"physical_cells": len(jobs),
                            "dispatched_by_arm": {arm: sum(job["arm"] == arm for job in jobs) for arm in names}}
     return {**({"rule": sealed["rule"]["name"]} if sealed.get("rule") else {}),  # v2.2
+            **({"configuration": sealed["configuration"]} if profiles.is_v28(sealed.get("configuration")) else {}),
             **({"reuse": {"plan_sha256": seals["reuse_sha256"], "card_sample": sealed["reuse"]["card_sample"],
                            "timing": "physical_dispatch_schedule", "infrastructure": "dispatched_representatives",
                            "identical_all": {name: len(items) for name, items in sealed["reuse"]["identical_all"].items()},
@@ -1026,6 +1030,8 @@ def decide(cells, sealed):
     j3 = {"fault_items": len(faults), "items": faults, "A": size_a, "share": len(faults) / size_a,
           "max_items": fault_items_max(size_a), "ok": len(faults) * FAULT_SHARE_MAX.denominator
           <= FAULT_SHARE_MAX.numerator * size_a}
+    if profiles.is_v28(sealed.get("configuration")):
+        j3["informational"] = True
     margin = format_margin(len(astar))
     format_items = astar
     if reuse is not None:
@@ -1057,7 +1063,7 @@ def decide(cells, sealed):
     j6 = _duplicate(cells_table, sealed, items, design)
     j7 = _probe(cells, identical=identical.get("probe", []))
     failed = [name for name, check in (("J1", j1), ("J2", j2), ("J3", j3), ("J4", j4), ("J7", j7))
-              if check is not None and not check["ok"]]
+              if check is not None and not check.get("informational") and not check["ok"]]
     if not j5["ok"] or (j6 is not None and not j6["ok"]):
         verdict = "undetermined"
         reason = "instrument guard failed (%s); the run pauses, the batch is consumed but undecided" % (
@@ -1070,6 +1076,9 @@ def decide(cells, sealed):
         if gate is not None:
             reason = "J1 (%s: %+.1f points over the whole batch%s) and J3-J7 hold; placebo label %s" % (
                 gate["name"], 100 * first["whole_batch"], "" if j1["practical"] else ", significant", j2["label"])
+        if j3.get("informational"):
+            reason = reason.replace("J1-J7 hold", "J1, J2 and J4-J7 hold; J3 reported")
+            reason = reason.replace("and J3-J7 hold", "and J4-J7 hold; J3 reported")
     calls = (CANDIDATE, PLACEBO_Y) + ((PLACEBO_I,) if PLACEBO_I in arms else ())
     return record("decision-v2-3" if sealed.get("reuse") is not None else "decision", plan["evidence"], {
         **_header(sealed), "A_star": len(astar), "A_star_rooms": plan["astar_rooms"], "analysed": len(items),

@@ -341,17 +341,24 @@ class _Shell:
         """``(text, bindings)``: one procedure's screened note (§2.2) and the bindings it shows. With ``public_text``
         every binding must quote it verbatim (§2.4 item 1); sham content (``public_text`` None) was checked on its
         donor. Each dropped field or binding is a fault."""
-        kept, dropped = notes.screen(fields, bench=self.bench, public_text=public_text)
+        modern = notes.outcome_judged(procedure)
+        kept, dropped = notes.screen(fields, bench=self.bench, public_text=public_text,
+                                     **({"outcome_judged": True} if modern else {}))
+        if modern:
+            _, header_drops = notes.screen_header(procedure.header)
+            dropped += header_drops
         bindings = kept.pop("bindings", [])
         if bindings and public_text is not None:
             bindings, unverified = notes.check_bindings(bindings, public_text)
             dropped = dropped + unverified
         if bindings:
             kept["bindings"] = bindings
+        kept = notes.suppress_faulted(kept, dropped, outcome_judged=modern)
+        bindings = kept.get("bindings", [])
         text = notes.render(kept, bench=self.bench, header=procedure.header) if kept else ""
         self.notes.append({"id": procedure.id, "hook": hook, "fields": kept, "rendered_chars": len(text),
                            "dropped": dropped})
-        for entry in dropped:
+        for entry in notes.fault_drops(dropped, outcome_judged=modern):
             self.fault(procedure.id, hook, "note_" + entry["reason"], None, entry["detail"])
         return text, bindings
 
@@ -364,6 +371,12 @@ class _Shell:
             gone.add(entry["procedure"])
             if entry["reason"] == "over_declared_cap":
                 self.fault(entry["procedure"].split("/")[0], "notes", "note_over_declared_cap", None, entry["chars"])
+        modern_dropped = {p.id for p in self.package.procedures if p.id in self.dropped and notes.outcome_judged(p)}
+        if modern_dropped:
+            # A cap fault discovered during assembly also suppresses this procedure's other pending notes.
+            entries = [entry for entry in entries if entry[0].split("/")[0] not in modern_dropped]
+            text, skipped = notes.assemble(entries, bench=self.bench)
+            gone = {entry["procedure"] for entry in skipped}
         return text, [label for label, note, _ in entries if note and label not in gone]
 
     def sham(self, procedure_id, hook, step=0):
@@ -411,6 +424,9 @@ class _Shell:
                         continue
                     offered[label] = bindings
                 entries.append((label, text, procedure.max_note_chars))
+        # v2.8: another hook of this procedure can fault after its first note was prepared.
+        modern_dropped = {p.id for p in self.package.procedures if p.id in self.dropped and notes.outcome_judged(p)}
+        entries = [entry for entry in entries if entry[0].split("/")[0] not in modern_dropped]
         text, shown = self.assemble(entries)
         invited = [label for label in shown if label in offered]
         if invited:
@@ -509,7 +525,7 @@ class _Shell:
         """``(notes text, repair requested)`` of the enabled ``sheet_feedback`` procedures after the pre-check."""
         report = {key: run_report.get(key) for key in REPORT_KEYS}
         failed = report["status"] in PROGRAM_ERRORS
-        entries, requested = [], False
+        entries, requests = [], []
         for procedure in self.enabled(("sheet_feedback",)):
             if procedure.id in self.text:  # T_F: no procedure code; the same trigger RULE on the shell's report
                 text, trigger = (self.text[procedure.id] if failed else ""), failed and procedure.requests_second_call
@@ -523,15 +539,18 @@ class _Shell:
                                           public_text=None)
                 else:
                     text, _ = self.render(procedure, "sheet_feedback", shaped[0], public_text=_public_text(view))
+                if notes.outcome_judged(procedure) and procedure.id in self.dropped:
+                    continue
                 trigger = shaped[1]
                 if trigger and not procedure.requests_second_call:
                     self.fault(procedure.id, "sheet_feedback", "undeclared_second_call")
                     continue
-            requested = requested or trigger
+            if trigger:
+                requests.append(procedure)
             entries.append((procedure.id + "/sheet_feedback", text, procedure.max_note_chars))
         text, _ = self.assemble(entries)
         self.notes_chars = max(self.notes_chars, len(text))
-        return text, requested
+        return text, any(not (notes.outcome_judged(p) and p.id in self.dropped) for p in requests)
 
     # ------------------------------------------------------------------------------------------------ ALFWorld
     def before_step(self, view, states, step):
@@ -554,6 +573,8 @@ class _Shell:
                     continue
                 text, _ = self.render(procedure, "alf_before_step", shaped[0], public_text=reference)
                 commands = [c for c in dict.fromkeys(shaped[1]) if c in admissible]
+            if notes.outcome_judged(procedure) and procedure.id in self.dropped:
+                continue
             line = NOT_RECOMMENDED_PREFIX + ", ".join(commands) if commands else ""
             entries.append((label, "\n".join(part for part in (text, line) if part), procedure.max_note_chars))
             discouraged[label] = commands

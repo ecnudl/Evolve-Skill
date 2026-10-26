@@ -33,8 +33,8 @@ def test_alf_v2_is_the_second_v27_profile_and_inherits_alf_v1_by_value():
     assert not p.is_zebra(CONFIG)
     assert p.is_alfworld(p.ALFWORLD_V1) and not p.is_alfworld_v2(p.ALFWORLD_V1)
     assert p.FEATURE_FAMILIES[p.ALFWORLD_V1] == "v2.6" and not p.is_v27(p.ALFWORLD_V1)
-    assert {name for name in p.CONFIGURATIONS if p.is_v27(name)} == {p.ZEBRA_PC_V5, CONFIG}
-    assert {name for name in p.CONFIGURATIONS if p.is_alfworld(name)} == {p.ALFWORLD_V1, CONFIG}
+    assert {name for name in p.CONFIGURATIONS if p.is_v27(name) and not p.is_v28(name)} == {p.ZEBRA_PC_V5, CONFIG}
+    assert {name for name in p.CONFIGURATIONS if p.is_alfworld(name) and not p.is_v28(name)} == {p.ALFWORLD_V1, CONFIG}
     assert not p.is_alfworld(None) and not p.is_alfworld_v2(None)
     for name in ("CONFIGURATIONS", "LEARNING", "FIX_ECHO", "META_COUNTERFACTUAL", "TRAIN_SIGN", "PRUNE_NON_FIRING",
                  "ACCEPT_RULES", "ENGINEER_MAX_TOKENS", "TRIM_PAYLOADS", "NORMALIZE_STRUCTURE", "CHECK_NON_FIRING",

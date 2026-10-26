@@ -9,15 +9,17 @@ from copy import deepcopy
 
 from .protocol import *  # re-export the historical vocabulary, without mutating its tables
 from . import protocol as legacy
-from .policy import POLICY_VERSION_V24, POLICY_VERSION_V25
+from .policy import POLICY_VERSION_V24, POLICY_VERSION_V25, POLICY_VERSION_V28, MAX_SOURCE_BYTES_V28
 
 ZEBRA_PC_V1 = "zebra-pc-v1"
 ZEBRA_PC_V2 = "zebra-pc-v2"
 ZEBRA_PC_V3 = "zebra-pc-v3"
 ZEBRA_PC_V4 = "zebra-pc-v4"
 ZEBRA_PC_V5 = "zebra-pc-v5"
+ZEBRA_PC_V6 = "zebra-pc-v6"
 ALFWORLD_V1 = "alfworld-v1"
 ALFWORLD_V2 = "alfworld-v2"
+ALFWORLD_V3 = "alfworld-v3"
 ZEBRA = "zebralogic"
 SUPPORTED_BENCHES = BENCHES + (ZEBRA,)
 FEATURE_FAMILIES = {name: ("v2.3" if name == MAIN_V2_3 else "historical") for name in CONFIGURATIONS}
@@ -28,54 +30,62 @@ FEATURE_FAMILIES[ZEBRA_PC_V4] = "v2.6"
 FEATURE_FAMILIES[ALFWORLD_V1] = "v2.6"
 FEATURE_FAMILIES[ZEBRA_PC_V5] = "v2.7"
 FEATURE_FAMILIES[ALFWORLD_V2] = "v2.7"
+FEATURE_FAMILIES[ZEBRA_PC_V6] = "v2.8"
+FEATURE_FAMILIES[ALFWORLD_V3] = "v2.8"
 
 
 def is_v23(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return FEATURE_FAMILIES[configuration] in ("v2.3", "v2.4", "v2.5", "v2.6", "v2.7")
+    return FEATURE_FAMILIES[configuration] in ("v2.3", "v2.4", "v2.5", "v2.6", "v2.7", "v2.8")
 
 
 def is_v24(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return FEATURE_FAMILIES[configuration] in ("v2.4", "v2.5", "v2.6", "v2.7")
+    return FEATURE_FAMILIES[configuration] in ("v2.4", "v2.5", "v2.6", "v2.7", "v2.8")
 
 
 def is_v25(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return FEATURE_FAMILIES[configuration] in ("v2.5", "v2.6", "v2.7")
+    return FEATURE_FAMILIES[configuration] in ("v2.5", "v2.6", "v2.7", "v2.8")
 
 
 def is_v26(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return FEATURE_FAMILIES[configuration] in ("v2.6", "v2.7")
+    return FEATURE_FAMILIES[configuration] in ("v2.6", "v2.7", "v2.8")
 
 
 def is_v27(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return FEATURE_FAMILIES[configuration] == "v2.7"
+    return FEATURE_FAMILIES[configuration] in ("v2.7", "v2.8")
+
+
+def is_v28(configuration):
+    configuration = configuration or PILOT
+    require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
+    return FEATURE_FAMILIES[configuration] == "v2.8"
 
 
 def is_zebra(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ZEBRA_PC_V1, ZEBRA_PC_V2, ZEBRA_PC_V3, ZEBRA_PC_V4, ZEBRA_PC_V5)
+    return configuration in (ZEBRA_PC_V1, ZEBRA_PC_V2, ZEBRA_PC_V3, ZEBRA_PC_V4, ZEBRA_PC_V5, ZEBRA_PC_V6)
 
 
 def is_alfworld(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ALFWORLD_V1, ALFWORLD_V2)
+    return configuration in (ALFWORLD_V1, ALFWORLD_V2, ALFWORLD_V3)
 
 
 def is_alfworld_v2(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration == ALFWORLD_V2
+    return configuration in (ALFWORLD_V2, ALFWORLD_V3)
 
 
 def _extend(table, value, *, v2=None, v3=None, v4=None):
@@ -249,6 +259,44 @@ RUN_ROOTS[ALFWORLD_V2] = ALFWORLD_V2_ROOT
 CHAIN_NAMESPACES[ALFWORLD_V2] = ALFWORLD_V2_NAMESPACES
 ACCEPT_FRESHNESS[ALFWORLD_V2] = ALFWORLD_V2_FRESHNESS
 ENGINEER_RECORDS[ALFWORLD_V2] = "engineer-alf-v2"
+
+
+# v2.8 inherits panels, acceptance bars and token ledgers by value. Only the
+# outcome-judged engineer/worker contract and experiment identity change.
+ZEBRA_PC_V6_ROOT = "/data/execskill-20261026-zebra-pc-v6"
+ZEBRA_PC_V6_MANIFEST = ZEBRA_PC_V6_ROOT + "-manifest.json"
+ZEBRA_PC_V6_NAMESPACES = {"G": "G-zpc6", "D": "D-zpc6"}
+ALFWORLD_V3_ROOT = "/data/execskill-20261026-alfworld-v3"
+ALFWORLD_V3_MANIFEST = ALFWORLD_V3_ROOT + "-manifest.json"
+ALFWORLD_V3_NAMESPACES = {"G": "G-alf3", "D": "D-alf3"}
+ALFWORLD_V3_FRESHNESS = "alfworld_split_v1_slices_reused_acceptance_used_once"
+SUPPORTED_NAMESPACES += tuple(ZEBRA_PC_V6_NAMESPACES.values()) + tuple(ALFWORLD_V3_NAMESPACES.values())
+for _child, _parent in ((ZEBRA_PC_V6, ZEBRA_PC_V5), (ALFWORLD_V3, ALFWORLD_V2)):
+    for _name in ("CONFIGURATIONS", "CONFIG_STEP_CAPS", "CONFIG_SCHEDULE_CELLS", "CONFIG_ROLE_CAPS", "CONFIG_GLM_CAP",
+                  "CONFIG_CAP_FACTOR", "COST_CHECK_PAUSES", "TEST_READ_CELLS", "STAGE_READ", "LEARNING", "FIX_ECHO",
+                  "META_COUNTERFACTUAL", "TRAIN_SIGN", "PRUNE_NON_FIRING", "ACCEPT_RULES", "ENGINEER_MAX_TOKENS",
+                  "TRIM_PAYLOADS", "NORMALIZE_STRUCTURE", "CHECK_NON_FIRING", "IDENTICAL_REQUEST_REUSE",
+                  "CODE_EXTRACTION", "MULTIPLE_PYTHON_BLOCKS"):
+        globals()[_name][_child] = deepcopy(globals()[_name][_parent])
+    ENGINEER_RECORDS[_child] = "engineer-v2-8"
+    POLICY_VERSIONS[_child] = POLICY_VERSION_V28
+REAL_RUN_EVIDENCE[ZEBRA_PC_V6] = "zebra_pc_v6_real_run"
+REAL_RUN_EVIDENCE[ALFWORLD_V3] = "alfworld_v3_real_run"
+RUN_ROOTS[ZEBRA_PC_V6] = ZEBRA_PC_V6_ROOT
+RUN_ROOTS[ALFWORLD_V3] = ALFWORLD_V3_ROOT
+CHAIN_NAMESPACES[ZEBRA_PC_V6] = ZEBRA_PC_V6_NAMESPACES
+CHAIN_NAMESPACES[ALFWORLD_V3] = ALFWORLD_V3_NAMESPACES
+ACCEPT_FRESHNESS[ZEBRA_PC_V6] = "zebra_split_v1_slices_reused_accept_used_three_times_plus_ub_probe"
+ACCEPT_FRESHNESS[ALFWORLD_V3] = ALFWORLD_V3_FRESHNESS
+
+# Conservative extra calls reserve one whole-proposal retry, one format retry
+# per change, and one after each ordinary fix. They do not consume TRAIN_FIXES.
+ENGINEER_CALL_BUDGETS = {name: ENGINEER_CALLS + (1 + MAX_CHANGES * 2 if is_v28(name) else 0)
+                       for name in CONFIGURATIONS}
+TRAIN_ENGINEER_CALL_BUDGETS = {
+    name: TRAIN_ENGINEER_CALLS + (1 + MAX_CHANGES * (TRAIN_FIXES + 1) if is_v28(name) else 0)
+    for name in CONFIGURATIONS}
+V28_HASHSEED = 0
 
 
 def launchable_chains(configuration):

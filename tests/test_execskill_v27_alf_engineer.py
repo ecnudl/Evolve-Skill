@@ -98,7 +98,7 @@ def test_alf_v2_c7_without_any_shown_cell_reports_counts_only():
 
 
 def test_tracker_prompt_is_alf_v2_only_even_though_fix_help_is_shared():
-    for configuration in p.CONFIGURATIONS:
+    for configuration in (name for name in p.CONFIGURATIONS if not p.is_v28(name)):
         ctx, _ = context(configuration=configuration, bench="alfworld")
         ctx.roles = WireRoles()
         e._ask(ctx, e.payload(ctx), "propose")

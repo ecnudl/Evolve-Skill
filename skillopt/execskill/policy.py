@@ -52,6 +52,9 @@ POLICY_VERSION_V24 = POLICY_VERSION_V23.replace("v2-3", "v2-4")
 POLICY_PATH_V24 = POLICY_PATH.with_name("policy-v2-4.json")
 POLICY_VERSION_V25 = POLICY_VERSION_V23.replace("v2-3", "v2-5")
 POLICY_PATH_V25 = POLICY_PATH.with_name("policy-v2-5.json")
+POLICY_VERSION_V28 = POLICY_VERSION_V23.replace("v2-3", "v2-8")
+POLICY_PATH_V28 = POLICY_PATH.with_name("policy-v2-8.json")
+MAX_SOURCE_BYTES_V28 = 24_000
 POLICY_PATH_V23 = POLICY_PATH.with_name("policy-v2-3.json")
 BENCHES = ("searchqa", "officeqa", "livemath", "spreadsheetbench", "alfworld")
 MAX_SOURCE_BYTES = 6000
@@ -158,8 +161,11 @@ POLICY_V24 = {**POLICY_V23, "version": POLICY_VERSION_V24,
               "registration": "Route B v2.4 request 2026-10-25 item 5", "max_source_bytes": 10_000}
 POLICY_V25 = {**POLICY_V24, "version": POLICY_VERSION_V25,
               "registration": "Route B v2.5 request 2026-10-25 item 2", "max_source_bytes": 16_000}
+POLICY_V28 = {**POLICY_V25, "version": POLICY_VERSION_V28,
+              "registration": "Route B v2.8 outcome-judged engineer 2026-10-26",
+              "max_source_bytes": MAX_SOURCE_BYTES_V28}
 POLICIES = {POLICY_VERSION: POLICY, POLICY_VERSION_V23: POLICY_V23, POLICY_VERSION_V24: POLICY_V24,
-            POLICY_VERSION_V25: POLICY_V25}
+            POLICY_VERSION_V25: POLICY_V25, POLICY_VERSION_V28: POLICY_V28}
 
 BULLETIN = re.compile("|".join("(?:%s)" % p for p in BULLETIN_PATTERNS), re.I)
 RECEPTACLE = re.compile(RECEPTACLE_PATTERN, re.I)
@@ -206,7 +212,8 @@ def write_policy_json(path=None, *, version=POLICY_VERSION):
     """Write ``POLICY`` as canonical JSON, so the file's sha256 is ``policy_sha256()``. An existing file must hold the
     same bytes: a changed policy is a new protocol version, never an overwrite."""
     paths = {POLICY_VERSION: POLICY_PATH, POLICY_VERSION_V23: POLICY_PATH_V23,
-             POLICY_VERSION_V24: POLICY_PATH_V24, POLICY_VERSION_V25: POLICY_PATH_V25}
+             POLICY_VERSION_V24: POLICY_PATH_V24, POLICY_VERSION_V25: POLICY_PATH_V25,
+             POLICY_VERSION_V28: POLICY_PATH_V28}
     path = Path(path) if path is not None else paths[version]
     data = _canonical(POLICIES[version])
     if path.exists():
@@ -505,7 +512,7 @@ def check(source, *, bench=None, version=POLICY_VERSION):
         return [Violation("syntax", type(error).__name__, getattr(error, "lineno", 0) or 0)]
     parents = {child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)}
     numpy_names = _numpy_names(tree)
-    out = (_module_level_v23 if version in (POLICY_VERSION_V23, POLICY_VERSION_V24, POLICY_VERSION_V25)
+    out = (_module_level_v23 if version in (POLICY_VERSION_V23, POLICY_VERSION_V24, POLICY_VERSION_V25, POLICY_VERSION_V28)
            else _module_level)(source, tree)
     for node in ast.walk(tree):
         out.extend(_node(node, parents, numpy_names))

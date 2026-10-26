@@ -47,6 +47,7 @@ import copy
 import json
 import re
 from collections import defaultdict
+from contextlib import ExitStack
 from dataclasses import dataclass, field
 from fractions import Fraction
 
@@ -302,6 +303,18 @@ class _Run:
     def fault(self, hook, step, kind, detail=""):
         self.outcome.faults.append({"hook": hook, "step": step, "kind": kind, "detail": str(detail)[:200]})
         self.dead = True
+        if notes.outcome_judged(self.procedure):
+            # Suppress only pending requests: an after-step/feedback fault cannot retract
+            # a note already consumed by the solver's earlier request.
+            pending = ({"before_call", "bindings"} if hook in ("applies", "before_call", "bindings") else
+                       {"alf_before_step"} if hook == "alf_before_step" else
+                       {"sheet_feedback"} if hook == "sheet_feedback" else set())
+            self.outcome.notes[:] = [note for note in self.outcome.notes
+                                    if note["step"] != step or note["hook"] not in pending]
+            if "bindings" in pending:
+                self.outcome.bindings = []
+            if hook == "alf_before_step" and step is not None and step < len(self.outcome.steps):
+                self.outcome.steps[step].update(note="", discouraged=[])
 
     def call(self, hook, args, step=None):
         """``(ok, value)`` of one sandbox call; a failed call is a crash fault."""
@@ -331,21 +344,42 @@ class _Run:
     def render(self, hook, fields, reference, step=None):
         """``(text, bindings)``: the screened note and its verbatim bindings (the shell's ``render``)."""
         bench = self.inputs["bench"]
-        kept, dropped = notes.screen(fields, bench=bench, public_text=reference)  # verbatim quotes kept (C6b-2)
+        modern = notes.outcome_judged(self.procedure)
+        if modern:
+            # Audit raw output before C9 can discard an item; C8 remains a fatal integrity check.
+            raw = json.dumps(fields, ensure_ascii=False).lower() + "\n" + self.procedure.header.lower()
+            for marker in CHANNEL_MARKERS:
+                if marker in raw:
+                    self.outcome.faults.append({"hook": hook, "step": step,
+                                               "kind": "answer_channel_marker", "detail": marker})
+        kept, dropped = notes.screen(fields, bench=bench, public_text=reference,
+                                     **({"outcome_judged": True} if modern else {}))
+        if modern:
+            _, header_drops = notes.screen_header(self.procedure.header)
+            dropped += header_drops
         bindings = kept.pop("bindings", [])
         if bindings:
             bindings, unverified = notes.check_bindings(bindings, reference)
             dropped = dropped + unverified
         if bindings:
             kept["bindings"] = bindings
+        kept = notes.suppress_faulted(kept, dropped, outcome_judged=modern)
+        if modern:
+            bindings = kept.get("bindings", [])
+        fault_drops = notes.fault_drops(dropped, outcome_judged=modern)
         for entry in dropped:
-            self.fault(hook, step, "note_" + entry["reason"], entry["detail"])
+            if entry not in fault_drops:
+                self.outcome.faults.append({"hook": hook, "step": step, "kind": "note_form_instruction",
+                                           "detail": entry["detail"], "field": entry["field"],
+                                           "item": entry["item"], "informational": True})
+            else:
+                self.fault(hook, step, "note_" + entry["reason"], entry["detail"])
         text = notes.render(kept, bench=bench, header=self.procedure.header) if kept else ""
         return text, bindings
 
     def show(self, hook, text, reference, step=None):
         """Whether the shell would show the note; one over its caps is a fault and is not shown."""
-        if not text:
+        if not text or (notes.outcome_judged(self.procedure) and self.dead):
             return False
         if len(text) > self.procedure.max_note_chars:
             self.fault(hook, step, "note_over_declared_cap", len(text))
@@ -371,11 +405,14 @@ class _Run:
             found = self.hook("sheet_feedback", [view, shown, None], "request_repair")
             if found is not None:
                 text, _ = self.render("sheet_feedback", found[0], reference)
+                if notes.outcome_judged(self.procedure) and self.dead:
+                    return
                 if found[1] and not self.procedure.requests_second_call:
                     self.fault("sheet_feedback", None, "undeclared_second_call")
                 else:
                     self.show("sheet_feedback", text, reference)
-                    self.outcome.repair = found[1]
+                    if not (notes.outcome_judged(self.procedure) and self.dead):
+                        self.outcome.repair = found[1]
 
     def episode(self):
         state = None
@@ -429,16 +466,47 @@ def solo(procedure):
     return Package((procedure,), "replay", procedure.evidence)
 
 
+def run_worker_pass(items, open_worker, run, *, faults_of=lambda result: result.faults):
+    """Yield (item, result), reusing a healthy worker for one pass over a single input mount.
+
+    Each hook already executes in a fresh procedure namespace. A lost worker can permanently drop a procedure;
+    close that worker after recording the affected item and reload the whole package for the remaining items.
+    Ordinary hook exceptions/timeouts do not poison the worker and need no container restart.
+    """
+    with ExitStack() as stack:
+        worker = None
+        for item in items:
+            if worker is None:
+                worker = stack.enter_context(open_worker(item))
+            result = run(item, worker)
+            yield item, result
+            sticky = any(f.get("kind") in ("worker", "not_loaded", "crash:worker", "crash:not_loaded")
+                         for f in faults_of(result))
+            if sticky or getattr(worker, "dropped", ()) or getattr(worker, "rejected", ()):
+                stack.close()
+                worker = None
+
+
 def replay_many(procedure, entries, workers, *, hashseed=0, inputs_dirs=None, mutation=None, actual=None):
     """{cell: Outcome} of ``procedure`` on ``entries`` (``inputs_of`` values), in their order within each worker group:
     one worker per bench kind and input directory, opened by ``workers(package, kind=, hashseed=, inputs_dir=)`` (a
     context manager yielding a started worker, e.g. ``sandbox.client.with_worker`` with its options bound).
-    ``inputs_dirs``: {cell: the SpreadsheetBench item's public input directory}."""
+    ``inputs_dirs``: {cell: the SpreadsheetBench item's public input directory}. v2.8 pins the seed to zero,
+    reuses one healthy worker per pass/mount and reopens after worker-loss or another sticky worker fault."""
     groups = defaultdict(list)
     for entry in entries:
         groups[(SANDBOX_KINDS.get(entry["bench"], "cell"), (inputs_dirs or {}).get(entry["cell"]))].append(entry)
     out, package = {}, solo(procedure)
     for (kind, directory), group in groups.items():
+        if notes.outcome_judged(procedure):
+            def run(entry, worker):
+                captured = None if actual is None else actual.setdefault(entry["cell"], [])
+                return replay(worker, procedure, entry, mutation=mutation,
+                              **({"actual": captured} if captured is not None else {}))
+            for entry, outcome in run_worker_pass(group, lambda entry: workers(
+                    package, kind=kind, hashseed=0, inputs_dir=directory), run):
+                out[entry["cell"]] = outcome
+            continue
         with workers(package, kind=kind, hashseed=hashseed, inputs_dir=directory) as worker:
             for entry in group:
                 captured = None if actual is None else actual.setdefault(entry["cell"], [])
@@ -461,6 +529,12 @@ MISMATCH_EXPLANATION = (
     "PYTHONHASHSEED=1 in reverse order. Every hook return must be identical; nothing may crash or time out (5 s). "
     "Sort unordered collections before iterating and use deterministic counters for limits."
 )
+MISMATCH_EXPLANATION_V28 = (
+    "C6 reuses one healthy worker per pass and input mount with PYTHONHASHSEED=0 and a fresh namespace per hook "
+    "call, then repeats in reverse order in a fresh worker with the same seed. A lost/sticky worker is replaced "
+    "for remaining items. Crashes, timeouts and mismatches are information; the first pass is shown. "
+    "Faults suppress pending notes; notes already delivered before a late fault remain recorded."
+)
 
 
 def zero_crash(procedure, entries, workers, *, inputs_dirs=None, actual=None, diagnostic_cells=None):
@@ -468,7 +542,8 @@ def zero_crash(procedure, entries, workers, *, inputs_dirs=None, actual=None, di
     PYTHONHASHSEED 0 in the given order and in one with PYTHONHASHSEED 1 in the reverse order; the check passes when
     there is at least one trajectory, no crash-type fault and every hook value hash is identical. v2.6's optional
     ``diagnostic_cells`` captures bounded results from these same two passes and permits one shown mismatch example;
-    None preserves historical reports and capture behavior."""
+    None preserves historical reports and capture behavior. v2.8 uses seed zero in both passes and reuses one
+    healthy worker per pass/input mount; every hook call retains its fresh procedure namespace."""
     diagnosing = diagnostic_cells is not None
     first_actual = actual if actual is not None else {} if diagnosing else None
     second_actual = {} if diagnosing else None
@@ -484,6 +559,11 @@ def zero_crash(procedure, entries, workers, *, inputs_dirs=None, actual=None, di
     if diagnosing and mismatched:
         report.update(_mismatch_diagnostics(entries, mismatched, first, second, first_actual, second_actual,
                                             diagnostic_cells))
+    if notes.outcome_judged(procedure):
+        report.update(informational=True, mismatch_explanation=MISMATCH_EXPLANATION_V28,
+                      hashseed=0, fresh_namespace="per_hook_call", replay_workers="per_pass",
+                      items=[{"cell": cell, "first": first[cell].summary(), "second": second[cell].summary(),
+                              "mismatched": cell in mismatched} for cell in first])
     return report, first
 
 
@@ -1046,8 +1126,23 @@ def registrar_checks(procedure, entries, outcomes):
         agreement = [agree, total]
         if not total or Fraction(agree, total) < TRACKER_AGREEMENT:
             problems.append({"reason": "reference_tracker", "detail": agreement})
-    problems += [{"reason": "bindings_not_verbatim", **f} for f in _faults(outcomes, BINDING_KINDS)][:10]
-    return {"check": "C7", "passed": not problems, "problems": problems, "tracker_agreement": agreement}
+    bindings = [{"reason": "bindings_not_verbatim", **f} for f in _faults(outcomes, BINDING_KINDS)]
+    problems += bindings if notes.outcome_judged(procedure) else bindings[:10]
+    report = {"check": "C7", "passed": not problems, "problems": problems, "tracker_agreement": agreement}
+    if notes.outcome_judged(procedure):
+        # Invalid/duplicate names and nonnumeric values are already removed by check_bindings.
+        # They cannot change a calculator request. A claimed nonverbatim value/quote remains leakage.
+        fatal = [problem for problem in problems if problem.get("kind") == "note_not_verbatim"]
+        informational = [problem for problem in problems if problem not in fatal]
+        report.update(measured_passed=not problems, problems=problems[:10],
+                      problem_count=len(problems), fatal_problems=fatal[:10], fatal_problem_count=len(fatal),
+                      informational_problems=informational[:10], informational_problem_count=len(informational),
+                      passed=not fatal,
+                      classifications={"winning_action_discouraged": "quality", "repair_on_passed_item": "quality",
+                                       "reference_tracker": "quality", "note_name": "quality",
+                                       "note_duplicate_name": "quality", "note_value": "quality",
+                                       "note_not_verbatim": "leakage"})
+    return report
 
 
 # ------------------------------------------------------------------------------------------------ C8, C9, C4 faults
@@ -1055,6 +1150,9 @@ def format_guard(outcomes):
     """C8: [{cell, hook, step, marker}] of the shown notes carrying an answer-channel marker."""
     out = []
     for cell, outcome in outcomes.items():
+        for fault in outcome.faults:
+            if fault["kind"] == "answer_channel_marker":
+                out.append({"cell": cell, "hook": fault["hook"], "step": fault["step"], "marker": fault["detail"]})
         for note in outcome.notes:
             lowered = note["text"].lower()
             hits = [marker for marker in CHANNEL_MARKERS if marker in lowered]

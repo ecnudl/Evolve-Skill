@@ -158,15 +158,37 @@ class _Run:
             self.fault(fn, "output_shape")
         return found
 
-    def fields(self, found, text):
+    def fields(self, found, text, hook):
         """The screened fields (bindings checked verbatim on the donor's own public text); {} after a fault."""
         if found is None:
             return {}
-        kept, _ = notes.screen(found[0], bench=self.bench)
+        modern = notes.outcome_judged(self.procedure)
+        kept, dropped = notes.screen(found[0], bench=self.bench,
+                                     **({"outcome_judged": True, "public_text": text} if modern else {}))
+        if modern:
+            _, header_drops = notes.screen_header(self.procedure.header)
+            dropped += header_drops
         if "bindings" in kept:
-            bindings, _ = notes.check_bindings(kept.pop("bindings"), text)
+            bindings, unverified = notes.check_bindings(kept.pop("bindings"), text)
+            if modern:
+                dropped += unverified
             if bindings:
                 kept["bindings"] = bindings
+        kept = notes.suppress_faulted(kept, dropped, outcome_judged=modern)
+        if modern:
+            faults = notes.fault_drops(dropped, outcome_judged=True)
+            for row in dropped:
+                if row in faults:
+                    self.fault(hook, "note_" + row["reason"])
+                    self.faults[-1].update(row)
+                else:
+                    self.faults.append({"procedure": self.procedure.id, "donor": self.donor, "hook": hook,
+                                        "kind": "note_" + row["reason"], "informational": True, **row})
+            if kept:
+                text = notes.render(kept, bench=self.bench, header=self.procedure.header)
+                if len(text) > self.procedure.max_note_chars:
+                    self.fault(hook, "note_over_declared_cap")
+                    return {}
         return kept
 
 
@@ -178,10 +200,13 @@ def _outputs(run, inputs):
         for hook in QA_HOOKS:
             if hook in hooks:
                 args = [inputs["view"], None] if hook == "before_call" else [inputs["view"]]
-                out[hook] = run.fields(run.hook(hook, args), text)
+                out[hook] = run.fields(run.hook(hook, args), text, hook)
+        if run.dead and notes.outcome_judged(run.procedure):
+            out = {hook: {} for hook in out}
         if SHEET_HOOK in hooks and inputs["report"] is not None:
             report = {key: inputs["report"].get(key) for key in REPORT_KEYS}
-            out[SHEET_HOOK] = run.fields(run.hook(SHEET_HOOK, [inputs["view"], report, None], "request_repair"), text)
+            out[SHEET_HOOK] = run.fields(run.hook(SHEET_HOOK, [inputs["view"], report, None], "request_repair"), text,
+                                         SHEET_HOOK)
         return out
     if STEP_HOOK not in hooks:
         return out
@@ -192,7 +217,10 @@ def _outputs(run, inputs):
         admissible = view["admissible_commands"] if isinstance(view["admissible_commands"], list) else []
         commands = [c for c in dict.fromkeys(found[1]) if c in admissible] if found is not None else []
         reference = public_text([view["initial_observation"], view["observation"]])
-        entries.append({"fields": run.fields(found, reference), "discourage": len(commands)})
+        fields = run.fields(found, reference, STEP_HOOK)
+        if run.dead and notes.outcome_judged(run.procedure):
+            commands = []
+        entries.append({"fields": fields, "discourage": len(commands)})
         if AFTER_HOOK in hooks and step["event"] is not None and not run.dead:
             ok, new = run.raw(AFTER_HOOK, [step["event"], state])
             if ok and len(json.dumps(new, sort_keys=True, ensure_ascii=False,

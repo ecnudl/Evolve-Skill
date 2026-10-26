@@ -28,7 +28,7 @@ CONFIG = p.ZEBRA_PC_V5
 def test_v27_inherits_v26_without_changing_other_feature_families():
     assert p.FEATURE_FAMILIES[CONFIG] == "v2.7"
     assert all(fn(CONFIG) for fn in (p.is_zebra, p.is_v23, p.is_v24, p.is_v25, p.is_v26, p.is_v27))
-    assert all(not p.is_v27(name) for name in (*p.CONFIGURATIONS, None) if name not in (CONFIG, p.ALFWORLD_V2))
+    assert all(not p.is_v27(name) for name in (*p.CONFIGURATIONS, None) if name not in (CONFIG, p.ALFWORLD_V2) and not p.is_v28(name))
     assert p.FEATURE_FAMILIES[p.ALFWORLD_V1] == "v2.6" and p.is_v26(p.ALFWORLD_V1)
     assert p.is_v26(p.ZEBRA_PC_V4) and not p.is_v26(p.ZEBRA_PC_V3)
     with pytest.raises(ValueError, match="Unknown run configuration"):

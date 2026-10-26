@@ -558,7 +558,8 @@ def _item_workers(st, publics):
     def factory(package, item):
         sheet = st.bench == "spreadsheetbench" and item in publics
         with (_sheet_inputs(publics[item]) if sheet else nullcontext()) as inputs:
-            with st.services.workers(package, kind="cell", inputs_dir=inputs) as worker:
+            with st.services.workers(package, kind="cell", inputs_dir=inputs,
+                                    **({"hashseed": 0} if protocol.is_v28(configuration_of(st.setting)) else {})) as worker:
                 yield worker
 
     return factory
@@ -1091,13 +1092,13 @@ def _token(cell):
     return ((cell.get("judge") or {}).get("v2") or {}).get("token")
 
 
-def selftest_verdict(cells, sets, changed, *, identical=None, request_faults=None):
+def selftest_verdict(cells, sets, changed, *, identical=None, request_faults=None, configuration=None):
     """§5.5: the two registered blocks, from the cell records alone. ``cells``: the self-test's cell records (arms
     S' and S, one run); ``sets``: {bench: [item ids]}; ``changed``: the ids of the procedures the step adds or revises.
     (a) S' cells with a fault of a changed procedure or a re-execution ``unknown_fault`` (J3's rule, Codex F22) > 2 %;
     S' cells with only an inherited procedure's fault are counted apart, never blocking; (b) on any set, S's
     format-violating share exceeded by >= 5 points with a one-sided exact sign test p < 0.05. Accuracy is recorded,
-    never blocking."""
+    never blocking. v2.8 records the fault threshold but only the format comparison blocks."""
     by = {(c["cell"]["arm"], c["cell"]["task_id"]): c for c in cells}
     candidate = [c for c in cells if c["cell"]["arm"] == "S'"]
 
@@ -1130,10 +1131,13 @@ def selftest_verdict(cells, sets, changed, *, identical=None, request_faults=Non
                                     if evaluated else None for arm in ("S'", "S")},
                        **({"identical": len(ids) - len(evaluated), "accuracy_items": len(evaluated)}
                           if identical is not None else {})}
-    blocked = fault_share > SELFTEST_FAULT_MAX or any(row["blocks"] for row in rows.values())
+    informational_faults = protocol.is_v28(configuration)
+    blocked = (fault_share > SELFTEST_FAULT_MAX and not informational_faults) or any(
+        row["blocks"] for row in rows.values())
     return {"fault_cells": faulted, "inherited_fault_cells": inherited, "candidate_cells": len(candidate),
             "fault_share": float(fault_share), "fault_blocks": fault_share > SELFTEST_FAULT_MAX, "sets": rows,
-            "blocked": blocked, **({"identical": identical, "skipped_items": skipped, "fault_items_denominator": total}
+            "blocked": blocked, **({"faults_informational": True} if informational_faults else {}),
+            **({"identical": identical, "skipped_items": skipped, "fault_items_denominator": total}
                                    if identical is not None else {})}
 
 
@@ -1197,7 +1201,9 @@ def _selftest(st, unit, candidate, generated):
                                  if any(f.get("procedure") in changed for f in arms["S'"]["faults"])})
                           if sealed is not None else None)
         verdict = selftest_verdict(cells, {b: [i["id"] for i in items] for b, items in sets.items()},
-                                   changed, identical=identical, request_faults=request_faults)
+                                   changed, identical=identical, request_faults=request_faults,
+                                   **({"configuration": configuration_of(st.setting)}
+                                      if protocol.is_v28(configuration_of(st.setting)) else {}))
         return {**verdict, "cells": len(cells), "reason": "identical_requests_no_calls" if not jobs else None,
                 **({"request_plan_sha256": sealed[RECORD_HASH], "version": "paired-selftest-v2-3",
                     "request_fault_items": request_faults}
@@ -1332,7 +1338,9 @@ def _routes(st, package, entries, publics):
     """v2: {key: ``router.RouteLog``} of ``package`` on ``entries`` [(key, routing view)], zero calls: no worker when
     no procedure of the package runs on the bench; on SpreadsheetBench one worker per item with its workbook mounted
     (``_item_workers``, ``publics`` by key); else one worker holding the package for every item (a predicate is a pure
-    function of the view: C6 replayed every procedure in two orders and hash seeds)."""
+    function of the view: C6 replayed every procedure in two orders and hash seeds). v2.8 reuses one healthy worker
+    per package pass with seed zero and fresh per-hook namespaces, reopening after a sticky worker fault.
+    Workbook mounts and custom item-worker factories retain their separate input boundaries."""
     if not package.for_bench(st.bench):
         return {key: router.route(package, st.bench, view, None) for key, view in entries}
     if st.bench == "spreadsheetbench" or st.services.item_workers is not None:
@@ -1341,6 +1349,10 @@ def _routes(st, package, entries, publics):
             with factory(package, key) as worker:
                 out[key] = router.route(package, st.bench, view, worker)
         return out
+    if protocol.is_v28(configuration_of(st.setting)):
+        return {key: result for (key, _), result in replay.run_worker_pass(
+            entries, lambda entry: st.services.workers(package, kind="cell", inputs_dir=None, hashseed=0),
+            lambda entry, worker: router.route(package, st.bench, entry[1], worker))}
     with st.services.workers(package, kind="cell", inputs_dir=None) as worker:
         return {key: router.route(package, st.bench, view, worker) for key, view in entries}
 
@@ -1350,7 +1362,7 @@ def _token_share(found):
 
 
 def train_verdict(cells, items, generated, changed, *, predicate_faults, routed, sign=True, request_faults=None,
-                  identical=None, runs=1):
+                  identical=None, runs=1, configuration=None):
     """v2: the adoption rule of one training round from its cell records (module docstring). ``cells``: {(arm, item):
     [cell records]} of arms S' (the candidate) and S (the incumbent); ``items`` / ``generated``: the run-slice and
     G_self items evaluated (those routed differently); ``changed``: the ids of the procedures the candidate adds or
@@ -1362,7 +1374,8 @@ def train_verdict(cells, items, generated, changed, *, predicate_faults, routed,
     one-sided exact sign test of fixed against broken p <= ``TRAIN_ALPHA``. v2.2 (``protocol.TRAIN_SIGN``): with
     ``sign`` False the sign test is recorded and not required (``sign_required``). v2.3 Amendment 1: ``identical``
     names evaluated items skipped for both arms, with zero difference; their ``runs`` registered run-slice cells
-    (one per generated item) remain in the format/fault denominator. None preserves the frozen verdict shape."""
+    (one per generated item) remain in the format/fault denominator. None preserves the frozen verdict shape.
+    v2.8 keeps the measured fault guard booleans as information; format and gain still decide adoption."""
     evaluated = list(items) + list(generated)
     skipped = set(identical or ())
     if identical is not None:
@@ -1397,15 +1410,18 @@ def train_verdict(cells, items, generated, changed, *, predicate_faults, routed,
     gain = {"fixed_over_broken": len(fixed) > len(broken), "net": net >= need}
     if sign:
         gain["sign"] = p <= TRAIN_ALPHA
-    adopted = bool(evaluated) and all(guards.values()) and all(gain.values())
+    informational = ("own_faults", "predicate_faults") if protocol.is_v28(configuration) else ()
+    deciding = {name: ok for name, ok in guards.items() if name not in informational}
+    adopted = bool(evaluated) and all(deciding.values()) and all(gain.values())
     reason = None
     if not adopted:
-        failed = ["guard:" + k for k, ok in guards.items() if not ok] + ["gain:" + k for k, ok in gain.items() if not ok]
+        failed = ["guard:" + k for k, ok in deciding.items() if not ok] + ["gain:" + k for k, ok in gain.items() if not ok]
         reason = failed[0] if evaluated else "no_item_routes_differently"
     return {"adopted": adopted, "reason": reason, "items": len(items), "generated": len(generated),
             "fixed": fixed, "broken": broken, "net": "%d/%d" % (net.numerator, net.denominator), "need": need,
             "p_sign": p, "guards": guards, "gain": gain, "own_fault_cells": own, "candidate_cells": len(candidate),
             "predicate_faults": predicate_faults, "routed": routed, "format_cells": formats, "format_margin": margin,
+            **({"informational_guards": list(informational)} if informational else {}),
             **({} if sign else {"sign_required": False}),
             **({"identical": list(identical), "skipped_candidate_cells": skipped_cells,
                 "candidate_cells_denominator": candidate_denominator} if identical is not None else {})}
@@ -1469,7 +1485,8 @@ def _shown_note_fields(bench, package, stored, view, delivered):
         require(note["hook"] == "before_call" and note["id"] in package.order,
                 "Zebra coverage uses the source package's first-note hooks")
         procedure = package.get(note["id"])
-        kept = notes.Screened(note["fields"], solver._public_text(view))
+        kept = notes.Screened(note["fields"], solver._public_text(view),
+                              outcome_judged=notes.outcome_judged(procedure))
         text = notes.render(kept, bench=bench, header=procedure.header) if kept else ""
         label = procedure.id + "/" + note["hook"]
         entries.append((label, text, procedure.max_note_chars))
@@ -1642,6 +1659,8 @@ def _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells, made,
     if protocol.is_v24(configuration_of(st.setting)):
         value.update({"unfixed_examples": _unfixed_examples(st, cut, unit, verdict, cells, made, current),
                       "identical_items": sorted(set(verdict.get("identical", ())) & set(by_key))})
+    if protocol.is_v28(configuration_of(st.setting)):
+        value["informational_guards"] = list(verdict["informational_guards"])
     return value
 
 
@@ -1703,6 +1722,8 @@ def _train_eval(st, cut, r, incumbent, candidate, generated, *, current=None):
                                 request_faults=([key for key, arms in signatures.items()
                                                  if any(f.get("procedure") in changed for f in arms["S'"]["faults"])]
                                                 if signatures is not None else None),
+                                **({"configuration": configuration_of(st.setting)}
+                                   if protocol.is_v28(configuration_of(st.setting)) else {}),
                                 **({"identical": identical, "runs": runs} if signatures is not None else {}))
         feedback_args = {}
         if protocol.is_v24(configuration_of(st.setting)):
@@ -1739,9 +1760,21 @@ def _line(r, engineered, evaluated):
                      "fixed": len(verdict["fixed"]), "broken": len(verdict["broken"]), "net": verdict["net"],
                      "p_sign": verdict["p_sign"], "reason": verdict["reason"]})
     sealed, proposals = engineered["engineer"], []
+    inert = [change["id"] for change in sealed["changes"] if change.get("inert")]
+    if inert and engineered["candidate_sha256"] is None:
+        line.update(reason="inert", inert=inert)
+    if engineered["candidate_sha256"] is None and any(change.get("deferred") for change in sealed["changes"]):
+        line["reason"] = "system_deferred"
     for change in sealed["changes"]:
-        stopped = change["attempts"][-1]["failed"] if not change["survived"] else None
-        if stopped is not None:
+        stopped = ((change["attempts"][-1]["failed"] if change["attempts"] else change.get("reason"))
+                   if not change["survived"] else None)
+        if change.get("inert"):
+            fate = "inert"
+        elif change.get("deferred"):
+            fate = "system_deferred"
+        elif change.get("reason") == "unparseable":
+            fate = "unparseable"
+        elif stopped is not None:
             fate = "check_failed:" + stopped
         elif change["n"] in sealed["dropped"]:
             fate = "dropped_in_combination"
@@ -1924,7 +1957,9 @@ def _accept(st, cut, candidate, generated):
                 generate=generate, dup=admitted and st.k > 1, probe=[item["task_id"] for item in probe],
                 freshness=ACCEPT_FRESHNESS.get(configuration_of(st.setting), FRESHNESS),
                 mde=MDE_POINTS[st.bench],  # A9-3: the registered MDE in decision.json
-                rule=ACCEPT_RULES[configuration_of(st.setting)], reuse=reuse)  # v2.2: the practical rule, None before
+                rule=ACCEPT_RULES[configuration_of(st.setting)], reuse=reuse,
+                **({"configuration": configuration_of(st.setting)}
+                   if protocol.is_v28(configuration_of(st.setting)) else {}))
         packages = acceptance.round_packages(candidate, st.parent, step=sealed["step"], twins=sealed["plan"]["twins"])
         tasks = _round_tasks(records, probe, acc)  # §6.4 J7: the probe items options-only
         earlier = acceptance.earlier_blocks(sealed, root, attempt) if n > 1 else None  # §9.3, owner decision #15

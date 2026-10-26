@@ -88,9 +88,74 @@ def lexicon_hits(text, *, bench):
     return hits + (meta_option_hits(text) if bench == "livemath" else [])
 
 
-def header_hits(header, *, benches):
+def header_hits(header, *, benches, outcome_judged=False):
     """[(bench, term)]: the lexicon terms a procedure's constant header shows on the benches it may fire on."""
-    return [(bench, term) for bench in benches for term in lexicon_hits(header, bench=bench)]
+    return [(bench, term) for bench in benches for term in (
+        instruction_hits(header) if outcome_judged else lexicon_hits(header, bench=bench))]
+
+
+# v2.8 screens instructions about the reply's form, not individual factual words.
+FORM_INSTRUCTIONS = (r"answer\s+(?:only\s+)?with", r"respond\s+(?:only\s+)?with", r"output\s+only",
+                     r"return\s+only", r"reply\s+with", r"format\s+your", r"round\s+to",
+                     r"give\s+the\s+answer\s+as", r"only\s+the", r"just\s+the",
+                     r"(?:answer|respond|reply|output|return|print|format)\s+(?:(?:only|just)\s+)?"
+                     r"(?:with|without|as|in|using)",
+                     r"(?:answer|respond|reply|output|return|print)\s+(?:only|just)",
+                     r"(?:answer|respond|reply|output|return|print|format)\s+"
+                     r"(?:(?:the|your|a|an)\s+)?(?:final\s+)?"
+                     r"(?:answer|response|reply|output|result|number|value|label|letter|name|text|code|json|grid|solution|units|rounding|rounded)",
+                     r"round\s+(?:(?:the|your)\s+)?(?:final\s+)?(?:answer|output|result|number|value)",
+                     r"(?:include|omit)\s+(?:the\s+)?units\s+(?:in|from)\s+(?:(?:the|your)\s+)?answer")
+FORM_PATTERN = re.compile(r"\b(?:" + "|".join(FORM_INSTRUCTIONS) + r")\b", re.I)
+INSTRUCTION_PREFIX = re.compile(
+    r"(?:^|[,;:]\s*|\b(?:please\s*,?|must|should|remember\s+to|need\s+to|and|then)\s+)$", re.I)
+REPLY_NOUN = re.compile(r"\s*(?:answer|number|value|result|label|letter|name|text|code|json|grid|solution|facts)\b", re.I)
+NOTE_SENTENCES = r"(?<=[.!?])\s+|\n+"
+
+
+def v28_screen_record():
+    """The new screen's exact constants; the frozen legacy lexicon identity stays unchanged."""
+    return {"version": "execskill-v2-8-note-screen", "instructions": list(FORM_INSTRUCTIONS),
+            "instruction_prefix": INSTRUCTION_PREFIX.pattern, "reply_noun": REPLY_NOUN.pattern,
+            "sentence_split": NOTE_SENTENCES, "case_sensitive": False,
+            "granularity": "sentence_or_list_element", "drop_is_fault": False,
+            "field_types": FIELD_TYPES, "verbatim": LEXICON_VERBATIM,
+            "meta_option": {"bench": "livemath", "terms": list(META_TERMS)}}
+
+
+def v28_screen_sha256():
+    return digest(v28_screen_record())
+
+
+def outcome_judged(procedure):
+    """A procedure's immutable policy identity scopes the new runtime behavior."""
+    from .policy import POLICY_VERSION_V28
+    return getattr(procedure, "policy_version", None) == POLICY_VERSION_V28
+
+
+def instruction_hits(text):
+    found = []
+    for match in FORM_PATTERN.finditer(text):
+        prefix = text[:match.start()].lstrip(" -*\t")
+        if not INSTRUCTION_PREFIX.search(prefix):
+            continue
+        if match.group(0).lower() in ("only the", "just the") and not REPLY_NOUN.match(text[match.end():]):
+            continue
+        found.append(match.group(0))
+    return found
+
+
+def screen_header(header):
+    """The same sentence-level screen for a v2.8 constant header; preserve factual words."""
+    parts, dropped = [], []
+    for index, sentence in enumerate(re.split(NOTE_SENTENCES, header)):
+        hits = instruction_hits(sentence)
+        if hits:
+            dropped.append({"field": "header", "reason": "form_instruction", "detail": hits[0],
+                            "item": index})
+        elif sentence:
+            parts.append(sentence)
+    return " ".join(parts), dropped
 
 
 def _strings(value, max_chars):
@@ -144,12 +209,29 @@ class Screened(dict):
     """The fields ``screen`` kept, with the item's public text they were screened against (None: every text was
     screened); ``render`` screens them again against the same text."""
 
-    def __init__(self, fields, public_text):
+    def __init__(self, fields, public_text, outcome_judged=False):
         super().__init__(fields)
         self.public_text = public_text
+        self.outcome_judged = outcome_judged
 
 
-def screen(fields, *, bench, public_text=None):
+def fault_drops(dropped, *, outcome_judged=False):
+    """The one note-fault rule shared by live execution, replay, donors and placebo.
+
+    Only v2.8's sentence-level reply-form removal is informational. Shape, cap, binding and all other drops
+    remain procedure faults; older policies retain their original handling.
+    """
+    return [entry for entry in dropped if not (outcome_judged and entry["reason"] == "form_instruction")]
+
+
+def suppress_faulted(fields, dropped, *, outcome_judged=False):
+    """Suppress an entire v2.8 pending note after a real fault, preserving its screening identity."""
+    if outcome_judged and fault_drops(dropped, outcome_judged=True):
+        return Screened({}, getattr(fields, "public_text", None), outcome_judged=True)
+    return fields
+
+
+def screen(fields, *, bench, public_text=None, outcome_judged=False):
     """``(kept, dropped)``: the well-formed, capped, lexicon-clean fields as ``Screened`` (an empty field is absent,
     not dropped), and one ``{"field", "reason", "detail"}`` per dropped field, reason ``unknown_field``, ``type``,
     ``cap``, ``lexicon`` or ``meta_option``. Every dropped field is one procedure fault. ``public_text``: the item's
@@ -158,8 +240,8 @@ def screen(fields, *, bench, public_text=None):
     require(bench in PATTERNS, "Unknown bench")
     require(public_text is None or type(public_text) is str, "The public text is text")
     if not isinstance(fields, dict):
-        return Screened({}, public_text), [{"field": None, "reason": "type", "detail": type(fields).__name__}]
-    kept, dropped = Screened({}, public_text), []
+        return Screened({}, public_text, outcome_judged), [{"field": None, "reason": "type", "detail": type(fields).__name__}]
+    kept, dropped = Screened({}, public_text, outcome_judged), []
     for name in sorted(fields, key=_field_order):
         value = fields[name]
         if name not in FIELD_TYPES:
@@ -169,7 +251,33 @@ def screen(fields, *, bench, public_text=None):
         if not typed or not capped:
             dropped.append({"field": name, "reason": "type" if not typed else "cap", "detail": ""})
             continue
-        hits = [term for text in _screened(name, value, public_text) for term in lexicon_hits(text, bench=bench)]
+        if outcome_judged:
+            # Each list element is independently removable. Strings additionally preserve other factual sentences.
+            clean = []
+            for index, item in enumerate(value):
+                if FIELD_TYPES[name]["kind"] == "strings":
+                    sentences = []
+                    for sentence in re.split(NOTE_SENTENCES, item):
+                        hits = instruction_hits(sentence)
+                        if hits:
+                            dropped.append({"field": name, "reason": "form_instruction", "detail": hits[0],
+                                            "item": index})
+                        elif sentence:
+                            sentences.append(sentence)
+                    if sentences:
+                        clean.append(" ".join(sentences))
+                else:
+                    hits = [hit for text in _screened(name, [item], public_text)
+                            for hit in instruction_hits(text)]
+                    if hits:
+                        dropped.append({"field": name, "reason": "form_instruction", "detail": hits[0],
+                                        "item": index})
+                    else:
+                        clean.append(item)
+            value = clean
+        hits = [term for text in _screened(name, value, public_text) for term in (
+            meta_option_hits(text) if outcome_judged and bench == "livemath" else
+            [] if outcome_judged else lexicon_hits(text, bench=bench))]
         if hits:
             meta = any(term in META_TERMS for term in hits)
             dropped.append({"field": name, "reason": "meta_option" if meta else "lexicon", "detail": hits[0]})
@@ -219,10 +327,14 @@ def render(fields, *, bench, header):
     """The note of one procedure: its constant header, then each field under its fixed header, in ``FIELD_ORDER``.
     ``fields`` must pass ``screen`` unchanged (the shell screens first), against the public text it was screened with
     when it is ``Screened`` (else every text); no field renders as ""."""
-    require(type(header) is str and len(header) <= MAX_HEADER_CHARS and not lexicon_hits(header, bench=bench),
+    modern = isinstance(fields, Screened) and fields.outcome_judged
+    if modern:
+        header, _ = screen_header(header)
+    require(type(header) is str and len(header) <= MAX_HEADER_CHARS
+            and not (instruction_hits(header) if modern else lexicon_hits(header, bench=bench)),
             "A procedure header is at most 200 lexicon-clean characters")
     reference = fields.public_text if isinstance(fields, Screened) else None
-    kept, dropped = screen(fields, bench=bench, public_text=reference)
+    kept, dropped = screen(fields, bench=bench, public_text=reference, outcome_judged=modern)
     require(not dropped and kept == {k: v for k, v in fields.items() if v}, "Only screened fields are rendered")
     if not kept:
         return ""
