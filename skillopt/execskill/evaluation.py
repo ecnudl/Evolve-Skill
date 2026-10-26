@@ -90,6 +90,7 @@ context (evaluation.py:262-305). What changes:
 from __future__ import annotations
 
 import functools
+from . import profiles
 import hashlib
 import html
 import io
@@ -613,7 +614,7 @@ def sealed_cell(full):
         "answered": answered(full),  # §6.3's mask: whether the provider delivered any reply in this cell
         "solver_route": full.get("solver_route"),  # {"route", "model"} (cells.py); route None on chain G
         **({key: full[key] for key in ("configuration", "keyword_hits", "applies", "returned_model", "returned_models")}
-           if full.get("configuration") in ("zebra-pc-v7", "alfworld-v4", "zebra-pc-v8", "alfworld-v5") else {}),
+           if full.get("configuration") in ("zebra-pc-v7", "alfworld-v4", "zebra-pc-v8", "alfworld-v5", "zebra-pc-v9", "alfworld-v6") else {}),
         "stop": None if full["stop"] is None else {"kind": full["stop"]["kind"]}}
 
 
@@ -1190,7 +1191,8 @@ def evaluate(unit_root, *, run, shared, pinned, chain, bench, arms, context, wor
                                           route_workers=route_workers, canaries=canaries, panel=panel, reset=reset,
                                           stages=stages, run_configuration=run_configuration)
                     finally:
-                        _drained(drain, context, unit)
+                        _drained(drain, context, unit,
+                                 **({"configuration": run_configuration} if profiles.is_v292(run_configuration) else {}))
                 except BaseException:  # noqa: B036 -- recorded in full while still contained
                     _diagnose()
                     raise
@@ -1201,7 +1203,7 @@ def evaluate(unit_root, *, run, shared, pinned, chain, bench, arms, context, wor
     raise replacement
 
 
-def _drained(drain, context, unit):
+def _drained(drain, context, unit, *, configuration=None):
     """The unit drain after the attempt (ticket C5-1): CleanupUnconfirmed (the unit's containers remain) pauses the
     unit as a stop, its status written unless the attempt already has one."""
     if drain is None:
@@ -1213,6 +1215,13 @@ def _drained(drain, context, unit):
         if context.attempt.is_dir() and not (context.attempt / "status.json").exists():
             _paused(context.attempt, context.evidence, kind_, "unit_drain: %s" % str(error)[:200])
         raise Pause(kind_, "unit_drain", unit) from None
+    finally:
+        cleanups = getattr(drain, "cleanups", None) if profiles.is_v292(configuration) else None
+        if cleanups:
+            write_json(context.attempt / "sandbox-cleanups.json", {"cleanups": cleanups})
+        starts = getattr(drain, "starts", None) if profiles.is_v292(configuration) else None
+        if starts:
+            write_json(context.attempt / "sandbox-starts.json", {"starts": starts})
 
 
 def _paused(attempt, evidence, kind_, reason, **extra):
@@ -1498,6 +1507,9 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
     stages = stage_rows(chain_root, chain, order_of(setting), final, start) if STAGE_READ[configuration] else None
     unit = "%s/test/%s" % (chain, bench)
     own = units.for_unit(setting, chain, bench, unit)
+    if profiles.is_v292(configuration):
+        own.sandbox["cleanup_events"].clear()
+        own.sandbox["start_events"].clear()
     model = CHAINS[chain]
     glm = model == CHAINS["G"]
     endpoint = budgets.endpoint(own, budgets.solver_scopes(chain, None, None, "test"), client=own.clients(model, bench),

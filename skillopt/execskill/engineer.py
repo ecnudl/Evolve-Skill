@@ -678,7 +678,8 @@ class Context:
                 **({"v27": True} if protocol.is_v27(self.configuration) else {}),
                 **({"v28": True} if protocol.is_v28(self.configuration) else {}),
                 **({"v29": True} if protocol.is_v29(self.configuration) else {}),
-                **({"v291": True} if protocol.is_v291(self.configuration) else {})) for entry in self.lint),
+                **({"v291": True} if protocol.is_v291(self.configuration) else {}),
+                **({"v292": True} if protocol.is_v292(self.configuration) else {})) for entry in self.lint),
                 "Lint entries are reports")
         require(isinstance(self.reserved, frozenset) and all(type(i) is str for i in self.reserved),
                 "Reserved procedure ids")
@@ -692,6 +693,7 @@ class Context:
                                                       v24=v24, v25=v25 and not protocol.is_alfworld(self.configuration),
                                                       v28=protocol.is_v28(self.configuration), v29=protocol.is_v29(self.configuration),
                                                       v291=protocol.is_v291(self.configuration),
+                                                      v292=protocol.is_v292(self.configuration),
                                                       current={t["cell"]: t for t in self.current}),
                 "The training feedback shows this step's run-slice items with their own references only")
         output_refs = {e["task_id"] for e in (self.training or {}).get("unfixed_examples", [])} if v24 else set()
@@ -746,7 +748,7 @@ def _history_line(entry, before, *, v24=False, v28=False, v29=False, v291=False)
                for p in entry["proposals"])
 
 
-def _lint_entry(entry, *, v25=False, v26=False, v27=False, v28=False, v29=False, v291=False):
+def _lint_entry(entry, *, v25=False, v26=False, v27=False, v28=False, v29=False, v291=False, v292=False):
     """v2 (Codex review 2026-10-23 #3, #4): an advisory replay-test report exactly as ``_lint`` writes it."""
     if not isinstance(entry, dict):
         return False
@@ -758,7 +760,7 @@ def _lint_entry(entry, *, v25=False, v26=False, v27=False, v28=False, v29=False,
                     {"fired_items", "faulted_items", "signatures", "dropped_notes"}
                     | ({"truncated"} if "truncated" in row else set())
                     if v291 and row.get("check") == "C6" else set()))
-                and (not v291 or row.get("check") != "C6" or fault_feedback.lint_details_ok(row))
+                and (not v291 or row.get("check") != "C6" or fault_feedback.lint_details_ok(row, v292=v292))
                 and row["check"] in ("C5b", "C6", "C6b", "C6c", "C7", "C9")
                 and type(row["passed"]) is bool and isinstance(row["counts"], dict)
                 and set(row["counts"]) <= engineer_v28.INFORMATION_COUNTS
@@ -798,7 +800,7 @@ def _lint_entry(entry, *, v25=False, v26=False, v27=False, v28=False, v29=False,
 
 
 def _training_ok(training, references, own, evaluated, bench, *, v24=False, v25=False, current=None, v28=False, v29=False,
-                 v291=False):
+                 v291=False, v292=False):
     """v2 (Codex review 2026-10-23 #4): the last round's feedback exactly as ``step._feedback`` writes it; each
     example names one of this step's run-slice items (``own``) and that item's candidate-arm cell of the last training
     unit (``evaluated``: {cell: trajectory}), its texts within ``TRAIN_TEXT_CHARS``, and a reference only off ALFWorld
@@ -832,7 +834,7 @@ def _training_ok(training, references, own, evaluated, bench, *, v24=False, v25=
             return False
         if v25 and not _coverage_ok(entry["notes_coverage"], entry["enabled_items"]):
             return False
-        if v291 and not _fault_feedback_ok(entry["faults"], own):
+        if v291 and not _fault_feedback_ok(entry["faults"], own, v292=v292):
             return False
         if not all(_example_ok(example, references, own, evaluated, bench) for example in entry["examples"]):
             return False
@@ -870,11 +872,14 @@ def _format_counts_ok(value):
     return isinstance(value, dict) and set(value) == {"S", "S'"} and all(_count(n) for n in value.values())
 
 
-def _fault_feedback_ok(value, own):
+def _fault_feedback_ok(value, own, *, v292=False):
+    from . import fault_feedback
     if not (isinstance(value, dict) and set(value) == {"cells", "signatures"} and _count(value["cells"])
             and isinstance(value["signatures"], list) and len(value["signatures"]) <= 3):
         return False
-    return all(isinstance(row, dict) and set(row) == {"hook", "kind", "exc_type", "message", "cells", "example_task_id"}
+    return all(isinstance(row, dict) and set(row) == ({"hook", "kind", "exc_type", "message", "cells", "example_task_id"}
+               | ({"expected", "returned"} if v292 and row.get("kind") == "output_shape" else set()))
+               and fault_feedback.shape_fields_ok(row, v292=v292)
                and all(row[key] is None or type(row[key]) is str for key in ("hook", "kind", "exc_type"))
                and _text(row["message"], 200) and _count(row["cells"]) and 0 < row["cells"] <= value["cells"]
                and (row["example_task_id"] is None or type(row["example_task_id"]) is str and row["example_task_id"] in own)
@@ -1176,6 +1181,14 @@ def _ask(ctx, user, purpose):
         from . import engineer_v291
         system = engineer_v291.system(ctx.configuration, train=ctx.mode == TRAIN)
         suffix = {"fix": engineer_v29.FIX_SYSTEM, "format_retry": engineer_v29.FORMAT_RETRY_SYSTEM,
+                  "audit_fix": engineer_v29.AUDIT_FIX_SYSTEM,
+                  "fault_repair": engineer_v291.FAULT_REPAIR_INSTRUCTION}.get(user.get("request"))
+        if suffix:
+            system += suffix
+    if protocol.is_v292(ctx.configuration):
+        from . import engineer_v292
+        system = engineer_v292.system(ctx.configuration, train=ctx.mode == TRAIN)
+        suffix = {"fix": engineer_v29.FIX_SYSTEM, "format_retry": engineer_v292.FORMAT_RETRY_SYSTEM,
                   "audit_fix": engineer_v29.AUDIT_FIX_SYSTEM,
                   "fault_repair": engineer_v291.FAULT_REPAIR_INSTRUCTION}.get(user.get("request"))
         if suffix:

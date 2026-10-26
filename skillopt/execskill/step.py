@@ -374,8 +374,11 @@ class _Step:
                     "parent": self.parent.sha256}
         base, services = self.setting, self.services
         self.setting = units.for_unit(base, self.chain, self.bench, label)
+        cleanup_options = ({key: self.setting.sandbox[key] for key in (
+            "cleanup_grace_seconds", "cleanup_events", "ready_timeout_seconds", "start_events")}
+                           if protocol.is_v292(configuration_of(self.setting)) else {})
         self.services = replace(services, workers=functools.partial(services.workers,
-                                                                    tag=self.setting.sandbox["tag"]),
+                                                                    tag=self.setting.sandbox["tag"], **cleanup_options),
                                 registry=services.registry.bound(base.root))
         root = units.unit_path(self.chain_root, self.k, self.bench, name)
 
@@ -1673,7 +1676,8 @@ def _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells, made,
                            "examples": shown})
         if protocol.is_v291(configuration_of(st.setting)):
             procedures[-1]["faults"] = _procedure_fault_feedback(
-                pid, cells, made, set(by_key), tag + ":faults")
+                pid, cells, made, set(by_key), tag + ":faults",
+                configuration=configuration_of(st.setting))
         if protocol.is_v25(configuration_of(st.setting)) and not protocol.is_alfworld(configuration_of(st.setting)):
             enabled = [key for key in evaluated if pid in routed[key]["candidate"]]
             procedures[-1]["notes_coverage"] = _notes_coverage(
@@ -1697,12 +1701,14 @@ def _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells, made,
     return value
 
 
-def _procedure_fault_feedback(pid, cells, made, own, tag):
+def _procedure_fault_feedback(pid, cells, made, own, tag, *, configuration=None):
     """v2.9.1: union cell/shell faults, count each candidate cell once per signature.
 
     Counts include measured generated cells, but example task IDs are run-only.
     Informational drops are reported by lint, not counted as procedure failures.
     """
+    from . import fault_feedback
+    v292 = configuration is not None and protocol.is_v292(configuration)
     faulted, grouped = set(), {}
     for (arm, task), found in sorted(cells.items()):
         if arm != "S'":
@@ -1728,6 +1734,7 @@ def _procedure_fault_feedback(pid, cells, made, own, tag):
         signatures.append(dict(zip(("hook", "kind", "exc_type", "message"), key),
                                cells=len(group["cells"]),
                                example_task_id=examples[0]["task_id"] if examples else None))
+        signatures[-1].update(fault_feedback.output_shape_fields(key[0], key[1], key[3], v292=v292))
     return {"cells": len(faulted), "signatures": signatures}
 
 

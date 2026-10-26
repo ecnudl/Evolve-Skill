@@ -179,7 +179,7 @@ def s3(setting, services):
             "solver_route": "B"}
 
 
-def authored_fault_reply(bench):
+def authored_fault_reply(bench, *, configuration=None):
     """A deterministic, public-input crash in the first note hook of every item."""
     from . import alf_smoke, zebra_smoke
     owner = alf_smoke if bench == 'alfworld' else zebra_smoke
@@ -190,6 +190,9 @@ def authored_fault_reply(bench):
     if bench == 'alfworld':
         source = ('def alf_before_step(view, state):\n'
                   '    return {"facts": [state.get("previous_observation", "")] }\n')
+        if configuration is not None and p.is_v292(configuration):
+            source = ('def alf_before_step(view, state):\n'
+                      '    return {"fields": {"facts": [state.get("previous_observation", "")]}}\n')
         entry['hooks'] = ['alf_before_step']
     else:
         source = ('def before_call(view, state):\n'
@@ -214,7 +217,7 @@ def _fault_evidence_ok(value, bench):
 def _fault_repair_proposal(st, cut):
     from . import engineer_v291
     def work(attempt):
-        reply = authored_fault_reply(st.bench)
+        reply = authored_fault_reply(st.bench, configuration=p.configuration_of(st.setting))
         entries, sources = engineer.parse(reply)
         change = engineer.changes_of(entries, sources, digest(reply))[0]
         _, _, publics = step._training_publics(cut, None, st.bench)
@@ -249,8 +252,9 @@ def _s3c(setting, services):
     st, cut = (owner._fixture_step(setting, services, 'S3c') if alf
                else owner._fixture_step(setting, services, 'D', 'S3c'))
     identity = {'run': setting.run, 'configuration': configuration, 'chain': 'D', 'substage': 'S3c',
-                'recipe': 'v291-fault-repair-v1', 'fixtures_sha256': digest(cut),
-                'proposal_sha256': digest(authored_fault_reply(st.bench))}
+                'recipe': 'v292-fault-repair-v1' if p.is_v292(configuration) else 'v291-fault-repair-v1',
+                'fixtures_sha256': digest(cut),
+                'proposal_sha256': digest(authored_fault_reply(st.bench, configuration=configuration))}
     cached = owner._cached_substage(st, identity)
     if cached is not None:
         return cached

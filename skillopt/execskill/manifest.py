@@ -142,26 +142,53 @@ def image_id(docker=None, image=sandbox.IMAGE):
     return found
 
 
-def _ping_empty():
+def _ping_empty(*, cleanup_grace_seconds=0, cleanup_events=None,
+                ready_timeout_seconds=protocol.SANDBOX_READY_SECONDS, start_events=None):
     """One ping of an empty-package cell worker (lazy start, forced removal of its exact name on close)."""
     empty = SimpleNamespace(sha256=digest([]), procedures=())
-    with sandbox.with_worker(empty, kind="cell") as worker:
+    options = ({"cleanup_grace_seconds": cleanup_grace_seconds, "cleanup_events": cleanup_events}
+               if cleanup_grace_seconds else {})
+    if ready_timeout_seconds != protocol.SANDBOX_READY_SECONDS or start_events is not None:
+        options.update(ready_timeout_seconds=ready_timeout_seconds, start_events=start_events)
+    with sandbox.with_worker(empty, kind="cell", **options) as worker:
         return worker.ping()
 
 
-def environment(*, docker=None, ping=None):
+def environment(*, docker=None, ping=None, configuration=None, cleanup_events=None, start_events=None):
     """The interpreter, openpyxl, docker, the pinned image's id and the in-image libraries (one sandbox ping).
     ``docker``: a ``sandbox.client.Docker``; ``ping``: a callable returning one worker ping (tests pass fakes)."""
     import openpyxl
 
     docker = docker or sandbox.Docker()
-    found = (ping or _ping_empty)()
+    cleanups = [] if cleanup_events is None else cleanup_events
+    starts = [] if start_events is None else start_events
+    grace = protocol.cleanup_grace_seconds(configuration)
+    probe = (functools.partial(_ping_empty, cleanup_grace_seconds=grace, cleanup_events=cleanups,
+                              ready_timeout_seconds=protocol.ready_timeout_seconds(configuration), start_events=starts)
+             if protocol.is_v292(configuration) else _ping_empty)
+    found = (ping or probe)()
     libs = {name: found.get(name) for name in IN_IMAGE_LIBS}
     require(all(type(value) is str and value for value in libs.values()), "The sandbox ping names its libraries")
     return {"python": sys.version.split()[0], "openpyxl": openpyxl.__version__,
             "docker": _docker_text(docker, ["version", "--format", "{{.Server.Version}}"]),
             "image_digests": {"sandbox": image_id(docker)}, "in_image_libs": libs,
+            **({"sandbox": {key: rows for key, rows in (("cleanups", cleanups), ("starts", starts)) if rows}}
+               if cleanups or starts else {}),
             "in_image_pip_freeze_sha256": digest(libs)}
+
+
+def _environment_for_manifest(out, configuration):
+    """Keep child probe lifecycle records even when a later probe fails."""
+    cleanups, starts = [], []
+    try:
+        return environment(configuration=configuration, cleanup_events=cleanups, start_events=starts)
+    finally:
+        if cleanups:
+            path = safe_path(out)
+            write_json(path.with_name(path.name + ".sandbox-cleanups.json"), {"cleanups": cleanups})
+        if starts:
+            path = safe_path(out)
+            write_json(path.with_name(path.name + ".sandbox-starts.json"), {"starts": starts})
 
 
 def verify_code(manifest, repo=REPO):
@@ -237,6 +264,11 @@ def prompt_sha(configuration=None):
         out["engineer"] = _sha_text_digest(engineer_v291.system(configuration, train=False))
         out["v2"]["engineer"] = _sha_text_digest(engineer_v291.system(configuration, train=True))
         out["v291"] = engineer_v291.prompt_pins()
+    if protocol.is_v292(configuration):
+        from . import engineer_v292
+        out["engineer"] = _sha_text_digest(engineer_v292.system(configuration, train=False))
+        out["v2"]["engineer"] = _sha_text_digest(engineer_v292.system(configuration, train=True))
+        out["v292"] = engineer_v292.prompt_pins()
     return out
 
 
@@ -273,6 +305,9 @@ def registered(configuration=None):
                        "infra_unknown_max": p.INFRA_UNKNOWN_MAX, "dup_alpha": p.DUP_ALPHA,
                        "holm_family": p.HOLM_FAMILY, "smoke_format_floor": p.SMOKE_FORMAT_FLOOR,
                        "smoke_format_margin": p.SMOKE_FORMAT_MARGIN,
+                       **({"sandbox_cleanup_grace_seconds": protocol.cleanup_grace_seconds(configuration),
+                           "sandbox_ready_timeout_seconds": protocol.ready_timeout_seconds(configuration)}
+                          if protocol.is_v292(configuration) else {}),
                        "min_production_receipts": p.MIN_PRODUCTION_RECEIPTS}})
 
 
@@ -337,7 +372,32 @@ def check(manifest):
     require(set(value) == FIELDS, "Not a %s manifest" % protocol.VERSION)
     require(set(value["sandbox"]) == SANDBOX_FIELDS and set(value["sandbox"]["measured"]) == MEASURED_FIELDS,
             "The sandbox block holds the registered fields")
-    require(set(value["environment"]) == ENVIRONMENT_FIELDS, "The environment block holds the registered fields")
+    require(set(value["environment"]) == (ENVIRONMENT_FIELDS | (
+        {"sandbox"} if protocol.is_v292(value.get("configuration")) and "sandbox" in value["environment"] else set())),
+        "The environment block holds the registered fields")
+    if "sandbox" in value["environment"]:
+        lifecycle = value["environment"]["sandbox"]
+        require(isinstance(lifecycle, dict) and lifecycle and set(lifecycle) <= {"cleanups", "starts"},
+                "The child environment carries sandbox lifecycle records")
+        if "cleanups" in lifecycle:
+            require(isinstance(lifecycle["cleanups"], list) and lifecycle["cleanups"]
+                    and all(isinstance(event, dict) and set(event) == {
+                        "container", "seconds", "extra_tries", "extra_seconds"}
+                        and isinstance(event["container"], str) and sandbox.NAME.fullmatch(event["container"]) is not None
+                        and type(event["extra_tries"]) is int and event["extra_tries"] > 0
+                        and all(type(event[key]) in (int, float) and 0 <= event[key] < float('inf')
+                                for key in ("seconds", "extra_seconds")) for event in lifecycle["cleanups"]),
+                    "The child environment carries confirmed cleanup extensions")
+        if "starts" in lifecycle:
+            require(isinstance(lifecycle["starts"], list) and lifecycle["starts"]
+                    and all(isinstance(event, dict) and set(event) == {
+                        "container", "seconds", "ready_timeout_seconds", "ready"}
+                        and isinstance(event["container"], str) and sandbox.NAME.fullmatch(event["container"]) is not None
+                        and type(event["seconds"]) in (int, float) and 0 <= event["seconds"] < float('inf')
+                        and type(event["ready_timeout_seconds"]) in (int, float)
+                        and event["ready_timeout_seconds"] == protocol.ready_timeout_seconds(value["configuration"])
+                        and type(event["ready"]) is bool for event in lifecycle["starts"]),
+                    "The child environment carries bounded ready-ping start records")
     require(set(value["provenance"]) == PROVENANCE_FIELDS and value["provenance"]["env_files_absent"] is True,
             "The provenance names the verified snapshot without .env files")
     require(isinstance(value["prompt_sha"], dict)
@@ -428,7 +488,8 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
                     "docker_argv_template_sha": digest({k: sandbox.argv_template(k, v) for k, v in limits.items()}),
                     "limits": {k: asdict(v) for k, v in sorted(limits.items())}, "measured": measured},
         "code": pin_code(), "loaded_code": sorted(loaded_code()),
-        "environment": environment() if environment_found is None else environment_found}
+        "environment": ((_environment_for_manifest(out, configuration) if protocol.is_v292(configuration) else environment())
+                        if environment_found is None else environment_found)}
     suffix = ("-v2-9" if protocol.is_v29(configuration) else "-v2-8" if protocol.is_v28(configuration) else "-alf-v2" if protocol.is_alfworld_v2(configuration) else "-alf-v1" if protocol.is_alfworld(configuration) else
               "-v2-7" if protocol.is_v27(configuration) else "-v2-6" if protocol.is_v26(configuration)
               else "-v2-5" if protocol.is_v25(configuration)
@@ -629,6 +690,12 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
     extra = {"verify": functools.partial(verify_unit, m, docker=docker),
              "drain": functools.partial(sandbox.drain_unit, docker=docker), "slot_root": m["slot_root"],
              "configuration": m["configuration"]}
+    cleanup_options = ({"cleanup_grace_seconds": protocol.cleanup_grace_seconds(m["configuration"])}
+                       if protocol.is_v292(m["configuration"]) else {})
+    if cleanup_options:
+        extra["drain"] = functools.partial(sandbox.drain_unit, docker=docker, **cleanup_options)
+    worker_options = {**cleanup_options, **({"ready_timeout_seconds": protocol.ready_timeout_seconds(m["configuration"])}
+                                           if protocol.is_v292(m["configuration"]) else {})}
     if protocol.is_v29(m["configuration"]) and protocol.is_alfworld(m["configuration"]):
         extra.update(alf_confirm_views=deepcopy(m["data"]["alf_confirm_views"]),
                      confirm=deepcopy(m["data"]["confirm"]))
@@ -654,7 +721,7 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
         run=m[protocol.RECORD_HASH], root=root, shared=root / "shared", pools=_pools(m, chain, root),
         cards=dict(m["cards"]), runtime=dict(m["runtime"]), clients=_clients(m, chain, transport, route),
         budget=budget, slots=pools,
-        sandbox={"docker": docker, "limits": limits_of(m), "image": m["sandbox"]["image_id"]},
+        sandbox={"docker": docker, "limits": limits_of(m), "image": m["sandbox"]["image_id"], **worker_options},
         evidence=m["evidence"], branch=bound["branch"], longest=bound["longest"], extra=extra)
     if protocol.is_v29(m["configuration"]):
         from . import confirm
@@ -842,14 +909,14 @@ def audit_features(configuration):
 def alfworld_registration_key(configuration):
     """The configuration's preparation metadata field; v1 retains its original schema."""
     require(protocol.is_alfworld(configuration), "A registered ALFWorld configuration")
-    return ("alfworld_v5" if protocol.is_v291(configuration) else "alfworld_v4" if protocol.is_v29(configuration) else "alfworld_v3" if protocol.is_v28(configuration) else
+    return ("alfworld_v6" if protocol.is_v292(configuration) else "alfworld_v5" if protocol.is_v291(configuration) else "alfworld_v4" if protocol.is_v29(configuration) else "alfworld_v3" if protocol.is_v28(configuration) else
             "alfworld_v2" if protocol.is_alfworld_v2(configuration) else "alfworld_v1")
 
 
 def _check_alfworld(value):
     """Validate the preparation metadata linkage, without opening any test or pool file."""
     data = value["data"]
-    label = ("ALFWorld v5" if protocol.is_v291(value["configuration"]) else "ALFWorld v4" if protocol.is_v29(value["configuration"]) else "ALFWorld v3" if protocol.is_v28(value["configuration"]) else
+    label = ("ALFWorld v6" if protocol.is_v292(value["configuration"]) else "ALFWorld v5" if protocol.is_v291(value["configuration"]) else "ALFWorld v4" if protocol.is_v29(value["configuration"]) else "ALFWorld v3" if protocol.is_v28(value["configuration"]) else
              "ALFWorld v2" if protocol.is_alfworld_v2(value["configuration"]) else "ALFWorld v1")
     require(data.get("alfworld_features") == alfworld_features(value["configuration"]),
             "The ALFWorld feature family is pinned by value")

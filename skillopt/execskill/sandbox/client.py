@@ -35,6 +35,17 @@ Error mapping (§2.6, §4.4):
 ``restarts`` records every container replaced without dropping a procedure, ``cleanups`` every confirmed removal with
 its latency (the S0/S2 reports of safety reviews 3 and 5).
 
+The default cleanup grace is zero, retaining those rules and records. Opted-in workers may extend a failed removal
+for a bounded wall-clock grace, with exact-name retries starting at least 15 seconds apart. An extended confirmation
+adds ``extra_tries`` and ``extra_seconds`` and can also be collected by a unit's ``cleanup_events`` sink. An opted-in
+unit drain applies the same loop only to valid exact names beneath its complete unit prefix; machine-wide drains
+never perform removals.
+
+An opted-in ``ready_timeout_seconds`` applies only to the first ready ping of each start, including a retry;
+later pings, loads and calls retain their registered timeouts. Opted-in ``starts`` / ``start_events`` record the
+host's docker-spawn-to-ready latency, excluding slot waits, runner preparation, loads and cleanup. A failed ready
+attempt has ``ready: False`` and its elapsed wait, rather than a claimed successful ready latency.
+
 Slots (plan §4; ``slots.py``): with ``live`` (the ``execskill-sandbox-live`` pool, or a unit's capped view of it) a
 container holds one slot from before its start until its removal is confirmed; with ``per_call`` (the
 ``execskill-sandbox`` pool) each exchange holds one short slot (``hold_short``: P4 after two 600 s waits). The live slot
@@ -44,6 +55,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import re
 import select
@@ -76,6 +88,7 @@ POLICY_FILE = Path(policy.__file__)
 REPLY_GRACE_SECONDS = 10  # a call's reply may arrive this long after its wall timeout before the worker counts as lost
 CLEANUP_TRIES = 3  # safety review 3: removal and its exact-name check tried three times, each command CLEANUP_SECONDS
 CLEANUP_PAUSE_SECONDS = 1  # between two tries
+CLEANUP_GRACE_POLL_SECONDS = 15  # opt-in: minimum spacing between extended removal starts
 START_TRIES = 2  # safety review 5: one retry of a failed start or ready ping
 CALL_FAULTS = FAULTS + ("worker",)
 RESULT_KEYS = {True: ("ok", "value", "value_sha256", "cpu_ms", "rss_kib"),
@@ -177,19 +190,29 @@ class Docker:
         return Completed(done.returncode, done.stdout)
 
 
-def _listed(docker, pattern):
+def _listed(docker, pattern, *, timeout=None):
     """The container names one bounded ``docker ps -a`` lists for ``pattern``; None when the listing failed."""
     listed = docker.run([docker.binary, "ps", "-a", "--filter", "name=" + pattern, "--format", "{{.Names}}"],
-                        CLEANUP_SECONDS)
+                        CLEANUP_SECONDS if timeout is None else timeout)
     return None if listed.code != 0 else listed.stdout.decode("utf-8", "replace").split()
 
 
-def cleanup(name, *, docker=None):
+def _cleanup_grace_valid(value):
+    try:
+        return type(value) in (int, float) and math.isfinite(value) and value >= 0
+    except OverflowError:
+        return False
+
+
+def cleanup(name, *, docker=None, cleanup_grace_seconds=0):
     """Force-remove the container ``name`` and confirm that exactly this name is gone; never looks at other workers'
     containers (Codex F14). Up to ``CLEANUP_TRIES`` tries of ``docker rm --force`` and the exact-name check, each
     command bounded by ``CLEANUP_SECONDS`` and the tries ``CLEANUP_PAUSE_SECONDS`` apart, so one slow removal is not a
-    stop (safety review 3). CleanupUnconfirmed after the last try."""
+    stop (safety review 3). Optional grace starts only after those tries fail,
+    includes command time, and returns statistics only for an extended confirmation.
+    CleanupUnconfirmed when no successful exact-name listing confirms removal."""
     require(type(name) is str and NAME.fullmatch(name) is not None, "Not a sandbox container name")
+    require(_cleanup_grace_valid(cleanup_grace_seconds), "Invalid sandbox cleanup grace")
     docker = docker or Docker()
     if docker.binary is None:
         raise CleanupUnconfirmed("sandbox cleanup unconfirmed (%s): docker unavailable" % name)
@@ -199,18 +222,55 @@ def cleanup(name, *, docker=None):
             time.sleep(CLEANUP_PAUSE_SECONDS)
         docker.run([docker.binary, "rm", "--force", name], CLEANUP_SECONDS)
         remaining = _listed(docker, "^/%s$" % name)
+        if cleanup_grace_seconds and remaining is not None:
+            remaining = [found for found in remaining if found == name]
         if remaining == []:
             return
+    extra_tries = 0
+    if cleanup_grace_seconds:
+        extended = time.monotonic()
+        deadline = extended + cleanup_grace_seconds
+        due = extended + CLEANUP_GRACE_POLL_SECONDS
+        while time.monotonic() < deadline:
+            now = time.monotonic()
+            if due > now:
+                time.sleep(min(due - now, deadline - now))
+            attempt_started = time.monotonic()
+            available = deadline - attempt_started
+            if available <= 0:
+                break
+            extra_tries += 1
+            docker.run([docker.binary, "rm", "--force", name], min(CLEANUP_SECONDS, available))
+            available = deadline - time.monotonic()
+            if available <= 0:
+                remaining = None  # a successful exact-name listing is still required
+                break
+            remaining = _listed(docker, "^/%s$" % name, timeout=min(CLEANUP_SECONDS, available))
+            if remaining is not None:
+                remaining = [found for found in remaining if found == name]
+            if remaining == [] and time.monotonic() <= deadline:
+                return {"container": name, "extra_tries": extra_tries,
+                        "extra_seconds": round(time.monotonic() - extended, 3)}
+            due = max(attempt_started + CLEANUP_GRACE_POLL_SECONDS, time.monotonic())
     raise CleanupUnconfirmed("sandbox cleanup unconfirmed (%s): %s after %d tries in %.1f s" % (
-        name, "still listed" if remaining else "docker ps failed", CLEANUP_TRIES, time.monotonic() - started))
+        name, "still listed" if remaining else "docker ps failed", CLEANUP_TRIES + extra_tries,
+        time.monotonic() - started))
 
 
-def drain_check(prefix=PREFIX, *, docker=None):
+def drain_check(prefix=PREFIX, *, docker=None, cleanup_grace_seconds=0, cleanups=None):
     """Once the workers that use names under ``prefix`` have all exited: no container whose name starts with
     ``prefix`` remains (Codex F14). The listing is tried up to ``CLEANUP_TRIES`` times while docker fails to answer; a
-    listed container is a finding at once. CleanupUnconfirmed otherwise."""
+    listed container is a finding at once by default. Positive grace requires a complete unit prefix, removes its
+    initial snapshot's exact names with ``cleanup`` and retains extended confirmations in ``cleanups`` even if a
+    later name fails. Each name gets its own bounded grace; a newly appearing name at the final check is a finding,
+    never an unbounded expansion of the removal snapshot. CleanupUnconfirmed otherwise."""
     require(type(prefix) is str and prefix.startswith(PREFIX) and re.fullmatch(r"[a-z0-9-]+", prefix) is not None,
             "A sandbox name prefix")
+    require(_cleanup_grace_valid(cleanup_grace_seconds) and (cleanups is None or type(cleanups) is list),
+            "Invalid sandbox cleanup grace or events")
+    if cleanup_grace_seconds:
+        require(re.fullmatch(re.escape(PREFIX) + TAG.pattern + "-", prefix) is not None,
+                "Cleanup grace requires an exact sandbox unit prefix")
     docker = docker or Docker()
     if docker.binary is None:
         raise CleanupUnconfirmed("sandbox cleanup unconfirmed (%s*): docker unavailable" % prefix)
@@ -224,14 +284,39 @@ def drain_check(prefix=PREFIX, *, docker=None):
     if remaining is None:
         raise CleanupUnconfirmed("sandbox cleanup unconfirmed (%s*): docker ps failed after %d tries" % (
             prefix, CLEANUP_TRIES))
+    if cleanup_grace_seconds:
+        events = [] if cleanups is None else cleanups
+        scoped = sorted(set(name for name in remaining if name.startswith(prefix)))
+        if not scoped:
+            return events
+        for name in scoped:
+            if NAME.fullmatch(name) is None:
+                raise CleanupUnconfirmed("sandbox containers remain (%s*): %s" % (prefix, name))
+            started = time.monotonic()
+            extended = cleanup(name, docker=docker, cleanup_grace_seconds=cleanup_grace_seconds)
+            if extended is not None:
+                events.append({"container": name, "seconds": round(time.monotonic() - started, 3), **extended})
+        # A container created during another exact-name removal is still a
+        # finding; this drain never broadens removal beyond its original names.
+        remaining = _listed(docker, "^/" + prefix)
+        if remaining is None:
+            raise CleanupUnconfirmed("sandbox cleanup unconfirmed (%s*): docker ps failed after removals" % prefix)
+        remaining = [name for name in remaining if name.startswith(prefix)]
+        if not remaining:
+            return events
     if remaining:
         raise CleanupUnconfirmed("sandbox containers remain (%s*): %s" % (prefix, ", ".join(sorted(remaining)[:10])))
 
 
-def drain_unit(chain, unit, *, docker=None):
+def drain_unit(chain, unit, *, docker=None, cleanup_grace_seconds=0, cleanups=None):
     """The unit drain of §2.6 (registrar decision on safety review 3): once every worker of ``unit`` -- each made with
     ``tag=unit_tag(chain, unit)`` -- has exited, none of its containers remains; other units' and the other chain's
     containers are not looked at. CleanupUnconfirmed otherwise."""
+    require(_cleanup_grace_valid(cleanup_grace_seconds) and (cleanups is None or type(cleanups) is list),
+            "Invalid sandbox cleanup grace or events")
+    if cleanup_grace_seconds or cleanups is not None:
+        return drain_check(PREFIX + unit_tag(chain, unit) + "-", docker=docker,
+                           cleanup_grace_seconds=cleanup_grace_seconds, cleanups=cleanups)
     drain_check(PREFIX + unit_tag(chain, unit) + "-", docker=docker)
 
 
@@ -336,16 +421,27 @@ class Worker:
     ``rejected`` the ones the worker refused at load ({id: reason}), ``names`` every container this worker started,
     ``unconfirmed`` the containers whose removal was not confirmed (their live slots stay held), ``restarts`` the
     containers replaced without dropping a procedure ({cause, container, procedure}) and ``cleanups`` the confirmed
-    removals ({container, seconds})."""
+    removals ({container, seconds}). ``cleanup_grace_seconds`` opts this worker into the bounded extension; its
+    successful extended confirmations add extra_tries/extra_seconds and also reach ``cleanup_events`` when given.
+    ``ready_timeout_seconds`` changes only each start's first ping. A non-default value or ``start_events`` sink
+    enables ``starts`` records ({container, seconds, ready_timeout_seconds, ready}); default workers keep them empty."""
 
     def __init__(self, *, docker=None, limits=None, hashseed=0, live=None, per_call=None, scratch=None, image=IMAGE,
-                 tag=None):
+                 tag=None, cleanup_grace_seconds=0, cleanup_events=None,
+                 ready_timeout_seconds=SANDBOX_READY_SECONDS, start_events=None):
         require(hashseed in (0, 1) and (limits is None or set(limits) <= set(KINDS))
                 and (tag is None or (type(tag) is str and TAG.fullmatch(tag) is not None)), "Invalid worker settings")
+        require(_cleanup_grace_valid(cleanup_grace_seconds)
+                and (cleanup_events is None or type(cleanup_events) is list), "Invalid sandbox cleanup grace or events")
+        require(_cleanup_grace_valid(ready_timeout_seconds) and ready_timeout_seconds > 0
+                and (start_events is None or type(start_events) is list), "Invalid sandbox ready timeout or events")
         self.docker = docker or Docker()
         self.limits = {**LIMITS, **(limits or {})}
         self.hashseed, self.live, self.per_call, self.image, self.tag = hashseed, live, per_call, image, tag
         self.scratch = scratch
+        self.cleanup_grace_seconds, self.cleanup_events = cleanup_grace_seconds, cleanup_events
+        self.ready_timeout_seconds, self.start_events = ready_timeout_seconds, start_events
+        self.starts, self._start_started = [], None
         self.package = self.kind = self.inputs_dir = None
         self.dropped, self.rejected, self.names, self.unconfirmed, self.info = [], {}, [], [], None
         self.restarts, self.cleanups = [], []
@@ -487,6 +583,8 @@ class Worker:
             container.stack.enter_context(self.live.hold())
         self._container = container  # attached at once: whatever fails next, ``_discard`` releases the slot
         self.names.append(name)
+        self._start_started = (time.monotonic() if self.ready_timeout_seconds != SANDBOX_READY_SECONDS
+                               or self.start_events is not None else None)
         try:
             container.process = self.docker.spawn(argv)
         except OSError:
@@ -498,13 +596,27 @@ class Worker:
             raise
 
     def _handshake(self):
-        """The ready ping (within ``SANDBOX_READY_SECONDS``) and the load of every procedure not dropped."""
-        ping = self._exchange({"op": "ping"}, SANDBOX_READY_SECONDS)
-        if (ping.get("ok") is not True or ping.get("worker") != WORKER_PROTOCOL
-                or ping.get("worker_sha256") != worker_sha256() or ping.get("hashseed") != str(self.hashseed)
-                or ping.get("policy_sha256") != policy.policy_sha256()):
-            raise ConfigurationError("sandbox worker identity mismatch: %s" % {
-                k: ping.get(k) for k in ("worker", "worker_sha256", "hashseed", "policy_sha256")})
+        """The first ready ping (within this worker's timeout), then the unchanged 20-second procedure load."""
+        ready, answered = False, None
+        try:
+            ping = self._exchange({"op": "ping"}, self.ready_timeout_seconds)
+            if self._start_started is not None:
+                answered = time.monotonic()
+            if (ping.get("ok") is not True or ping.get("worker") != WORKER_PROTOCOL
+                    or ping.get("worker_sha256") != worker_sha256() or ping.get("hashseed") != str(self.hashseed)
+                    or ping.get("policy_sha256") != policy.policy_sha256()):
+                raise ConfigurationError("sandbox worker identity mismatch: %s" % {
+                    k: ping.get(k) for k in ("worker", "worker_sha256", "hashseed", "policy_sha256")})
+            ready = True
+        finally:
+            if self._start_started is not None:
+                elapsed = (time.monotonic() if answered is None else answered) - self._start_started
+                event = {"container": self._container.name, "seconds": round(elapsed, 3),
+                         "ready_timeout_seconds": self.ready_timeout_seconds, "ready": ready}
+                self.starts.append(event)
+                if self.start_events is not None:
+                    self.start_events.append(dict(event))
+                self._start_started = None
         entries = [e for e in self._entries if e["id"] not in self.dropped]
         versions = {e.get("policy_version", policy.POLICY_VERSION) for e in entries}
         version = (policy.POLICY_VERSION_V29 if policy.POLICY_VERSION_V29 in versions else
@@ -613,17 +725,28 @@ class Worker:
         if container is None:
             return
         process, started = container.process, time.monotonic()
+        extended, event = None, None
         try:
             if process is not None:
                 process.stdin.close()
-            cleanup(container.name, docker=self.docker)
+            if self.cleanup_grace_seconds:
+                extended = cleanup(container.name, docker=self.docker,
+                                   cleanup_grace_seconds=self.cleanup_grace_seconds)
+            else:
+                cleanup(container.name, docker=self.docker)
+            if extended is not None:
+                event = {"container": container.name, "seconds": round(time.monotonic() - started, 3), **extended}
+                if self.cleanup_events is not None:
+                    self.cleanup_events.append(event)
         except CleanupUnconfirmed:
             self.unconfirmed.append(container)  # keeps its live slot held while this worker exists
             raise
         finally:
             if process is not None:
                 _reap(process)
-        self.cleanups.append({"container": container.name, "seconds": round(time.monotonic() - started, 3)})
+        event = event if event is not None else {"container": container.name}
+        event["seconds"] = round(time.monotonic() - started, 3)
+        self.cleanups.append(event)
         container.stack.close()
 
 

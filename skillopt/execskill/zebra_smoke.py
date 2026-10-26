@@ -102,7 +102,8 @@ def collect_s0(out, *, pool=z.POOL_PATH, split_manifest=z.SPLIT_MANIFEST_PATH, s
     out.mkdir(parents=True, exist_ok=True)
     fixtures = out / "synthetic-fixtures.json"
     write_json(fixtures, fixture_items())
-    tested = (smoke.sandbox_selftest(out / "sandbox", item_files=[str(fixtures)]) if selftest is None
+    tested = (smoke.sandbox_selftest(out / "sandbox", item_files=[str(fixtures)],
+                  **({"configuration": configuration} if p.is_v292(configuration) else {})) if selftest is None
               else p.verified(read_json(selftest), "sandbox-selftest"))
     checked = checks or prelaunch.zero_call_checks(snapshot_root, python=sys.executable)
     measured = {key: tested["measured"][key] for key in ("vsz_kib", "rss_kib", "view_bytes_p99")}
@@ -226,9 +227,10 @@ def _s2(setting, chain):
     tasks = z.slices(setting.pools[z.BENCH])["smoke"]
     name = "%s/zebra-smoke/S2" % chain
     base = safe_path(setting.root) / chain / "lean-smoke" / "S2"
+    local = units.for_unit(setting, chain, z.BENCH, name) if p.is_v292(configuration) else setting
     def work(attempt):
         endpoint = units.solver_endpoint(setting, chain, z.BENCH, 1, "run", attempt)
-        context = units.cell_context(setting, attempt, endpoint)
+        context = units.cell_context(local, attempt, endpoint)
         arm = Arm("card", empty(step=name, evidence=setting.evidence))
         jobs = []
         for task in tasks:

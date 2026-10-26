@@ -50,7 +50,8 @@ def advisory_feedback(change, report, *, configuration=None):
         row = {"check": name, "passed": bool(check["passed"]), "counts": counts}
         if p.is_v291(configuration) and name == "C6":
             from . import fault_feedback
-            faults = fault_feedback.summarize(change.procedure, report, limit=3, example=False)
+            faults = fault_feedback.summarize(change.procedure, report, limit=3, example=False,
+                                              configuration=configuration)
             row.update(fired_items=faults['fired'], faulted_items=faults['faulted'],
                        **fault_feedback.lint_extension(faults))
         information.append(row)
@@ -173,18 +174,26 @@ def prepare(change, ctx):
     return dropped
 
 
-def _retry(ctx, reply, error, purpose, *, change=None, index=None):
+def _retry(ctx, reply, error, purpose, *, change=None, index=None, change_count=None, change_id=None):
     from . import engineer as e
     request = {"request": "format_retry", "instruction": FORMAT_RETRY_SYSTEM,
                "schema": reader.schema_document(), "parse_problem": error,
                "previous_reply": reply, "change_index": index}
+    v292 = p.is_v292(ctx.configuration)
+    if v292:
+        from . import engineer_v292
+        request.update(instruction=engineer_v292.FORMAT_RETRY_SYSTEM, change_count=change_count)
+        if isinstance(change_id, str):
+            request["change_id"] = change_id
     if change is not None:
         request["change"] = dict(change.entry, source=change.source)
     fixed, call = e._ask(ctx, request, "format-retry/" + purpose)
     event = {"purpose": purpose, "call": call, "parse_problem": error, "parsed": False}
     ctx.sheet.setdefault("format_retries", []).append(event)
+    selection = {"change_index": index, "change_count": change_count, "change_id": change_id} if v292 else None
     try:
-        results = reader.read(fixed, ctx, fix_change=change)
+        results = (reader.read(fixed, ctx, fix_change=change, selection=selection) if v292
+                   else reader.read(fixed, ctx, fix_change=change))
         if index is not None and len(results) != 1:
             raise reader.Unusable("format retry must contain exactly the requested change")
         if any(result["error"] for result in results):
@@ -194,16 +203,29 @@ def _retry(ctx, reply, error, purpose, *, change=None, index=None):
     except reader.Unusable as problem:
         event["reason"] = str(problem)
         return None, call
+    finally:
+        if v292:
+            event.update({key: selection[key] for key in ("selected_by", "reply_change_count") if key in selection})
+
+
+def _change_id(entry):
+    """The written id takes precedence over revises; never use schema defaults."""
+    return next((entry[key] for key in ("id", "revises") if isinstance(entry.get(key), str)), None) if isinstance(entry, dict) else None
 
 
 def read_call(ctx, reply, call, purpose, *, change=None):
     """At most one format retry for each unusable change (or unreadable envelope)."""
     from . import engineer as e
+    v292, metadata = p.is_v292(ctx.configuration), {}
     try:
-        results = reader.read(reply, ctx, fix_change=change)
+        results = (reader.read(reply, ctx, fix_change=change, metadata=metadata) if v292
+                   else reader.read(reply, ctx, fix_change=change))
     except reader.Unusable as problem:
         results, call = _retry(ctx, reply, str(problem), purpose, change=change,
-                              index=change.n if change else None)
+                              index=change.n if change else None,
+                              **({"change_count": metadata.get("change_count"),
+                                  "change_id": _change_id(change.entry) if change else None}
+                                 if v292 else {}))
         if results is None:
             return [], [{"n": change.n if change else 1, "reason": "unparseable", "detail": str(problem)}]
     changes, failures = [], []
@@ -211,7 +233,9 @@ def read_call(ctx, reply, call, purpose, *, change=None):
         result_call = call
         if result["error"]:
             attempted_repairs = list(result["repairs"])
-            repaired, result_call = _retry(ctx, reply, result["error"], purpose + "/%d" % n, change=change, index=n)
+            repaired, result_call = _retry(ctx, reply, result["error"], purpose + "/%d" % n, change=change, index=n,
+                **({"change_count": len(results), "change_id": _change_id(result["original"])}
+                   if p.is_v292(ctx.configuration) else {}))
             if repaired is None:
                 failures.append({"n": n, "reason": "unparseable", "detail": result["error"], "repairs": result["repairs"]})
                 continue
@@ -344,6 +368,9 @@ def run(ctx):
         from . import engineer_v291
         fields['prompt_sha256'] = engineer_v291.audit.text_sha256(engineer_v291.system(ctx.configuration, train=train))
         fields['fault_repair_calls'] = sum(len(row.get('fault_repair', {}).get('calls', [])) for row in outcomes)
+    if p.is_v292(ctx.configuration):
+        from . import engineer_v292
+        fields['prompt_sha256'] = engineer_v292.audit.text_sha256(engineer_v292.system(ctx.configuration, train=train))
     if train:
         fields.update(mode=e.TRAIN, round=ctx.round, base_sha256=ctx.base.sha256, budget=e.budget(ctx), lint=lint,
                       analysis=analysis, analyst_prompt_sha256=e.ANALYST_PROMPT_SHA256, disclosed=e._disclosed_items(ctx))

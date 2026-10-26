@@ -88,7 +88,7 @@ from skillopt.continual_eval.backends import (ALFWORLD_TRACE_VERSION, ANSWER_TAG
 from skillopt.continual_eval.core import require
 from skillopt.validator_pilot.api import digest
 
-from . import compute, notes, router, zebralogic
+from . import compute, donors, notes, router, zebralogic
 from .code_delivery import VERSION as CODE_EXTRACTION_V23
 from . import precheck as prechecks
 from .canonical import canonical
@@ -322,17 +322,9 @@ class _Shell:
         """A hook's value as ``(fields, extra value)``: ``before_call``/``bindings`` return the typed fields (None: no
         output); ``sheet_feedback`` {fields, request_repair: bool}; ``alf_before_step`` {fields, discourage: [command]}.
         None, and a fault, for any other shape."""
-        default = False if extra == "request_repair" else []
-        if value is None:
-            return {}, default
-        if extra is None and isinstance(value, dict):
-            return value, None
-        if extra is not None and isinstance(value, dict) and set(value) <= {"fields", extra}:
-            fields, other = value.get("fields") or {}, value.get(extra, default)
-            valid = (type(other) is bool if extra == "request_repair"
-                     else type(other) is list and all(type(c) is str for c in other))
-            if isinstance(fields, dict) and valid:
-                return fields, other
+        found = donors.shaped(value, extra)
+        if found is not None:
+            return found
         self.fault(procedure.id, fn, "output_shape", None, type(value).__name__)
         return None
 
@@ -498,11 +490,12 @@ class _Shell:
     def sandbox(self):
         """The sandbox lifecycle of the cell's worker (ticket C5-4): copies of its ``restarts`` and ``cleanups``
         (container names, procedure ids and numbers only); None without a worker. A worker without these lists (the
-        tests' FakeSandbox) has had neither."""
+        tests' FakeSandbox) has had neither. Opted-in start measurements accompany the same evidence."""
         if self.worker is None:
             return None
         return {"restarts": [dict(r) for r in getattr(self.worker, "restarts", ())],
-                "cleanups": [dict(c) for c in getattr(self.worker, "cleanups", ())]}
+                "cleanups": [dict(c) for c in getattr(self.worker, "cleanups", ())],
+                **({"starts": [dict(s) for s in self.worker.starts]} if getattr(self.worker, "starts", ()) else {})}
 
     # ------------------------------------------------------------------------------------------- predictions
     def record(self):
@@ -553,7 +546,7 @@ class _Shell:
                 text, trigger = (self.text[procedure.id] if failed else ""), failed and procedure.requests_second_call
             else:
                 ok, value = self.hook(procedure, "sheet_feedback", [view, report, None])
-                shaped = self.shaped(procedure, "sheet_feedback", value, "request_repair") if ok else None
+                shaped = self.shaped(procedure, "sheet_feedback", value, donors.shape_extra("sheet_feedback")) if ok else None
                 if shaped is None:
                     continue
                 if procedure.id in self.shams:  # the shadow decides the trigger; the donor's content is shown
@@ -590,7 +583,7 @@ class _Shell:
                 text, commands = self.text[procedure.id], []
             else:
                 ok, value = self.hook(procedure, "alf_before_step", [view, states.get(procedure.id)])
-                shaped = self.shaped(procedure, "alf_before_step", value, "discourage") if ok else None
+                shaped = self.shaped(procedure, "alf_before_step", value, donors.shape_extra("alf_before_step")) if ok else None
                 if shaped is None:
                     continue
                 text, _ = self.render(procedure, "alf_before_step", shaped[0], public_text=reference)

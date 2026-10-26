@@ -319,10 +319,13 @@ def _faults(runs, verdict):
 
 def _sandbox(runs):
     """The sandbox lifecycle of the cell's shell runs (ticket C5-4): {"restarts", "cleanups"}, each event of a run's
-    ``shell.sandbox`` with the run's step; empty lists when no run had a worker."""
+    ``shell.sandbox`` with the run's step; empty lists when no run had a worker.
+    Opted-in start measurements retain their container and the same step association."""
     found = {"restarts": [], "cleanups": []}
     for step, prediction in runs:
         events = (prediction.get("shell") or {}).get("sandbox") or {}
+        if events.get("starts"):
+            found.setdefault("starts", [])
         for name, entries in found.items():
             entries += [{**event, "step": step} for event in events.get(name) or []]
     return found

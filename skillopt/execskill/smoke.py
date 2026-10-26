@@ -646,7 +646,7 @@ def escape_rows(report):
         and report["python"]["dont_write_bytecode"] == 1}
 
 
-def _escape_report(docker, scratch):
+def _escape_report(docker, scratch, *, cleanup_grace_seconds=0, cleanup_events=None):
     """Run the escape probe once (forced removal of its exact container name afterwards); its parsed report."""
     if docker.binary is None:
         raise SandboxUnavailable("sandbox_unavailable: docker not found on %s" % sandbox.DOCKER_ENV["PATH"])
@@ -660,7 +660,13 @@ def _escape_report(docker, scratch):
     try:
         done = docker.run(escape_argv(runner, name=name, docker=docker.binary), ESCAPE_SECONDS)
     finally:
-        sandbox.cleanup(name, docker=docker)
+        if cleanup_grace_seconds:
+            started = time.monotonic()
+            event = sandbox.cleanup(name, docker=docker, cleanup_grace_seconds=cleanup_grace_seconds)
+            if event is not None and cleanup_events is not None:
+                cleanup_events.append({"container": name, "seconds": round(time.monotonic() - started, 3), **event})
+        else:
+            sandbox.cleanup(name, docker=docker)
         for path in runner.iterdir():
             path.chmod(0o644)
             path.unlink()
@@ -688,19 +694,40 @@ def view_bytes(item_files):
     return {"items": len(sizes), "p99": _p99(sizes)}
 
 
-def sandbox_selftest(out, *, item_files, docker=None, worker=None, scratch="/tmp", clock=time.monotonic):
+def sandbox_selftest(out, *, item_files, docker=None, worker=None, scratch="/tmp", clock=time.monotonic,
+                     configuration=None):
     """The S0 sandbox self-test (§2.6, §10 S0), zero model calls: the escape probe in the real container (judged by
     ``escape_rows``), one ping of an empty-package worker (VSZ/RSS and the container start latency) and the p99
     public-view size of ``item_files``; the sealed record ``<out>/sandbox-selftest.json`` (write-once) with the start
     limits it measured under. ``docker``: a ``sandbox.client.Docker`` (a fake in tests); ``worker``: a callable
     returning an unstarted worker (default ``sandbox.client.Worker``)."""
+    grace = protocol.cleanup_grace_seconds(configuration)
+    cleanups, starts = [], []
+    try:
+        return _sandbox_selftest(out, item_files=item_files, docker=docker, worker=worker, scratch=scratch,
+                                 clock=clock, cleanup_grace_seconds=grace, cleanup_events=cleanups,
+                                 ready_timeout_seconds=protocol.ready_timeout_seconds(configuration),
+                                 start_events=starts if protocol.is_v292(configuration) else None)
+    finally:
+        if cleanups:
+            write_json(safe_path(out) / "sandbox-cleanups.json", {"cleanups": cleanups})
+        if starts:
+            write_json(safe_path(out) / "sandbox-starts.json", {"starts": starts})
+
+
+def _sandbox_selftest(out, *, item_files, docker, worker, scratch, clock, cleanup_grace_seconds, cleanup_events,
+                      ready_timeout_seconds, start_events):
     out = safe_path(out)
     require(not (out / SELFTEST).exists(), "A self-test is written once")
     docker = docker or sandbox.Docker()
-    rows = escape_rows(_escape_report(docker, scratch))
+    cleanup_options = ({"cleanup_grace_seconds": cleanup_grace_seconds, "cleanup_events": cleanup_events}
+                       if cleanup_grace_seconds else {})
+    rows = escape_rows(_escape_report(docker, scratch, **cleanup_options))
     empty = SimpleNamespace(sha256=digest([]), procedures=())
     started = clock()
-    pinged = (worker or sandbox.Worker)().start(empty, kind="cell")
+    worker_options = {**cleanup_options, **({"ready_timeout_seconds": ready_timeout_seconds,
+                                            "start_events": start_events} if start_events is not None else {})}
+    pinged = (worker or sandbox.Worker)(**worker_options).start(empty, kind="cell")
     try:
         ping = pinged.ping()
     finally:
@@ -713,7 +740,9 @@ def sandbox_selftest(out, *, item_files, docker=None, worker=None, scratch="/tmp
         "escape_rows": rows, "escape_probe_sha256": manifest._sha(ESCAPE_PROBE),
         "worker_sha256": sandbox.worker_sha256(),
         "image": sandbox.IMAGE, "limits": {k: asdict(v) for k, v in sorted(sandbox.LIMITS.items())},
-        "measured": measured, "passed": all(rows.values())})
+        "measured": measured, "passed": all(rows.values()),
+        **({"sandbox": {key: rows for key, rows in (("cleanups", cleanup_events), ("starts", start_events)) if rows}}
+           if cleanup_events or start_events else {})})
     write_json(out / SELFTEST, value)
     return value
 
@@ -967,6 +996,7 @@ def _summary_of(spec, attempt, found, *, stage, bench, nominal, bound):
             "hooks": sorted(hooks), "alfworld": steps, "tokens": _usage(found),
             "restarts": len(box.get("restarts") or []),
             "cleanups": [c.get("seconds") for c in box.get("cleanups") or [] if isinstance(c, dict)],
+            **({"starts": [dict(event) for event in box["starts"]]} if box.get("starts") else {}),
             "stop": found.get("stop")}
 
 
@@ -1042,7 +1072,9 @@ def _unit(spec, setting, stage, name, items, *, first):
 
     identity = {"unit": unit, "stage": stage, "set": name, "spec": spec[protocol.RECORD_HASH]}
     return units.run_unit(safe_path(spec["root"]) / UNITS_DIR / stage / name, run=setting.run, identity=identity,
-                          work=work, evidence=setting.evidence, drain=units.drainer(setting, budgets.SMOKE, unit))
+                          work=work, evidence=setting.evidence, drain=units.drainer(setting, budgets.SMOKE, unit),
+                          **({"configuration": protocol.configuration_of(setting)}
+                             if protocol.is_v292(protocol.configuration_of(setting)) else {}))
 
 
 def _compliant(results, arms):
@@ -1077,7 +1109,9 @@ def _s2_judged(spec, results, *, ledger_bound, ledger, leftover, probe_entries, 
                          "level1_share": total and sum(s["level1"] for s in steps) / total},
             "sandbox": {"restarts": sum(c["restarts"] for c in cells),
                         "cleanup_seconds_max": max([s for c in cells for s in c["cleanups"] if s is not None],
-                                                   default=None)},
+                                                   default=None),
+                        **({"starts": [dict(event) for c in cells for event in c.get("starts", ())]}
+                           if any(c.get("starts") for c in cells) else {})},
             "tokens": {r["bench"] + "/" + arm: sum(c["tokens"] for c in r["cells"] if c["arm"] == arm)
                        for r in results for arm in {c["arm"] for c in r["cells"]}}}
 
@@ -1673,7 +1707,9 @@ def _confirm(spec, setting, stage, bench, item):
 
     identity = {"unit": unit, "stage": stage, "set": "confirm", "spec": spec[protocol.RECORD_HASH]}
     return units.run_unit(base / ("confirm-%d" % n), run=setting.run, identity=identity, work=work,
-                          evidence=setting.evidence, drain=units.drainer(setting, budgets.SMOKE, unit))
+                          evidence=setting.evidence, drain=units.drainer(setting, budgets.SMOKE, unit),
+                          **({"configuration": protocol.configuration_of(setting)}
+                             if protocol.is_v292(protocol.configuration_of(setting)) else {}))
 
 
 def _paused(root):

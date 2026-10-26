@@ -76,7 +76,7 @@ def repair(ctx, change, report, taken=(), *, max_repairs=None, format_retry=True
     """
     from . import engineer as e, engineer_v28, fault_feedback
     best, best_report = change, report
-    evidence = fault_feedback.summarize(best.procedure, best_report)
+    evidence = fault_feedback.summarize(best.procedure, best_report, configuration=ctx.configuration)
     record = {key: evidence[key] for key in ('fired', 'faulted', 'threshold', 'triggered')}
     record.update(calls=[], kept_index=0, stop_reason='not_triggered')
     checked = []
@@ -113,7 +113,7 @@ def repair(ctx, change, report, taken=(), *, max_repairs=None, format_retry=True
             row['passed'] or row.get('informational') for row in candidate_report['checks'])
         event.update(checked=True, passed_fatal_checks=fatal_passed,
                      deferred=bool(candidate_report.get('deferred')))
-        after = (fault_feedback.summarize(candidate.procedure, candidate_report)
+        after = (fault_feedback.summarize(candidate.procedure, candidate_report, configuration=ctx.configuration)
                  if candidate.procedure is not None and any(
                      row['check'] == 'C6' for row in candidate_report['checks']) else None)
         event['faulted_after'] = after['faulted'] if after is not None else None

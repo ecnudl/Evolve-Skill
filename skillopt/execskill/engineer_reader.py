@@ -299,7 +299,7 @@ def defined_hooks(source):
     return [hook for hook in p.HOOKS if hook in names]
 
 
-def _source_owners(entries, blocks, ctx, fix_change):
+def _source_owners(entries, blocks, ctx, fix_change, *, selected=None):
     """Assign fences together, reserving sources needed by non-inheriting siblings.
 
     The small change limit bounds this matching to O(fences * 2**changes).
@@ -310,18 +310,22 @@ def _source_owners(entries, blocks, ctx, fix_change):
     for index, entry in enumerate(entries):
         if not isinstance(entry, dict) or isinstance(entry.get("source"), str) and entry["source"].strip():
             continue
+        fixing = fix_change if selected is None or selected == index else None
         target = entry.get("revises", entry.get("id"))
-        if target is None and fix_change is not None:
-            target = fix_change.entry.get("revises", fix_change.entry.get("id"))
+        if target is None and fixing is not None:
+            target = fixing.entry.get("revises", fixing.entry.get("id"))
         parent = ctx.parent.get(target) if isinstance(target, str) and target in ctx.parent.order else None
-        kind = entry.get("kind", fix_change.kind if fix_change else "revision" if parent else "new")
+        kind = entry.get("kind", fixing.kind if fixing else "revision" if parent else "new")
         if kind not in ("new", "revision"):
             continue
-        inherited = any(getattr(item, "source", None) for item in (fix_change, parent))
+        inherited = any(getattr(item, "source", None) for item in (fixing, parent))
         hooks = entry.get("hooks")
         hooks = set(hooks) if isinstance(hooks, list) and all(isinstance(h, str) for h in hooks) else set()
         candidates.append((index, not inherited, hooks))
     if not candidates or not blocks:
+        return {}
+    selected_slot = next((slot for slot, (index, _, _) in enumerate(candidates) if index == selected), None)
+    if selected is not None and selected_slot is None:
         return {}
     mandatory = [index for index, required, _ in candidates if required]
     order = (list(range(len(entries))) if len(blocks) == len(entries) else
@@ -349,13 +353,24 @@ def _source_owners(entries, blocks, ctx, fix_change):
                 else:
                     tied = list(tied)
                 for assignment in assignments:
-                    selected = assignment[:slot] + (number,) + assignment[slot + 1:]
-                    if selected not in tied and len(tied) < 2:
-                        tied.append(selected)
+                    assigned = assignment[:slot] + (number,) + assignment[slot + 1:]
+                    if selected_slot is not None:
+                        if len(tied) < 2 and not any(item[selected_slot] == assigned[selected_slot] for item in tied):
+                            tied.append(assigned)
+                    elif assigned not in tied and len(tied) < 2:
+                        tied.append(assigned)
                 updated[key] = (proposed, tied)
         states = updated
     best = max(score for score, _ in states.values())
     choices = [assignment for score, assignments in states.values() if score == best for assignment in assignments]
+    if selected is not None:
+        # A sibling's ambiguous ownership cannot invalidate a uniquely owned
+        # selected source. Inline/inherited selected sources need no owner.
+        selected_owners = {choice[selected_slot] for choice in choices}
+        if len(selected_owners) != 1:
+            raise Unusable("ambiguous procedure source blocks; ownership is not unique")
+        number = selected_owners.pop()
+        return {selected: next(block for block in blocks if block[0] == number)} if number is not None else {}
     if len(choices) != 1:
         raise Unusable("ambiguous procedure source blocks; ownership is not unique")
     by_number = {number: (number, lang, body) for number, lang, body in blocks}
@@ -374,15 +389,140 @@ def _source(entry, owned, inherited):
     raise Unusable("no procedure source block")
 
 
-def read(reply, ctx, *, fix_change=None):
+def read(reply, ctx, *, fix_change=None, selection=None, metadata=None):
     """Per-change results; a broken sibling cannot discard a usable change."""
     try:
-        return _read(reply, ctx, fix_change=fix_change)
+        return _read(reply, ctx, fix_change=fix_change, selection=selection, metadata=metadata)
     except (RecursionError, MemoryError, OverflowError) as error:
         raise Unusable("reply exceeds reader resources (%s)" % type(error).__name__) from None
 
 
-def _read(reply, ctx, *, fix_change=None):
+def _inline_source(entry, repairs):
+    """v2.9.2 aliases/fences only; never alter unfenced program text."""
+    if not isinstance(entry, dict):
+        return entry
+    entry = copy.deepcopy(entry)
+    source, code = entry.get("source"), entry.pop("code", None)
+    usable_source = isinstance(source, str) and bool(source.strip())
+    usable_code = isinstance(code, str) and bool(code.strip())
+    if usable_source and usable_code and source != code:
+        repairs.append({"rule": "inline_source_precedence", "path": "$.source", "ignored": "$.code"})
+    if not usable_source and usable_code:
+        source = code
+        repairs.append({"rule": "inline_code_alias", "path": "$.code", "to": "$.source"})
+    if isinstance(source, str) and source.strip():
+        stripped = source.strip()
+        # Parse the opener independently so a short closing run cannot make
+        # the regex backtrack part of the opening delimiter into the info.
+        opening = re.match(r"(`{3,}|~{3,})([^\n]*)\n", stripped)
+        if opening is not None:
+            delimiter, info = opening.groups()
+            valid_info = not info.startswith(delimiter[0]) and (delimiter[0] != "`" or "`" not in info)
+            if valid_info:
+                closing = re.search(r"^[ \t]*" + re.escape(delimiter[0]) + r"{%d,}[ \t]*\r?$" % len(delimiter),
+                                    stripped[opening.end():], re.M)
+                # The first valid closing line ends the block. Any following
+                # text means this is not exactly one complete inline fence.
+                if closing is not None and opening.end() + closing.end() == len(stripped):
+                    source = stripped[opening.end():opening.end() + closing.start()]
+                    repairs.append({"rule": "inline_source_unfenced", "path": "$.source"})
+        entry["source"] = source
+    return entry
+
+
+def _selected_entry(entries, selection):
+    """Resolve raw manifest identities before defaults/inheritance can add ids."""
+    selection["reply_change_count"] = len(entries)
+    if len(entries) == 1:
+        selection["selected_by"] = "single"
+        return 0
+    change_id = selection.get("change_id")
+    matches = [index for index, entry in enumerate(entries) if isinstance(entry, dict)
+               and isinstance(change_id, str) and any(entry.get(key) == change_id for key in ("id", "revises"))]
+    if len(matches) == 1:
+        selection["selected_by"] = "id"
+        return matches[0]
+    index = selection.get("change_index")
+    if (len(entries) == selection.get("change_count") and type(index) is int
+            and 1 <= index <= len(entries)):
+        selection["selected_by"] = "position"
+        return index - 1
+    raise Unusable("format retry must contain exactly the requested change")
+
+
+def _large_retry_source_owner(entries, blocks, selected, ctx, fix_change):
+    """Resolve just one oversized retry entry in linear work, never 2**N.
+
+    Inline code wins. Position breaks ties only when every mapped entry attains
+    its maximal hook score; otherwise a uniquely best hook match, without a
+    competing sibling, is the only available ownership proof.
+    """
+    entry = entries[selected]
+    if not isinstance(entry, dict) or isinstance(entry.get("source"), str) and entry["source"].strip():
+        return {}
+    target = entry.get("revises", entry.get("id"))
+    if target is None and fix_change is not None:
+        target = fix_change.entry.get("revises", fix_change.entry.get("id"))
+    parent = ctx.parent.get(target) if isinstance(target, str) and target in ctx.parent.order else None
+    kind = entry.get("kind", fix_change.kind if fix_change else "revision" if parent else "new")
+    if kind not in ("new", "revision"):
+        return {}
+    if not blocks:
+        return {}
+    candidates = []
+    for index, value in enumerate(entries):
+        if not isinstance(value, dict) or isinstance(value.get("source"), str) and value["source"].strip():
+            continue
+        fixing = fix_change if index == selected else None
+        target = value.get("revises", value.get("id"))
+        if target is None and fixing is not None:
+            target = fixing.entry.get("revises", fixing.entry.get("id"))
+        parent = ctx.parent.get(target) if isinstance(target, str) and target in ctx.parent.order else None
+        kind = value.get("kind", fixing.kind if fixing else "revision" if parent else "new")
+        if kind not in ("new", "revision"):
+            continue
+        inherited = any(getattr(item, "source", None) for item in (fixing, parent))
+        hooks = value.get("hooks")
+        hooks = set(hooks) if isinstance(hooks, list) and all(isinstance(hook, str) for hook in hooks) else set()
+        candidates.append((index, not inherited, hooks))
+    mandatory = [index for index, required, _ in candidates if required]
+    order = (list(range(len(entries))) if len(blocks) == len(entries) else
+             [index for index, _, _ in candidates] if len(blocks) == len(candidates) else
+             mandatory if len(blocks) == len(mandatory) else [])
+    block_hooks = [set(defined_hooks(block[2])) for block in blocks]
+    if order:
+        positions = {index: position for position, index in enumerate(order)}
+        maximal = all(
+            (len(block_hooks[positions[index]] & hooks) if hooks else len(block_hooks[positions[index]]))
+            == max(len(actual & hooks) if hooks else len(actual) for actual in block_hooks)
+            for index, _, hooks in candidates if index in positions)
+        if maximal:
+            return {selected: blocks[positions[selected]]} if selected in positions else {}
+    _, required, hooks = next(candidate for candidate in candidates if candidate[0] == selected)
+    required_only = len(blocks) <= len(mandatory)
+    if required_only and not required:
+        return {}  # Every authored block is needed by a non-inheriting sibling.
+    scores = []
+    for block, actual in zip(blocks, block_hooks):
+        scores.append((len(actual & hooks) if hooks else len(actual), block))
+    best = max(score for score, _ in scores)
+    winners = [block for score, block in scores if score == best and score > 0]
+    if len(winners) != 1:
+        raise Unusable("ambiguous procedure source blocks; ownership is not unique")
+    actual = set(defined_hooks(winners[0][2]))
+    for index, other_required, other_hooks in candidates:
+        if index == selected or required_only and not other_required:
+            continue
+        # In an incomplete envelope, a block matching another source-needing
+        # entry cannot uniquely belong to this one. Once mandatory sources can
+        # all be filled, inherited replacements also compete for spare blocks.
+        competes = bool(actual & other_hooks) if other_hooks else bool(actual)
+        if competes:
+            raise Unusable("ambiguous procedure source blocks; ownership is not unique")
+    return {selected: winners[0]}
+
+
+def _read(reply, ctx, *, fix_change=None, selection=None, metadata=None):
     from .engineer import EDIT_KINDS
     if not _bounded_text(reply):
         raise Unusable("missing reply or reply exceeds reader byte limit")
@@ -398,19 +538,35 @@ def _read(reply, ctx, *, fix_change=None):
     manifest, repairs = tolerant_json(manifests[0][1])
     manifest = normalize(manifest, {"changes": Field(list, True, [])}, repairs=repairs)
     entries = manifest["changes"]
-    if len(entries) > p.MAX_CHANGES:
+    v292 = p.is_v292(getattr(ctx, "configuration", None))
+    if v292 and metadata is not None:
+        metadata.update(change_count=len(entries), entries=entries)
+    if v292 and selection is not None:
+        selection["reply_change_count"] = len(entries)
+    if selection is not None and not v292:
+        raise Unusable("retry selection belongs only to v2.9.2")
+    selected = _selected_entry(entries, selection) if selection is not None else None
+    if len(entries) > p.MAX_CHANGES and selected is None:
         raise Unusable("changes count %d exceeds %d" % (len(entries), p.MAX_CHANGES))
-    if fix_change is not None and len(entries) != 1:
+    if fix_change is not None and len(entries) != 1 and selected is None:
         raise Unusable("a fix must contain exactly its one change")
+    originals = entries
+    inline_repairs = [[] for entry in entries]
+    if v292:
+        entries = [_inline_source(entry, log) for entry, log in zip(entries, inline_repairs)]
     code = [(n, lang, body) for n, lang, body in blocks if n != manifests[0][0]]
-    owners = _source_owners(entries, code, ctx, fix_change)
+    owners = (_large_retry_source_owner(entries, code, selected, ctx, fix_change) if len(entries) > p.MAX_CHANGES else
+              _source_owners(entries, code, ctx, fix_change, selected=selected))
     results = []
-    for index, original in enumerate(entries, 1):
-        log = copy.deepcopy(repairs)
+    for index, prepared in enumerate(entries, 1):
+        if selected is not None and index - 1 != selected:
+            continue
+        original = originals[index - 1]
+        log = copy.deepcopy(repairs) + inline_repairs[index - 1]
         try:
             if not isinstance(original, dict):
                 raise Unusable("change must be an object")
-            entry = copy.deepcopy(original)
+            entry = copy.deepcopy(prepared)
             target = entry.get("revises", entry.get("id"))
             if target is None and fix_change is not None:
                 target = fix_change.entry.get("revises", fix_change.entry.get("id"))
@@ -447,6 +603,8 @@ def _read(reply, ctx, *, fix_change=None):
             results.append({"entry": entry, "source": source, "repairs": log, "error": None})
         except Unusable as error:
             results.append({"entry": original, "source": None, "repairs": log, "error": str(error)})
+        if v292:
+            results[-1]["original"] = copy.deepcopy(original)
     return results
 
 

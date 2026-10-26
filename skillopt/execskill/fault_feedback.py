@@ -194,8 +194,27 @@ def _detail(report, name):
     return next((row.get("detail") or {} for row in report.get("checks", ()) if row["check"] == name), {})
 
 
-def summarize(procedure, report, *, limit=SIGNATURES, example=True):
+def output_shape_fields(hook, kind, message, *, v292=False):
+    """Child-only explanation, generated from the shell's return-shape rule."""
+    if not v292 or kind != "output_shape":
+        return {}
+    from .donors import expected_shape
+    return {"expected": expected_shape(hook), "returned": message}
+
+
+def shape_fields_ok(row, *, v292=False):
+    if not isinstance(row, dict) or (v292 and row.get("kind") == "output_shape"
+            and not all(type(row.get(key)) is str for key in ("hook", "message"))):
+        return False
+    expected = output_shape_fields(row.get("hook"), row.get("kind"), row.get("message"), v292=v292)
+    return ({key: row[key] for key in ("expected", "returned") if key in row} == expected
+            and (not expected or all(type(row.get(key)) is str for key in expected)))
+
+
+def summarize(procedure, report, *, limit=SIGNATURES, example=True, configuration=None):
     """Count complete attempts; signatures are stable and count distinct items."""
+    from . import profiles as p
+    v292 = configuration is not None and p.is_v292(configuration)
     fired, observed = set(), []
     for item in _detail(report, "C6").get("items", ()):
         task = item.get("task_id", item.get("item", item.get("cell")))
@@ -238,6 +257,7 @@ def summarize(procedure, report, *, limit=SIGNATURES, example=True):
         hook, kind, exc_type, message, line = key
         row = {"hook": hook, "kind": kind, "exc_type": exc_type, "message": message, "line": line,
                "items": len(tasks), "first_step": first_step, "example_task_ids": tasks[:2]}
+        row.update(output_shape_fields(hook, kind, message, v292=v292))
         if type(line) is int and 1 <= line <= len(source):
             row["source_line"] = _source_text(source[line - 1])
             truncated |= row["source_line"] != source[line - 1]
@@ -281,7 +301,7 @@ def summarize(procedure, report, *, limit=SIGNATURES, example=True):
     return bound_diagnostics(result, example=example)
 
 
-def lint_details_ok(row):
+def lint_details_ok(row, *, v292=False):
     """Validate the bounded diagnostic extension allowed in next-round lint."""
     if not isinstance(row, dict) or "truncated" in row and row["truncated"] is not True:
         return False
@@ -300,8 +320,12 @@ def lint_details_ok(row):
     required = {"hook", "kind", "exc_type", "message", "line", "items", "first_step", "example_task_ids"}
     optional = {"source_line", "source_context", "measured_length", "max_note_chars", "bench_cap", "state_bytes",
                 "field", "field_measurements", "field_limits"}
+    if v292:
+        optional |= {"expected", "returned"}
     for signature in signatures:
         if not isinstance(signature, dict) or not required <= set(signature) or set(signature) - required - optional:
+            return False
+        if not shape_fields_ok(signature, v292=v292):
             return False
         if (not all(type(signature[key]) is str for key in ("hook", "kind", "message"))
                 or len(signature["message"]) > MESSAGE_CHARS

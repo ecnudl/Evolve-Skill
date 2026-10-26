@@ -233,7 +233,8 @@ def collect_s0(out, *, preparation_file, snapshot_root=manifest.REPO, selftest=N
     fixtures = fixture_items(imported["runtime"][BENCH])
     fixture_file = out / "synthetic-fixtures.json"
     write_json(fixture_file, fixtures)
-    tested = (smoke.sandbox_selftest(out / "sandbox", item_files=[str(fixture_file)]) if selftest is None
+    tested = (smoke.sandbox_selftest(out / "sandbox", item_files=[str(fixture_file)],
+                  **({"configuration": configuration} if p.is_v292(configuration) else {})) if selftest is None
               else p.verified(read_json(selftest), "sandbox-selftest"))
     checked = checks or prelaunch.zero_call_checks(snapshot_root, python=sys.executable)
     measured = {key: tested["measured"][key] for key in ("vsz_kib", "rss_kib", "view_bytes_p99")}
@@ -349,9 +350,10 @@ def _s1(setting):
 def _s2(setting):
     tasks = _slices(setting.pools[BENCH], setting.runtime[BENCH])["smoke"][:S2_ITEMS]
     name = "D/alfworld-smoke/S2"
+    local = units.for_unit(setting, "D", BENCH, name) if p.is_v292(p.configuration_of(setting)) else setting
     def work(attempt):
         endpoint = units.solver_endpoint(setting, "D", BENCH, 1, "run", attempt)
-        context = units.cell_context(setting, attempt, endpoint)
+        context = units.cell_context(local, attempt, endpoint)
         arm = Arm("card", empty(step=name, evidence=setting.evidence))
         jobs = [({"id": cell_id(name, "C", task["task_id"], 0), "unit": name, "arm": "C", "benchmark": BENCH,
                   "task_id": task["task_id"], "run": 0}, {"public": task["public"], "private": task["private"]}, arm)

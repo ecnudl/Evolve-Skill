@@ -110,18 +110,39 @@ def changed(parent, candidate):
             for e in edits(parent, candidate)]
 
 
+# The shell and diagnostics share these return-shape rules. The tuple is the
+# required exact type and, for containers, the required exact item type.
+NOTE_SHAPE_EXTRAS = {"before_call": None, "bindings": None,
+                     "sheet_feedback": "request_repair", "alf_before_step": "discourage"}
+SHAPE_EXTRA_TYPES = {"request_repair": (bool, None), "discourage": (list, str)}
+
+
+def shape_extra(hook):
+    return NOTE_SHAPE_EXTRAS.get(hook)
+
+
+def expected_shape(hook):
+    """Describe the very same types consumed by ``shaped`` and the live shell."""
+    extra = shape_extra(hook)
+    if extra is None:
+        return "None or {<note fields>}"
+    outer, item = SHAPE_EXTRA_TYPES[extra]
+    suffix = ("[<command strings>]" if outer is list and item is str else "<%s>" % outer.__name__)
+    return 'None or {"fields": {<note fields>}, "%s": %s}' % (extra, suffix)
+
+
 def shaped(value, extra):
     """A hook value in the shell's shapes (``solver._Shell.shaped``): ``(fields, extra value)``; None for a wrong
     shape. ``extra``: None (``before_call``, ``bindings``), ``"request_repair"`` or ``"discourage"``."""
-    default = False if extra == "request_repair" else []
+    outer, item = SHAPE_EXTRA_TYPES.get(extra, (list, str)) if isinstance(extra, str) else (list, str)
+    default = outer()
     if value is None:
         return {}, default
     if extra is None:
         return (value, None) if isinstance(value, dict) else None
     if isinstance(value, dict) and set(value) <= {"fields", extra}:
         fields, other = value.get("fields") or {}, value.get(extra, default)
-        valid = (type(other) is bool if extra == "request_repair"
-                 else type(other) is list and all(type(c) is str for c in other))
+        valid = type(other) is outer and (item is None or all(type(c) is item for c in other))
         if isinstance(fields, dict) and valid:
             return fields, other
     return None
@@ -206,7 +227,7 @@ def _outputs(run, inputs):
             out = {hook: {} for hook in out}
         if SHEET_HOOK in hooks and inputs["report"] is not None:
             report = {key: inputs["report"].get(key) for key in REPORT_KEYS}
-            out[SHEET_HOOK] = run.fields(run.hook(SHEET_HOOK, [inputs["view"], report, None], "request_repair"), text,
+            out[SHEET_HOOK] = run.fields(run.hook(SHEET_HOOK, [inputs["view"], report, None], shape_extra(SHEET_HOOK)), text,
                                          SHEET_HOOK)
         return out
     if STEP_HOOK not in hooks:
@@ -214,7 +235,7 @@ def _outputs(run, inputs):
     state, entries = None, []
     for step in inputs["steps"]:
         view = step["view"]
-        found = run.hook(STEP_HOOK, [view, state], "discourage")
+        found = run.hook(STEP_HOOK, [view, state], shape_extra(STEP_HOOK))
         admissible = view["admissible_commands"] if isinstance(view["admissible_commands"], list) else []
         commands = [c for c in dict.fromkeys(found[1]) if c in admissible] if found is not None else []
         reference = public_text([view["initial_observation"], view["observation"]])

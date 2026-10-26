@@ -72,6 +72,7 @@ from skillopt.validator_pilot.api import digest
 
 from . import (budgets, describer, detectors, engineer, examiner, fixtures, manifest, protocol, replay, research,
                rounds, slots, smoke, solver, step, trajectories, units)
+from . import profiles
 from .cells import Pause
 from .errors import BudgetStop, ConfigurationError
 from .generators import livemath
@@ -478,7 +479,9 @@ def unit(spec, m, manifest_path, *, fake=False, env_path=None, roles_repo=None, 
         identity = {"unit": label, "stage": STAGE, "spec": spec[protocol.RECORD_HASH]}
         try:
             return units.run_unit(unit_root(spec, name), run=setting.run, identity=identity, work=work,
-                                  evidence=evidence, drain=units.drainer(setting, budgets.SMOKE, label))
+                                  evidence=evidence, drain=units.drainer(setting, budgets.SMOKE, label),
+                                  **({"configuration": profiles.configuration_of(setting)}
+                                     if profiles.is_v292(profiles.configuration_of(setting)) else {}))
         except Pause as pause:
             return {"stage": STAGE, "complete": False, "stopped": pause.kind, "reason": pause.reason,
                     "unit": pause.cell}

@@ -217,7 +217,11 @@ def cell_context(setting, attempt, endpoint, *, solve=solver.solve):
     capped = {bench: pools[LIVE].limited(cap) for bench, cap in LIVE_SANDBOX_UNIT_CAP.items()}
 
     def worker(bench):
-        return Worker(**setting.sandbox, live=capped.get(bench, pools[LIVE]), per_call=pools[CALL])
+        options = dict(setting.sandbox)
+        if protocol.is_v292(protocol.configuration_of(setting)):
+            options["cleanup_grace_seconds"] = protocol.cleanup_grace_seconds(protocol.configuration_of(setting))
+            options["ready_timeout_seconds"] = protocol.ready_timeout_seconds(protocol.configuration_of(setting))
+        return Worker(**options, live=capped.get(bench, pools[LIVE]), per_call=pools[CALL])
 
     nominal = ({bench: solver_tokens(endpoint.model, bench) for bench in protocol.active_benches(protocol.configuration_of(setting))}
                if endpoint.model == protocol.CHAINS["D"] else {})
@@ -232,7 +236,23 @@ def for_unit(setting, chain, bench, unit):
     ``drain_unit(chain, unit)`` finds exactly those, and on ALFWorld at most ``ALFWORLD_WORKERS`` cells at once."""
     require(bench in SUPPORTED_BENCHES and type(unit) is str and unit, "A unit of a known bench")
     workers = min(setting.workers, ALFWORLD_WORKERS) if bench == "alfworld" else setting.workers
-    return replace(setting, sandbox={**setting.sandbox, "tag": unit_tag(chain, unit)}, workers=workers)
+    options = {**setting.sandbox, "tag": unit_tag(chain, unit)}
+    if protocol.is_v292(protocol.configuration_of(setting)):
+        options.update(cleanup_grace_seconds=protocol.cleanup_grace_seconds(protocol.configuration_of(setting)),
+                       cleanup_events=_cleanup_events(setting, chain, unit),
+                       ready_timeout_seconds=protocol.ready_timeout_seconds(protocol.configuration_of(setting)),
+                       start_events=_start_events(setting, chain, unit))
+    return replace(setting, sandbox=options, workers=workers)
+
+
+def _cleanup_events(setting, chain, unit):
+    """One child-only collector shared by unit workers and their exact-name drain."""
+    return setting.extra.setdefault("sandbox_cleanup_events", {}).setdefault((chain, unit), [])
+
+
+def _start_events(setting, chain, unit):
+    """One child-only start collector shared by service and cell workers."""
+    return setting.extra.setdefault("sandbox_start_events", {}).setdefault((chain, unit), [])
 
 
 def drainer(setting, chain, unit):
@@ -240,6 +260,16 @@ def drainer(setting, chain, unit):
     ``sandbox.client.drain_unit`` on the run's docker (``manifest.setting_of``) -- or None for a setting without one
     (fixtures whose cells start no container)."""
     drain = setting.extra.get("drain")
+    if protocol.is_v292(protocol.configuration_of(setting)):
+        cleanups = _cleanup_events(setting, chain, unit)
+        def finish():
+            if drain is not None:
+                return drain(chain, unit,
+                             cleanup_grace_seconds=protocol.cleanup_grace_seconds(protocol.configuration_of(setting)),
+                             cleanups=cleanups)
+        finish.cleanups = cleanups
+        finish.starts = _start_events(setting, chain, unit)
+        return finish
     return None if drain is None else functools.partial(drain, chain, unit)
 
 
@@ -299,6 +329,15 @@ def run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=Non
         if finished is None and attempt_number(attempt) > 1 + MAX_REDOS:
             raise Pause("redo_limit", "%s: at most %d redos of a unit (§3.4)" % (attempt.name, MAX_REDOS), name)
         attempt.mkdir()
+        cleanup_events = getattr(drain, "cleanups", None) if protocol.is_v292(configuration) else None
+        start_events = getattr(drain, "starts", None) if protocol.is_v292(configuration) else None
+        if cleanup_events is not None:
+            cleanup_events.clear()
+        if start_events is not None:
+            start_events.clear()
+        def lifecycle():
+            events = {key: rows for key, rows in (("cleanups", cleanup_events), ("starts", start_events)) if rows}
+            return {"sandbox": events} if events else {}
         write_json(attempt / "started.json", record("unit-started" + suffix, evidence, {
             "run": run, "identity": identity, **({"commit_of": finished[0].name} if finished else {})}))
         try:
@@ -313,20 +352,29 @@ def run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=Non
                 if settle is not None:
                     settle(worked, result)
             finally:
-                if drain is not None:
-                    drain()
+                try:
+                    if drain is not None:
+                        drain()
+                finally:
+                    if cleanup_events:
+                        write_json(attempt / "sandbox-cleanups.json", {"cleanups": cleanup_events})
+                    if start_events:
+                        write_json(attempt / "sandbox-starts.json", {"starts": start_events})
         except Pause as pause:
             write_json(attempt / "status.json", record("unit-status" + suffix, evidence, {
-                "status": "paused", "kind": pause.kind, "reason": pause.reason, "cell": pause.cell}))
+                "status": "paused", "kind": pause.kind, "reason": pause.reason, "cell": pause.cell,
+                **lifecycle()}))
             raise
         except Exception as error:  # a stop of the run, a configuration check or a crash: the unit pauses
             (attempt / "diagnostics.log").write_text(traceback.format_exc(), encoding="utf-8")
             kind = stop_kind(error) or ("configuration" if isinstance(error, ValueError) else "exception")
             write_json(attempt / "status.json", record("unit-status" + suffix, evidence, {
-                "status": "paused", "kind": kind, "reason": type(error).__name__, "cell": None}))
+                "status": "paused", "kind": kind, "reason": type(error).__name__, "cell": None,
+                **lifecycle()}))
             raise Pause(kind, type(error).__name__, name) from error
         value = record("unit" + suffix, evidence, {"run": run, "identity": identity, "status": "complete",
                                           "attempt": worked.name, "result": result,
+                                          **lifecycle(),
                                           **({"committed_in": attempt.name} if finished else {})})
         write_json(unit_root / "unit.json", value)
         return value
