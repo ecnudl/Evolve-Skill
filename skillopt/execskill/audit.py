@@ -261,71 +261,240 @@ def situation_prompt(procedures, bench, batch, counts, *, final=False):
     return '\n'.join(lines + ['Return only JSON: ' + (B_FINAL_SCHEMA if final else B_SCHEMA)])
 
 
-def _text(value):
-    if type(value) is not str:
-        raise Invalid('text')
-    return value
+def _required_units(part, *, extracted=None, batch=()):
+    if part == 'A':
+        return ['template:' + row['t'] for row in extracted['templates']]
+    return ['note:' + row['s'] + '/' + note['n'] for row in batch for note in row['notes']] + ['program']
+
+
+def _json_copy(value):
+    """Clone canonical judge data without deepcopy's lower nesting ceiling."""
+    return json.loads(json.dumps(value, ensure_ascii=False, allow_nan=False, sort_keys=True,
+                                 separators=(',', ':')))
 
 
 def parse_verdict(raw, part, *, extracted=None, batch=(), final=False, procedures=()):
     try:
+        return _parse_verdict(raw, part, extracted=extracted, batch=batch, final=final, procedures=procedures)
+    except (RecursionError, OverflowError, UnicodeError):
+        # Normalization/diagnostics must not escape the same unusable-shape path
+        # merely because their call stack is deeper than the initial JSON check.
+        raise Invalid('non_canonical_json') from None
+
+
+def _parse_verdict(raw, part, *, extracted=None, batch=(), final=False, procedures=()):
+    """Keep independently valid judgments; only an unusable reply shape raises.
+
+    ``covered`` counts complete required template/note/program units, not fields.
+    Only fully covered units contribute judgments. Malformed fragments are ignored
+    before resolving valid duplicates, so they cannot poison a valid unit. The
+    request chooses one whole attempt by this coverage; attempts are never merged.
+    """
+    try:
         value = parse(raw)
-        # Validate the complete value, including optional/unknown nested fields,
-        # against the immutable record writer before accepting a judge verdict.
+        # Check the whole decoded reply before ignoring any extra/invalid part.
         json.dumps(value, ensure_ascii=False, allow_nan=False, sort_keys=True,
                    separators=(',', ':')).encode('utf-8')
+        # Diagnostic and cache clones use the same canonical JSON machinery.
+        _json_copy(value)
+    except Invalid:
+        raise
     except (TypeError, ValueError, UnicodeError, OverflowError, RecursionError):
         raise Invalid('non_canonical_json') from None
-    if part == 'A':
-        if set(value) != {'templates', 'other'} or not all(isinstance(value[k], list) for k in value):
-            raise Invalid('template_schema')
-        ids, observed = {t['t'] for t in extracted['templates']}, set()
-        functions = {n.name for p in procedures for n in ast.parse(p.source).body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
-        for row in value['templates']:
-            if not isinstance(row, dict) or row.get('t') not in ids or row['t'] in observed or row.get('verdict') not in ('ok', 'P1', 'P2', 'P3', 'P4', 'P5'):
-                raise Invalid('template_verdict')
-            observed.add(row['t'])
-            _text(row.get('reason'))
-            if row['verdict'] == 'P1' and not _text(row.get('false_when')).strip():
-                raise Invalid('P1_requires_false_when')
-        if observed != ids:
-            raise Invalid('missing_template_verdict')
-        for row in value['other']:
-            if not isinstance(row, dict) or row.get('verdict') not in ('P1', 'P2', 'P3', 'P4', 'P5') or row.get('where') not in functions:
-                raise Invalid('other_verdict')
-            _text(row.get('reason'))
-    else:
-        allowed = {'situations', 'program'} | ({'contradictions'} if final else set())
-        if set(value) != allowed or not isinstance(value['situations'], list):
-            raise Invalid('situation_schema')
-        expected = {s['s']: {n['n'] for n in s['notes']} for s in batch}
-        seen = set()
-        for situation in value['situations']:
-            if not isinstance(situation, dict) or situation.get('s') not in expected or not isinstance(situation.get('notes'), list):
-                raise Invalid('situation_id')
-            for note in situation['notes']:
-                key = (situation['s'], note.get('n')) if isinstance(note, dict) else None
-                if key is None or key[1] not in expected[key[0]] or key in seen or note.get('truth') not in ('true', 'false', 'unverifiable') or note.get('policy') not in ('ok', 'P2', 'P3', 'P4', 'P5'):
-                    raise Invalid('note_verdict')
+    required = _required_units(part, extracted=extracted, batch=batch)
+    meta = {'required': required, 'covered': [], 'abstained': [], 'ignored': [],
+            'retry_problems': [], 'contradictions_covered': not final or part == 'A'}
+
+    def abstain(unit, path, reason, *, retry=True):
+        row = {'unit': unit, 'path': path, 'reason': reason}
+        if row not in meta['abstained']:
+            meta['abstained'].append(row)
+        if retry:
+            problem = path + ' ' + reason
+            if problem not in meta['retry_problems']:
+                meta['retry_problems'].append(problem)
+
+    def ignored(path, reason, row):
+        meta['ignored'].append({'path': path, 'reason': reason, 'raw': _json_copy(row)})
+
+    def enum(value, allowed):
+        return type(value) is str and value in allowed
+
+    def bad_value(value, allowed):
+        return json.dumps(value, ensure_ascii=False) + ' not in ' + '|'.join(allowed)
+
+    def unique(rows):
+        seen, result = set(), []
+        for path, row in rows:
+            key = digest(row)
+            if key not in seen:
                 seen.add(key)
-                _text(note.get('reason'))
-                evidence = _text(note.get('evidence'))
-                if note['truth'] == 'false' and not evidence.strip():
-                    raise Invalid('false_requires_evidence')
-        if seen != {(s, n) for s, ids in expected.items() for n in ids}:
-            raise Invalid('missing_note_verdict')
-        if not isinstance(value['program'], dict) or value['program'].get('verdict') not in ('ok', 'P6'):
-            raise Invalid('program_verdict')
-        _text(value['program'].get('reason'))
+                result.append((path, row))
+        return result
+
+    def resolve(unit, rows, validate, *, missing_path, name, fields=None):
+        """Resolve a whole required unit after setting aside malformed fragments."""
+        valid, problems = [], []
+        for path, row in rows:
+            errors = validate(row)
+            if errors:
+                for suffix, reason in errors:
+                    ignored(path + suffix, reason, row)
+                    problems.append((path + suffix, reason))
+            else:
+                judgment = {key: row[key] for key in fields} if fields else row
+                valid.append((path, judgment))
+        valid = unique(valid)
+        if not valid:
+            # Preserve exact field problems for retries, but only if no valid
+            # fragment judged this required unit anywhere in the attempt.
+            for path, reason in problems or [(missing_path, 'missing ' + name)]:
+                abstain(unit, path, reason)
+            return None
+        if len(valid) > 1:
+            for path, _ in valid:
+                abstain(unit, path, 'conflicting duplicate ' + name)
+            return None
+        meta['covered'].append(unit)
+        return _json_copy(valid[0][1])
+
+    allowed = {'templates', 'other'} if part == 'A' else {'situations', 'program'} | ({'contradictions'} if final else set())
+    for key in sorted(set(value) - allowed):
+        ignored(key, 'extra top-level key', value[key])
+    if part == 'A':
+        if not isinstance(value.get('templates'), list):
+            raise Invalid('templates must be a list')
+        result = {'templates': [], 'other': []}
+        ids = [t['t'] for t in extracted['templates']]
+        grouped = {key: [] for key in ids}
+        for index, row in enumerate(value['templates']):
+            path = 'templates[%d]' % index
+            key = row.get('t') if isinstance(row, dict) else None
+            if type(key) is not str or key not in grouped:
+                ignored(path + '.t', 'unknown template id ' + json.dumps(key, ensure_ascii=False), row)
+            else:
+                grouped[key].append((path, row))
+        codes = ('ok', 'P1', 'P2', 'P3', 'P4', 'P5')
+        def template_errors(row):
+            errors = []
+            if not enum(row.get('verdict'), codes):
+                errors.append(('.verdict', bad_value(row.get('verdict'), codes)))
+            if type(row.get('reason')) is not str:
+                errors.append(('.reason', 'must be text'))
+            if row.get('verdict') == 'P1' and (type(row.get('false_when')) is not str or not row['false_when'].strip()):
+                errors.append(('.false_when', 'P1 requires non-empty false_when'))
+            return errors
+        for key, rows in grouped.items():
+            row = resolve('template:' + key, rows, template_errors,
+                          missing_path='templates', name='template ' + key)
+            if row is not None:
+                result['templates'].append(row)
+        other = value.get('other', [])
+        if not isinstance(other, list):
+            ignored('other', 'optional other must be a list', other)
+        else:
+            functions = {node.name for proc in procedures for node in ast.parse(proc.source).body
+                         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
+            kept = set()
+            for index, row in enumerate(other):
+                path = 'other[%d]' % index
+                reason = None
+                if not isinstance(row, dict):
+                    reason = 'optional row must be an object'
+                elif not enum(row.get('verdict'), codes[1:]):
+                    reason = bad_value(row.get('verdict'), codes[1:])
+                    path += '.verdict'
+                elif type(row.get('where')) is not str or row['where'] not in functions:
+                    reason = 'unknown function'
+                    path += '.where'
+                elif type(row.get('reason')) is not str:
+                    reason = 'must be text'
+                    path += '.reason'
+                if reason:
+                    ignored(path, reason, row)
+                elif digest(row) not in kept:
+                    result['other'].append(_json_copy(row))
+                    kept.add(digest(row))
+    else:
+        if not isinstance(value.get('situations'), list) or not isinstance(value.get('program'), dict):
+            raise Invalid('situations must be a list and program must be an object')
+        result = {'situations': [], 'program': {}}
+        expected = {row['s']: [note['n'] for note in row['notes']] for row in batch}
+        grouped = {(sid, nid): [] for sid, ids in expected.items() for nid in ids}
+        for index, situation in enumerate(value['situations']):
+            path = 'situations[%d]' % index
+            sid = situation.get('s') if isinstance(situation, dict) else None
+            if type(sid) is not str or sid not in expected:
+                ignored(path + '.s', 'unknown situation id ' + json.dumps(sid, ensure_ascii=False), situation)
+                continue
+            if not isinstance(situation.get('notes'), list):
+                ignored(path + '.notes', 'must be a list', situation)
+                continue
+            for note_index, row in enumerate(situation['notes']):
+                note_path = path + '.notes[%d]' % note_index
+                nid = row.get('n') if isinstance(row, dict) else None
+                if type(nid) is not str or nid not in expected[sid]:
+                    ignored(note_path + '.n', 'unknown note id ' + json.dumps(nid, ensure_ascii=False), row)
+                else:
+                    grouped[(sid, nid)].append((note_path, row))
+        truths, policies = ('true', 'false', 'unverifiable'), ('ok', 'P2', 'P3', 'P4', 'P5')
+        def note_errors(row):
+            errors = []
+            for field, codes in (('truth', truths), ('policy', policies)):
+                if not enum(row.get(field), codes):
+                    errors.append(('.' + field, bad_value(row.get(field), codes)))
+            if type(row.get('evidence')) is not str:
+                errors.append(('.evidence', 'truth requires text evidence (empty unless false)'))
+            elif row.get('truth') == 'false' and not row['evidence'].strip():
+                errors.append(('.evidence', 'truth false requires non-empty evidence'))
+            if type(row.get('reason')) is not str:
+                errors.append(('.reason', 'must be text'))
+            return errors
+        for sid, ids in expected.items():
+            kept = []
+            for nid in ids:
+                unit = 'note:' + sid + '/' + nid
+                note = resolve(unit, grouped[(sid, nid)], note_errors,
+                               missing_path='situations', name='note ' + sid + '/' + nid,
+                               fields=('n', 'truth', 'policy', 'evidence', 'reason'))
+                if note is not None:
+                    kept.append(note)
+            result['situations'].append({'s': sid, 'notes': kept})
+        def program_errors(row):
+            errors = []
+            if not enum(row.get('verdict'), ('ok', 'P6')):
+                errors.append(('.verdict', bad_value(row.get('verdict'), ('ok', 'P6'))))
+            if type(row.get('reason')) is not str:
+                errors.append(('.reason', 'must be text'))
+            return errors
+        result['program'] = resolve('program', [('program', value['program'])], program_errors,
+                                    missing_path='program', name='program') or {}
         if final:
-            note_ids = {s + '/' + n for s, ns in expected.items() for n in ns}
-            if not isinstance(value['contradictions'], list):
-                raise Invalid('contradictions')
-            for row in value['contradictions']:
-                if not isinstance(row, dict) or not isinstance(row.get('notes'), list) or len(row['notes']) != 2 or len(set(row['notes'])) != 2 or not set(row['notes']) <= note_ids:
-                    raise Invalid('contradiction_notes')
-                _text(row.get('reason'))
-    return value
+            result['contradictions'] = []
+            contradictions = value.get('contradictions')
+            if not isinstance(contradictions, list):
+                abstain('contradictions', 'contradictions',
+                        'missing or invalid optional contradictions list', retry=False)
+                if 'contradictions' in value:
+                    ignored('contradictions', 'optional contradictions must be a list', contradictions)
+            else:
+                meta['contradictions_covered'] = True
+                owners = {row['s'] + '/' + note['n']: note['procedure'] for row in batch for note in row['notes']}
+                pairs = {}
+                for index, row in enumerate(contradictions):
+                    path = 'contradictions[%d]' % index
+                    ids = row.get('notes') if isinstance(row, dict) else None
+                    valid = (isinstance(ids, list) and len(ids) == 2 and all(type(n) is str and n in owners for n in ids)
+                             and len(set(ids)) == 2 and owners[ids[0]] != owners[ids[1]])
+                    if not valid or type(row.get('reason')) is not str:
+                        ignored(path, 'contradiction needs two distinct known notes from different procedures and text reason', row)
+                        continue
+                    key = tuple(sorted(ids))
+                    if key not in pairs:
+                        pairs[key] = _json_copy(row)
+                result['contradictions'] = list(pairs.values())
+    result['_validation'] = meta
+    return result
 
 
 def _tokens(calls):
@@ -339,13 +508,16 @@ def _tokens(calls):
     return total
 
 
-def _request(judge, role, system, user, *, label, parser, cache):
+def _request(judge, role, system, user, *, label, parser, cache, required=(), final=False):
     key = digest([judge, system, user, JUDGE_MAX_TOKENS])
     if key in cache:
-        return dict(copy.deepcopy(cache[key]), reused=True)
+        return dict(_json_copy(cache[key]), reused=True)
     record = {"judge": judge, "label": label + "/" + judge, "prompt_sha256": text_sha256(system + "\n\n" + user), "prompt_text": system + "\n\n" + user, "system": system, "user": user,
               "max_tokens": JUDGE_MAX_TOKENS, "raw_replies": [], "parsed": None, "retries": [],
-              "available": False, "reused": False, "tokens": {"input": 0, "output": 0, "charged": 0}}
+              "available": False, "reused": False, "tokens": {"input": 0, "output": 0, "charged": 0},
+              "required": list(required), "covered": [], "ignored": [], "abstained": [],
+              "attempts": [], "selected_attempt": None}
+    best = None
     if role is None:
         record['unavailable_reason'] = 'judge_not_configured'
     else:
@@ -355,32 +527,59 @@ def _request(judge, role, system, user, *, label, parser, cache):
             raw = role.plain('audit_' + judge.lower(), system, current_user,
                              label=label + '/' + judge + ('/format-retry' if attempt else ''), max_tokens=JUDGE_MAX_TOKENS)
             # Invalid Unicode cannot be persisted as UTF-8. Keep its explicit
-            # escaped representation and mark that encoding, while parsing the
-            # original reply so it still consumes the single format retry.
+            # escaped representation while parsing the actual provider reply.
             stored_raw = raw.encode('utf-8', errors='backslashreplace').decode('utf-8') if isinstance(raw, str) else raw
             record['raw_replies'].append(stored_raw)
             if stored_raw != raw:
                 record.setdefault('raw_reply_escaped_attempts', []).append(attempt)
             try:
-                record['parsed'] = parser(raw)
-                record['available'] = True
-                break
+                parsed = parser(raw)
+                validation = parsed['_validation']
+                problems = (validation['retry_problems']
+                            if set(validation['required']) - set(validation['covered']) else [])
+                record['attempts'].append({'attempt': attempt, 'usable': True,
+                    'covered': _json_copy(validation['covered']),
+                    'abstained': _json_copy(validation['abstained']),
+                    'ignored': _json_copy(validation['ignored'])})
+                # A tie keeps the earlier attempt. Never merge its judgments
+                # with a retry, even when their valid subsets are disjoint.
+                if best is None or len(validation['covered']) > len(best[1]['_validation']['covered']):
+                    best = (attempt, parsed)
+                if not problems:
+                    break
             except (Invalid, ValueError, TypeError, KeyError) as error:
+                problems = [str(error)]
                 record['unavailable_reason'] = str(error)
-                if attempt == 0:
-                    current_user = FORMAT_RETRY + ('\n' + user) + '\nPrevious reply: ' + str(stored_raw) + '\nParse problem: ' + str(error)
-                    record['retries'].append({"label": label + "/" + judge + "/format-retry", "system": system, "user": current_user,
-                                              "prompt_sha256": text_sha256(system + "\n\n" + current_user), "prompt_text": system + "\n\n" + current_user, "parse_problem": str(error)})
+                record['attempts'].append({'attempt': attempt, 'usable': False,
+                                          'shape_problem': str(error), 'covered': [], 'abstained': [], 'ignored': []})
+            if attempt == 0:
+                problem_text = '\n'.join(problems)
+                current_user = FORMAT_RETRY + ('\n' + user) + '\nPrevious reply: ' + str(stored_raw) + '\nParse problem: ' + problem_text
+                record['retries'].append({"label": label + "/" + judge + "/format-retry", "system": system, "user": current_user,
+                    "prompt_sha256": text_sha256(system + "\n\n" + current_user), "prompt_text": system + "\n\n" + current_user,
+                    "parse_problem": problem_text, "problems": list(problems)})
         record['tokens'] = _tokens(role.calls[before:])
-    cache[key] = copy.deepcopy(record)
+    if best is not None:
+        attempt, parsed = best
+        validation = parsed['_validation']
+        record.update(parsed=parsed, available=True, selected_attempt=attempt,
+            required=_json_copy(validation['required']), covered=_json_copy(validation['covered']),
+            ignored=_json_copy(validation['ignored']), abstained=_json_copy(validation['abstained']))
+        record.pop('unavailable_reason', None)
+    else:
+        record['abstained'] = [{'unit': unit, 'path': unit, 'reason': 'request unavailable: ' + record['unavailable_reason']}
+                               for unit in list(required) + (['contradictions'] if final else [])]
+    cache[key] = _json_copy(record)
     return record
 
 
 def findings(parsed, *, part, procedure, batch=()):
     out = {}
+    validation = parsed.get('_validation', {})
+    covered = set(validation.get('covered', ()))
     if part == 'A':
         for row in parsed['templates']:
-            if row['verdict'] != 'ok':
+            if 'template:' + row['t'] in covered and row['verdict'] != 'ok':
                 out[('template', procedure, row['t'])] = {**row, 'kind': 'template', 'procedure': procedure}
         for row in parsed['other']:
             out[('other', procedure, row['where'], row['verdict'])] = {**row, 'kind': 'other', 'procedure': procedure}
@@ -388,13 +587,15 @@ def findings(parsed, *, part, procedure, batch=()):
         lookup = {(s['s'], n['n']): n for s in batch for n in s['notes']}
         for situation in parsed['situations']:
             for note in situation['notes']:
-                if note['truth'] == 'false' or note['policy'] != 'ok':
+                if 'note:' + situation['s'] + '/' + note['n'] not in covered:
+                    continue
+                if note.get('truth') == 'false' or note.get('policy') in ('P2', 'P3', 'P4', 'P5'):
                     owner = lookup[(situation['s'], note['n'])]['procedure']
                     out[('note', owner, situation['s'], note['n'])] = {**note, 's': situation['s'], 'kind': 'note', 'procedure': owner,
-                        'verdict': 'P1' if note['truth'] == 'false' else note['policy']}
-        if parsed['program']['verdict'] == 'P6':
+                        'verdict': 'P1' if note.get('truth') == 'false' else note['policy']}
+        if 'program' in covered and parsed['program'].get('verdict') == 'P6':
             out[('program', procedure, 'P6')] = {**parsed['program'], 'kind': 'program', 'procedure': procedure}
-        for contradiction in parsed.get('contradictions', []):
+        for contradiction in parsed.get('contradictions', []) if validation.get('contradictions_covered') else ():
             ids = tuple(sorted(contradiction['notes']))
             owners = [lookup[tuple(n.split('/'))]['procedure'] for n in ids]
             if len(set(owners)) == 2:
@@ -404,7 +605,8 @@ def findings(parsed, *, part, procedure, batch=()):
 
 def agreement(by_judge, available):
     """Same template/note regardless of code; other requires function+code; any-batch P6 aggregates."""
-    both = set(by_judge.get('G', {})) & set(by_judge.get('D', {})) if all(available.get(j) for j in JUDGES) else set()
+    # Availability is reporting-only: findings already contain usable parts.
+    both = set(by_judge.get('G', {})) & set(by_judge.get('D', {}))
     confirmed, advisory = [], []
     for key in sorted(set(by_judge.get('G', {})) | set(by_judge.get('D', {}))):
         rows = {j: by_judge[j][key] for j in JUDGES if key in by_judge.get(j, {})}
@@ -426,16 +628,36 @@ def run_audit(procedures, situations, judges, *, bench, configuration, step, rou
     samples = sampled['situations']
     requests, by_judge = [], {j: {} for j in JUDGES}
     available = {j: True for j in JUDGES}
+    incomplete_units = []
     def request_pair(part, system, user, procedure, *, extracted=None, batch=()):
         pair = {'part': part, 'procedure': procedure.id, 'requests': {}}
-        parser = lambda raw: parse_verdict(raw, part, extracted=extracted, batch=batch, final=final, procedures=procedures)
+        parser = lambda raw: parse_verdict(raw, part, extracted=extracted, batch=batch, final=final,
+                                          procedures=(procedure,) if part == 'A' else procedures)
         for judge in JUDGES:
             row = _request(judge, judges.get(judge), system, user,
-                label='audit/%s/%s/%s/%s' % (step, change_id, procedure.id, len(requests)), parser=parser, cache=cache)
+                label='audit/%s/%s/%s/%s' % (step, change_id, procedure.id, len(requests)), parser=parser, cache=cache,
+                required=_required_units(part, extracted=extracted, batch=batch), final=final and part == 'B')
             pair['requests'][judge] = row
             available[judge] &= row['available']
             if row['available']:
                 by_judge[judge].update(findings(row['parsed'], part=part, procedure=procedure.id, batch=batch))
+        required = _required_units(part, extracted=extracted, batch=batch)
+        if final and part == 'B':
+            required.append('contradictions')
+        # Missing coverage belongs to this request, including a program verdict
+        # in this batch. A valid later batch does not erase that evidence gap.
+        for unit in required:
+            missing = []
+            for judge in JUDGES:
+                row = pair['requests'][judge]
+                valid = unit in row['covered']
+                if unit == 'contradictions' and row['available']:
+                    valid = row['parsed']['_validation']['contradictions_covered']
+                if not valid:
+                    missing.append(judge)
+            if missing:
+                incomplete_units.append({'request': len(requests), 'procedure': procedure.id,
+                                         'unit': unit, 'judges': missing})
         requests.append(pair)
     extracted_records = {}
     for procedure in procedures:
@@ -456,7 +678,8 @@ def run_audit(procedures, situations, judges, *, bench, configuration, step, rou
                   for k in ('input', 'output', 'charged')} for j in JUDGES}
     return {"phase": 2 if final else 1, "policy_sha256": text_sha256(POLICY), "sampling": sampled,
             "templates": extracted_records, "counts": counts, "requests": requests, "available": available,
-            "audit_incomplete": not all(available.values()), "confirmed": confirmed, "advisory": advisory,
+            "incomplete_units": incomplete_units,
+            "audit_incomplete": bool(incomplete_units) or not all(available.values()), "confirmed": confirmed, "advisory": advisory,
             "decision": 'confirmed' if confirmed else 'pass', "tokens": totals,
             "situation_keys": [situation_key(s) for s in samples]}
 
@@ -533,7 +756,7 @@ def audit_fix_prompt(change, result):
 def feedback(result):
     # Only audit1 calls this; the final audit has no route to engineer.Context.
     return {"decision": result['decision'], "audit_incomplete": result['audit_incomplete'],
-            "advisory": copy.deepcopy(result['advisory'])}
+            "advisory": _json_copy(result['advisory'])}
 
 
 def removed_procedures(result, order):

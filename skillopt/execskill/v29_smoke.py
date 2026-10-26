@@ -59,6 +59,21 @@ def false_template_confirmed(result, bench):
     return False
 
 
+def judge_counts(result):
+    """Selected-attempt coverage; multiple field problems count one abstained unit.
+
+    Counts are summed over request-local units. Ignored optional rows and extra
+    keys remain separate from required-unit coverage and do not change S3a's gate.
+    """
+    counts = {judge: {"covered": 0, "abstained": 0, "ignored": 0} for judge in audit.JUDGES}
+    for pair in (result or {}).get("requests", []):
+        for judge, request in pair["requests"].items():
+            counts[judge]["covered"] += len(request.get("covered", []))
+            counts[judge]["abstained"] += len({row["unit"] for row in request.get("abstained", [])})
+            counts[judge]["ignored"] += len(request.get("ignored", []))
+    return counts
+
+
 def _proposal(st, cut):
     def work(attempt):
         reply = authored_reply(st.bench)
@@ -81,6 +96,7 @@ def _proposal(st, cut):
             step.save(st.chain_root, candidate)
         return {"parsed": True, "passed": bool(audited and all(audited["available"].values())),
                 "checks": checked, "audit": audited, "false_template_confirmed": false_template_confirmed(audited, st.bench),
+                "judge_counts": judge_counts(audited),
                 "candidate_sha256": candidate.sha256 if candidate is not None else None,
                 "exercise": True, "decision_used_for_adoption": False}
     return st.unit("engineer-r1", work)
@@ -91,6 +107,12 @@ def _audit_measurements(*values):
     rows, seen = [], set()
     def walk(value):
         if isinstance(value, dict):
+            if value.get("phase") in (1, 2) and isinstance(value.get("requests"), list):
+                # Findings and ignored reply fragments are untrusted model data,
+                # even if their keys happen to resemble an audit request record.
+                for pair in value["requests"]:
+                    walk(pair)
+                return
             if isinstance(value.get("requests"), dict) and set(value["requests"]) == {"G", "D"}:
                 for judge, request in value["requests"].items():
                     key = (judge, request.get("prompt_sha256"))
@@ -104,6 +126,7 @@ def _audit_measurements(*values):
                         rows.append({"role": "audit_" + judge.lower(),
                                      "charged": request["tokens"]["charged"] / attempts,
                                      "request_bytes": size})
+                return  # do not scan parsed replies or their diagnostic raw rows
             for child in value.values():
                 walk(child)
         elif isinstance(value, list):

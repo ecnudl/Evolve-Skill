@@ -200,3 +200,68 @@ def test_smoke_measurements_count_identical_audits_in_separate_units_once_each()
     unit = {'changes': [{'audits': [pair]}], 'audits': [pair]}
     measured = v29_smoke._audit_measurements(unit, deepcopy(unit))
     assert all(row['calls'] == 2 and row['tokens'] == 200 for row in measured.values())
+
+
+@pytest.mark.parametrize('configuration,make,module', [(p.ZEBRA_PC_V7,zebra_made,zebra_smoke),
+                                                     (p.ALFWORLD_V4,alf_made,alf_smoke)])
+def test_s3a_uses_valid_templates_when_d_adds_the_smoke_p6_other_row(
+        tmp_path, monkeypatch, configuration, make, module):
+    class SmokeReplyJudge(FixtureJudge):
+        def plain(self, role, system, user, **kwargs):
+            parsed = json.loads(super().plain(role, system, user, **kwargs))
+            if system == audit.A_SYSTEM:
+                parsed['other'] = [{'verdict': 'P6', 'where': 'before_call', 'reason':
+                    'The description says it parses every clue ... but the code only splits off the first line ...'}]
+            return json.dumps(parsed)
+
+    setting, services, solver, roles = make(tmp_path, monkeypatch, response='empty')
+    setting = replace(setting, extra={**setting.extra, 'configuration': configuration, 'route': 'B'})
+    scope = budgets.solver_scopes('D', p.active_benches(configuration)[0], 1, 'confirm')[-1]
+    setting.budget.declare({scope: budgets.chain_caps('D', configuration)[scope]})
+    judges = {'G': FixtureJudge(True), 'D': SmokeReplyJudge(True)}
+    monkeypatch.setattr(units, 'audit_judges', lambda *args: judges)
+    original = roles.replies
+    roles.replies = lambda system, payload: ('```json\n{"changes": []}\n```'
+        if system == engineer_v29.system(configuration, train=True) else original(system, payload))
+    result = module._s3(setting, services)
+    proposal = result['S3a']['proposal']
+    assert result['passed'] and proposal['passed'] and proposal['false_template_confirmed']
+    assert proposal['audit']['available'] == {'G': True, 'D': True}
+    assert not proposal['audit']['audit_incomplete']
+    first = next(pair for pair in proposal['audit']['requests'] if pair['part'] == 'A')
+    assert first['requests']['D']['ignored'][0]['raw']['verdict'] == 'P6'
+    assert not first['requests']['D']['retries']
+    assert proposal['judge_counts']['D']['ignored'] == 1
+    assert proposal['judge_counts']['G']['ignored'] == 0
+    assert proposal['judge_counts']['D']['covered'] == proposal['judge_counts']['G']['covered'] > 0
+    assert proposal['judge_counts']['G']['abstained'] == proposal['judge_counts']['D']['abstained'] == 0
+    if configuration == p.ZEBRA_PC_V7:
+        assert any(f['kind'] == 'template' and f['t'] == 'T2' for f in proposal['audit']['confirmed'])
+
+
+def test_smoke_counts_each_abstained_unit_once_and_keeps_ignored_separate():
+    request = {'covered': ['template:T1'], 'abstained': [
+        {'unit': 'note:S1/N1', 'path': 'notes[0].truth', 'reason': 'invalid truth'},
+        {'unit': 'note:S1/N1', 'path': 'notes[0].policy', 'reason': 'invalid policy'}],
+        'ignored': [{'path': 'other[0]', 'reason': 'invalid code', 'raw': {'verdict': 'P6'}}]}
+    result = {'requests': [{'requests': {'G': request, 'D': request}}]}
+    assert v29_smoke.judge_counts(result) == {
+        judge: {'covered': 1, 'abstained': 1, 'ignored': 1} for judge in ('G', 'D')}
+    assert v29_smoke.judge_counts(None) == {
+        judge: {'covered': 0, 'abstained': 0, 'ignored': 0} for judge in ('G', 'D')}
+
+
+def test_smoke_measurements_never_interpret_ignored_judge_data_as_call_records():
+    from tests.test_execskill_v29_reply_parts import EditedJudge, run
+    def edit(value, part, retry):
+        value['optional'] = {'requests': {'G': {}, 'D': {}}}
+        if part == 'A':
+            value['templates'][0]['extra'] = {'requests': {'G': {}, 'D': {}}}
+        return value
+    result = run(('zebralogic', p.ZEBRA_PC_V7), EditedJudge(edit, template='P1'),
+                 EditedJudge(template='P1'))
+    assert result['available'] == {'G': True, 'D': True} and result['confirmed']
+    measured = v29_smoke._audit_measurements({'audit': result, 'duplicate': result})
+    for judge in ('G', 'D'):
+        assert measured['audit_' + judge.lower()]['calls'] == len(result['requests'])
+        assert measured['audit_' + judge.lower()]['tokens'] == result['tokens'][judge]['charged']

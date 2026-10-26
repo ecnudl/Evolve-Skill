@@ -183,10 +183,14 @@ def test_public_view_whitelist_does_not_copy_labels_answers_or_hidden_history():
     assert 'SENTINEL' not in json.dumps([zebra,alf])
 
 
-def test_unusable_schema_never_confirms_hallucinated_unit():
-    with pytest.raises(Exception):
-        audit.parse_verdict(json.dumps({'templates':[{'t':'T999','verdict':'P2','reason':'x'}], 'other':[]}),
-                            'A', extracted=audit.templates(procedure().source,'zebralogic'), procedures=[procedure()])
+def test_unknown_template_is_ignored_and_never_confirms_hallucinated_unit():
+    parsed = audit.parse_verdict(json.dumps({'templates':[{'t':'T999','verdict':'P2','reason':'x'}], 'other':[]}),
+                                'A', extracted=audit.templates(procedure().source,'zebralogic'), procedures=[procedure()])
+    assert parsed['templates'] == []
+    assert parsed['_validation']['ignored'][0]['path'] == 'templates[0].t'
+    assert parsed['_validation']['ignored'][0]['raw']['t'] == 'T999'
+    assert {row['unit'] for row in parsed['_validation']['abstained']} == set(parsed['_validation']['required'])
+    assert not audit.findings(parsed, part='A', procedure=procedure().id)
 
 
 def test_final_delivered_notes_include_discouragement_and_verify_source_hash():
