@@ -48,6 +48,7 @@ from __future__ import annotations
 import functools
 import hashlib
 import math
+from copy import deepcopy
 import sys
 from dataclasses import asdict, dataclass
 from fractions import Fraction
@@ -225,7 +226,17 @@ def prompt_sha(configuration=None):
     if protocol.is_v28(configuration):
         out["v28"] = {"fix": engineer.ENGINEER_PROMPT_FIX_V28_SHA256,
                       "format_retry": engineer.ENGINEER_PROMPT_FORMAT_RETRY_V28_SHA256}
+    if protocol.is_v29(configuration):
+        from . import engineer_v29, audit
+        bench = protocol.active_benches(configuration)[0]
+        out["engineer"] = _sha_text_digest(engineer_v29.system(configuration, train=False))
+        out["v2"]["engineer"] = _sha_text_digest(engineer_v29.system(configuration, train=True))
+        out["v29"] = {"engineer": engineer_v29.prompt_pins(), "audit": audit.prompt_pins()}
     return out
+
+
+def _sha_text_digest(text):
+    return hashlib.sha256(text.encode()).hexdigest()
 
 
 def _plain(value):
@@ -268,13 +279,14 @@ def _solver_fields(chain, env_path, branch, longest, configuration=None):
     elucid = model == client.ELUCID_MODEL
     require(branch in protocol.BRANCHES if elucid else branch is None, "Chain D names its S1 branch; chain G none")
     benches = protocol.active_benches(configuration)
-    return {"backend": "elucid" if elucid else "bigmodel", "model": model,
-            "url_host": client.ELUCID_HOST if elucid else BIGMODEL_HOST, "env_path": str(safe_path(env_path)),
+    northgate = elucid and protocol.is_v29(configuration)
+    return {"backend": "northgate" if northgate else "elucid" if elucid else "bigmodel", "model": model,
+            "url_host": client.NORTHGATE_HOST if northgate else client.ELUCID_HOST if elucid else BIGMODEL_HOST, "env_path": str(safe_path(env_path)),
             "proxy": protocol.GATEWAY, "reasoning_effort": protocol.REASONING_EFFORT if elucid else "low",
             "M": {b: protocol.solver_tokens(model, b) for b in benches}, "branch": branch, "longest": longest,
             "read_timeout": {b: protocol.read_timeout(model, b) for b in benches},
             "slots": protocol.SLOTS[model],
-            "response_model_ids": sorted(client.ELUCID_RESPONSE_MODEL_IDS) if elucid else [model],
+            "response_model_ids": sorted(client.NORTHGATE_RESPONSE_MODEL_IDS) if northgate else sorted(client.ELUCID_RESPONSE_MODEL_IDS) if elucid else [model],
             "client_source_sha": _sha(Path(client.__file__))}
 
 
@@ -335,6 +347,13 @@ def check(manifest):
     require(value["evidence"] not in real or value["evidence"] == protocol.REAL_RUN_EVIDENCE[configuration],
             "A real run's evidence label is its configuration's: %s" % protocol.REAL_RUN_EVIDENCE[configuration])
     check_clients(value["clients"], configuration=configuration)
+    if protocol.is_v29(configuration):
+        from . import confirm
+        require(value["prompt_sha"] == prompt_sha(configuration), "The v2.9 prompt pins")
+        pin = value["data"].get("confirm")
+        require(isinstance(pin, dict) and len(pin.get("ids", [])) == 40
+                and len(set(pin["ids"])) == 40, "The forty practice confirmation ids are pinned")
+        require(pin.get("freshness") == protocol.CONFIRM_FRESHNESS[configuration], "Confirm slice provenance")
     if protocol.is_v23(configuration):
         require(value["sandbox"]["policy_sha256"] == policy.policy_sha256(
             version=protocol.POLICY_VERSIONS[configuration]), "The v2.3 sandbox policy is pinned")
@@ -385,6 +404,11 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
     if protocol.is_alfworld(configuration):
         given = {**given, "clients": {**given["clients"], "roles": role_settings(configuration)},
                  "data": {**given["data"], "alfworld_features": alfworld_features(configuration)}}
+    if protocol.is_v29(configuration):
+        from . import confirm
+        bench = protocol.active_benches(configuration)[0]
+        given = {**given, "data": {**given["data"], "confirm": confirm.identity(
+            configuration, _items(given["data"]["pools"][bench], bench))}}
     from . import protocol as historical
     fields = {
         **given, **registered(configuration), "history_root": historical.HISTORY_ROOT, "slot_root": historical.SLOT_ROOT,
@@ -400,7 +424,7 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
                     "limits": {k: asdict(v) for k, v in sorted(limits.items())}, "measured": measured},
         "code": pin_code(), "loaded_code": sorted(loaded_code()),
         "environment": environment() if environment_found is None else environment_found}
-    suffix = ("-v2-8" if protocol.is_v28(configuration) else "-alf-v2" if protocol.is_alfworld_v2(configuration) else "-alf-v1" if protocol.is_alfworld(configuration) else
+    suffix = ("-v2-9" if protocol.is_v29(configuration) else "-v2-8" if protocol.is_v28(configuration) else "-alf-v2" if protocol.is_alfworld_v2(configuration) else "-alf-v1" if protocol.is_alfworld(configuration) else
               "-v2-7" if protocol.is_v27(configuration) else "-v2-6" if protocol.is_v26(configuration)
               else "-v2-5" if protocol.is_v25(configuration)
               else "-v2-4" if protocol.is_v24(configuration)
@@ -427,6 +451,9 @@ def solver_config(manifest, chain, bench, route=None):
     """The ``client.solver_client`` config of ``chain``'s solver on ``bench``: the manifest block projected onto
     ``client.CONFIG_KEYS`` (A2's note). ``route``: chain D's route (``routes``; None or route A: the solver block,
     another route: its pin with the route named; registrar row "deepseek route B")."""
+    if chain == "D" and protocol.is_v29(manifest["configuration"]):
+        require(route in (None, "B"), "v2.9 chain D stays on northgate")
+        route = "B"
     if route is not None and route != routes.ROUTED[chain][0]:
         return routes.config(routes.block_of(manifest, chain, route), bench)
     block = manifest["clients"]["solver"][chain]
@@ -518,7 +545,7 @@ def _clients(m, chain, transport, route=None):
 
     def make(wanted, bench):
         if bench is not None and route is not None:  # M4: the chain D client factory reads the route at unit start
-            routes.check_bound(safe_path(m["root"]) / run, route, run=m[protocol.RECORD_HASH], chain=run)
+            routes.check_bound(safe_path(m["root"]) / run, route, run=m[protocol.RECORD_HASH], chain=run, **({"configuration": m["configuration"]} if protocol.is_v29(m["configuration"]) else {}))
         key = (wanted, bench)
         if key not in cache:
             if bench is None:
@@ -589,7 +616,7 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
                 else "ALFWorld v1 launches only chain D")
     root, docker = safe_path(m["root"]), docker or sandbox.Docker()
     solver_chain = _solver_chain(chain, root)  # the smoke: its specification's (registrar addendum 2026-10-23 02:3x)
-    route = routes.current(root / chain, run=m[protocol.RECORD_HASH], chain=chain) if chain in routes.ROUTED else None
+    route = routes.current(root / chain, run=m[protocol.RECORD_HASH], chain=chain, **({"configuration": m["configuration"]} if protocol.is_v29(m["configuration"]) else {})) if chain in routes.ROUTED else None
     block = m["clients"]["solver"][solver_chain]
     bound = block if route is None else {**routes.block_of(m, chain, route), "model": block["model"]}  # M4
     pools = slots.pools(m["slot_root"], sizes=_slot_sizes(m))
@@ -597,6 +624,9 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
     extra = {"verify": functools.partial(verify_unit, m, docker=docker),
              "drain": functools.partial(sandbox.drain_unit, docker=docker), "slot_root": m["slot_root"],
              "configuration": m["configuration"]}
+    if protocol.is_v29(m["configuration"]) and protocol.is_alfworld(m["configuration"]):
+        extra.update(alf_confirm_views=deepcopy(m["data"]["alf_confirm_views"]),
+                     confirm=deepcopy(m["data"]["confirm"]))
     if path is not None:
         extra["manifest"] = str(safe_path(path))
     if route is not None:
@@ -621,6 +651,11 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
         budget=budget, slots=pools,
         sandbox={"docker": docker, "limits": limits_of(m), "image": m["sandbox"]["image_id"]},
         evidence=m["evidence"], branch=bound["branch"], longest=bound["longest"], extra=extra)
+    if protocol.is_v29(m["configuration"]):
+        from . import confirm
+        bench = protocol.active_benches(m["configuration"])[0]
+        require(m["data"]["confirm"] == confirm.identity(m["configuration"], setting.pools[bench]),
+                "The loaded practice pool matches the pinned confirmation ids and provenance")
     _safety(setting, bound)
     return setting
 
@@ -762,7 +797,7 @@ def alfworld_features(configuration=protocol.ALFWORLD_V1):
 def outcome_engineer_features(configuration):
     """V2.8 execution and admission contract, pinned only for new configurations."""
     require(protocol.is_v28(configuration), "A v2.8 configuration")
-    return {
+    out = {
         "source_bytes": policy.source_limit(protocol.POLICY_VERSIONS[configuration]),
         "single_call_budget": protocol.ENGINEER_CALL_BUDGETS[configuration],
         "train_call_budget": protocol.TRAIN_ENGINEER_CALL_BUDGETS[configuration],
@@ -774,19 +809,36 @@ def outcome_engineer_features(configuration):
         "note_screen_sha256": notes.v28_screen_sha256(),
         "train_fault_guards": "information", "acceptance_j3": "information",
     }
+    if protocol.is_v29(configuration):
+        out.update({"applies": "optional_default_true", "lexicon": "log_only",
+                    "note_screen_sha256": notes.v29_screen_sha256(),
+                    "audit": audit_features(configuration)})
+    return out
+
+
+def audit_features(configuration):
+    from . import audit, v29_limits, v29_route_probe
+    return {"policy_sha256": _sha_text_digest(audit.POLICY), "prompts": audit.prompt_pins(),
+            "judges": {"G": {"model": protocol.ROLE_MODEL, "provider": "engineer"},
+                       "D": {"model": client.NORTHGATE_MODEL, "route": "B",
+                             "response_model_ids": sorted(client.NORTHGATE_RESPONSE_MODEL_IDS)}},
+            "limits": v29_limits.identity(protocol, configuration),
+            "confirm_freshness": protocol.CONFIRM_FRESHNESS[configuration],
+            "agreement": "both_same_unit;unverifiable_never_fault;unavailable_advisory",
+            "runtime_screen": "C8_and_caps;C9_log_only", "northgate_probe": v29_route_probe.prompt_pins()}
 
 
 def alfworld_registration_key(configuration):
     """The configuration's preparation metadata field; v1 retains its original schema."""
     require(protocol.is_alfworld(configuration), "A registered ALFWorld configuration")
-    return ("alfworld_v3" if protocol.is_v28(configuration) else
+    return ("alfworld_v4" if protocol.is_v29(configuration) else "alfworld_v3" if protocol.is_v28(configuration) else
             "alfworld_v2" if protocol.is_alfworld_v2(configuration) else "alfworld_v1")
 
 
 def _check_alfworld(value):
     """Validate the preparation metadata linkage, without opening any test or pool file."""
     data = value["data"]
-    label = ("ALFWorld v3" if protocol.is_v28(value["configuration"]) else
+    label = ("ALFWorld v4" if protocol.is_v29(value["configuration"]) else "ALFWorld v3" if protocol.is_v28(value["configuration"]) else
              "ALFWorld v2" if protocol.is_alfworld_v2(value["configuration"]) else "ALFWorld v1")
     require(data.get("alfworld_features") == alfworld_features(value["configuration"]),
             "The ALFWorld feature family is pinned by value")
@@ -821,6 +873,11 @@ def _check_alfworld(value):
     require(registered["runtime_sha256"] == digest(value["runtime"]["alfworld"]),
             "The ALFWorld runtime differs from its preparation pin")
     require(data["pools"]["alfworld"] == registered["pool"], "The ALFWorld pool differs from its preparation pin")
+    if protocol.is_v29(value["configuration"]):
+        from . import alf_confirm_views
+        alf_confirm_views.validate(data.get("alf_confirm_views"), configuration=value["configuration"],
+            runtime=value["runtime"]["alfworld"], confirm_pin=data["confirm"],
+            preparation=registered["preparation"], pool=registered["pool"])
     require(data.get("pinned") == {
         "paths": {"split": registered["split"]["path"], "test": {"alfworld": registered["test"]["path"]}},
         "sha256": {registered[key]["path"]: registered[key]["sha256"] for key in ("split", "test")}},

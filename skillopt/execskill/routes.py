@@ -85,17 +85,20 @@ def history(chain_root, *, run=None, chain="D"):
     return records
 
 
-def current(chain_root, *, run=None, chain="D"):
+def current(chain_root, *, run=None, chain="D", configuration=None):
     """The route ``chain`` runs on now: the last switch's, else the registered start (route A)."""
     records = history(chain_root, run=run, chain=chain)
+    if protocol.is_v29(configuration) and chain == "D":
+        require(not records, "v2.9 stays on northgate; route switching requires a new owner decision")
+        return client.ROUTE_B
     return records[-1]["to"] if records else ROUTED[chain][0]
 
 
-def check_bound(chain_root, bound, *, run, chain="D"):
+def check_bound(chain_root, bound, *, run, chain="D", configuration=None):
     """At every client build (a unit start): the chain's route is still the one this process bound (module
     docstring); ConfigurationError otherwise -- the unit pauses instead of switching mid-run."""
     try:
-        found = current(chain_root, run=run, chain=chain)
+        found = current(chain_root, run=run, chain=chain, configuration=configuration)
     except ValueError as error:
         raise ConfigurationError("The route history of chain %s: %s" % (chain, error)) from None
     if found != bound:

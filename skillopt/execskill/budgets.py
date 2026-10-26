@@ -61,7 +61,7 @@ from .profiles import (SUPPORTED_BENCHES, BENCHES, CHAINS, CONFIG_GLM_CAP, CONFI
 ROOT = OVERALL
 SMOKE = "smoke"  # the smoke's namespace and scope prefix (registry.NAMESPACES)
 STEP_KINDS = ("run", "examiner", "selftest", "accept")
-KINDS = STEP_KINDS + ("test", "smoke", "probe")
+KINDS = STEP_KINDS + ("test", "smoke", "probe", "confirm")
 # method role -> its per-step scope; the describer and the leakage adjudication are the engineer's
 ROLES = {"engineer": "engineer", "describer": "engineer", "leakage": "engineer", "examiner": "examiner",
          "examiner_research": "examiner:research"}
@@ -128,7 +128,22 @@ def role_scope_caps(pilot=PILOT):
     examiner 5M, examiner research 9.2M, registrar 17:0x)."""
     require(pilot in PILOTS, "Unknown run configuration")
     caps = CONFIG_ROLE_CAPS[pilot]
-    return {"engineer": caps["engineer"], "examiner": caps["examiner"], "examiner:research": caps["examiner_research"]}
+    out = {"engineer": caps["engineer"], "examiner": caps["examiner"], "examiner:research": caps["examiner_research"]}
+    from . import profiles
+    if profiles.is_v29(pilot):
+        out.update({role: caps[role] for role in ("audit_g", "audit_d")})
+    return out
+
+
+def step_kinds(configuration):
+    from . import profiles
+    return STEP_KINDS + (("confirm",) if profiles.is_v29(configuration) else ())
+
+
+def audit_scopes(chain, judge, bench, k):
+    """Separate judge subscopes, charged to the method total on both providers."""
+    require(judge in ("G", "D"), "A registered audit judge")
+    return ROOT, chain + ":glm", "%s:role:audit_%s" % (_step(chain, bench, k), judge.lower())
 
 
 def chain_caps(chain, pilot=PILOT):
@@ -142,7 +157,7 @@ def chain_caps(chain, pilot=PILOT):
     out = {ROOT: plan["solver_cap"] + glm, chain + ":solver": plan["solver_cap"],
            chain + ":test": plan["test_read_cap"], chain + ":redo": plan["redo_reserve"], chain + ":glm": glm}
     for k, bench in enumerate(plan["order"], 1):
-        for kind in STEP_KINDS:
+        for kind in step_kinds(pilot):
             cap = step_caps[bench][kind]
             out[solver_scopes(chain, bench, k, kind)[-1]] = cap
             for attempt in range(2, MAX_REDOS + 2):

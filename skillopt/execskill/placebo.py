@@ -51,11 +51,11 @@ def placebo_package(candidate, parent):
     return (restore(candidate, parent, back) if back else candidate), tuple(p.id for _, p, _ in changed)
 
 
-def rendered(fields, *, bench, header, outcome_judged=False):
+def rendered(fields, *, bench, header, outcome_judged=False, audited=False):
     """The length of one procedure's note as the shell renders it (its header included)."""
-    if outcome_judged:
-        fields, dropped = notes.screen(fields, bench=bench, outcome_judged=True)
-        _, header_drops = notes.screen_header(header)
+    if outcome_judged or audited:
+        fields, dropped = notes.screen(fields, bench=bench, outcome_judged=True, audited=audited)
+        _, header_drops = notes.screen_header(header, **({"audited": True, "bench": bench} if audited else {}))
         fields = notes.suppress_faulted(fields, dropped + header_drops, outcome_judged=True)
     return len(notes.render(fields, bench=bench, header=header)) if fields else 0
 
@@ -79,20 +79,20 @@ def _fields(entries):
     return out
 
 
-def sham_fields(segments, target, *, bench, header, cap, outcome_judged=False):
+def sham_fields(segments, target, *, bench, header, cap, outcome_judged=False, audited=False):
     """``(fields, band record)``: the donor content in the length band of ``target`` (module docstring).
     ``segments``: the donor's screened fields, the paired output first, then the same donor's next outputs;
     ``header``: the procedure's constant header (the shell renders it; it counts here); ``cap``: its note cap."""
     lower, upper = band(target, cap)
-    if outcome_judged:
-        screened = [notes.screen(segment, bench=bench, outcome_judged=True) for segment in segments]
+    if outcome_judged or audited:
+        screened = [notes.screen(segment, bench=bench, outcome_judged=True, audited=audited) for segment in segments]
         segments = [notes.suppress_faulted(fields, dropped, outcome_judged=True) for fields, dropped in screened]
 
     def size(entries):
         fields = _fields(entries)
-        _, dropped = notes.screen(fields, bench=bench, outcome_judged=outcome_judged)
+        _, dropped = notes.screen(fields, bench=bench, outcome_judged=outcome_judged, audited=audited)
         return (math.inf if notes.fault_drops(dropped, outcome_judged=outcome_judged)
-                else rendered(fields, bench=bench, header=header, outcome_judged=outcome_judged))
+                else rendered(fields, bench=bench, header=header, outcome_judged=outcome_judged, audited=audited))
 
     first = _entries(segments[0]) if segments else []
     chosen, action = [], "kept"
@@ -120,7 +120,7 @@ def sham_fields(segments, target, *, bench, header, cap, outcome_judged=False):
                     chosen.append((name, clipped))
             break
     fields = _fields(chosen)
-    chars = rendered(fields, bench=bench, header=header, outcome_judged=outcome_judged)
+    chars = rendered(fields, bench=bench, header=header, outcome_judged=outcome_judged, audited=audited)
     within = lower <= chars <= upper
     return fields, {"target": target, "chars": chars, "within": within,
                     "action": "short" if action == "kept" and not within else action}
@@ -143,7 +143,7 @@ def real_lengths(changed, views, workers, *, bench, packages):
                                                                          "report": None, "steps": None},
                                                      bench=bench, faults=[])
                     out[procedure.id][item] = {hook: rendered(fields, bench=bench, header=procedure.header,
-                                                            outcome_judged=notes.outcome_judged(procedure))
+                                                            outcome_judged=notes.outcome_judged(procedure), audited=notes.audited(procedure))
                                                for hook, fields in found.items()}
     return out
 
@@ -159,7 +159,7 @@ def median_length(corpus, procedure, hook):
         else:
             notes_ = [found] if found else []
         lengths += [rendered(f, bench=corpus["bench"], header=procedure.header,
-                            outcome_judged=notes.outcome_judged(procedure)) for f in notes_ if f]
+                            outcome_judged=notes.outcome_judged(procedure), audited=notes.audited(procedure)) for f in notes_ if f]
     return int(statistics.median(lengths)) if lengths else 0
 
 
@@ -174,7 +174,7 @@ def build_y(corpus, pairs, lengths, *, changed):
         content, bands = {}, {}
         for _, procedure, _ in changed:
             sham, keep = {}, {"bench": bench, "header": procedure.header, "cap": procedure.max_note_chars,
-                             **({"outcome_judged": True} if notes.outcome_judged(procedure) else {})}
+                             **({"outcome_judged": True, "audited": notes.audited(procedure)} if notes.outcome_judged(procedure) else {})}
             for hook in procedure.hooks:
                 label = procedure.id + "/" + hook
                 if hook in donors.QA_HOOKS:
@@ -232,14 +232,14 @@ def build_i(placebo_y, procedures, *, bench, unit):
             modern = notes.outcome_judged(procedure)
             content[procedure_id] = {}
             for hook, fields in sham.items():
-                target, count = rendered(fields, bench=bench, header=procedure.header, outcome_judged=modern), 1
+                target, count = rendered(fields, bench=bench, header=procedure.header, outcome_judged=modern, audited=notes.audited(procedure)), 1
                 text = irrelevant_text(item, unit)
                 while target and rendered({"facts": chunks(text, count)}, bench=bench,
-                                          header=procedure.header, outcome_judged=modern) < target:
+                                          header=procedure.header, outcome_judged=modern, audited=notes.audited(procedure)) < target:
                     count += 1
                 content[procedure_id][hook], _ = sham_fields([{"facts": chunks(text, count)}], target, bench=bench,
                                                              header=procedure.header, cap=procedure.max_note_chars,
-                                                             outcome_judged=modern)
+                                                             outcome_judged=modern, audited=notes.audited(procedure))
         out[item] = {"procedures": content}
     return out
 

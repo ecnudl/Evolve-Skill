@@ -302,8 +302,8 @@ MUTATIONS = {
         [T + "cli.py::test_recover_refuses_a_finished_acceptance_round"]),
     # registrar addendum 2026-10-22 15:3x: tickets P2C-1 and P2C-2
     "56-step-unit-starts-without-a-confirmed-first-call": (
-        PE + "step.py", "    confirmation(manifest[\"root\"], manifest[RECORD_HASH], chain)  # ticket P2C-1",
-        "    (lambda *args: None)(manifest[\"root\"], manifest[RECORD_HASH], chain)  # ticket P2C-1",
+        PE + "step.py", "    confirmation(manifest[\"root\"], manifest[RECORD_HASH], chain,\n",
+        "    (lambda *args, **kwargs: None)(manifest[\"root\"], manifest[RECORD_HASH], chain,\n",
         [T + "runcli.py::test_step_unit_runs_one_step_of_the_order_and_maps_its_pause_to_the_exit_code"]),
     "57-step-unit-takes-another-runs-confirmation": (
         PE + "chain.py",
@@ -531,7 +531,8 @@ MUTATIONS = {
         [T + "routes.py::test_route_b_balance_exhaustion_is_raised_at_once_never_retried_and_nothing_is_sent_after"]),
     "109-route-switches-under-a-running-process": (
         PE + "manifest.py",
-        "            routes.check_bound(safe_path(m[\"root\"]) / run, route, run=m[protocol.RECORD_HASH], chain=run)\n",
+        "            routes.check_bound(safe_path(m[\"root\"]) / run, route, run=m[protocol.RECORD_HASH], chain=run, "
+        "**({\"configuration\": m[\"configuration\"]} if protocol.is_v29(m[\"configuration\"]) else {}))\n",
         "            pass\n",
         [T + "routes.py::test_setting_of_binds_the_route_per_process_and_a_unit_never_switches_mid_run"]),
     "110-route-switch-without-a-balance-pause-or-reason": (

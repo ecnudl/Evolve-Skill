@@ -9,7 +9,7 @@ from copy import deepcopy
 
 from .protocol import *  # re-export the historical vocabulary, without mutating its tables
 from . import protocol as legacy
-from .policy import POLICY_VERSION_V24, POLICY_VERSION_V25, POLICY_VERSION_V28, MAX_SOURCE_BYTES_V28
+from .policy import POLICY_VERSION_V24, POLICY_VERSION_V25, POLICY_VERSION_V28, POLICY_VERSION_V29, MAX_SOURCE_BYTES_V28, MAX_SOURCE_BYTES_V29
 
 ZEBRA_PC_V1 = "zebra-pc-v1"
 ZEBRA_PC_V2 = "zebra-pc-v2"
@@ -17,9 +17,11 @@ ZEBRA_PC_V3 = "zebra-pc-v3"
 ZEBRA_PC_V4 = "zebra-pc-v4"
 ZEBRA_PC_V5 = "zebra-pc-v5"
 ZEBRA_PC_V6 = "zebra-pc-v6"
+ZEBRA_PC_V7 = "zebra-pc-v7"
 ALFWORLD_V1 = "alfworld-v1"
 ALFWORLD_V2 = "alfworld-v2"
 ALFWORLD_V3 = "alfworld-v3"
+ALFWORLD_V4 = "alfworld-v4"
 ZEBRA = "zebralogic"
 SUPPORTED_BENCHES = BENCHES + (ZEBRA,)
 FEATURE_FAMILIES = {name: ("v2.3" if name == MAIN_V2_3 else "historical") for name in CONFIGURATIONS}
@@ -32,60 +34,68 @@ FEATURE_FAMILIES[ZEBRA_PC_V5] = "v2.7"
 FEATURE_FAMILIES[ALFWORLD_V2] = "v2.7"
 FEATURE_FAMILIES[ZEBRA_PC_V6] = "v2.8"
 FEATURE_FAMILIES[ALFWORLD_V3] = "v2.8"
+FEATURE_FAMILIES[ZEBRA_PC_V7] = "v2.9"
+FEATURE_FAMILIES[ALFWORLD_V4] = "v2.9"
 
 
 def is_v23(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return FEATURE_FAMILIES[configuration] in ("v2.3", "v2.4", "v2.5", "v2.6", "v2.7", "v2.8")
+    return FEATURE_FAMILIES[configuration] in ("v2.3", "v2.4", "v2.5", "v2.6", "v2.7", "v2.8", "v2.9")
 
 
 def is_v24(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return FEATURE_FAMILIES[configuration] in ("v2.4", "v2.5", "v2.6", "v2.7", "v2.8")
+    return FEATURE_FAMILIES[configuration] in ("v2.4", "v2.5", "v2.6", "v2.7", "v2.8", "v2.9")
 
 
 def is_v25(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return FEATURE_FAMILIES[configuration] in ("v2.5", "v2.6", "v2.7", "v2.8")
+    return FEATURE_FAMILIES[configuration] in ("v2.5", "v2.6", "v2.7", "v2.8", "v2.9")
 
 
 def is_v26(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return FEATURE_FAMILIES[configuration] in ("v2.6", "v2.7", "v2.8")
+    return FEATURE_FAMILIES[configuration] in ("v2.6", "v2.7", "v2.8", "v2.9")
 
 
 def is_v27(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return FEATURE_FAMILIES[configuration] in ("v2.7", "v2.8")
+    return FEATURE_FAMILIES[configuration] in ("v2.7", "v2.8", "v2.9")
 
 
 def is_v28(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return FEATURE_FAMILIES[configuration] == "v2.8"
+    return FEATURE_FAMILIES[configuration] in ("v2.8", "v2.9")
+
+
+def is_v29(configuration):
+    configuration = configuration or PILOT
+    require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
+    return FEATURE_FAMILIES[configuration] == "v2.9"
 
 
 def is_zebra(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ZEBRA_PC_V1, ZEBRA_PC_V2, ZEBRA_PC_V3, ZEBRA_PC_V4, ZEBRA_PC_V5, ZEBRA_PC_V6)
+    return configuration in (ZEBRA_PC_V1, ZEBRA_PC_V2, ZEBRA_PC_V3, ZEBRA_PC_V4, ZEBRA_PC_V5, ZEBRA_PC_V6, ZEBRA_PC_V7)
 
 
 def is_alfworld(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ALFWORLD_V1, ALFWORLD_V2, ALFWORLD_V3)
+    return configuration in (ALFWORLD_V1, ALFWORLD_V2, ALFWORLD_V3, ALFWORLD_V4)
 
 
 def is_alfworld_v2(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ALFWORLD_V2, ALFWORLD_V3)
+    return configuration in (ALFWORLD_V2, ALFWORLD_V3, ALFWORLD_V4)
 
 
 def _extend(table, value, *, v2=None, v3=None, v4=None):
@@ -289,6 +299,38 @@ CHAIN_NAMESPACES[ALFWORLD_V3] = ALFWORLD_V3_NAMESPACES
 ACCEPT_FRESHNESS[ZEBRA_PC_V6] = "zebra_split_v1_slices_reused_accept_used_three_times_plus_ub_probe"
 ACCEPT_FRESHNESS[ALFWORLD_V3] = ALFWORLD_V3_FRESHNESS
 
+# v2.9 is a fresh identity; frozen parent tables are copied by value. Extra
+# judge/confirmation ledger formulas are defined separately in v29_limits.
+ZEBRA_PC_V7_ROOT = "/data/execskill-20261027-zebra-pc-v7"
+ZEBRA_PC_V7_MANIFEST = ZEBRA_PC_V7_ROOT + "-manifest.json"
+ZEBRA_PC_V7_NAMESPACES = {"G": "G-zpc7", "D": "D-zpc7"}
+ALFWORLD_V4_ROOT = "/data/execskill-20261027-alfworld-v4"
+ALFWORLD_V4_MANIFEST = ALFWORLD_V4_ROOT + "-manifest.json"
+ALFWORLD_V4_NAMESPACES = {"G": "G-alf4", "D": "D-alf4"}
+ALFWORLD_V4_FRESHNESS = "alfworld_split_v1_slices_reused_acceptance_used_once"
+SUPPORTED_NAMESPACES += tuple(ZEBRA_PC_V7_NAMESPACES.values()) + tuple(ALFWORLD_V4_NAMESPACES.values())
+for _child, _parent in ((ZEBRA_PC_V7, ZEBRA_PC_V6), (ALFWORLD_V4, ALFWORLD_V3)):
+    for _name in ("CONFIGURATIONS", "CONFIG_STEP_CAPS", "CONFIG_SCHEDULE_CELLS", "CONFIG_ROLE_CAPS", "CONFIG_GLM_CAP",
+                  "CONFIG_CAP_FACTOR", "COST_CHECK_PAUSES", "TEST_READ_CELLS", "STAGE_READ", "LEARNING", "FIX_ECHO",
+                  "META_COUNTERFACTUAL", "TRAIN_SIGN", "PRUNE_NON_FIRING", "ACCEPT_RULES", "ENGINEER_MAX_TOKENS",
+                  "TRIM_PAYLOADS", "NORMALIZE_STRUCTURE", "CHECK_NON_FIRING", "IDENTICAL_REQUEST_REUSE",
+                  "CODE_EXTRACTION", "MULTIPLE_PYTHON_BLOCKS"):
+        globals()[_name][_child] = deepcopy(globals()[_name][_parent])
+    ENGINEER_RECORDS[_child] = "engineer-v2-9"
+    POLICY_VERSIONS[_child] = POLICY_VERSION_V29
+REAL_RUN_EVIDENCE[ZEBRA_PC_V7] = "zebra_pc_v7_real_run"
+REAL_RUN_EVIDENCE[ALFWORLD_V4] = "alfworld_v4_real_run"
+RUN_ROOTS[ZEBRA_PC_V7] = ZEBRA_PC_V7_ROOT
+RUN_ROOTS[ALFWORLD_V4] = ALFWORLD_V4_ROOT
+CHAIN_NAMESPACES[ZEBRA_PC_V7] = ZEBRA_PC_V7_NAMESPACES
+CHAIN_NAMESPACES[ALFWORLD_V4] = ALFWORLD_V4_NAMESPACES
+ACCEPT_FRESHNESS[ZEBRA_PC_V7] = "zebra_split_v1_slices_reused_accept_used_four_times_plus_ub_probe"
+ACCEPT_FRESHNESS[ALFWORLD_V4] = ALFWORLD_V4_FRESHNESS
+CONFIRM_FRESHNESS = {
+    ZEBRA_PC_V7: "zebra_split_v1_confirm_spare_probe_smoke_first_use",
+    ALFWORLD_V4: "alfworld_split_v1_confirm_spare_rooms_first_use"}
+
+
 # Conservative extra calls reserve one whole-proposal retry, one format retry
 # per change, and one after each ordinary fix. They do not consume TRAIN_FIXES.
 ENGINEER_CALL_BUDGETS = {name: ENGINEER_CALLS + (1 + MAX_CHANGES * 2 if is_v28(name) else 0)
@@ -296,6 +338,9 @@ ENGINEER_CALL_BUDGETS = {name: ENGINEER_CALLS + (1 + MAX_CHANGES * 2 if is_v28(n
 TRAIN_ENGINEER_CALL_BUDGETS = {
     name: TRAIN_ENGINEER_CALLS + (1 + MAX_CHANGES * (TRAIN_FIXES + 1) if is_v28(name) else 0)
     for name in CONFIGURATIONS}
+for _configuration in (ZEBRA_PC_V7, ALFWORLD_V4):
+    ENGINEER_CALL_BUDGETS[_configuration] += MAX_CHANGES
+    TRAIN_ENGINEER_CALL_BUDGETS[_configuration] += MAX_CHANGES
 V28_HASHSEED = 0
 
 
@@ -425,3 +470,9 @@ def read_estimate_terms(per_cell, ratio, pilot=PILOT):
 
 def estimate_test_read(per_cell, ratio, pilot=PILOT):
     return math.ceil(sum(read_estimate_terms(per_cell, ratio, pilot).values()))
+
+
+# Apply only the additional v2.9 reservations after constructing inherited tables.
+from . import v29_limits as _v29_limits
+import sys as _sys
+_v29_limits.extend_profiles(_sys.modules[__name__])

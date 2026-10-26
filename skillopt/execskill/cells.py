@@ -62,7 +62,8 @@ from skillopt.continual_eval.core import require, safe_path, write_json
 from skillopt.validator_pilot.api import digest
 
 from . import judge as judges
-from . import outcomes_ext, solver, trajectories, zebralogic
+from . import outcomes_ext, solver, trajectories, zebralogic, notes
+from .profiles import is_v29
 from .client import route_of
 from .errors import AssumptionBroken, ConfigurationError, LedgerFailure, stop_kind
 from .outcomes_ext import REPLAY_MISMATCH
@@ -123,6 +124,7 @@ class Context:
     solve: object = solver.solve
     clock: object = time.time
     endpoints: dict = field(default_factory=dict)
+    configuration: str | None = None
 
     def __post_init__(self):
         self.attempt = safe_path(self.attempt)
@@ -352,6 +354,29 @@ def _solver_route(context, recorders, bench):
     return route_of(getattr(endpoint, "client", None), getattr(endpoint, "model", None))
 
 
+def _audited_fields(context, runs, recorders, route):
+    """v2.9 per-cell metadata, including explicit zero hits for the card arm."""
+    if not is_v29(context.configuration):
+        return {}
+    rows = [row for _, pred in runs for entry in (pred.get("shell") or {}).get("notes", [])
+            for row in entry.get("dropped", [])]
+    receipts = [receipt for rec in recorders for receipt in rec.receipts]
+    models = list(dict.fromkeys(receipt.get("returned_model") for receipt in receipts
+                               if isinstance(receipt, dict) and receipt.get("returned_model")))
+    return {"configuration": context.configuration, "keyword_hits": notes.keyword_summary(rows),
+            "applies": {pid: row["applies"] for pid, row in (route or {}).get("per_procedure", {}).items()},
+            "returned_models": models, "returned_model": models[-1] if models else None}
+
+
+def _shared_audited_fields(context, source, route):
+    if not is_v29(context.configuration):
+        return {}
+    return {"configuration": context.configuration,
+            "keyword_hits": deepcopy(source.get("keyword_hits", {"count": 0, "sentences": []})),
+            "applies": {pid: row["applies"] for pid, row in route.get("per_procedure", {}).items()},
+            "returned_models": list(source.get("returned_models", [])), "returned_model": source.get("returned_model")}
+
+
 # -------------------------------------------------------------------------------------------------- the cell
 def run_cell(context, cell, task, arm, *, store):
     """``cell``: {"id", "unit", "arm", "benchmark", "task_id", "run"} (plus "set", "block", "source_item" when the
@@ -444,6 +469,7 @@ def run_cell(context, cell, task, arm, *, store):
         "judge": judged if final is not None else None, "shared_with": None, "sandbox": _sandbox(runs),
         "solver_route": _solver_route(context, recorders, cell["benchmark"]),
         "dispatch_ts": dispatched, "finish_ts": finished, "stop": stop}
+    fields.update(_audited_fields(context, runs, recorders, route))
     revised = context.runtime.get(bench, {}).get("code_extraction_version") == "explicit-python-fences-v2"
     sealed = record("cell-v2-3" if revised else "cell", context.evidence, fields)
     trajectory = None
@@ -451,7 +477,9 @@ def run_cell(context, cell, task, arm, *, store):
         trajectory = trajectories.build(
             cell, evidence=context.evidence, arm_kind=arm.kind, package_sha256=arm.package.sha256, calls=log.entries,
             prediction=prediction, judge=judged, deciding=deciding, worst=worst, logical_calls=log.logical(),
-            dispatch_ts=dispatched, finish_ts=finished)
+            dispatch_ts=dispatched, finish_ts=finished,
+            **({"configuration": context.configuration, "solver_route": fields["solver_route"],
+                "keyword_hits": fields["keyword_hits"]} if is_v29(context.configuration) else {}))
     stored = store.save(sealed, trajectory)
     if stop is not None:
         raise Pause(stop["kind"], stop["reason"], cell["id"])
@@ -489,6 +517,7 @@ def share_cell(context, cell, task, arm, source, route, *, store):
         "final": source["final"], "official": source["official"], "judge": source["judge"],
         "shared_with": source["cell"]["id"], "sandbox": _sandbox([]), "dispatch_ts": now, "finish_ts": now,
         "solver_route": source.get("solver_route"), "stop": None}
+    fields.update(_shared_audited_fields(context, source, route))
     return store.save(record("cell", context.evidence, fields), None)
 
 
@@ -537,6 +566,7 @@ def share_same(context, cell, task, arm, source, route, source_route, source_pac
         "final": source["final"], "official": source["official"], "judge": source["judge"],
         "shared_with": source["cell"]["id"], "sandbox": _sandbox([]), "dispatch_ts": now, "finish_ts": now,
         "solver_route": source.get("solver_route"), "stop": None}
+    fields.update(_shared_audited_fields(context, source, route))
     return store.save(record("cell", context.evidence, fields), None)
 
 

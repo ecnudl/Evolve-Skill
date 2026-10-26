@@ -591,6 +591,8 @@ class Context:
     # The ordinary non-workbook routing factory can hold one worker across pure predicates. Custom factories
     # remain per item unless the caller explicitly declares this capability.
     routing_shared_worker: bool = False
+    # v2.9: independent audit-only role objects; never the engineer conversation.
+    audit_judges: dict = field(default_factory=dict, repr=False, compare=False)
     # the payload's disclosed SpreadsheetBench values and the public workbooks read for their check (``disclosed``)
     sheet: dict = field(default_factory=dict, init=False, repr=False, compare=False)
 
@@ -668,12 +670,13 @@ class Context:
                     "unit")
         v24, v25 = protocol.is_v24(self.configuration), protocol.is_v25(self.configuration)
         require(isinstance(self.history, list) and all(_history_line(entry, self.round, v24=v24,
-                v28=protocol.is_v28(self.configuration)) for entry in self.history),
+                v28=protocol.is_v28(self.configuration), v29=protocol.is_v29(self.configuration)) for entry in self.history),
                 "The history holds counts and flags only")
         require(isinstance(self.lint, list) and all(_lint_entry(entry, v25=v25,
                 **({"v26": True} if protocol.is_v26(self.configuration) else {}),
                 **({"v27": True} if protocol.is_v27(self.configuration) else {}),
-                **({"v28": True} if protocol.is_v28(self.configuration) else {})) for entry in self.lint),
+                **({"v28": True} if protocol.is_v28(self.configuration) else {}),
+                **({"v29": True} if protocol.is_v29(self.configuration) else {})) for entry in self.lint),
                 "Lint entries are reports")
         require(isinstance(self.reserved, frozenset) and all(type(i) is str for i in self.reserved),
                 "Reserved procedure ids")
@@ -685,7 +688,7 @@ class Context:
         evaluated = {t["cell"]: t for t in self.evaluated}
         require(self.training is None or _training_ok(self.training, self.references, own, evaluated, self.bench,
                                                       v24=v24, v25=v25 and not protocol.is_alfworld(self.configuration),
-                                                      v28=protocol.is_v28(self.configuration),
+                                                      v28=protocol.is_v28(self.configuration), v29=protocol.is_v29(self.configuration),
                                                       current={t["cell"]: t for t in self.current}),
                 "The training feedback shows this step's run-slice items with their own references only")
         output_refs = {e["task_id"] for e in (self.training or {}).get("unfixed_examples", [])} if v24 else set()
@@ -710,11 +713,16 @@ def _verdict_fields(entry):
             and (entry["reason"] is None or _text(entry["reason"], MAX_REASON_CHARS)))
 
 
-def _history_line(entry, before, *, v24=False, v28=False):
+def _history_line(entry, before, *, v24=False, v28=False, v29=False):
     """v2 (Codex review 2026-10-23 #4): a line of an earlier round exactly as ``step._line`` writes it -- counts,
     flags, the net, p and reason -- with its ``proposals`` (the step buffer): kind, registrar id, target, a description
     excerpt and the fate."""
     fields = HISTORY_FIELDS | ({"patience_counted"} if v24 else set())
+    if v29 and "confirm" in entry:
+        from .engineer_v29 import confirm_feedback_ok
+        if not confirm_feedback_ok(entry["confirm"]):
+            return False
+        fields |= {"confirm"}
     if v28 and "inert" in entry:
         if not isinstance(entry["inert"], list) or not all(_text(i, MAX_ID_CHARS) for i in entry["inert"]):
             return False
@@ -731,7 +739,7 @@ def _history_line(entry, before, *, v24=False, v28=False):
                for p in entry["proposals"])
 
 
-def _lint_entry(entry, *, v25=False, v26=False, v27=False, v28=False):
+def _lint_entry(entry, *, v25=False, v26=False, v27=False, v28=False, v29=False):
     """v2 (Codex review 2026-10-23 #3, #4): an advisory replay-test report exactly as ``_lint`` writes it."""
     if not isinstance(entry, dict):
         return False
@@ -745,6 +753,11 @@ def _lint_entry(entry, *, v25=False, v26=False, v27=False, v28=False):
                 and all(_count(v) for v in row["counts"].values()) for row in info)):
             return False
     fields = LINT_FIELDS | ({"information"} if v28 and "information" in entry else set())
+    if v29 and "audit" in entry:
+        from .engineer_v29 import audit_feedback_ok
+        if not audit_feedback_ok(entry["audit"]):
+            return False
+        fields |= {"audit"}
     if not (isinstance(entry, dict) and set(entry) == fields and _text(entry["id"], MAX_ID_CHARS, empty=False)
             and isinstance(entry["tests"], list) and len(entry["tests"]) <= MAX_TESTS
             and isinstance(entry["problems"], list) and len(entry["problems"]) <= MAX_LINT):
@@ -772,12 +785,17 @@ def _lint_entry(entry, *, v25=False, v26=False, v27=False, v28=False):
         for p in entry["problems"])
 
 
-def _training_ok(training, references, own, evaluated, bench, *, v24=False, v25=False, current=None, v28=False):
+def _training_ok(training, references, own, evaluated, bench, *, v24=False, v25=False, current=None, v28=False, v29=False):
     """v2 (Codex review 2026-10-23 #4): the last round's feedback exactly as ``step._feedback`` writes it; each
     example names one of this step's run-slice items (``own``) and that item's candidate-arm cell of the last training
     unit (``evaluated``: {cell: trajectory}), its texts within ``TRAIN_TEXT_CHARS``, and a reference only off ALFWorld
     and only the item's own (``Context.references``)."""
     fields = TRAINING_FIELDS | ({"unfixed_examples", "identical_items"} if v24 else set())
+    if v29 and "confirm" in training:
+        from .engineer_v29 import confirm_feedback_ok
+        if not confirm_feedback_ok(training["confirm"]):
+            return False
+        fields |= {"confirm"}
     if v28:
         fields |= {"informational_guards"}
         if training.get("informational_guards") != ["own_faults", "predicate_faults"]:
@@ -1088,6 +1106,13 @@ def _ask(ctx, user, purpose):
             system += engineer_v28.FIX_SYSTEM
         elif user.get("request") == "format_retry":
             system += engineer_v28.FORMAT_RETRY_SYSTEM
+    if protocol.is_v29(ctx.configuration):
+        from . import engineer_v29
+        system = engineer_v29.system(ctx.configuration, train=ctx.mode == TRAIN)
+        suffix = {"fix": engineer_v29.FIX_SYSTEM, "format_retry": engineer_v29.FORMAT_RETRY_SYSTEM,
+                  "audit_fix": engineer_v29.AUDIT_FIX_SYSTEM}.get(user.get("request"))
+        if suffix:
+            system += suffix
     options = ({"max_tokens": protocol.ENGINEER_MAX_TOKENS[ctx.configuration]}
                if modern and ctx.mode == TRAIN and purpose in ("propose", "repropose") else {})
     reply = ctx.roles.plain(ROLE, system, json.dumps(user, ensure_ascii=False, sort_keys=True),
@@ -1959,6 +1984,8 @@ def check(change, ctx, taken=()):
                                        **({"actual": actual} if v24 else {}),
                                        **({"diagnostic_cells": _feedback_cells(ctx)}
                                           if protocol.is_v26(ctx.configuration) else {}))
+    if protocol.is_v29(ctx.configuration):
+        ctx.sheet.setdefault("audit_replays", {})[procedure.id] = (list(entries.values()), outcomes)
     disclosure = {"shown_cells": _feedback_cells(ctx)} if protocol.is_v25(ctx.configuration) else {}
     if disclosure:
         if not done("C5b", *replay.claimed_tests(procedure, entries, outcomes, actual, **disclosure,
@@ -1983,6 +2010,8 @@ def check(change, ctx, taken=()):
             effect_hooks = (("alf_before_step",) if ctx.bench == "alfworld" else
                             ("before_call", "sheet_feedback") if ctx.bench == "spreadsheetbench" else
                             ("before_call", "bindings") if ctx.bench in QA else ("before_call",))
+            if protocol.is_v29(ctx.configuration) and ctx.bench == "alfworld":
+                effect_hooks += ("alf_after_step",)
             no_effect = not set(effect_hooks).intersection(procedure.hooks) or ctx.bench in procedure.excluded_benches
             report["inert"] = bool((from_replay and not routed["C6c"][1]["nonempty"])
                                    or from_routing or empty_notes or no_effect)

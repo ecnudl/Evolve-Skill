@@ -158,7 +158,8 @@ from skillopt.validator_pilot.api import digest
 
 from . import (acceptance, budgets, describer, detectors, donors, engineer, examiner, exclusion, generators, notes,
                profiles as protocol,
-               replay, research, rounds, router, solver, supply, trajectories, units, reuse as request_reuse)
+               replay, research, rounds, router, solver, supply, trajectories, units, reuse as request_reuse,
+               confirm as practice_confirm)
 from .corpus import Corpus
 from .cells import Arm, Pause, TrainingStore, cell_id, run_cells
 from .chain import EXIT_AWAITING, EXIT_COMPLETE, EXIT_PAUSED, cap_check, check_pins, confirmation, heavy
@@ -195,6 +196,10 @@ TRAIN = engineer.TRAIN  # v2's learning mode (module docstring)
 UNITS_V2 = ("run", "diagnose", "generate",
             *("%s-r%d" % (kind, r) for r in range(1, TRAIN_ROUNDS + 1) for kind in ("engineer", "train")),
             "selftest", "accept", "freeze")
+UNITS_V29 = ("run", "diagnose", "generate",
+             *("%s-r%d" % (kind, r) for r in range(1, TRAIN_ROUNDS + 1)
+               for kind in ("engineer", "train", "confirm")),
+             "audit-final", "selftest", "accept", "freeze")
 QUESTION_FIELDS = {"searchqa": "question", "officeqa": "question", "livemath": "question",
                    "spreadsheetbench": "instruction", "alfworld": "task_text",
                    "zebralogic": "question"}  # v2 feedback: the item's question
@@ -295,6 +300,8 @@ class _Step:
     def units(self):
         """The step's sub-step units: v1's, the S4 mini-step's or v2's (``UNITS_V2``)."""
         if self.learning == TRAIN:
+            if protocol.is_v29(configuration_of(self.setting)):
+                return UNITS_V29
             return UNITS_V2
         return UNITS if self.smoke is None else SMOKE_UNITS
 
@@ -469,8 +476,13 @@ def _alfworld_views(st, cut):
     was reset with the frozen runtime this run pins (``views_runtime_sha256`` of ``supply.alfworld_pool`` = the digest
     of ``setting.runtime["alfworld"]``); refused before anything is registered. The live reset re-checks each view
     (``solver._solve_alfworld``)."""
+    if protocol.is_v29(configuration_of(st.setting)) and "confirm" in cut:
+        from .alf_confirm_views import attach
+        cut["confirm"] = attach(cut["confirm"], st.setting.extra.get("alf_confirm_views"),
+            configuration=configuration_of(st.setting), runtime=st.runtime(),
+            confirm_pin=st.setting.extra.get("confirm"))
     pinned = digest(st.runtime())
-    for name in ("run", "accept"):
+    for name in (("run", "accept", "confirm") if "confirm" in cut else ("run", "accept")):
         for item in cut[name]:
             solver.routing_view(st.bench, item["public"], runtime=st.runtime())
             require(item.get("views_runtime_sha256") == pinned, "An ALFWorld game's pre-reset routing view was not "
@@ -492,6 +504,9 @@ def _cut(st, held):
         cut = {name: sliced[name] for name in ("run", "accept")}
         require(not set(held) & {item["task_id"] for items in cut.values() for item in items},
                 "ZebraLogic's registered slices contain already held or consumed items")
+        if protocol.is_v29(configuration_of(st.setting)):
+            cut["confirm"], _ = practice_confirm.slice_items(configuration_of(st.setting), pool,
+                excluded=[item["task_id"] for name in ("run", "accept") for item in cut[name]])
         return cut
     sizes = supply.registered_sizes(st.bench)
     if bench == "searchqa":
@@ -501,6 +516,9 @@ def _cut(st, held):
         return {"run": supply.slices(bench, pool, sizes, held)["run"], "accept": accept}
     if bench == "alfworld":
         cut = supply.slices(bench, pool, {name: sizes[name] for name in ("run", "accept")}, held)
+        if protocol.is_v29(configuration_of(st.setting)):
+            cut["confirm"], _ = practice_confirm.slice_items(configuration_of(st.setting), pool,
+                excluded=[item["task_id"] for name in ("run", "accept") for item in cut[name]])
         _alfworld_views(st, cut)
         return cut
     return supply.slices(bench, pool, sizes, held)
@@ -516,7 +534,10 @@ def _slices(st):
         value = verified(read_json(path), "step-slices")
         require(value["chain"] == st.chain and value["k"] == st.k and value["bench"] == st.bench,
                 "The slices of another step")
-        return {name: _items_of(st, ids) for name, ids in value["slices"].items()}
+        cut = {name: _items_of(st, ids) for name, ids in value["slices"].items()}
+        if st.bench == "alfworld" and protocol.is_v29(configuration_of(st.setting)) and "confirm" in cut:
+            _alfworld_views(st, cut)
+        return cut
     if st.smoke is not None:  # §10 S4: the mini-step's own cut of its 60 smoke items (v2's SX: of its 260)
         sizes = SX_SLICES if st.smoke.train else S4_SLICES
         items, run = list(st.smoke.items), sizes["run"]
@@ -533,7 +554,9 @@ def _slices(st):
     require(cut.get("run") and cut.get("accept"), "The bench's supply holds a run and an acceptance slice")
     write_json(path, record("step-slices", st.evidence, {
         "chain": st.chain, "k": st.k, "bench": st.bench,
-        "slices": {name: [item["task_id"] for item in items] for name, items in sorted(cut.items())}}))
+        "slices": {name: [item["task_id"] for item in items] for name, items in sorted(cut.items())},
+        **({"confirm": practice_confirm.identity(configuration_of(st.setting), st.setting.pools[st.bench])}
+           if protocol.is_v29(configuration_of(st.setting)) and st.smoke is None else {})}))
     return _slices(st)
 
 
@@ -1049,7 +1072,9 @@ def _engineer(st, cut, unit, previous):
                                    card=st.setting.cards.get(st.bench, ""), references=_references(st, cut, parents),
                                    inputs_dirs=inputs,
                                    detectors=detectors.counts(detectors.diagnosis(parents, bench=st.bench)),
-                                   previous=previous, spent=spent, configuration=configuration_of(st.setting))
+                                   previous=previous, spent=spent, configuration=configuration_of(st.setting),
+                                   **({"audit_judges": units.audit_judges(st.setting, st.chain, st.bench, st.k)}
+                                      if protocol.is_v29(configuration_of(st.setting)) else {}))
             candidate, sealed = engineer.run(ctx)
         if candidate is not None:
             save(st.chain_root, candidate)
@@ -1324,7 +1349,9 @@ def _engineer_train(st, cut, r, incumbent, *, done, fed, history, training, lint
                                    disclosed=frozenset(disclosed),
                                    configuration=configuration_of(st.setting),
                                    echo=FIX_ECHO[configuration_of(st.setting)],  # v2.1: main-v2-1 redacts
-                                   counterfactual=META_COUNTERFACTUAL[configuration_of(st.setting)], **routing)
+                                   counterfactual=META_COUNTERFACTUAL[configuration_of(st.setting)], **routing,
+                                   **({"audit_judges": units.audit_judges(st.setting, st.chain, st.bench, st.k)}
+                                      if protocol.is_v29(configuration_of(st.setting)) else {}))
             candidate, sealed = engineer.run_train(ctx)
         if candidate is not None:
             save(st.chain_root, candidate)
@@ -1741,9 +1768,152 @@ def _train_eval(st, cut, r, incumbent, candidate, generated, *, current=None):
             out.update({"proposed_sha256": candidate.sha256, "pruned": pruned})
         if signatures is not None:
             out.update({"version": "training-requests-v2-3", "identical": identical, "request_signatures": signatures})
+        if protocol.is_v29(configuration_of(st.setting)):
+            out["routing"] = {key: {"S": before[key].to_json(), "S'": after[key].to_json()} for key, _ in views}
         return out
 
     return st.unit(unit, work)
+
+
+def _confirm_identities(st, items, evaluated, incumbent, candidate, signatures):
+    """Exact replay identity for each confirmation arm, without model calls.
+
+    Zebra retains the rendered request signature. ALFWorld episodes bind the
+    frozen starting observation, runtime and card as well as package and game.
+    Missing or faulted request signatures are deliberately not identities.
+    """
+    identities = {}
+    for key in evaluated:
+        identities[key] = {}
+        for arm, package in (("S", incumbent), ("S'", candidate)):
+            if st.bench == "alfworld":
+                item = items[key]
+                view_sha256 = item["public"].get("routing_view_sha256")
+                card = st.setting.cards.get(st.bench)
+                require(view_sha256 and item.get("views_runtime_sha256") == digest(st.runtime()),
+                        "ALFWorld confirmation requires pinned view and runtime identities")
+                require(isinstance(card, str) and bool(card), "ALFWorld confirmation requires its pinned card")
+                identities[key][arm] = {
+                    "version": "alfworld-confirm-episode-v2-9", "package_sha256": package.sha256,
+                    "game_id": item["task_id"], "view_sha256": view_sha256,
+                    "runtime_sha256": digest(st.runtime()),
+                    "card_sha256": hashlib.sha256(card.encode("utf-8")).hexdigest()}
+            else:
+                signature = signatures.get(key, {}).get(arm)
+                identities[key][arm] = (signature if isinstance(signature, dict)
+                    and signature.get("request_sha256") and isinstance(signature.get("post_call"), list)
+                    and signature.get("faults") == [] else None)
+    return identities
+
+
+def _confirm_cell_reusable(cell, key):
+    """An uninterrupted, scored or otherwise final, fault-free stored cell."""
+    return bool(isinstance(cell, dict) and "stop" in cell and cell["stop"] is None
+                and isinstance(cell.get("final"), dict)
+                and cell["final"].get("outcome") in ("pass", "fail", "unknown")
+                and isinstance(cell["final"].get("kind"), str) and cell["final"]["kind"]
+                and cell["final"]["kind"] != "fault" and cell["final"].get("remedy") is None
+                and cell.get("faults") == [] and cell.get("cell", {}).get("task_id") == key
+                and cell.get("cell", {}).get("id")
+                and ((cell.get("judge") or {}).get("v2") or {}).get("token")
+                in ("pass", "fail", "unknown", "unknown_artifact"))
+
+
+def _confirm_cached(st, r, package, identities):
+    """Sealed earlier confirmation cells for this exact package and item.
+
+    Only completed units are read. A promoted candidate's measured cells are
+    reusable as the next incumbent, as are an unchanged incumbent's cells, only
+    with the same saved request identity and a complete, fault-free cell.
+    """
+    cached = {}
+    for previous in range(1, r):
+        found = st.done("confirm-r%d" % previous)
+        if not found:
+            continue
+        for side, arm in (("incumbent", "S"), ("candidate", "S'")):
+            if found.get(side + "_sha256") == package.sha256:
+                saved = found.get("request_identities", found.get("request_signatures", {}))
+                for key, cell in (found.get(side + "_cells") or {}).items():
+                    current = identities.get(key, {}).get("S")
+                    if (current and saved.get(key, {}).get(arm) == current
+                            and _confirm_cell_reusable(cell, key)):
+                        cached[key] = cell
+    return cached
+
+
+def _confirm_eval(st, cut, r, incumbent, candidate, *, exercise=False):
+    """Held-out practice unit, one run per pair, no engineer-visible content.
+
+    Smoke may provide exactly two authored ``cut['confirm']`` items with
+    ``exercise=True``; its measured verdict is explicitly unused for adoption.
+    """
+    require(protocol.is_v29(configuration_of(st.setting)), "Confirmation requires v2.9")
+    selected = list(cut["confirm"])
+    require(len(selected) == (2 if exercise else practice_confirm.ITEMS),
+            "Confirmation has its registered 40 items (two authored exercise items in smoke)")
+    ids = [item["task_id"] for item in selected]
+    require(len(ids) == len(set(ids)), "Distinct confirmation items")
+    require(not set(ids) & {item["task_id"] for name in ("run", "accept", "select", "generated", "sealed")
+                           for item in cut.get(name, ())}, "Confirmation slices are disjoint")
+    unit, name = "confirm-r%d" % r, st.label("confirm-r%d" % r)
+
+    def work(attempt):
+        items = {rounds.key(st.bench, item["task_id"]): item for item in selected}
+        publics = {key: item["public"] for key, item in items.items()}
+        views = [(key, solver.routing_view(st.bench, public, runtime=st.runtime()))
+                 for key, public in publics.items()]
+        before, after = _routes(st, incumbent, views, publics), _routes(st, candidate, views, publics)
+        evaluated = [key for key, _ in views if before[key].enabled != after[key].enabled]
+        signatures = _pair_signatures(st, candidate, incumbent, publics,
+                                      [(key, view) for key, view in views if key in evaluated])
+        identical = [key for key, arms in signatures.items()
+                     if request_reuse.interchangeable(arms["S'"], arms["S"], bench=st.bench)]
+        identities = _confirm_identities(st, items, evaluated, incumbent, candidate, signatures)
+        cached = _confirm_cached(st, r, incumbent, identities)
+        jobs, cells, reused = [], {}, {}
+        for key in evaluated:
+            if key in identical:
+                continue
+            item = items[key]
+            task = {"benchmark": st.bench, "public": item["public"], "private": item["private"]}
+            jobs.append(("S'", Arm("candidate", candidate), key, 0, task))
+            if key in cached:
+                cells[("S", key)] = [cached[key]]
+                reused[key] = cached[key]["cell"]["id"]
+            else:
+                jobs.append(("S", Arm("parent", incumbent), key, 0, task))
+        found = _cells(st, attempt, st.solver("confirm", attempt), name, jobs, tag="confirm") if jobs else []
+        for cell in found:
+            cells[(cell["cell"]["arm"], cell["cell"]["task_id"])] = [cell]
+        rounds.guard(cells, ["S", "S'"], name)
+        result = practice_confirm.verdict(cells, evaluated, identical=identical, items=len(items))
+        result.update(reused_cells=len(reused) + 2 * len(identical), tokens=practice_confirm.tokens(found),
+                      exercise=exercise)
+        return {"confirm": result, "round": r, "incumbent_sha256": incumbent.sha256,
+                "candidate_sha256": candidate.sha256, "slice_ids": ids,
+                "freshness": practice_confirm.FRESHNESS[configuration_of(st.setting)],
+                "routed": {key: {"incumbent": list(before[key].enabled), "candidate": list(after[key].enabled)}
+                           for key, _ in views}, "identical": identical, "request_signatures": signatures,
+                "request_identities": identities,
+                "routing": {key: {"S": before[key].to_json(), "S'": after[key].to_json()} for key, _ in views},
+                "reused": reused, "cells": len(found),
+                "incumbent_cells": {key: rows[0] for (arm, key), rows in cells.items() if arm == "S"},
+                "candidate_cells": {key: rows[0] for (arm, key), rows in cells.items() if arm == "S'"}}
+
+    return st.unit(unit, work)
+
+
+def _confirmed_training(evaluated, confirmation):
+    """Combine decisions while adding only safe counts to history/feedback."""
+    result = dict(evaluated)
+    counts = practice_confirm.counts_only(confirmation["confirm"])
+    result["confirm"] = counts
+    adopted = bool(evaluated["adopted"] and counts["passed"])
+    reason = evaluated["verdict"]["reason"] if adopted else "confirm:" + counts["reason"]
+    result.update(adopted=adopted, verdict={**evaluated["verdict"], "adopted": adopted, "reason": reason},
+                  feedback={**evaluated["feedback"], "adopted": adopted, "reason": reason, "confirm": counts})
+    return result
 
 
 def _line(r, engineered, evaluated):
@@ -1759,6 +1929,8 @@ def _line(r, engineered, evaluated):
         line.update({"adopted": verdict["adopted"], "items": verdict["items"], "generated": verdict["generated"],
                      "fixed": len(verdict["fixed"]), "broken": len(verdict["broken"]), "net": verdict["net"],
                      "p_sign": verdict["p_sign"], "reason": verdict["reason"]})
+        if "confirm" in evaluated:
+            line["confirm"] = practice_confirm.counts_only(evaluated["confirm"])
     sealed, proposals = engineered["engineer"], []
     inert = [change["id"] for change in sealed["changes"] if change.get("inert")]
     if inert and engineered["candidate_sha256"] is None:
@@ -1768,7 +1940,9 @@ def _line(r, engineered, evaluated):
     for change in sealed["changes"]:
         stopped = ((change["attempts"][-1]["failed"] if change["attempts"] else change.get("reason"))
                    if not change["survived"] else None)
-        if change.get("inert"):
+        if change.get("reason") in ("audit_confirmed", "audit_fix_failed_checks"):
+            fate = change["reason"]
+        elif change.get("inert"):
             fate = "inert"
         elif change.get("deferred"):
             fate = "system_deferred"
@@ -1812,6 +1986,8 @@ def _train(st, cut, generated):
                                        if protocol.is_v24(configuration_of(st.setting)) else {}))
             if evaluated["candidate_sha256"] != candidate.sha256:  # v2.2: idle procedures were pruned
                 candidate = _package(st, evaluated["candidate_sha256"])
+            if protocol.is_v29(configuration_of(st.setting)) and evaluated["adopted"]:
+                evaluated = _confirmed_training(evaluated, _confirm_eval(st, cut, r, incumbent, candidate))
             done.append(("train-r%d" % r, evaluated["adopted"]))
             fed, training = "train-r%d" % r, evaluated["feedback"]
             if evaluated["cells"]:
@@ -1836,6 +2012,89 @@ def _train(st, cut, generated):
     return incumbent, out, last
 
 
+def _audit_final(st, candidate, rounds_done):
+    """Audit held-out/training public notes after all engineer calls have ended."""
+    from . import audit
+    unit = "audit-final"
+
+    def work(attempt):
+        prior, snapshots = [], []
+        packages = {candidate.sha256: candidate, st.parent.sha256: st.parent}
+        for line in rounds_done:
+            r = line["round"]
+            engineered = st.done("engineer-r%d" % r)
+            if engineered:
+                prior.extend({**record, "_source_unit": st.label("engineer-r%d" % r)}
+                             for record in engineered["engineer"].get("audits", ()))
+            for source, name in (("confirm", "confirm-r%d" % r), ("train", "train-r%d" % r)):
+                if st.done(name):
+                    for trajectory in _unit_trajectories(st, name):
+                        if trajectory.get("arm") == "S'":
+                            sha256 = trajectory.get("package_sha256")
+                            if sha256 and sha256 not in packages:
+                                packages[sha256] = _package(st, sha256)
+                            observed = packages.get(sha256)
+                            snapshots.append({**trajectory, "audit_source": source,
+                                "package_procedures": {p.id: hashlib.sha256(p.source.encode("utf-8")).hexdigest()
+                                                       for p in observed.procedures} if observed else {}})
+        situations = audit.situations_from_cells(snapshots, candidate)
+        excluded = {key for record in prior for key in record.get("situation_keys", ())}
+        counts = {}
+        for record in prior:
+            counts.update(record.get("counts", {}))
+        cache = {}
+        # Part A contains only immutable source/description/templates. The final
+        # audit explicitly reuses identical prior template requests, while Part
+        # B is always constructed from fresh, undisclosed situations.
+        for index, earlier in enumerate(prior):
+            for pair in earlier.get("requests", ()):
+                if pair.get("part") == "A":
+                    for judge, request in pair["requests"].items():
+                        key = digest([judge, request["system"], request["user"], request["max_tokens"]])
+                        cache[key] = {**request, "reused_from_audit": index,
+                                      "reused_from_unit": earlier["_source_unit"]}
+        changed = _changed_ids(st.parent, candidate)
+        procedures = [p for p in candidate.procedures if p.id in changed]
+        if not procedures:
+            return {"audit_final": {"phase": 2, "decision": "not_applicable",
+                    "reason": "no_added_or_revised_procedures", "audit_incomplete": False,
+                    "confirmed": [], "advisory": [], "requests": [], "tokens": {}},
+                    "removed": [], "candidate_sha256": candidate.sha256,
+                    "final_sha256": candidate.sha256, "decision": "continue"}
+        result = audit.run_audit(procedures, situations,
+            units.audit_judges(st.setting, st.chain, st.bench, st.k), bench=st.bench,
+            configuration=configuration_of(st.setting), step=st.name, change_id="final", counts=counts,
+            final=True, exclude=excluded, cache=cache, context_procedures=candidate.procedures,
+            final_package_sha256=candidate.sha256)
+        removed = audit.removed_procedures(result, list(candidate.order))
+        final = withhold(candidate, removed) if removed else candidate
+        validate(final, st.parent)
+        if not edits(st.parent, final):
+            final = st.parent
+        save(st.chain_root, final)
+        return {"audit_final": result, "removed": removed,
+                "candidate_sha256": candidate.sha256, "final_sha256": final.sha256,
+                "decision": "audit_emptied" if final.sha256 == st.parent.sha256 else "continue"}
+
+    result = st.unit(unit, work)
+    final = st.parent if result["final_sha256"] == st.parent.sha256 else _package(st, result["final_sha256"])
+    return final, result
+
+
+def _audit_summary(st, rounds_done, final=None):
+    """Step-level availability and per-judge actual usage; no content in feedback."""
+    records = []
+    for line in rounds_done:
+        found = st.done("engineer-r%d" % line["round"])
+        if found:
+            records.extend(found["engineer"].get("audits", ()))
+    if final is not None:
+        records.append(final["audit_final"])
+    return {"audits": len(records), "audit_incomplete": sum(bool(r.get("audit_incomplete")) for r in records),
+            "tokens": {judge: {name: sum(r.get("tokens", {}).get(judge, {}).get(name, 0) for r in records)
+                               for name in ("input", "output", "charged")} for judge in ("G", "D")}}
+
+
 def _trained(st, cut, generated):
     """v2 (module docstring): the training rounds, then one self-test of the final package -> ``(S' or None, the
     not-run outcome or None, the training record)``. No edit against S: ``no_training_gain`` (SX only: the last
@@ -1848,7 +2107,15 @@ def _trained(st, cut, generated):
     elif st.smoke is not None and last is not None:
         candidate, training["exercise"] = last, EXERCISE
     else:
+        if protocol.is_v29(configuration_of(st.setting)):
+            training["audit_summary"] = _audit_summary(st, rounds_done)
         return last, _release("no_training_gain"), training
+    if protocol.is_v29(configuration_of(st.setting)):
+        candidate, final_audit = _audit_final(st, candidate, rounds_done)
+        training.update(audit_final=final_audit, audit_summary=_audit_summary(st, rounds_done, final_audit),
+                        final_sha256=candidate.sha256)
+        if final_audit["decision"] == "audit_emptied":
+            return candidate, _release("audit_emptied"), training
     if _selftest(st, "selftest", candidate, generated)["blocked"]:
         return candidate, _release("selftest_blocked"), training
     return candidate, None, training
@@ -2100,7 +2367,10 @@ def run_step(setting, chain, bench, k, parent, *, services, chain_root=None, smo
         "violating_items": outcome["violating_items"],
         "units": {name: _unit_hash(st, name) for name in st.units if (units.unit_path(
             st.chain_root, k, bench, name) / "unit.json").exists()},
-        "evidence_kind": "selection", **({"learning": TRAIN, "training": training} if st.learning == TRAIN else {})})
+        "evidence_kind": "selection", **({"learning": TRAIN, "training": training} if st.learning == TRAIN else {}),
+        **({"audit_final": (training or {}).get("audit_final"),
+            "audit_summary": (training or {}).get("audit_summary")}
+           if protocol.is_v29(configuration_of(setting)) else {})})
     write_json(final, value)
     return StepRecord(package, verified(read_json(final), "step"))
 
@@ -2149,7 +2419,9 @@ def run_unit_spec(manifest, *, spec):
     order = CONFIGURATIONS[configuration]["order"]
     require(chain in CHAINS and type(k) is int and 1 <= k <= len(order) and order[k - 1] == bench,
             "A step of the order of the manifest's run configuration")
-    confirmation(manifest["root"], manifest[RECORD_HASH], chain)  # ticket P2C-1: before anything is touched
+    confirmation(manifest["root"], manifest[RECORD_HASH], chain,
+                 **({"configuration": manifest["configuration"]}
+                    if protocol.is_v29(manifest["configuration"]) else {}))  # P2C-1: before anything is touched
     setting = manifests.setting_of(manifest, chain)
     budgets.own_ledger(setting, chain).declare({**budgets.chain_caps(chain, configuration),
                                                 **budgets.first_call_caps(chain)})

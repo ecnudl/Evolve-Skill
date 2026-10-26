@@ -41,6 +41,7 @@ from skillopt.coevo5.cells import exclusive
 from skillopt.continual_eval.core import read_json, require, safe_path, write_json
 
 from . import outcomes_ext, zebralogic
+from .profiles import is_v29
 from .profiles import SUPPORTED_BENCHES as BENCHES, LANDMARK_STEPS, NOTES_KEY, QA, RECORD_HASH, record, verified
 
 TRAJECTORIES = "trajectories"
@@ -105,7 +106,7 @@ def _steps(calls, prediction, shell):
 
 
 def build(cell, *, evidence, arm_kind, package_sha256, calls, prediction, judge, deciding, worst, logical_calls,
-          dispatch_ts, finish_ts):
+          dispatch_ts, finish_ts, configuration=None, solver_route=None, keyword_hits=None):
     """The trajectory record of one completed cell (plan §2.3). ``calls``: the logical calls of the solve whose
     prediction is final, each {purpose, system, user, request_sha256, receipt}; ``prediction``: that prediction;
     ``judge``: the cell's judge record; ``deciding``, ``worst``, ``logical_calls``: the cell record's."""
@@ -124,6 +125,17 @@ def build(cell, *, evidence, arm_kind, package_sha256, calls, prediction, judge,
                   "fallback": shell.get("fallback")},
         "alfworld_steps": _steps(calls, prediction, shell) if cell["benchmark"] == "alfworld" else None,
         "judge": judge, "token": judge["v2"]["token"], "dispatch_ts": dispatch_ts, "finish_ts": finish_ts}
+    if is_v29(configuration):
+        models = list(dict.fromkeys(call["receipt"].get("returned_model") for call in calls
+                                   if isinstance(call.get("receipt"), dict) and call["receipt"].get("returned_model")))
+        fields.update(configuration=configuration, solver_route=solver_route, returned_models=models,
+                      returned_model=models[-1] if models else None,
+                      keyword_hits=keyword_hits or {"count": 0, "sentences": []})
+        fields["shell"]["keyword_hits"] = fields["keyword_hits"]
+        for original, kept in zip(calls, fields["calls"]):
+            receipt = original.get("receipt") or {}
+            kept["receipt"].update(returned_model=receipt.get("returned_model"),
+                                   route=receipt.get("route", (solver_route or {}).get("route")))
     return record("trajectory", evidence, fields)
 
 

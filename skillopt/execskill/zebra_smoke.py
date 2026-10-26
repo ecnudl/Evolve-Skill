@@ -142,6 +142,7 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, elucid_env, rou
     root = safe_path(root)
     require(smoke_chain is not None or str(root) == p.RUN_ROOTS[configuration], "The registered real run root")
     estimates, terms, smoke_pins = {}, {}, {}
+    probe_longest = routes.S1B_CEILING
     for result_path in smoke_results:
         result = p.verified(read_json(result_path), "zebra-smoke-result")
         require(result["passed"] and result["configuration"] == configuration, "A passed measured zebra smoke")
@@ -150,6 +151,11 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, elucid_env, rou
             require(chain in p.launchable_chains(configuration), "zebra-pc-v5 launches chain D only")
         require(chain in p.CHAINS and chain not in smoke_pins and result.get("s0") == checked[p.RECORD_HASH]
                 and result.get("snapshot_sha256") == current_sha, "The smoke result belongs to this S0 and snapshot")
+        if p.is_v29(configuration):
+            probe = result["solver_probe"]
+            require(probe["passed"] and probe["route"] == "B" and probe["longest"] > 0,
+                    "The real-run ledger bound comes from northgate S1")
+            probe_longest = probe["longest"]
         smoked = manifest.load(result["manifest_path"], verify=False)
         require(smoked[p.RECORD_HASH] == result["manifest"] and smoked["configuration"] == configuration
                 and smoked["evidence"] == "smoke" and smoked["data"]["s0_sha256"] == checked[p.RECORD_HASH]
@@ -167,7 +173,9 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, elucid_env, rou
             estimates[chain] = math.ceil(anchor * (200 + 1_000 * float(p.PROCEDURE_ARM_FACTOR[1])))
             terms[chain] = {z.BENCH: str(estimates[chain])}
     blocks = {"G": manifest.solver_block("G", env_path=roles_repo, configuration=configuration),
-              "D": manifest.solver_block("D", env_path=elucid_env, branch="E", configuration=configuration)}
+              "D": manifest.solver_block("D", env_path=route_b_env if p.is_v29(configuration) else elucid_env,
+                  branch="N" if p.is_v29(configuration) else "E",
+                  longest=probe_longest if p.is_v29(configuration) else None, configuration=configuration)}
     route = routes.pin("D", "B", env_path=route_b_env, solver_block=blocks["D"], configuration=configuration)
     kwargs = {"root": str(root), "data": {"pools": {z.BENCH: checked["pool"]}, "pinned": z.identity()["sealed"],
         "zebra_pc": z.identity(), "split_manifest": checked["split_manifest"], "s0_sha256": checked[p.RECORD_HASH],
@@ -205,8 +213,12 @@ def _s1(setting, chain):
                               run=setting.run, identity={"unit": name}, work=work, evidence=setting.evidence,
                               configuration=configuration)
         roles[role] = done["result"]
+    extra = {}
+    if p.is_v29(configuration):
+        from . import v29_route_probe
+        extra["solver_probe"] = v29_route_probe.measure(setting)
     return {"passed": first["passed"] and all(row["passed"] for row in roles.values()), "roles": roles,
-            "solver_confirmation": first[p.RECORD_HASH]}
+            "solver_confirmation": first[p.RECORD_HASH], **extra}
 
 
 def _s2(setting, chain):
@@ -232,7 +244,10 @@ def _s2(setting, chain):
         return {"passed": complete == 10 and parsed >= 9, "items": 10, "parsed": parsed,
                 "parse_rate": parsed / 10, "measurements": measured,
                 "tokens_per_cell": measured["actual"] / 10,
-                "settled_tokens": sum(s.get("charged", 0) for c in cells for s in c["sends"])}
+                "settled_tokens": sum(s.get("charged", 0) for c in cells for s in c["sends"]),
+                **({"solver_bounds": {"branch": setting.branch, "longest": setting.longest,
+                    "ledger_bound": p.ledger_bound(p.CHAINS["D"], z.BENCH, branch=setting.branch,
+                                                     longest=setting.longest)}} if p.is_v29(configuration) else {})}
     return units.run_unit(base, run=setting.run, identity={"unit": name}, work=work, evidence=setting.evidence,
                           configuration=configuration, drain=units.drainer(setting, chain, name))["result"]
 
@@ -242,7 +257,7 @@ def _scope_cells(chain, configuration=p.ZEBRA_PC_V1):
     scopes = smoke._scope_cells(chain, configuration)
     redo, totals = [], {}
     for k, bench in enumerate(p.PILOTS[configuration]["order"], 1):
-        for kind in budgets.STEP_KINDS:
+        for kind in budgets.step_kinds(configuration):
             redo.extend(cells for cells in scopes[budgets.solver_scopes(chain, bench, k, kind, 2)[-1]] if cells)
             for b, (card, proc) in p.CONFIG_SCHEDULE_CELLS[configuration][bench][kind].items():
                 was = totals.get(b, (0, 0))
@@ -265,8 +280,19 @@ def projection(s2, chain, configuration=p.ZEBRA_PC_V1, *, s3=None):
     require(card > 0 and s2["items"] == 10, "S-E6 needs ten measured cells")
     ratio = s2["settled_tokens"] / s2["measurements"]["actual"]
     proc = card * float(p.PROCEDURE_ARM_FACTOR[1])
+    if p.is_v29(configuration):
+        require(s3 is not None and s3.get("confirm_measurements"), "S-E6 requires S3 confirmation measurements")
+        measured_confirm = s3["confirm_measurements"]
+        require(measured_confirm["cells"] > 0, "S3 confirmation ran fixture cells")
+        proc = max(proc, measured_confirm["settled_tokens"] / measured_confirm["cells"] / ratio)
     size = s2["measurements"]["request_bytes"][z.BENCH]
-    reserve = reservation(size, p.ledger_bound(p.CHAINS[chain], z.BENCH, branch="E" if chain == "D" else None))
+    if p.is_v29(configuration):
+        bound = s2["solver_bounds"]
+        require(bound["branch"] == "N" and bound["ledger_bound"] == p.ledger_bound(
+            p.CHAINS[chain], z.BENCH, branch="N", longest=bound["longest"]), "The measured northgate bound")
+        reserve = reservation(size, bound["ledger_bound"])
+    else:
+        reserve = reservation(size, p.ledger_bound(p.CHAINS[chain], z.BENCH, branch="E" if chain == "D" else None))
     caps = budgets.chain_caps(chain, configuration)
     scopes = {}
     for scope, alternatives in _scope_cells(chain, configuration).items():
@@ -430,6 +456,10 @@ def _s3b(setting, services, chain="D"):
 
 
 def _s3(setting, services, chain="D"):
+    if p.is_v29(p.configuration_of(setting)):
+        from . import v29_smoke
+        return v29_smoke.s3(setting, services)
+
     authored, real = _s3a(setting, services, chain), _s3b(setting, services, chain)
     failed = [name for name, value in (("S3a", authored), ("S3b", real)) if not value["passed"]]
     return {"passed": not failed, "S3a": authored, "S3b": real, "failed_substages": failed,
@@ -456,6 +486,10 @@ def run_stage(manifest_path, chain, stage, *, docker=None, transport=None, confi
         for prior in STAGES[:STAGES.index(stage)]:
             previous[prior] = _checked_stage(root / (prior + ".json"), m, chain, prior)["result"]
             require(previous[prior]["passed"], "Every preceding smoke stage must pass")
+        if p.is_v29(configuration) and stage != "S1":
+            probe = previous["S1"]["solver_probe"]
+            require(probe["passed"] and probe["route"] == "B", "The measured northgate bound")
+            setting = replace(setting, branch="N", longest=probe["longest"])
         if stage == "S1":
             value = _s1(setting, chain)
         elif stage == "S2":
@@ -475,7 +509,8 @@ def run_stage(manifest_path, chain, stage, *, docker=None, transport=None, confi
                 "configuration": configuration, "chain": chain, "manifest": m[p.RECORD_HASH],
                 "stages": list(STAGES), "passed": value["passed"], "read_estimate": value["read_estimate"],
                 "s0": m["data"]["s0_sha256"], "manifest_path": str(safe_path(manifest_path)),
-                "snapshot_sha256": m["data"]["snapshot_sha256"], "sealed_reads": 0}))
+                "snapshot_sha256": m["data"]["snapshot_sha256"], "sealed_reads": 0,
+                **({"solver_probe": previous["S1"]["solver_probe"]} if p.is_v29(configuration) else {})}))
         return written
 
 

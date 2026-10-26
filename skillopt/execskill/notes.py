@@ -19,6 +19,8 @@ applies (terms, rule, headers, field types, caps) before S2 (plan §11).
 from __future__ import annotations
 
 import re
+import hashlib
+import json
 
 from skillopt.continual_eval.core import require
 from skillopt.validator_pilot.api import digest
@@ -129,8 +131,58 @@ def v28_screen_sha256():
 
 def outcome_judged(procedure):
     """A procedure's immutable policy identity scopes the new runtime behavior."""
-    from .policy import POLICY_VERSION_V28
-    return getattr(procedure, "policy_version", None) == POLICY_VERSION_V28
+    from .policy import POLICY_VERSION_V28, POLICY_VERSION_V29
+    return getattr(procedure, "policy_version", None) in (POLICY_VERSION_V28, POLICY_VERSION_V29)
+
+
+def audited(procedure):
+    """Only v2.9's immutable procedure policy enables log-only keyword checks."""
+    from .policy import POLICY_VERSION_V29
+    return getattr(procedure, "policy_version", None) == POLICY_VERSION_V29
+
+
+def sentence_elements(text):
+    """Shared v2.9 sentence/list splitter for audits and every runtime path."""
+    return [part.strip().lstrip("-* ").strip() for part in re.split(NOTE_SENTENCES, text)
+            if part.strip().lstrip("-* ").strip()]
+
+
+def keyword_hits(text, *, bench):
+    """Sentence hashes and hit counts; informational and independent of arm/public exemptions."""
+    rows = []
+    for index, sentence in enumerate(sentence_elements(text)):
+        terms = lexicon_hits(sentence, bench=bench)
+        imperatives = instruction_hits(sentence)
+        if terms or imperatives:
+            rows.append({"sentence_sha256": hashlib.sha256(sentence.encode("utf-8")).hexdigest(),
+                         "count": len(terms) + len(imperatives), "lexicon": terms,
+                         "imperatives": imperatives, "item": index})
+    return rows
+
+
+CHANNEL_MARKERS_V29 = ("<answer", "</answer", "<action", "</action", "<calc", "</calc", "```")
+
+
+def _audit_events(text, *, bench, field):
+    return [{"field": field, "reason": "audit_keyword", "detail": "keyword hit (log only)", **row}
+            for row in keyword_hits(text, bench=bench)]
+
+
+def keyword_summary(entries):
+    """Public count/hash representation used by shell, replay and donor records."""
+    rows = [{"sentence_sha256": row["sentence_sha256"], "count": row["count"]}
+            for row in entries if row.get("reason") == "audit_keyword"]
+    return {"count": sum(row["count"] for row in rows), "sentences": rows}
+
+
+def v29_screen_record():
+    return {**v28_screen_record(), "version": "execskill-v2-9-note-screen", "keyword_action": "log_only",
+            "sentence_sha256": "sha256 of UTF-8 sentence_elements text", "count": "lexicon + imperative matches",
+            "answer_channel_markers": list(CHANNEL_MARKERS_V29)}
+
+
+def v29_screen_sha256():
+    return digest(v29_screen_record())
 
 
 def instruction_hits(text):
@@ -145,8 +197,14 @@ def instruction_hits(text):
     return found
 
 
-def screen_header(header):
+def screen_header(header, *, audited=False, bench=None):
     """The same sentence-level screen for a v2.8 constant header; preserve factual words."""
+    if audited:
+        require(bench in PATTERNS, "An audited header names its benchmark")
+        drops = _audit_events(header, bench=bench, field="header")
+        markers = [marker for marker in CHANNEL_MARKERS_V29 if marker in header.lower()]
+        drops += [{"field": "header", "reason": "answer_channel_marker", "detail": marker} for marker in markers]
+        return ("" if markers else header), drops
     parts, dropped = [], []
     for index, sentence in enumerate(re.split(NOTE_SENTENCES, header)):
         hits = instruction_hits(sentence)
@@ -209,10 +267,11 @@ class Screened(dict):
     """The fields ``screen`` kept, with the item's public text they were screened against (None: every text was
     screened); ``render`` screens them again against the same text."""
 
-    def __init__(self, fields, public_text, outcome_judged=False):
+    def __init__(self, fields, public_text, outcome_judged=False, audited=False):
         super().__init__(fields)
         self.public_text = public_text
         self.outcome_judged = outcome_judged
+        self.audited = audited
 
 
 def fault_drops(dropped, *, outcome_judged=False):
@@ -221,27 +280,29 @@ def fault_drops(dropped, *, outcome_judged=False):
     Only v2.8's sentence-level reply-form removal is informational. Shape, cap, binding and all other drops
     remain procedure faults; older policies retain their original handling.
     """
-    return [entry for entry in dropped if not (outcome_judged and entry["reason"] == "form_instruction")]
+    return [entry for entry in dropped if not (outcome_judged and entry["reason"] in ("form_instruction", "audit_keyword"))]
 
 
 def suppress_faulted(fields, dropped, *, outcome_judged=False):
     """Suppress an entire v2.8 pending note after a real fault, preserving its screening identity."""
     if outcome_judged and fault_drops(dropped, outcome_judged=True):
-        return Screened({}, getattr(fields, "public_text", None), outcome_judged=True)
+        return Screened({}, getattr(fields, "public_text", None), outcome_judged=True,
+                        audited=getattr(fields, "audited", False))
     return fields
 
 
-def screen(fields, *, bench, public_text=None, outcome_judged=False):
+def screen(fields, *, bench, public_text=None, outcome_judged=False, audited=False):
     """``(kept, dropped)``: the well-formed, capped, lexicon-clean fields as ``Screened`` (an empty field is absent,
     not dropped), and one ``{"field", "reason", "detail"}`` per dropped field, reason ``unknown_field``, ``type``,
     ``cap``, ``lexicon`` or ``meta_option``. Every dropped field is one procedure fault. ``public_text``: the item's
     public text, against which table cells and binding quotes are verified verbatim and then not screened (ticket
     A3-1 (b)); None (a sham's content, or a caller without the item) screens every text."""
+    outcome_judged = outcome_judged or audited
     require(bench in PATTERNS, "Unknown bench")
     require(public_text is None or type(public_text) is str, "The public text is text")
     if not isinstance(fields, dict):
-        return Screened({}, public_text, outcome_judged), [{"field": None, "reason": "type", "detail": type(fields).__name__}]
-    kept, dropped = Screened({}, public_text, outcome_judged), []
+        return Screened({}, public_text, outcome_judged, audited), [{"field": None, "reason": "type", "detail": type(fields).__name__}]
+    kept, dropped = Screened({}, public_text, outcome_judged, audited), []
     for name in sorted(fields, key=_field_order):
         value = fields[name]
         if name not in FIELD_TYPES:
@@ -251,7 +312,16 @@ def screen(fields, *, bench, public_text=None, outcome_judged=False):
         if not typed or not capped:
             dropped.append({"field": name, "reason": "type" if not typed else "cap", "detail": ""})
             continue
-        if outcome_judged:
+        if audited:
+            for text in _screened(name, value, None):
+                dropped.extend(_audit_events(text, bench=bench, field=name))
+            raw = json.dumps(value, ensure_ascii=False).lower()
+            markers = [marker for marker in CHANNEL_MARKERS_V29 if marker in raw]
+            if markers:
+                dropped.extend({"field": name, "reason": "answer_channel_marker", "detail": marker}
+                               for marker in markers)
+                continue
+        if outcome_judged and not audited:
             # Each list element is independently removable. Strings additionally preserve other factual sentences.
             clean = []
             for index, item in enumerate(value):
@@ -328,14 +398,15 @@ def render(fields, *, bench, header):
     ``fields`` must pass ``screen`` unchanged (the shell screens first), against the public text it was screened with
     when it is ``Screened`` (else every text); no field renders as ""."""
     modern = isinstance(fields, Screened) and fields.outcome_judged
+    audit = isinstance(fields, Screened) and fields.audited
     if modern:
-        header, _ = screen_header(header)
+        header, _ = screen_header(header, **({"audited": True, "bench": bench} if audit else {}))
     require(type(header) is str and len(header) <= MAX_HEADER_CHARS
-            and not (instruction_hits(header) if modern else lexicon_hits(header, bench=bench)),
+            and not ([] if audit else instruction_hits(header) if modern else lexicon_hits(header, bench=bench)),
             "A procedure header is at most 200 lexicon-clean characters")
     reference = fields.public_text if isinstance(fields, Screened) else None
-    kept, dropped = screen(fields, bench=bench, public_text=reference, outcome_judged=modern)
-    require(not dropped and kept == {k: v for k, v in fields.items() if v}, "Only screened fields are rendered")
+    kept, dropped = screen(fields, bench=bench, public_text=reference, outcome_judged=modern, audited=audit)
+    require(not ([row for row in dropped if row["reason"] != "audit_keyword"] if audit else dropped) and kept == {k: v for k, v in fields.items() if v}, "Only screened fields are rendered")
     if not kept:
         return ""
     blocks = [header.strip()] if header.strip() else []

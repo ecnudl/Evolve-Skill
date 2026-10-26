@@ -274,13 +274,14 @@ class Outcome:
     ``faults``: [{hook, step, kind, detail}]; ``values``: [[hook, step, value sha256 or "fault:<kind>"]]."""
     cell: str
     bench: str
-    applies: bool | None = None
+    applies: bool | str | None = None
     notes: list = field(default_factory=list)
     bindings: list = field(default_factory=list)
     repair: bool = False
     steps: list = field(default_factory=list)
     faults: list = field(default_factory=list)
     values: list = field(default_factory=list)
+    audited: bool = False
 
     def note(self, hook, step=None):
         found = [n["text"] for n in self.notes if n["hook"] == hook and n["step"] == step]
@@ -288,7 +289,8 @@ class Outcome:
 
     def summary(self):
         return {"cell": self.cell, "applies": self.applies, "notes": len(self.notes), "faults": self.faults,
-                "values_sha256": digest(self.values)}
+                "values_sha256": digest(self.values),
+                **({"keyword_hits": notes.keyword_summary(self.faults)} if self.audited else {})}
 
 
 class _Run:
@@ -297,7 +299,7 @@ class _Run:
     def __init__(self, worker, procedure, inputs, actual=None):
         self.worker, self.procedure, self.inputs = worker, procedure, inputs
         self.actual = actual
-        self.outcome = Outcome(inputs["cell"], inputs["bench"])
+        self.outcome = Outcome(inputs["cell"], inputs["bench"], audited=notes.audited(procedure))
         self.dead = False
 
     def fault(self, hook, step, kind, detail=""):
@@ -353,9 +355,10 @@ class _Run:
                     self.outcome.faults.append({"hook": hook, "step": step,
                                                "kind": "answer_channel_marker", "detail": marker})
         kept, dropped = notes.screen(fields, bench=bench, public_text=reference,
-                                     **({"outcome_judged": True} if modern else {}))
+                                     **({"outcome_judged": True, "audited": notes.audited(self.procedure)} if modern else {}))
         if modern:
-            _, header_drops = notes.screen_header(self.procedure.header)
+            _, header_drops = notes.screen_header(self.procedure.header,
+                **({"audited": True, "bench": bench} if notes.audited(self.procedure) else {}))
             dropped += header_drops
         bindings = kept.pop("bindings", [])
         if bindings:
@@ -369,9 +372,11 @@ class _Run:
         fault_drops = notes.fault_drops(dropped, outcome_judged=modern)
         for entry in dropped:
             if entry not in fault_drops:
-                self.outcome.faults.append({"hook": hook, "step": step, "kind": "note_form_instruction",
+                self.outcome.faults.append({"hook": hook, "step": step, "kind": "note_" + entry["reason"],
                                            "detail": entry["detail"], "field": entry["field"],
-                                           "item": entry["item"], "informational": True})
+                                           "item": entry["item"], "informational": True,
+                                           **({"reason": entry["reason"], "sentence_sha256": entry["sentence_sha256"],
+                                               "count": entry["count"]} if entry["reason"] == "audit_keyword" else {})})
             else:
                 self.fault(hook, step, "note_" + entry["reason"], entry["detail"])
         text = notes.render(kept, bench=bench, header=self.procedure.header) if kept else ""
@@ -449,11 +454,13 @@ def replay(worker, procedure, inputs, *, mutation=None, actual=None):
     if mutation is not None:
         inputs = mutate(inputs, mutation)
     run = _Run(worker, procedure, inputs, actual)
-    ok, value = run.call("applies", [inputs["view"]])
+    from .package import default_applies
+    default = default_applies(procedure)
+    ok, value = (True, True) if default else run.call("applies", [inputs["view"]])
     if ok and type(value) is not bool:
         run.fault("applies", None, "predicate:not_bool", type(value).__name__)
     elif ok:
-        run.outcome.applies = value
+        run.outcome.applies = "default_true" if default else value
         if value and inputs["bench"] == "alfworld":
             run.episode()
         elif value:
@@ -966,7 +973,8 @@ def holds(prop, hook, outcome):
     kind, step = prop["kind"], prop.get("step")
     entry = outcome.steps[step] if step is not None and step < len(outcome.steps) else None
     if kind in ("applies_true", "applies_false"):
-        return outcome.applies is (kind == "applies_true")
+        applies = True if outcome.applies == "default_true" else outcome.applies
+        return applies is (kind == "applies_true")
     if kind in ("note_contains", "note_matches"):
         text = outcome.note(hook, step)
         return prop["value"] in text if kind == "note_contains" else _fragments(text, prop["value"])

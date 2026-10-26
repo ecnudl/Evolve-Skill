@@ -343,9 +343,10 @@ class _Shell:
         donor. Each dropped field or binding is a fault."""
         modern = notes.outcome_judged(procedure)
         kept, dropped = notes.screen(fields, bench=self.bench, public_text=public_text,
-                                     **({"outcome_judged": True} if modern else {}))
+                                     **({"outcome_judged": True, "audited": notes.audited(procedure)} if modern else {}))
         if modern:
-            _, header_drops = notes.screen_header(procedure.header)
+            _, header_drops = notes.screen_header(procedure.header,
+                **({"audited": True, "bench": self.bench} if notes.audited(procedure) else {}))
             dropped += header_drops
         bindings = kept.pop("bindings", [])
         if bindings and public_text is not None:
@@ -357,7 +358,11 @@ class _Shell:
         bindings = kept.get("bindings", [])
         text = notes.render(kept, bench=self.bench, header=procedure.header) if kept else ""
         self.notes.append({"id": procedure.id, "hook": hook, "fields": kept, "rendered_chars": len(text),
-                           "dropped": dropped})
+                           "dropped": dropped,
+                           **({"procedure_sha256": procedure.sha256,
+                               "source_sha256": hashlib.sha256(procedure.source.encode()).hexdigest(),
+                               "step": len(self.steps) if self.steps is not None else None,
+                               "delivered_text": ""} if notes.audited(procedure) else {})})
         for entry in notes.fault_drops(dropped, outcome_judged=modern):
             self.fault(procedure.id, hook, "note_" + entry["reason"], None, entry["detail"])
         return text, bindings
@@ -377,7 +382,22 @@ class _Shell:
             entries = [entry for entry in entries if entry[0].split("/")[0] not in modern_dropped]
             text, skipped = notes.assemble(entries, bench=self.bench)
             gone = {entry["procedure"] for entry in skipped}
-        return text, [label for label, note, _ in entries if note and label not in gone]
+        shown = [label for label, note, _ in entries if note and label not in gone]
+        for label, rendered, _ in entries:
+            pid, hook = label.split("/", 1)
+            procedure = self.package.get(pid)
+            if not notes.audited(procedure):
+                continue
+            step = len(self.steps) if self.steps is not None else None
+            found = next((row for row in reversed(self.notes)
+                          if row["id"] == pid and row["hook"] == hook and row.get("step") == step), None)
+            if found is None:
+                found = {"id": pid, "hook": hook, "fields": {}, "rendered_chars": len(rendered), "dropped": [],
+                         "procedure_sha256": procedure.sha256, "source_sha256": hashlib.sha256(procedure.source.encode()).hexdigest(),
+                         "step": step, "delivered_text": ""}
+                self.notes.append(found)
+            found["delivered_text"] = rendered if label in shown else ""
+        return text, shown
 
     def sham(self, procedure_id, hook, step=0):
         """A placebo procedure's sealed content for ``hook`` (ALFWorld: the donor's step, its last one beyond)."""
@@ -497,6 +517,8 @@ class _Shell:
                   "arm": {"withheld": sorted(self.withhold), "restored": sorted(self.restore),
                           "placebo": sorted(self.shams), "text": sorted(self.text)},
                   "sandbox": self.sandbox()}
+        if any(notes.audited(p) for p in self.package.procedures):
+            fields["keyword_hits"] = notes.keyword_summary([row for entry in self.notes for row in entry["dropped"]])
         if self.steps is not None:
             fields["alfworld_steps"] = self.steps
         if self.shortcut is not None:

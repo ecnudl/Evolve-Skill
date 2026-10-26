@@ -72,7 +72,7 @@ from .errors import AssumptionBroken, BudgetStop, ConfigurationError, LedgerFail
 from .package import empty
 from .profiles import (BENCHES, SUPPORTED_BENCHES, read_benches, CHAINS, CONFIGURATIONS, COST_CHECK_PAUSES, FIRST_CALL_SYSTEM, FIRST_CALL_USER, PILOT,
                        PROCEDURE_ARM_FACTOR, RECORD_HASH, SLOT_ROOT, STAGE_READ, TEST_READ_CELLS, TEST_START_FACTOR,
-                       configuration_of, estimate_arms, estimate_test_read, fired_share, first_call_bench, is_alfworld, is_zebra, is_v27,
+                       configuration_of, estimate_arms, estimate_test_read, fired_share, first_call_bench, is_alfworld, is_zebra, is_v27, is_v29,
                        ledger_bound, order_of, read_estimate_terms, record, verified)
 
 __all__ = ("EXIT_AWAITING", "EXIT_COMPLETE", "EXIT_PAUSED", "RUNNER_LOCK", "Terminated", "cap_check", "chain_root",
@@ -193,7 +193,8 @@ def first_call(setting, chain, *, before=lambda: None):
     Chain D on route B (registrar row "deepseek route B", 17:3x; M4): the route ``manifest.setting_of`` bound
     (``setting.extra["route"]``) confirms its own first reply the same way (``_confirm_of``)."""
     root = chain_root(setting, chain)
-    route = setting.extra.get("route") if chain in routes.ROUTED else None  # M4: the route this process runs on
+    route = ("B" if chain == "D" and is_v29(configuration_of(setting)) else
+             setting.extra.get("route") if chain in routes.ROUTED else None)  # M4: the route this process runs on
     identity, confirm, failed_name, echo = _confirm_of(setting.run, chain, route)
     if (root / confirm).exists():
         return confirmation(setting.root, setting.run, chain, route=route)
@@ -236,7 +237,7 @@ def first_call(setting, chain, *, before=lambda: None):
         else "error_type %s" % receipt.get("error_type")), "%s/confirm" % chain)
 
 
-def confirmation(root, run, chain, route=None):
+def confirmation(root, run, chain, route=None, configuration=None):
     """The verified ``confirm.json`` of chain ``chain`` of run ``run`` under the run root ``root`` (``first_call``):
     it exists, names this run and chain, and passed; ValueError otherwise. ``first_call`` reuses it on every relaunch,
     and ``step.run_unit_spec`` needs it before a paid step unit starts outside ``run`` (registrar addendum 2026-10-22
@@ -244,7 +245,7 @@ def confirmation(root, run, chain, route=None):
     default the chain's current route (``routes.current``), so a paid unit after a route switch needs that route's
     own first call (``_confirm_of``)."""
     if route is None and chain in routes.ROUTED:
-        route = routes.current(safe_path(root) / chain, run=run, chain=chain)
+        route = routes.current(safe_path(root) / chain, run=run, chain=chain, configuration=configuration)
     identity, confirm = _confirm_of(run, chain, route)[:2]
     path = safe_path(root) / chain / confirm
     require(path.exists(), "Chain %s has no confirmed first call (%s): start the chain with run, which makes it "

@@ -235,6 +235,8 @@ def fix(ctx, change, report, *, attempt=None, why=None):
 def run(ctx):
     from . import engineer as e
     train = ctx.mode == e.TRAIN
+    if p.is_v29(ctx.configuration):
+        from . import engineer_v29
     findings, analysed_refs, analysis = e.analyse(ctx) if train else (None, [], None)
     user = e.payload(ctx, findings) if train else e.payload(ctx)
     ctx.sheet["shown"] = e._shown_references(user) + analysed_refs + (e._earlier_references(ctx) if train else []) + e._output_references(ctx, user)
@@ -260,6 +262,37 @@ def run(ctx):
         survived = attempts[-1]["passed"]
         inert = bool(attempts[-1].get("inert"))
         deferred = bool(attempts[-1].get("deferred"))
+        audit_fields = {}
+        if p.is_v29(ctx.configuration) and survived and not inert and not deferred and final.kind in e.CODED:
+            from . import audit
+            audit_procedure_id = final.procedure.id
+            audited = audit.audit1(ctx, final, attempts[-1])
+            audit_fields = {"audits": [audited], "audit_fix_calls": 0}
+            if audited["confirmed"]:
+                request = {"request": "audit_fix", "bench": ctx.bench,
+                           "change": dict(final.entry, source=final.source),
+                           "instruction": audit.audit_fix_prompt(final, audited)}
+                reply, audit_call = e._ask(ctx, request, "audit-fix/%d" % final.n)
+                audit_fields["audit_fix_calls"] = int(audit_call is not None)
+                repaired, failures = read_call(ctx, reply, audit_call, "audit-fix/%d" % final.n, change=final) if audit_call else ([], [])
+                if not repaired or failures:
+                    survived = False
+                    audit_fields["reason"] = "audit_fix_failed_checks"
+                else:
+                    final = repaired[0]
+                    attempts.append(e.check(final, ctx, taken))
+                    survived = attempts[-1]["passed"]
+                    inert, deferred = bool(attempts[-1].get("inert")), bool(attempts[-1].get("deferred"))
+                    if not survived:
+                        audit_fields["reason"] = "audit_fix_failed_checks"
+                    elif not inert and not deferred:
+                        audited = audit.audit1(ctx, final, attempts[-1])
+                        audit_fields["audits"].append(audited)
+                        if audited["confirmed"]:
+                            survived = False
+                            audit_fields["reason"] = "audit_confirmed"
+            # This lint is run-slice-only; audit2 never calls the engineer or writes its lint.
+            attempts[-1].setdefault("lint", {"id": audit_procedure_id, "tests": [], "problems": []})["audit"] = audit.feedback(audited)
         if survived and not inert and not deferred:
             survivors.append(final)
             taken.add(final.target)
@@ -267,10 +300,11 @@ def run(ctx):
             lint.append(attempts[-1]["lint"])
         outcomes.append({**final.to_json(), "attempts": attempts, "survived": survived, "inert": inert, "deferred": deferred,
                          "fix_calls": len(replies), "fix_replies": replies, "summary": e._summary(final),
-                         **({"reason": "unparseable"} if replies and replies[-1] == "unparseable" else {})})
+                         **({"reason": "unparseable"} if replies and replies[-1] == "unparseable" else {}), **audit_fields})
     package, kept = e._combined_train(ctx, survivors) if train else e._combined(ctx.parent, survivors, ctx.step)
     fields = {"bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
-              "prompt_sha256": digest(system(ctx.configuration, train=train)), "proposals": proposals, "changes": outcomes,
+              "prompt_sha256": (engineer_v29.audit.text_sha256(engineer_v29.system(ctx.configuration, train=train))
+                                if p.is_v29(ctx.configuration) else digest(system(ctx.configuration, train=train))), "proposals": proposals, "changes": outcomes,
               "kept": [c.n for c in kept], "dropped": [c.n for c in survivors if c not in kept],
               "candidate_sha256": package.sha256 if package else None,
               "procedures": [proc.to_json() for proc in package.procedures] if package else [],
@@ -278,6 +312,12 @@ def run(ctx):
               "repairs": [repair for outcome in outcomes for repair in outcome.get("repairs", [])],
               "format_retries": ctx.sheet.get("format_retries", []),
               **({"payload_trimming": user["payload_trimming"]} if "payload_trimming" in user else {})}
+    if p.is_v29(ctx.configuration):
+        audits = ctx.sheet.get("audits", [])
+        fields.update(audits=audits, audit_incomplete=sum(a["audit_incomplete"] for a in audits),
+                      audit_fix_calls=sum(row.get("audit_fix_calls", 0) for row in outcomes),
+                      audit_tokens={judge: {key: sum(a["tokens"][judge][key] for a in audits)
+                          for key in ("input", "output", "charged")} for judge in ("G", "D")})
     if train:
         fields.update(mode=e.TRAIN, round=ctx.round, base_sha256=ctx.base.sha256, budget=e.budget(ctx), lint=lint,
                       analysis=analysis, analyst_prompt_sha256=e.ANALYST_PROMPT_SHA256, disclosed=e._disclosed_items(ctx))

@@ -40,7 +40,7 @@ EVIDENCE = ("engineering_fixture", "smoke", "pilot_real_run", "historical_replay
             "main_v2_1_real_run",  # v2.1 (owner decision 2026-10-24 02:2x): main-v2 with two engineer rules
             "main_v2_2_real_run", "main_v2_3_real_run", "zebra_pc_v1_real_run", "zebra_pc_v2_real_run",
             "zebra_pc_v3_real_run", "zebra_pc_v4_real_run", "alfworld_v1_real_run", "zebra_pc_v5_real_run",
-            "alfworld_v2_real_run", "zebra_pc_v6_real_run", "alfworld_v3_real_run")
+            "alfworld_v2_real_run", "zebra_pc_v6_real_run", "alfworld_v3_real_run", "zebra_pc_v7_real_run", "alfworld_v4_real_run")
 IMPORTABLE = ("fivebench-coevolution-v3-sheet-qualification",)  # §1, owner #7, Codex F15: the one v3 record kind read
 TEXTS_IMPORT = "fivebench-coevolution-v3-texts-import"  # §2.2: the v3 task cards, imported by value (plan §6)
 
@@ -75,8 +75,8 @@ def verified(value, name=None):
                 and version in (kind(name + "-v2-4"), kind(name + "-v2-5")))
             or (name in {"engineer", "manifest"}
                 and version in (kind(name + "-v2-6"), kind(name + "-alf-v1"), kind(name + "-v2-7"),
-                                kind(name + "-alf-v2"), kind(name + "-v2-8")))
-            or (name == "procedure" and version == kind("procedure-v2-8")),
+                                kind(name + "-alf-v2"), kind(name + "-v2-8"), kind(name + "-v2-9")))
+            or (name == "procedure" and version in (kind("procedure-v2-8"), kind("procedure-v2-9"))),
             "A record of another kind")
     require(value.get("evidence") in EVIDENCE, "Unknown evidence label")
     return value

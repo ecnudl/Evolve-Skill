@@ -186,6 +186,31 @@ def roles(endpoint, *, configuration=protocol.PILOT):
     return BoundedRoles(endpoint) if protocol.is_v23(configuration) else Roles(endpoint)
 
 
+class AuditRoles(Roles):
+    """One fresh, stateless 8K reviewer request; no engineer conversation."""
+    def plain(self, role, system, user, *, label, max_tokens=8192):
+        require(max_tokens == 8192, "The pinned audit response cap")
+        return super().plain(role, system, user, label=label)
+
+
+def audit_judges(setting, chain, bench, k):
+    from .v29_limits import JUDGE_MAX_TOKENS
+    require(protocol.is_v29(protocol.configuration_of(setting)), "Judges belong to v2.9")
+    out = {}
+    for judge in ("G", "D"):
+        model = ROLE_MODEL if judge == "G" else protocol.CHAINS["D"]
+        made = copy(setting.clients(model, None if judge == "G" else bench))
+        if judge == "D":
+            from . import client
+            require(getattr(made, "route", None) == client.ROUTE_B,
+                    "J-D uses the pinned northgate route")
+        made.max_tokens = JUDGE_MAX_TOKENS
+        endpoint = budgets.endpoint(setting, budgets.audit_scopes(chain, judge, bench, k),
+                                    client=made, max_tokens_bound=JUDGE_MAX_TOKENS)
+        out[judge] = AuditRoles(endpoint)
+    return out
+
+
 def cell_context(setting, attempt, endpoint, *, solve=solver.solve):
     """The cells' ``Context`` of one unit attempt (module docstring); ``solve``: the shell."""
     pools = setting.slots
@@ -198,7 +223,7 @@ def cell_context(setting, attempt, endpoint, *, solve=solver.solve):
                if endpoint.model == protocol.CHAINS["D"] else {})
     return Context(attempt=attempt, endpoint=endpoint, runtime=setting.runtime, cards=setting.cards,
                    native=pools[NATIVE], episodes=pools[EPISODE], worker=worker, evidence=setting.evidence,
-                   nominal=nominal, solve=solve)
+                   nominal=nominal, solve=solve, configuration=protocol.configuration_of(setting))
 
 
 def for_unit(setting, chain, bench, unit):

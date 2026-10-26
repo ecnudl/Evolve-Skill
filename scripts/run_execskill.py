@@ -807,10 +807,20 @@ def alf_snapshot(args):
 def alf_s0(args):
     from skillopt.execskill import alf_smoke
     value = alf_smoke.collect_s0(args.out, preparation_file=args.preparation, snapshot_root=args.snapshot,
-                                 selftest=args.selftest, configuration=getattr(args, "configuration", protocol.ALFWORLD_V1))
+                                 selftest=args.selftest, configuration=getattr(args, "configuration", protocol.ALFWORLD_V1),
+                                 confirm_views=getattr(args, "confirm_views", None))
     _print({"s0": str(Path(args.out) / alf_smoke.S0_FILE), "passed": value["passed"],
             "slice_counts": value["slice_counts"], "sealed_reads": value["sealed_reads"]})
     return 0 if value["passed"] else 3
+
+
+def alf_confirm_views(args):
+    from skillopt.execskill import alf_confirm_views as preparation
+    value = preparation.prepare(args.out, configuration=args.configuration,
+                                preparation_file=args.preparation, data_root=args.data_root)
+    _print({"confirm_views": str(safe_path(args.out)), "record_sha256": value[protocol.RECORD_HASH],
+            "games": len(value["ids"]), "runtime_sha256": value["runtime_sha256"],
+            "confirm_ids_sha256": value["confirm_ids_sha256"], "model_calls": 0})
 
 
 def alf_manifest(args):
@@ -969,14 +979,14 @@ def parser():
     sub.add_parser("monitor").add_argument("--root", required=True)
     command = sub.add_parser("zpc-snapshot")
     command.add_argument("--configuration", choices=(protocol.ZEBRA_PC_V1, protocol.ZEBRA_PC_V2,
-                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6),
+                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6, protocol.ZEBRA_PC_V7),
                          default=protocol.ZEBRA_PC_V1)
     command.add_argument("--source", default=str(PROJECT_ROOT))
     command.add_argument("--out", required=True)
     command.add_argument("--git-head", required=True)
     command = sub.add_parser("zpc-s0")
     command.add_argument("--configuration", choices=(protocol.ZEBRA_PC_V1, protocol.ZEBRA_PC_V2,
-                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6),
+                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6, protocol.ZEBRA_PC_V7),
                          default=protocol.ZEBRA_PC_V1)
     command.add_argument("--out", required=True)
     command.add_argument("--snapshot", default=str(PROJECT_ROOT))
@@ -985,7 +995,7 @@ def parser():
     command.add_argument("--selftest")
     command = sub.add_parser("zpc-manifest")
     command.add_argument("--configuration", choices=(protocol.ZEBRA_PC_V1, protocol.ZEBRA_PC_V2,
-                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6),
+                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6, protocol.ZEBRA_PC_V7),
                          default=protocol.ZEBRA_PC_V1)
     command.add_argument("--out", required=True)
     command.add_argument("--root", required=True)
@@ -998,26 +1008,32 @@ def parser():
     command.add_argument("--smoke-result", action="append", default=[])
     command = sub.add_parser("zpc-smoke")
     command.add_argument("--configuration", choices=(protocol.ZEBRA_PC_V1, protocol.ZEBRA_PC_V2,
-                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6),
+                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6, protocol.ZEBRA_PC_V7),
                          default=protocol.ZEBRA_PC_V1)
     command.add_argument("--manifest", required=True)
     command.add_argument("--chain", choices=("G", "D"), required=True)
     command.add_argument("--stage", choices=("S1", "S2", "S3", "SE6"), required=True)
     command = sub.add_parser("alf-snapshot")
-    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V1, protocol.ALFWORLD_V2, protocol.ALFWORLD_V3),
+    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V1, protocol.ALFWORLD_V2, protocol.ALFWORLD_V3, protocol.ALFWORLD_V4),
                          default=protocol.ALFWORLD_V1)
     command.add_argument("--source", default=str(PROJECT_ROOT))
     command.add_argument("--out", required=True)
     command.add_argument("--git-head", required=True)
     command = sub.add_parser("alf-s0")
-    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V1, protocol.ALFWORLD_V2, protocol.ALFWORLD_V3),
+    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V1, protocol.ALFWORLD_V2, protocol.ALFWORLD_V3, protocol.ALFWORLD_V4),
                          default=protocol.ALFWORLD_V1)
     command.add_argument("--out", required=True)
     command.add_argument("--preparation", required=True)
     command.add_argument("--snapshot", default=str(PROJECT_ROOT))
     command.add_argument("--selftest")
+    command.add_argument("--confirm-views", help="Required sealed forty-game pre-reset record for ALFWorld v2.9")
+    command = sub.add_parser("alf-confirm-views")
+    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V4,), required=True)
+    command.add_argument("--preparation", required=True)
+    command.add_argument("--data-root", required=True)
+    command.add_argument("--out", required=True)
     command = sub.add_parser("alf-manifest")
-    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V1, protocol.ALFWORLD_V2, protocol.ALFWORLD_V3),
+    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V1, protocol.ALFWORLD_V2, protocol.ALFWORLD_V3, protocol.ALFWORLD_V4),
                          default=protocol.ALFWORLD_V1)
     command.add_argument("--out", required=True)
     command.add_argument("--root", required=True)
@@ -1029,7 +1045,7 @@ def parser():
     command.add_argument("--smoke-chain", choices=("D",))
     command.add_argument("--smoke-result", action="append", default=[])
     command = sub.add_parser("alf-smoke")
-    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V1, protocol.ALFWORLD_V2, protocol.ALFWORLD_V3),
+    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V1, protocol.ALFWORLD_V2, protocol.ALFWORLD_V3, protocol.ALFWORLD_V4),
                          default=protocol.ALFWORLD_V1)
     command.add_argument("--manifest", required=True)
     command.add_argument("--chain", choices=("D",), default="D")
@@ -1041,7 +1057,8 @@ def parser():
 BENCH_OPTIONS = {"alfworld": ("data_root", "pool_games"),
                  "searchqa": ("fresh_manifest", "dataset", "revision", "exclude", "cache_sha256")}
 
-HANDLERS = {"alf-snapshot": alf_snapshot, "alf-s0": alf_s0, "alf-manifest": alf_manifest, "alf-smoke": alf_smoke,
+HANDLERS = {"alf-confirm-views": alf_confirm_views,
+            "alf-snapshot": alf_snapshot, "alf-s0": alf_s0, "alf-manifest": alf_manifest, "alf-smoke": alf_smoke,
             "zpc-snapshot": zpc_snapshot, "zpc-s0": zpc_s0, "zpc-manifest": zpc_manifest, "zpc-smoke": zpc_smoke,
             "verify-snapshot": verify_snapshot, "zero-call-checks": zero_call_checks, "leftovers": leftovers,
             "sandbox-selftest": sandbox_selftest, "import-texts": import_texts,

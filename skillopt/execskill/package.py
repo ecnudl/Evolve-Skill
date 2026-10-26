@@ -123,7 +123,7 @@ class Procedure:
         return hash(self.sha256)
 
     def _validate(self):
-        outcome_judged = self.policy_version == policy.POLICY_VERSION_V28
+        outcome_judged = self.policy_version in (policy.POLICY_VERSION_V28, policy.POLICY_VERSION_V29)
         learned = LEARNED_ID.fullmatch(self.id) if type(self.id) is str else None
         ensure(_is_procedure_id(self.id), "A procedure id is p-<bench>-<step>-<n> or fx-<name>")
         ensure(self.origin in SUPPORTED_BENCHES and (learned is None or learned.group(1) == self.origin),
@@ -190,7 +190,8 @@ class Procedure:
                       replay_tests=_plain(list(self.replay_tests)), lineage=dict(self.lineage))
         if self.policy_version != policy.POLICY_VERSION:
             fields["policy_version"] = self.policy_version
-            stamp = ("procedure-v2-8" if self.policy_version == policy.POLICY_VERSION_V28 else
+            stamp = ("procedure-v2-9" if self.policy_version == policy.POLICY_VERSION_V29 else
+                     "procedure-v2-8" if self.policy_version == policy.POLICY_VERSION_V28 else
                      "procedure-v2-5" if self.policy_version == policy.POLICY_VERSION_V25 else
                      "procedure-v2-4" if self.policy_version == policy.POLICY_VERSION_V24 else "procedure-v2-3")
             return record(stamp, self.evidence, fields)
@@ -203,8 +204,9 @@ class Procedure:
     @classmethod
     def from_json(cls, value):
         version = value.get("policy_version") if isinstance(value, dict) else None
-        modern = version in (policy.POLICY_VERSION_V23, policy.POLICY_VERSION_V24, policy.POLICY_VERSION_V25, policy.POLICY_VERSION_V28)
-        stamp = ("procedure-v2-8" if version == policy.POLICY_VERSION_V28 else
+        modern = version in (policy.POLICY_VERSION_V23, policy.POLICY_VERSION_V24, policy.POLICY_VERSION_V25, policy.POLICY_VERSION_V28, policy.POLICY_VERSION_V29)
+        stamp = ("procedure-v2-9" if version == policy.POLICY_VERSION_V29 else
+                 "procedure-v2-8" if version == policy.POLICY_VERSION_V28 else
                  "procedure-v2-5" if version == policy.POLICY_VERSION_V25 else
                  "procedure-v2-4" if version == policy.POLICY_VERSION_V24
                  else "procedure-v2-3" if modern else "procedure")
@@ -218,6 +220,16 @@ class Procedure:
                         **({"policy_version": value["policy_version"]} if modern else {}))
         ensure(procedure.sha256 == value[RECORD_HASH], "Procedure hash mismatch")
         return procedure
+
+
+def default_applies(procedure):
+    """v2.9 missing top-level predicate: every item, with no sandbox call.
+
+    Source definitions are authoritative; declarations must never fabricate an
+    entry point that the code does not define.
+    """
+    return (procedure.policy_version == policy.POLICY_VERSION_V29
+            and "applies" not in _hook_functions(procedure.source))
 
 
 @dataclass(frozen=True)

@@ -40,7 +40,7 @@ from skillopt.validator_pilot.api import digest
 
 from . import notes, router
 from .errors import ConfigurationError
-from .package import Package, edits
+from .package import default_applies, Package, edits
 from .profiles import SUPPORTED_BENCHES as BENCHES, NOTES_KEY, RECORD_HASH, SANDBOX_TIMEOUTS, record, verified
 
 QA_HOOKS = ("before_call", "bindings")
@@ -164,9 +164,10 @@ class _Run:
             return {}
         modern = notes.outcome_judged(self.procedure)
         kept, dropped = notes.screen(found[0], bench=self.bench,
-                                     **({"outcome_judged": True, "public_text": text} if modern else {}))
+                                     **({"outcome_judged": True, "public_text": text, "audited": notes.audited(self.procedure)} if modern else {}))
         if modern:
-            _, header_drops = notes.screen_header(self.procedure.header)
+            _, header_drops = notes.screen_header(self.procedure.header,
+                **({"audited": True, "bench": self.bench} if notes.audited(self.procedure) else {}))
             dropped += header_drops
         if "bindings" in kept:
             bindings, unverified = notes.check_bindings(kept.pop("bindings"), text)
@@ -270,7 +271,11 @@ def donor_corpus(candidate, parent, trajectories, workers):
         "donors": donors, "items": {entry["id"]: entry["item"] for entry in inputs},
         "sources": {t["cell"]: digest(t) for t in trajectories}, "outputs": outputs,
         "hashes": {pid: {d: digest(o) for d, o in per.items()} for pid, per in outputs.items()},
-        "faults": faults})
+        "faults": faults,
+        **({"routing": {p.id: {entry["id"]: {"applies": "default_true"} for entry in inputs}
+                         for _, p, _ in procedures if default_applies(p)},
+            "keyword_hits": notes.keyword_summary(faults)}
+           if any(notes.audited(p) for _, p, _ in procedures) else {})})
 
 
 def seal(corpus):

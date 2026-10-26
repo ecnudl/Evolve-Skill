@@ -212,7 +212,7 @@ def _fixture_environment(items):
 
 
 def collect_s0(out, *, preparation_file, snapshot_root=manifest.REPO, selftest=None, checks=None,
-               configuration=p.ALFWORLD_V1):
+               configuration=p.ALFWORLD_V1, confirm_views=None):
     _profile(configuration)
     out = safe_path(out)
     require(not (out / S0_FILE).exists(), "S0 is written once")
@@ -220,6 +220,15 @@ def collect_s0(out, *, preparation_file, snapshot_root=manifest.REPO, selftest=N
     imported = preparation(preparation_file)
     items = manifest._items(imported["pool"], BENCH)
     cut = _slices(items, imported["runtime"][BENCH])
+    additional = {}
+    if p.is_v29(configuration):
+        from . import alf_confirm_views, confirm
+        viewed = alf_confirm_views.load_for_preparation(confirm_views, configuration=configuration,
+                                                        imported=imported, items=items)
+        selected, pin = confirm.slice_items(configuration, items)
+        cut["confirm"] = alf_confirm_views.attach(selected, viewed, configuration=configuration,
+                                                runtime=imported["runtime"][BENCH], confirm_pin=pin)
+        additional = {"alf_confirm_views": viewed}
     out.mkdir(parents=True, exist_ok=True)
     fixtures = fixture_items(imported["runtime"][BENCH])
     fixture_file = out / "synthetic-fixtures.json"
@@ -232,7 +241,7 @@ def collect_s0(out, *, preparation_file, snapshot_root=manifest.REPO, selftest=N
         len(json.dumps(item["public"]["routing_view"], ensure_ascii=False).encode())
         for values in cut.values() for item in values))
     measured["native_peak_rss_kib"] = 1  # no native spreadsheet scorer in this profile
-    value = p.record("alfworld-s0", "smoke", {"configuration": configuration, **imported,
+    value = p.record("alfworld-s0", "smoke", {"configuration": configuration, **imported, **additional,
         "slice_ids": {key: [item["task_id"] for item in rows] for key, rows in cut.items()},
         "slice_counts": {key: len(rows) for key, rows in cut.items()}, "fixtures_sha256": digest(fixtures),
         "sandbox": tested[p.RECORD_HASH], "limits": tested["limits"], "measured": measured,
@@ -250,6 +259,15 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, elucid_env, rou
     require(checked["passed"] and checked["configuration"] == configuration, "A passing ALFWorld S0")
     imported = preparation(checked["registration"]["preparation"]["path"])
     require(all(checked[key] == value for key, value in imported.items()), "The preparation still matches S0")
+    additional = {}
+    if p.is_v29(configuration):
+        from . import alf_confirm_views, confirm
+        items = manifest._items(imported["pool"], BENCH)
+        _, source = alf_confirm_views.preparation_sources(imported, items)
+        viewed = alf_confirm_views.validate(checked.get("alf_confirm_views"), configuration=configuration,
+            runtime=imported["runtime"][BENCH], confirm_pin=confirm.identity(configuration, items),
+            preparation=imported["registration"]["preparation"], pool=imported["pool"], source=source)
+        additional = {"alf_confirm_views": deepcopy(viewed)}
     provenance_value = read_json(provenance)
     current_sha = hashlib.sha256(prelaunch.sha256_list(manifest.REPO).encode()).hexdigest()
     require(checked.get("snapshot_sha256") == current_sha == provenance_value.get("sha256_list_sha256")
@@ -263,11 +281,17 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, elucid_env, rou
     read_card, read_proc = p.TEST_READ_CELLS[configuration][BENCH]
     estimate = math.ceil(p.CELL_ANCHORS[BENCH][1] * (read_card + read_proc * float(p.PROCEDURE_ARM_FACTOR[1])))
     pins = {}
+    probe_longest = routes.S1B_CEILING
     for result_path in smoke_results:
         result = p.verified(read_json(result_path), "alfworld-smoke-result")
         require(result["passed"] and result["configuration"] == configuration and result["chain"] == "D"
                 and result.get("s0") == checked[p.RECORD_HASH] and result.get("snapshot_sha256") == current_sha,
                 "A passed measured ALFWorld smoke for this S0 and snapshot")
+        if p.is_v29(configuration):
+            probe = result["solver_probe"]
+            require(probe["passed"] and probe["route"] == "B" and probe["longest"] > 0,
+                    "The real-run ledger bound comes from northgate S1")
+            probe_longest = probe["longest"]
         smoked = manifest.load(result["manifest_path"], verify=False)
         require(smoked[p.RECORD_HASH] == result["manifest"] and smoked["configuration"] == configuration
                 and smoked["evidence"] == "smoke" and smoked["data"]["s0_sha256"] == checked[p.RECORD_HASH]
@@ -277,12 +301,14 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, elucid_env, rou
         pins["D"] = {"path": str(safe_path(result_path)), "record_sha256": result[p.RECORD_HASH]}
     require(smoke_chain is not None or pins, "A real run needs a passed measured chain-D smoke")
     blocks = {"G": manifest.solver_block("G", env_path=roles_repo, configuration=configuration),
-              "D": manifest.solver_block("D", env_path=elucid_env, branch="E", configuration=configuration)}
+              "D": manifest.solver_block("D", env_path=route_b_env if p.is_v29(configuration) else elucid_env,
+                  branch="N" if p.is_v29(configuration) else "E",
+                  longest=probe_longest if p.is_v29(configuration) else None, configuration=configuration)}
     route = routes.pin("D", "B", env_path=route_b_env, solver_block=blocks["D"], configuration=configuration)
     given = {"root": str(root), "data": {"pools": {BENCH: imported["pool"]}, "pinned": imported["pinned"],
         manifest.alfworld_registration_key(configuration): imported["registration"], "s0_sha256": checked[p.RECORD_HASH],
         "test_read_estimate": {"D": estimate}, "test_read_terms": {"D": {BENCH: str(estimate)}},
-        "launchable_chains": ["D"], "snapshot_sha256": current_sha, "smoke_results": pins},
+        "launchable_chains": ["D"], "snapshot_sha256": current_sha, "smoke_results": pins, **additional},
         "cards": imported["cards"], "contracts": imported["contracts"], "runtime": imported["runtime"],
         "sheet_qualification": None, "fixtures": {"sha256": checked["fixtures_sha256"]},
         "clients": {"solver": blocks, "roles": manifest.role_settings(configuration), "routes": {"D": {"B": route}}},
@@ -312,8 +338,12 @@ def _s1(setting):
         done = units.run_unit(safe_path(setting.root) / "D" / "lean-smoke" / "S1-roles" / role,
             run=setting.run, identity={"unit": name}, work=work, evidence=setting.evidence, configuration=configuration)
         roles[role] = done["result"]
+    extra = {}
+    if p.is_v29(configuration):
+        from . import v29_route_probe
+        extra["solver_probe"] = v29_route_probe.measure(setting)
     return {"passed": first["passed"] and all(row["passed"] for row in roles.values()), "roles": roles,
-            "solver_confirmation": first[p.RECORD_HASH]}
+            "solver_confirmation": first[p.RECORD_HASH], **extra}
 
 
 def _s2(setting):
@@ -513,6 +543,10 @@ def _s3b(setting, services):
 
 
 def _s3(setting, services):
+    if p.is_v29(p.configuration_of(setting)):
+        from . import v29_smoke
+        return v29_smoke.s3(setting, services)
+
     authored, real = _s3a(setting, services), _s3b(setting, services)
     failed = [name for name, value in (("S3a", authored), ("S3b", real)) if not value["passed"]]
     return {"passed": not failed, "S3a": authored, "S3b": real, "failed_substages": failed,
@@ -526,6 +560,10 @@ def projection(s2, s3, configuration=p.ALFWORLD_V1):
     require(card > 0 and s2["items"] == S2_ITEMS and s2["measurements"]["actual"] > 0,
             "S-E6 needs three measured ALFWorld games")
     ratio, proc = s2["settled_tokens"] / s2["measurements"]["actual"], card * float(p.PROCEDURE_ARM_FACTOR[1])
+    if p.is_v29(configuration):
+        measured_confirm = s3["confirm_measurements"]
+        require(measured_confirm["cells"] > 0, "S3 confirmation ran fixture cells")
+        proc = max(proc, measured_confirm["settled_tokens"] / measured_confirm["cells"] / ratio)
     bound = s2["solver_bounds"]
     require(ratio > 0 and bound["ledger_bound"] == p.ledger_bound(p.CHAINS["D"], BENCH,
         branch=bound["branch"], longest=bound["longest"]), "The measured solver bound and positive ledger ratio")
@@ -571,6 +609,10 @@ def run_stage(manifest_path, stage, *, chain_id="D", docker=None, transport=None
         for prior in STAGES[:STAGES.index(stage)]:
             previous[prior] = _checked_stage(root / (prior + ".json"), m, prior)["result"]
             require(previous[prior]["passed"], "Every preceding smoke stage must pass")
+        if p.is_v29(configuration) and stage != "S1":
+            probe = previous["S1"]["solver_probe"]
+            require(probe["passed"] and probe["route"] == "B", "The measured northgate bound")
+            setting = replace(setting, branch="N", longest=probe["longest"])
         if stage == "S1":
             value = _s1(setting)
         elif stage == "S2":
@@ -587,5 +629,6 @@ def run_stage(manifest_path, stage, *, chain_id="D", docker=None, transport=None
                 "configuration": configuration, "chain": "D", "manifest": m[p.RECORD_HASH],
                 "stages": list(STAGES), "passed": value["passed"], "read_estimate": value["read_estimate"],
                 "s0": m["data"]["s0_sha256"], "manifest_path": str(safe_path(manifest_path)),
-                "snapshot_sha256": m["data"]["snapshot_sha256"], "sealed_reads": 0}))
+                "snapshot_sha256": m["data"]["snapshot_sha256"], "sealed_reads": 0,
+                **({"solver_probe": previous["S1"]["solver_probe"]} if p.is_v29(configuration) else {})}))
         return written

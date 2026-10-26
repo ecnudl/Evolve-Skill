@@ -1319,17 +1319,29 @@ def max_role_calls(configuration=protocol.PILOT):
         return dict(MAX_ROLE_CALLS)
     train_calls = (protocol.TRAIN_ENGINEER_CALL_BUDGETS[configuration]
                    if protocol.is_v28(configuration) else protocol.TRAIN_ENGINEER_CALLS)
-    return {"engineer": protocol.TRAIN_ROUNDS * (train_calls + protocol.TRAIN_ANALYST_CALLS),
+    result = {"engineer": protocol.TRAIN_ROUNDS * (train_calls + protocol.TRAIN_ANALYST_CALLS),
             "leakage": protocol.TRAIN_ROUNDS * (protocol.MAX_CHANGES + protocol.TRAIN_ENGINEER_CALLS - 1),
             "describer": DESCRIBER_CALLS,
             "examiner": MAX_ROLE_CALLS["examiner"]
             + protocol.GENERATOR_CALLS * protocol.BAND_ROUNDS * protocol.TOPUP_ROUNDS,
             "examiner_research": MAX_ROLE_CALLS["examiner_research"]}
+    if protocol.is_v29(configuration):
+        from . import v29_limits
+        bench = protocol.active_benches(configuration)[0]
+        result.update({role: v29_limits.judge_calls(protocol, bench) for role in v29_limits.JUDGE_ROLES})
+        result["leakage"] += protocol.TRAIN_ROUNDS * protocol.MAX_CHANGES
+    return result
 
 
 def engineer_request_floor(configuration=protocol.PILOT):
     """``ENGINEER_REQUEST_FLOOR`` with the configuration's engineer prompt (v2: the longer of ``ENGINEER_SYSTEM_V2``
     and the analysts' ``ANALYST_SYSTEM``, both engineer-role calls). v2.3 also pins its single-mode smoke prompt."""
+    if protocol.is_v29(configuration):
+        from . import engineer_v29
+        bench = protocol.active_benches(configuration)[0]
+        return protocol.ROLE_INPUT_BYTES + max(len((engineer_v29.system(configuration, train=train) + suffix).encode())
+            for train in (False, True) for suffix in ("", engineer_v29.FIX_SYSTEM,
+                engineer_v29.FORMAT_RETRY_SYSTEM, engineer_v29.AUDIT_FIX_SYSTEM))
     if protocol.is_v28(configuration):
         prompts = ((engineer.ENGINEER_SYSTEM_ALF_V3, engineer.ENGINEER_SYSTEM_SINGLE_ALF_V3)
                    if protocol.is_alfworld(configuration) else
@@ -1430,7 +1442,7 @@ def _scope_cells(chain, pilot=protocol.PILOT):
     plan, schedule, out = protocol.PILOTS[pilot], protocol.CONFIG_SCHEDULE_CELLS[pilot], {}
     blocks, totals = [], {}
     for k, bench in enumerate(plan["order"], 1):
-        for kind in budgets.STEP_KINDS:
+        for kind in budgets.step_kinds(pilot):
             cells = schedule[bench][kind]
             out[budgets.solver_scopes(chain, bench, k, kind)[-1]] = [cells]
             redo = cells
@@ -1592,7 +1604,8 @@ def glm_projection(measured, pilot=protocol.PILOT):
     measured request (``assumed``). Returns {scope: {"settled", "reservation", "needed", "cap", "fits"} (+ "roles",
     "assumed")}; a scope fits when needed <= cap."""
     require(measured and all(entry["calls"] > 0 for entry in measured.values()), "S3 measured role calls")
-    plan, roles, calls = protocol.PILOTS[pilot], tuple(budgets.ROLES), max_role_calls(pilot)
+    plan, calls = protocol.PILOTS[pilot], max_role_calls(pilot)
+    roles = tuple(budgets.ROLES) + (("audit_g", "audit_d") if protocol.is_v29(pilot) else ())
     require(set(calls) == set(roles) and set(measured) <= set(roles), "The registered method roles")
     dearest = max(entry["per_call"] for entry in measured.values())
     widest = max(entry["request_bytes"] for entry in measured.values())
@@ -1607,11 +1620,13 @@ def glm_projection(measured, pilot=protocol.PILOT):
         for k, bench in enumerate(plan["order"], 1):
             charged = {}
             for role in roles:
-                charged.setdefault(budgets.glm_scopes(chain, role, bench, k)[-1], []).append(role)
+                scope = (budgets.audit_scopes(chain, role[-1].upper(), bench, k) if role.startswith("audit_")
+                         else budgets.glm_scopes(chain, role, bench, k))
+                charged.setdefault(scope[-1], []).append(role)
             for name, members in sorted(charged.items()):
                 settled = sum(per_call[role] * calls[role] for role in members)
                 reserve = max(reservation(size[role], protocol.ENGINEER_MAX_TOKENS[pilot]
-                                          if role == "engineer" else protocol.ROLE_MAX_TOKENS) for role in members)
+                                          if role == "engineer" else 8192 if role.startswith("audit_") else protocol.ROLE_MAX_TOKENS) for role in members)
                 out[name] = {**_glm_fit(settled, reserve, caps[name]), "roles": members,
                              "assumed": [role for role in members if role in assumed]}
                 total += settled

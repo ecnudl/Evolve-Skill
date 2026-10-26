@@ -35,7 +35,7 @@ NEW = ((p.ZEBRA_PC_V6, p.ZEBRA_PC_V5, 'zpc6', 'zebralogic'),
 def test_profiles_inherit_panels_caps_and_adoption_bars(configuration, parent, namespace, bench):
     assert p.FEATURE_FAMILIES[configuration] == 'v2.8'
     assert all(fn(configuration) for fn in (p.is_v23, p.is_v24, p.is_v25, p.is_v26, p.is_v27, p.is_v28))
-    assert {name for name in p.CONFIGURATIONS if p.is_v28(name)} == {p.ZEBRA_PC_V6, p.ALFWORLD_V3}
+    assert {name for name in p.CONFIGURATIONS if p.is_v28(name) and not p.is_v29(name)} == {p.ZEBRA_PC_V6, p.ALFWORLD_V3}
     assert not p.is_v28(None)
     for name in ('CONFIGURATIONS', 'CONFIG_STEP_CAPS', 'CONFIG_SCHEDULE_CELLS', 'CONFIG_ROLE_CAPS', 'CONFIG_GLM_CAP',
                  'CONFIG_CAP_FACTOR', 'COST_CHECK_PAUSES', 'TEST_READ_CELLS', 'STAGE_READ', 'LEARNING', 'FIX_ECHO',

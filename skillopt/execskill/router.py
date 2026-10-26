@@ -30,7 +30,7 @@ from skillopt.coevo5.data import ranked
 from skillopt.continual_eval.core import require
 from skillopt.validator_pilot.api import digest
 
-from .package import Package, edits
+from .package import Package, edits, default_applies
 from .profiles import (SUPPORTED_BENCHES, BENCHES, INHERITED_TWIN_MIN_FIRED, MAX_TWINS_PER_ITEM, MIN_ASTAR, MIN_ASTAR_ROOMS, RECORD_HASH,
                        SANDBOX_TIMEOUTS, SEED, TWIN_MIN_FIRED, record, withhold_tag, yoke_tag)
 
@@ -58,7 +58,7 @@ class RouteLog:
     @property
     def fired(self):
         """The procedures whose predicate returned True, withheld ones included."""
-        return tuple(pid for pid, entry in self.per_procedure.items() if entry["applies"] is True)
+        return tuple(pid for pid, entry in self.per_procedure.items() if entry["applies"] is True or entry["applies"] == "default_true")
 
     def to_json(self):
         return record("route", self.evidence, {
@@ -94,11 +94,13 @@ def route(package, bench, routing_view, worker, *, withhold=frozenset(), restore
     require(not procedures or worker is not None, "A package with procedures for the bench routes in the sandbox")
     per, faults = {}, []
     for procedure in procedures:
-        result = worker.call(procedure.id, PREDICATE, [routing_view], timeout_s=SANDBOX_TIMEOUTS["predicate"])
+        default = default_applies(procedure)
+        result = ({"ok": True, "value": True} if default else
+                  worker.call(procedure.id, PREDICATE, [routing_view], timeout_s=SANDBOX_TIMEOUTS["predicate"]))
         fault = predicate_fault(procedure.id, result)
         applies = None if fault else result["value"]
         withheld = procedure.id in withhold
-        per[procedure.id] = {"applies": applies, "enabled": applies is True and not withheld, "withheld": withheld,
+        per[procedure.id] = {"applies": "default_true" if default else applies, "enabled": applies is True and not withheld, "withheld": withheld,
                              "restored": procedure.id in restore, "shadow_fired": withheld and applies is True,
                              "fault": fault["kind"] if fault else None}
         if fault:
@@ -211,7 +213,10 @@ def plan(candidate, parent, bench, views, workers, *, unit, rooms=None, donors=(
         "items": items, "edits": [c.to_json() for c in changes],
         "routes": {i: {side: {"enabled": list(routed[i][side].enabled), "fired": list(routed[i][side].fired),
                               "faults": [dict(f) for f in routed[i][side].faults],
-                              "route_sha256": routed[i][side].sha256} for side in ("candidate", "parent")}
+                              "route_sha256": routed[i][side].sha256,
+                              **({"applies": {pid: row["applies"] for pid, row in routed[i][side].per_procedure.items()}}
+                                 if any(default_applies(p) for p in (candidate if side == "candidate" else parent).procedures)
+                                 else {})} for side in ("candidate", "parent")}
                    for i in items},
         "astar_by_edit": by_edit, "astar": astar, "astar_rooms": astar_rooms, "fault_items": fault_items,
         "twin_priority": priority, "twin_kinds": {p: kinds[p] for p in priority},
