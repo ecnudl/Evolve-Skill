@@ -296,14 +296,30 @@ class Outcome:
 class _Run:
     """One procedure's hooks on one trajectory, with the shell's fault rule."""
 
-    def __init__(self, worker, procedure, inputs, actual=None):
+    def __init__(self, worker, procedure, inputs, actual=None, *, capture_faults=False):
         self.worker, self.procedure, self.inputs = worker, procedure, inputs
         self.actual = actual
         self.outcome = Outcome(inputs["cell"], inputs["bench"], audited=notes.audited(procedure))
         self.dead = False
+        self.capture_faults = capture_faults
+        self.arguments = {}
 
-    def fault(self, hook, step, kind, detail=""):
-        self.outcome.faults.append({"hook": hook, "step": step, "kind": kind, "detail": str(detail)[:200]})
+    def fault(self, hook, step, kind, detail="", *, result=None, extra=None):
+        fault = {"hook": hook, "step": step, "kind": kind, "detail": str(detail)[:200]}
+        if self.capture_faults:
+            fault.update(procedure=self.procedure.id, exc_type=(result or {}).get("exc_type"),
+                         message=str((result or {}).get("message") or detail)[:300],
+                         line=(result or {}).get("line"),
+                         arguments=copy.deepcopy(self.arguments.get((hook, step), {})))
+            if kind.startswith("note_") or kind == "state_over_declared_bytes":
+                fault.update(max_note_chars=self.procedure.max_note_chars,
+                             bench_cap=MAX_NOTE_CHARS[self.inputs["bench"]])
+            if kind in ("note_over_declared_cap", "note_over_bench_cap", "state_over_declared_bytes"):
+                fault["measured_length"] = int(detail)
+            if kind == "state_over_declared_bytes":
+                fault["state_bytes"] = self.procedure.state_bytes
+            fault.update(extra or {})
+        self.outcome.faults.append(fault)
         self.dead = True
         if notes.outcome_judged(self.procedure):
             # Suppress only pending requests: an after-step/feedback fault cannot retract
@@ -321,12 +337,18 @@ class _Run:
     def call(self, hook, args, step=None):
         """``(ok, value)`` of one sandbox call; a failed call is a crash fault."""
         timeout = SANDBOX_TIMEOUTS["predicate" if hook == "applies" else "hook"]
+        if self.capture_faults:
+            from .fault_feedback import capture_arguments
+            self.arguments[(hook, step)] = capture_arguments(hook, args)
         result = self.worker.call(self.procedure.id, hook, list(args), timeout_s=timeout)
         if self.actual is not None:
-            self.actual.append({"hook": hook, "step": step, **bounded_result(result)})
+            self.actual.append({"hook": hook, "step": step, **bounded_result(result),
+                                **({"line": result.get("line"),
+                                    "arguments": copy.deepcopy(self.arguments[(hook, step)])}
+                                   if self.capture_faults else {})})
         if result.get("ok") is not True:
             self.outcome.values.append([hook, step, "fault:%s" % result.get("fault")])
-            self.fault(hook, step, "crash:%s" % result.get("fault"), result.get("message") or "")
+            self.fault(hook, step, "crash:%s" % result.get("fault"), result.get("message") or "", result=result)
             return False, None
         self.outcome.values.append([hook, step, result["value_sha256"]])
         return True, result["value"]
@@ -353,7 +375,11 @@ class _Run:
             for marker in CHANNEL_MARKERS:
                 if marker in raw:
                     self.outcome.faults.append({"hook": hook, "step": step,
-                                               "kind": "answer_channel_marker", "detail": marker})
+                                               "kind": "answer_channel_marker", "detail": marker,
+                                               **({"procedure": self.procedure.id, "exc_type": None,
+                                                   "message": marker, "line": None,
+                                                   "arguments": copy.deepcopy(self.arguments.get((hook, step), {}))}
+                                                  if self.capture_faults else {})})
         kept, dropped = notes.screen(fields, bench=bench, public_text=reference,
                                      **({"outcome_judged": True, "audited": notes.audited(self.procedure)} if modern else {}))
         if modern:
@@ -378,7 +404,11 @@ class _Run:
                                            **({"reason": entry["reason"], "sentence_sha256": entry["sentence_sha256"],
                                                "count": entry["count"]} if entry["reason"] == "audit_keyword" else {})})
             else:
-                self.fault(hook, step, "note_" + entry["reason"], entry["detail"])
+                extra = None
+                if self.capture_faults and entry["reason"] == "cap":
+                    from .fault_feedback import field_measurements
+                    extra = field_measurements(entry["field"], fields.get(entry["field"]))
+                self.fault(hook, step, "note_" + entry["reason"], entry["detail"], extra=extra)
         text = notes.render(kept, bench=bench, header=self.procedure.header) if kept else ""
         return text, bindings
 
@@ -448,12 +478,12 @@ class _Run:
                         entry.update(state=value, after=True)
 
 
-def replay(worker, procedure, inputs, *, mutation=None, actual=None):
+def replay(worker, procedure, inputs, *, mutation=None, actual=None, capture_faults=False):
     """The ``Outcome`` of ``procedure`` on one trajectory's ``inputs`` (``inputs_of``) through a started worker holding
     it: its predicate on the routing view, then -- where it applies -- its hooks as the shell calls them."""
     if mutation is not None:
         inputs = mutate(inputs, mutation)
-    run = _Run(worker, procedure, inputs, actual)
+    run = _Run(worker, procedure, inputs, actual, capture_faults=capture_faults)
     from .package import default_applies
     default = default_applies(procedure)
     ok, value = (True, True) if default else run.call("applies", [inputs["view"]])
@@ -494,7 +524,8 @@ def run_worker_pass(items, open_worker, run, *, faults_of=lambda result: result.
                 worker = None
 
 
-def replay_many(procedure, entries, workers, *, hashseed=0, inputs_dirs=None, mutation=None, actual=None):
+def replay_many(procedure, entries, workers, *, hashseed=0, inputs_dirs=None, mutation=None, actual=None,
+                capture_faults=False):
     """{cell: Outcome} of ``procedure`` on ``entries`` (``inputs_of`` values), in their order within each worker group:
     one worker per bench kind and input directory, opened by ``workers(package, kind=, hashseed=, inputs_dir=)`` (a
     context manager yielding a started worker, e.g. ``sandbox.client.with_worker`` with its options bound).
@@ -509,6 +540,7 @@ def replay_many(procedure, entries, workers, *, hashseed=0, inputs_dirs=None, mu
             def run(entry, worker):
                 captured = None if actual is None else actual.setdefault(entry["cell"], [])
                 return replay(worker, procedure, entry, mutation=mutation,
+                              **({"capture_faults": True} if capture_faults else {}),
                               **({"actual": captured} if captured is not None else {}))
             for entry, outcome in run_worker_pass(group, lambda entry: workers(
                     package, kind=kind, hashseed=0, inputs_dir=directory), run):
@@ -518,6 +550,7 @@ def replay_many(procedure, entries, workers, *, hashseed=0, inputs_dirs=None, mu
             for entry in group:
                 captured = None if actual is None else actual.setdefault(entry["cell"], [])
                 out[entry["cell"]] = replay(worker, procedure, entry, mutation=mutation,
+                                          **({"capture_faults": True} if capture_faults else {}),
                                           **({"actual": captured} if captured is not None else {}))
     return out
 
@@ -544,7 +577,8 @@ MISMATCH_EXPLANATION_V28 = (
 )
 
 
-def zero_crash(procedure, entries, workers, *, inputs_dirs=None, actual=None, diagnostic_cells=None):
+def zero_crash(procedure, entries, workers, *, inputs_dirs=None, actual=None, diagnostic_cells=None,
+               capture_faults=False):
     """C6: ``(report, outcomes of the first worker)``. Every in-scope trajectory runs in a fresh worker with
     PYTHONHASHSEED 0 in the given order and in one with PYTHONHASHSEED 1 in the reverse order; the check passes when
     there is at least one trajectory, no crash-type fault and every hook value hash is identical. v2.6's optional
@@ -555,8 +589,10 @@ def zero_crash(procedure, entries, workers, *, inputs_dirs=None, actual=None, di
     first_actual = actual if actual is not None else {} if diagnosing else None
     second_actual = {} if diagnosing else None
     first = replay_many(procedure, entries, workers, hashseed=0, inputs_dirs=inputs_dirs,
+                        **({"capture_faults": True} if capture_faults else {}),
                         **({"actual": first_actual} if first_actual is not None else {}))
     second = replay_many(procedure, entries[::-1], workers, hashseed=1, inputs_dirs=inputs_dirs,
+                         **({"capture_faults": True} if capture_faults else {}),
                          **({"actual": second_actual} if diagnosing else {}))
     crashes = crash_faults(first) + crash_faults(second)
     mismatched = [cell for cell in first if first[cell].values != second[cell].values]
@@ -571,6 +607,10 @@ def zero_crash(procedure, entries, workers, *, inputs_dirs=None, actual=None, di
                       hashseed=0, fresh_namespace="per_hook_call", replay_workers="per_pass",
                       items=[{"cell": cell, "first": first[cell].summary(), "second": second[cell].summary(),
                               "mismatched": cell in mismatched} for cell in first])
+        if capture_faults:
+            by_cell = {entry["cell"]: entry for entry in entries}
+            for item in report["items"]:
+                item["task_id"] = by_cell[item["cell"]]["item"]
     return report, first
 
 

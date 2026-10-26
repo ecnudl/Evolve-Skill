@@ -1330,12 +1330,17 @@ def max_role_calls(configuration=protocol.PILOT):
         bench = protocol.active_benches(configuration)[0]
         result.update({role: v29_limits.judge_calls(protocol, bench) for role in v29_limits.JUDGE_ROLES})
         result["leakage"] += protocol.TRAIN_ROUNDS * protocol.MAX_CHANGES
+        if protocol.is_v291(configuration):
+            result.update(v29_limits.v291_role_calls(protocol, configuration))
     return result
 
 
 def engineer_request_floor(configuration=protocol.PILOT):
     """``ENGINEER_REQUEST_FLOOR`` with the configuration's engineer prompt (v2: the longer of ``ENGINEER_SYSTEM_V2``
     and the analysts' ``ANALYST_SYSTEM``, both engineer-role calls). v2.3 also pins its single-mode smoke prompt."""
+    if protocol.is_v291(configuration):
+        from . import v29_limits
+        return protocol.ROLE_INPUT_BYTES + v29_limits.V291_ENGINEER_SYSTEM_BYTES
     if protocol.is_v29(configuration):
         from . import engineer_v29
         bench = protocol.active_benches(configuration)[0]

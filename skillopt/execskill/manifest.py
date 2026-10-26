@@ -232,6 +232,11 @@ def prompt_sha(configuration=None):
         out["engineer"] = _sha_text_digest(engineer_v29.system(configuration, train=False))
         out["v2"]["engineer"] = _sha_text_digest(engineer_v29.system(configuration, train=True))
         out["v29"] = {"engineer": engineer_v29.prompt_pins(), "audit": audit.prompt_pins()}
+    if protocol.is_v291(configuration):
+        from . import engineer_v291
+        out["engineer"] = _sha_text_digest(engineer_v291.system(configuration, train=False))
+        out["v2"]["engineer"] = _sha_text_digest(engineer_v291.system(configuration, train=True))
+        out["v291"] = engineer_v291.prompt_pins()
     return out
 
 
@@ -813,6 +818,12 @@ def outcome_engineer_features(configuration):
         out.update({"applies": "optional_default_true", "lexicon": "log_only",
                     "note_screen_sha256": notes.v29_screen_sha256(),
                     "audit": audit_features(configuration)})
+    if protocol.is_v291(configuration):
+        out.update({"fault_repair": {"calls_per_change": protocol.FAULT_REPAIRS,
+                    "trigger": "faulted >= max(1, ceil(fired / 10))",
+                    "keep": "passed_fatal_checks_and_not_deferred_and_strictly_fewer_faulted_items"},
+                    "train_patience": protocol.train_patience(configuration),
+                    "train_rounds": protocol.TRAIN_ROUNDS, "fault_evidence": "captured_call_arguments_and_source_context"})
     return out
 
 
@@ -831,14 +842,14 @@ def audit_features(configuration):
 def alfworld_registration_key(configuration):
     """The configuration's preparation metadata field; v1 retains its original schema."""
     require(protocol.is_alfworld(configuration), "A registered ALFWorld configuration")
-    return ("alfworld_v4" if protocol.is_v29(configuration) else "alfworld_v3" if protocol.is_v28(configuration) else
+    return ("alfworld_v5" if protocol.is_v291(configuration) else "alfworld_v4" if protocol.is_v29(configuration) else "alfworld_v3" if protocol.is_v28(configuration) else
             "alfworld_v2" if protocol.is_alfworld_v2(configuration) else "alfworld_v1")
 
 
 def _check_alfworld(value):
     """Validate the preparation metadata linkage, without opening any test or pool file."""
     data = value["data"]
-    label = ("ALFWorld v4" if protocol.is_v29(value["configuration"]) else "ALFWorld v3" if protocol.is_v28(value["configuration"]) else
+    label = ("ALFWorld v5" if protocol.is_v291(value["configuration"]) else "ALFWorld v4" if protocol.is_v29(value["configuration"]) else "ALFWorld v3" if protocol.is_v28(value["configuration"]) else
              "ALFWorld v2" if protocol.is_alfworld_v2(value["configuration"]) else "ALFWorld v1")
     require(data.get("alfworld_features") == alfworld_features(value["configuration"]),
             "The ALFWorld feature family is pinned by value")

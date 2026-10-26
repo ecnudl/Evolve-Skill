@@ -1671,6 +1671,9 @@ def _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells, made,
         procedures.append({"id": pid, "change": change, "enabled_items": len(on),
                            "fixed": sum(key in fixed for key in on), "broken": sum(key in broken for key in on),
                            "examples": shown})
+        if protocol.is_v291(configuration_of(st.setting)):
+            procedures[-1]["faults"] = _procedure_fault_feedback(
+                pid, cells, made, set(by_key), tag + ":faults")
         if protocol.is_v25(configuration_of(st.setting)) and not protocol.is_alfworld(configuration_of(st.setting)):
             enabled = [key for key in evaluated if pid in routed[key]["candidate"]]
             procedures[-1]["notes_coverage"] = _notes_coverage(
@@ -1688,7 +1691,74 @@ def _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells, made,
                       "identical_items": sorted(set(verdict.get("identical", ())) & set(by_key))})
     if protocol.is_v28(configuration_of(st.setting)):
         value["informational_guards"] = list(verdict["informational_guards"])
+    if protocol.is_v291(configuration_of(st.setting)):
+        value["format"] = _format_feedback(cells, made, set(by_key), verdict,
+                                            FEEDBACK_TAG + ":" + st.label(unit) + ":format")
     return value
+
+
+def _procedure_fault_feedback(pid, cells, made, own, tag):
+    """v2.9.1: union cell/shell faults, count each candidate cell once per signature.
+
+    Counts include measured generated cells, but example task IDs are run-only.
+    Informational drops are reported by lint, not counted as procedure failures.
+    """
+    faulted, grouped = set(), {}
+    for (arm, task), found in sorted(cells.items()):
+        if arm != "S'":
+            continue
+        for cell in found:
+            cid = cell["cell"]["id"]
+            trace = made.get(cid) or {}
+            faults = list(cell.get("faults") or ()) + list((trace.get("shell") or {}).get("faults") or ())
+            for fault in faults:
+                if fault.get("procedure") != pid or fault.get("informational"):
+                    continue
+                key = (fault.get("hook"), fault.get("kind"), fault.get("exc_type"),
+                       str(fault.get("message") or "")[:200])
+                group = grouped.setdefault(key, {"cells": set(), "tasks": set()})
+                group["cells"].add(cid)
+                if task in own:
+                    group["tasks"].add(task)
+                faulted.add(cid)
+    signatures = []
+    for key, group in sorted(grouped.items(), key=lambda entry: (-len(entry[1]["cells"]),
+                                                                json.dumps(entry[0], ensure_ascii=False)))[:3]:
+        examples = ranked([{"task_id": task} for task in sorted(group["tasks"])], SEED, tag + ":" + digest(key))
+        signatures.append(dict(zip(("hook", "kind", "exc_type", "message"), key),
+                               cells=len(group["cells"]),
+                               example_task_id=examples[0]["task_id"] if examples else None))
+    return {"cells": len(faulted), "signatures": signatures}
+
+
+def _format_example(trajectory, detail):
+    """Recorded diagnostic text and actual solver-visible notes/reply, without an answer reference."""
+    recorded = detail.get("detail")
+    if type(recorded) is not str:
+        recorded = json.dumps(detail, ensure_ascii=False, sort_keys=True)
+    replies = [reply for reply in trajectory.get("replies", ()) if type(reply) is str]
+    return {"task_id": trajectory["task_id"], "cell": trajectory["cell"], "detail": recorded[:300],
+            "notes": _notes_text(trajectory)[:600], "candidate_reply": (replies[-1] if replies else "")[-600:]}
+
+
+def _format_feedback(cells, made, own, verdict, tag):
+    choices = {}
+    for key in sorted(own):
+        incumbent = cells.get(("S", key), ())
+        if not incumbent or any(((cell.get("judge") or {}).get("format") or {}).get("violation")
+                                for cell in incumbent):
+            continue
+        for cell in sorted(cells.get(("S'", key), ()), key=lambda row: (row["cell"].get("run", 0), row["cell"]["id"])):
+            detail = (cell.get("judge") or {}).get("format") or {}
+            trajectory = made.get(cell["cell"]["id"])
+            if (detail.get("violation") and trajectory is not None and trajectory["task_id"] == key
+                    and trajectory.get("arm_kind") == "candidate"):
+                choices[key] = _format_example(trajectory, detail)
+                break
+    ranked_items = ranked([{"task_id": key} for key in sorted(choices)], SEED, tag)
+    return {**verdict["format_cells"], "margin": verdict["format_margin"],
+            "blocked": not verdict["guards"]["format"],
+            "examples": [choices[row["task_id"]] for row in ranked_items[:2]]}
 
 
 def _train_eval(st, cut, r, incumbent, candidate, generated, *, current=None):
@@ -1916,7 +1986,7 @@ def _confirmed_training(evaluated, confirmation):
     return result
 
 
-def _line(r, engineered, evaluated):
+def _line(r, engineered, evaluated, *, configuration=None):
     """v2: one round of the history the engineer sees: counts and flags, and per proposed change (SkillOpt's step
     buffer, owner suggestion 2026-10-23 15:1x) its kind (a registered edit kind, else None), registrar id, target,
     description excerpt -- only for a change whose final version passed the leakage check C4, i.e. survived or stopped
@@ -1924,11 +1994,15 @@ def _line(r, engineered, evaluated):
     (``engineer._combined_train``), ``pruned_no_firing`` (v2.2, ``prune_idle``), or the round's verdict."""
     line = {"round": r, "candidate": engineered["candidate_sha256"] is not None, "adopted": False, "items": 0,
             "generated": 0, "fixed": 0, "broken": 0, "net": "0/1", "p_sign": None, "reason": "no_candidate"}
+    if protocol.is_v291(configuration):
+        line.update(own_fault_cells=0, format_cells={"S": 0, "S'": 0})
     if evaluated is not None:
         verdict = evaluated["verdict"]
         line.update({"adopted": verdict["adopted"], "items": verdict["items"], "generated": verdict["generated"],
                      "fixed": len(verdict["fixed"]), "broken": len(verdict["broken"]), "net": verdict["net"],
                      "p_sign": verdict["p_sign"], "reason": verdict["reason"]})
+        if protocol.is_v291(configuration):
+            line.update(own_fault_cells=verdict["own_fault_cells"], format_cells=dict(verdict["format_cells"]))
         if "confirm" in evaluated:
             line["confirm"] = practice_confirm.counts_only(evaluated["confirm"])
     sealed, proposals = engineered["engineer"], []
@@ -1938,7 +2012,8 @@ def _line(r, engineered, evaluated):
     if engineered["candidate_sha256"] is None and any(change.get("deferred") for change in sealed["changes"]):
         line["reason"] = "system_deferred"
     for change in sealed["changes"]:
-        stopped = ((change["attempts"][-1]["failed"] if change["attempts"] else change.get("reason"))
+        kept = change.get("kept_attempt", -1) if protocol.is_v291(configuration) else -1
+        stopped = ((change["attempts"][kept]["failed"] if change["attempts"] else change.get("reason"))
                    if not change["survived"] else None)
         if change.get("reason") in ("audit_confirmed", "audit_fix_failed_checks"):
             fate = change["reason"]
@@ -1994,7 +2069,9 @@ def _train(st, cut, generated):
                 last = candidate
             if evaluated["adopted"]:
                 incumbent = candidate
-        line = _line(r, engineered, evaluated)
+        line = _line(r, engineered, evaluated,
+                     **({"configuration": configuration_of(st.setting)}
+                        if protocol.is_v291(configuration_of(st.setting)) else {}))
         if protocol.is_v24(configuration_of(st.setting)):
             line["patience_counted"] = line["candidate"]
         history.append(line)
@@ -2007,7 +2084,7 @@ def _train(st, cut, generated):
             misses = 0 if line["adopted"] else misses + int(line["patience_counted"])
         else:
             misses = 0 if line["adopted"] else misses + 1
-        if misses >= TRAIN_PATIENCE:
+        if misses >= protocol.train_patience(configuration_of(st.setting)):
             break
     return incumbent, out, last
 

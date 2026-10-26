@@ -130,7 +130,7 @@ def test_complete_manifest_pins_exact_practice_ids_prompts_and_models(tmp_path, 
         pin = {'path': str(pool), 'sha256': hashlib.sha256(pool.read_bytes()).hexdigest()}
         given['data']['pools'][bench] = pin
         old = given['data'].pop('alfworld_v1')
-        given['data']['alfworld_v4'] = {**old, 'pool': pin}
+        given['data'][manifest.alfworld_registration_key(configuration)] = {**old, 'pool': pin}
         from skillopt.execskill import alf_confirm_views, supply
         from skillopt.validator_pilot.api import digest
         confirm_pin = confirm.identity(configuration, rows)

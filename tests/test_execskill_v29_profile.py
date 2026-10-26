@@ -51,10 +51,10 @@ def test_v29_policy_is_canonical_and_sandbox_rules_inherited():
 
 
 def test_only_two_v29_profiles_and_exact_freshness():
-    assert {name for name in p.CONFIGURATIONS if p.is_v29(name)} == {'zebra-pc-v7', 'alfworld-v4'}
+    assert {name for name in p.CONFIGURATIONS if p.is_v29(name) and not p.is_v291(name)} == {'zebra-pc-v7', 'alfworld-v4'}
     assert p.ACCEPT_FRESHNESS[p.ZEBRA_PC_V7] == 'zebra_split_v1_slices_reused_accept_used_four_times_plus_ub_probe'
     assert p.ACCEPT_FRESHNESS[p.ALFWORLD_V4] == 'alfworld_split_v1_slices_reused_acceptance_used_once'
-    assert p.CONFIRM_FRESHNESS == {
+    assert {name: value for name, value in p.CONFIRM_FRESHNESS.items() if not p.is_v291(name)} == {
         p.ZEBRA_PC_V7: 'zebra_split_v1_confirm_spare_probe_smoke_first_use',
         p.ALFWORLD_V4: 'alfworld_split_v1_confirm_spare_rooms_first_use'}
     assert p.ZEBRA_PC_V7_MANIFEST == p.ZEBRA_PC_V7_ROOT + '-manifest.json'

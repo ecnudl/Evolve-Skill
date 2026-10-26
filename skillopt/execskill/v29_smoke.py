@@ -168,8 +168,115 @@ def s3(setting, services):
     confirm_measured = smoke.measured_cells(confirm_cells)
     confirm_measured.update(cells=len(confirm_cells),
                             settled_tokens=sum(s.get("charged", 0) for c in confirm_cells for s in c["sends"]))
-    failed = [name for name, row in (("S3a", authored), ("S3b", real)) if not row["passed"]]
-    return {"passed": not failed, "S3a": authored, "S3b": real, "failed_substages": failed,
+    fault_repair = _s3c(setting, services) if p.is_v291(configuration) else None
+    if fault_repair is not None:
+        measurements = _merge_measurements(measurements, fault_repair["role_measurements"])
+    substages = [("S3a", authored), ("S3b", real)] + ([("S3c", fault_repair)] if fault_repair is not None else [])
+    failed = [name for name, row in substages if not row["passed"]]
+    return {"passed": not failed, **({"S3c": fault_repair} if fault_repair is not None else {}), "S3a": authored, "S3b": real, "failed_substages": failed,
             "rounds": 1, "fixtures": len(cut["run"]), "confirm_fixtures": 2,
             "role_measurements": measurements, "confirm_measurements": confirm_measured, "generator": "selection", "research": "not_applicable",
             "solver_route": "B"}
+
+
+def authored_fault_reply(bench):
+    """A deterministic, public-input crash in the first note hook of every item."""
+    from . import alf_smoke, zebra_smoke
+    owner = alf_smoke if bench == 'alfworld' else zebra_smoke
+    entries, _ = engineer.parse(owner.authored_reply())
+    entry = entries[0]
+    entry.update(description='Extracts useful facts from the public task.', replay_tests=[],
+                 requests_second_call=False, state_bytes=0)
+    if bench == 'alfworld':
+        source = ('def alf_before_step(view, state):\n'
+                  '    return {"facts": [state.get("previous_observation", "")] }\n')
+        entry['hooks'] = ['alf_before_step']
+    else:
+        source = ('def before_call(view, state):\n'
+                  '    return {"facts": [view["question"].splitlines()[999]]}\n')
+        entry['hooks'] = ['before_call']
+    return '```json\n' + json.dumps({'changes': [entry]}, sort_keys=True) + '\n```\n```python\n' + source + '```'
+
+
+def _fault_evidence_ok(value, bench):
+    signatures = value.get('signatures') or []
+    call = value.get('example_call') or {}
+    arguments = call.get('arguments') or {}
+    first = signatures[0] if signatures else {}
+    return bool(value.get('triggered') and value.get('fired') and value.get('faulted') == value.get('fired')
+                and first.get('exc_type') and first.get('message') and type(first.get('line')) is int
+                and first['line'] > 0 and first.get('source_line') and first.get('source_context')
+                and call.get('hook') == ('alf_before_step' if bench == 'alfworld' else 'before_call')
+                and 'view' in arguments and 'state' in arguments
+                and (bench != 'alfworld' or call.get('step') == 0 and arguments['state'] is None))
+
+
+def _fault_repair_proposal(st, cut):
+    from . import engineer_v291
+    def work(attempt):
+        reply = authored_fault_reply(st.bench)
+        entries, sources = engineer.parse(reply)
+        change = engineer.changes_of(entries, sources, digest(reply))[0]
+        _, _, publics = step._training_publics(cut, None, st.bench)
+        ctx = engineer.Context(bench=st.bench, k=1, step=st.name, evidence=st.evidence, parent=st.parent,
+            trajectories=step._run_trajectories(st), current=step._current(st, []), corpora=step._corpora(st, cut),
+            workers=st.services.workers, roles=st.roles('engineer'), label=st.label('engineer-r1'),
+            card=st.setting.cards.get(st.bench, ''), mode='train', round=1, base=st.parent,
+            configuration=p.configuration_of(st.setting), echo=True, counterfactual=True,
+            routing_items=[(key, solver.routing_view(st.bench, public, runtime=st.runtime()))
+                           for key, public in publics.items()], routing_workers=step._item_workers(st, publics),
+            routing_shared_worker=st.services.item_workers is None)
+        checked = engineer.check(change, ctx)
+        if not checked['passed'] or checked.get('deferred'):
+            return {'passed': False, 'checks': checked, 'fault_repair': None, 'faulted_after': None}
+        _, _, attempts, repaired = engineer_v291.repair(ctx, change, checked, max_repairs=1, format_retry=False)
+        calls = repaired['calls']
+        sent = calls[0] if len(calls) == 1 else {}
+        passed = (repaired['triggered'] and _fault_evidence_ok((sent.get('request') or {}).get('evidence', {}), st.bench)
+                  and sent.get('call') is not None and sent.get('parsed') and sent.get('checked'))
+        return {'passed': bool(passed), 'checks': checked, 'attempts': attempts, 'fault_repair': repaired,
+                'faulted_after': sent.get('faulted_after'), 'exercise': True, 'decision_used_for_adoption': False}
+    return st.unit('engineer-r1', work)
+
+
+def _s3c(setting, services):
+    """One measured fault-repair engineer call; repaired quality is information."""
+    from . import alf_smoke, zebra_smoke
+    configuration = p.configuration_of(setting)
+    p.require(p.is_v291(configuration), "S3c belongs only to v2.9.1")
+    alf = p.is_alfworld(configuration)
+    owner = alf_smoke if alf else zebra_smoke
+    st, cut = (owner._fixture_step(setting, services, 'S3c') if alf
+               else owner._fixture_step(setting, services, 'D', 'S3c'))
+    identity = {'run': setting.run, 'configuration': configuration, 'chain': 'D', 'substage': 'S3c',
+                'recipe': 'v291-fault-repair-v1', 'fixtures_sha256': digest(cut),
+                'proposal_sha256': digest(authored_fault_reply(st.bench))}
+    cached = owner._cached_substage(st, identity)
+    if cached is not None:
+        return cached
+    measured = owner._measured_roles(st)
+    with owner._fixture_environment(cut['run']) if alf else contextlib.nullcontext():
+        step._run(st, cut)
+        proposed = _fault_repair_proposal(st, cut)
+    measurements = smoke.role_calls_measured([json.loads(row) for row in measured.read_text().splitlines()]
+                                             if measured.exists() else [])
+    sent = measurements.get('engineer') or {}
+    return owner._save_substage(st, identity, {
+        'passed': bool(proposed['passed'] and sent.get('calls') == 1 and sent.get('tokens', 0) > 0
+                       and sent.get('request_bytes', 0) > 0),
+        'proposal': proposed, 'role_measurements': measurements, 'exercise': True,
+        'faulted_after': proposed.get('faulted_after'), 'decision_used_for_adoption': False})
+
+
+def _merge_measurements(left, right):
+    result = copy.deepcopy(left)
+    for role, row in right.items():
+        if role not in result:
+            result[role] = copy.deepcopy(row)
+        else:
+            current = result[role]
+            current['calls'] += row['calls']
+            current['tokens'] += row['tokens']
+            current['request_bytes'] = max(current['request_bytes'], row['request_bytes'])
+            current['per_call'] = current['tokens'] / current['calls']
+    return result

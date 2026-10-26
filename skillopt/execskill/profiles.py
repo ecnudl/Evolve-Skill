@@ -18,10 +18,12 @@ ZEBRA_PC_V4 = "zebra-pc-v4"
 ZEBRA_PC_V5 = "zebra-pc-v5"
 ZEBRA_PC_V6 = "zebra-pc-v6"
 ZEBRA_PC_V7 = "zebra-pc-v7"
+ZEBRA_PC_V8 = "zebra-pc-v8"
 ALFWORLD_V1 = "alfworld-v1"
 ALFWORLD_V2 = "alfworld-v2"
 ALFWORLD_V3 = "alfworld-v3"
 ALFWORLD_V4 = "alfworld-v4"
+ALFWORLD_V5 = "alfworld-v5"
 ZEBRA = "zebralogic"
 SUPPORTED_BENCHES = BENCHES + (ZEBRA,)
 FEATURE_FAMILIES = {name: ("v2.3" if name == MAIN_V2_3 else "historical") for name in CONFIGURATIONS}
@@ -36,6 +38,8 @@ FEATURE_FAMILIES[ZEBRA_PC_V6] = "v2.8"
 FEATURE_FAMILIES[ALFWORLD_V3] = "v2.8"
 FEATURE_FAMILIES[ZEBRA_PC_V7] = "v2.9"
 FEATURE_FAMILIES[ALFWORLD_V4] = "v2.9"
+FEATURE_FAMILIES[ZEBRA_PC_V8] = "v2.9"
+FEATURE_FAMILIES[ALFWORLD_V5] = "v2.9"
 
 
 def is_v23(configuration):
@@ -80,22 +84,35 @@ def is_v29(configuration):
     return FEATURE_FAMILIES[configuration] == "v2.9"
 
 
+def is_v291(configuration):
+    configuration = configuration or PILOT
+    require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
+    return configuration in (ZEBRA_PC_V8, ALFWORLD_V5)
+
+
+def train_patience(configuration):
+    return 4 if is_v291(configuration) else TRAIN_PATIENCE
+
+
+FAULT_REPAIRS = 2
+
+
 def is_zebra(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ZEBRA_PC_V1, ZEBRA_PC_V2, ZEBRA_PC_V3, ZEBRA_PC_V4, ZEBRA_PC_V5, ZEBRA_PC_V6, ZEBRA_PC_V7)
+    return configuration in (ZEBRA_PC_V1, ZEBRA_PC_V2, ZEBRA_PC_V3, ZEBRA_PC_V4, ZEBRA_PC_V5, ZEBRA_PC_V6, ZEBRA_PC_V7, ZEBRA_PC_V8)
 
 
 def is_alfworld(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ALFWORLD_V1, ALFWORLD_V2, ALFWORLD_V3, ALFWORLD_V4)
+    return configuration in (ALFWORLD_V1, ALFWORLD_V2, ALFWORLD_V3, ALFWORLD_V4, ALFWORLD_V5)
 
 
 def is_alfworld_v2(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ALFWORLD_V2, ALFWORLD_V3, ALFWORLD_V4)
+    return configuration in (ALFWORLD_V2, ALFWORLD_V3, ALFWORLD_V4, ALFWORLD_V5)
 
 
 def _extend(table, value, *, v2=None, v3=None, v4=None):
@@ -476,3 +493,36 @@ def estimate_test_read(per_cell, ratio, pilot=PILOT):
 from . import v29_limits as _v29_limits
 import sys as _sys
 _v29_limits.extend_profiles(_sys.modules[__name__])
+
+
+# v2.9.1 copies the fully extended v2.9 parents, including audit and confirm caps.
+ZEBRA_PC_V8_ROOT = "/data/execskill-20261027-zebra-pc-v8"
+ZEBRA_PC_V8_MANIFEST = ZEBRA_PC_V8_ROOT + "-manifest.json"
+ZEBRA_PC_V8_NAMESPACES = {"G": "G-zpc8", "D": "D-zpc8"}
+ALFWORLD_V5_ROOT = "/data/execskill-20261027-alfworld-v5"
+ALFWORLD_V5_MANIFEST = ALFWORLD_V5_ROOT + "-manifest.json"
+ALFWORLD_V5_NAMESPACES = {"G": "G-alf5", "D": "D-alf5"}
+SUPPORTED_NAMESPACES += tuple(ZEBRA_PC_V8_NAMESPACES.values()) + tuple(ALFWORLD_V5_NAMESPACES.values())
+for _child, _parent in ((ZEBRA_PC_V8, ZEBRA_PC_V7), (ALFWORLD_V5, ALFWORLD_V4)):
+    for _name in ("CONFIGURATIONS", "CONFIG_STEP_CAPS", "CONFIG_SCHEDULE_CELLS", "CONFIG_ROLE_CAPS", "CONFIG_GLM_CAP",
+                  "CONFIG_CAP_FACTOR", "COST_CHECK_PAUSES", "TEST_READ_CELLS", "STAGE_READ", "LEARNING", "FIX_ECHO",
+                  "META_COUNTERFACTUAL", "TRAIN_SIGN", "PRUNE_NON_FIRING", "ACCEPT_RULES", "ENGINEER_MAX_TOKENS",
+                  "TRIM_PAYLOADS", "NORMALIZE_STRUCTURE", "CHECK_NON_FIRING", "IDENTICAL_REQUEST_REUSE",
+                  "CODE_EXTRACTION", "MULTIPLE_PYTHON_BLOCKS", "POLICY_VERSIONS", "ENGINEER_CALL_BUDGETS",
+                  "TRAIN_ENGINEER_CALL_BUDGETS"):
+        globals()[_name][_child] = deepcopy(globals()[_name][_parent])
+    ENGINEER_RECORDS[_child] = "engineer-v2-9-1"
+    # A format retry after every new fault repair, plus the parent's audit fix.
+    ENGINEER_CALL_BUDGETS[_child] += MAX_CHANGES * (FAULT_REPAIRS * 2 + 1)
+    TRAIN_ENGINEER_CALL_BUDGETS[_child] += MAX_CHANGES * (FAULT_REPAIRS * 2 + 1)
+REAL_RUN_EVIDENCE[ZEBRA_PC_V8] = "zebra_pc_v8_real_run"
+REAL_RUN_EVIDENCE[ALFWORLD_V5] = "alfworld_v5_real_run"
+RUN_ROOTS[ZEBRA_PC_V8] = ZEBRA_PC_V8_ROOT
+RUN_ROOTS[ALFWORLD_V5] = ALFWORLD_V5_ROOT
+CHAIN_NAMESPACES[ZEBRA_PC_V8] = ZEBRA_PC_V8_NAMESPACES
+CHAIN_NAMESPACES[ALFWORLD_V5] = ALFWORLD_V5_NAMESPACES
+ACCEPT_FRESHNESS[ZEBRA_PC_V8] = "zebra_split_v1_slices_reused_accept_used_four_times_plus_ub_probe"
+ACCEPT_FRESHNESS[ALFWORLD_V5] = "alfworld_split_v1_slices_reused_after_alfworld_v4"
+CONFIRM_FRESHNESS[ZEBRA_PC_V8] = "zebra_split_v1_confirm_spare_probe_smoke_first_use"
+CONFIRM_FRESHNESS[ALFWORLD_V5] = "alfworld_split_v1_confirm_spare_rooms_reused_after_alfworld_v4"
+_v29_limits.extend_v291_profiles(_sys.modules[__name__])

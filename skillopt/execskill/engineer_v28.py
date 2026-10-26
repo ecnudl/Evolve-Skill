@@ -15,7 +15,7 @@ INFORMATION_COUNTS = frozenset({"items", "faults", "mismatches", "fires_on", "pr
     "tracker_steps", "screened"})
 
 
-def advisory_feedback(change, report):
+def advisory_feedback(change, report, *, configuration=None):
     """Counts-only quality evidence plus malformed-test explanations for the next engineer round."""
     from . import engineer as e
     lint = report.setdefault("lint", {"id": change.procedure.id, "tests": [], "problems": []})
@@ -47,7 +47,13 @@ def advisory_feedback(change, report):
             counts = {"screened": len(detail)}
         else:
             continue
-        information.append({"check": name, "passed": bool(check["passed"]), "counts": counts})
+        row = {"check": name, "passed": bool(check["passed"]), "counts": counts}
+        if p.is_v291(configuration) and name == "C6":
+            from . import fault_feedback
+            faults = fault_feedback.summarize(change.procedure, report, limit=3, example=False)
+            row.update(fired_items=faults['fired'], faulted_items=faults['faulted'],
+                       **fault_feedback.lint_extension(faults))
+        information.append(row)
     lint["information"] = information
 
 
@@ -259,14 +265,26 @@ def run(ctx):
                 attempts.append(e.check(fixed, ctx, taken))
             if why in ("no_calls_left", "unparseable"):
                 break
-        survived = attempts[-1]["passed"]
-        inert = bool(attempts[-1].get("inert"))
-        deferred = bool(attempts[-1].get("deferred"))
+        current = attempts[-1]
+        survived = current["passed"]
+        inert = bool(current.get("inert"))
+        deferred = bool(current.get("deferred"))
+        fault_fields = {}
+        if p.is_v291(ctx.configuration) and final.kind in e.CODED:
+            from . import engineer_v291
+            if survived and not deferred:
+                final, current, checked, repaired = engineer_v291.repair(ctx, final, current, taken)
+                attempts.extend(checked)
+                inert, deferred = bool(current.get("inert")), bool(current.get("deferred"))
+            else:
+                repaired = {'fired': 0, 'faulted': 0, 'threshold': 1, 'triggered': False,
+                            'calls': [], 'kept_index': 0, 'stop_reason': 'failed_checks', 'eligible': False}
+            fault_fields['fault_repair'] = repaired
         audit_fields = {}
         if p.is_v29(ctx.configuration) and survived and not inert and not deferred and final.kind in e.CODED:
             from . import audit
             audit_procedure_id = final.procedure.id
-            audited = audit.audit1(ctx, final, attempts[-1])
+            audited = audit.audit1(ctx, final, current)
             audit_fields = {"audits": [audited], "audit_fix_calls": 0}
             if audited["confirmed"]:
                 request = {"request": "audit_fix", "bench": ctx.bench,
@@ -281,26 +299,30 @@ def run(ctx):
                 else:
                     final = repaired[0]
                     attempts.append(e.check(final, ctx, taken))
-                    survived = attempts[-1]["passed"]
-                    inert, deferred = bool(attempts[-1].get("inert")), bool(attempts[-1].get("deferred"))
+                    current = attempts[-1]
+                    survived = current["passed"]
+                    inert, deferred = bool(current.get("inert")), bool(current.get("deferred"))
                     if not survived:
                         audit_fields["reason"] = "audit_fix_failed_checks"
                     elif not inert and not deferred:
-                        audited = audit.audit1(ctx, final, attempts[-1])
+                        audited = audit.audit1(ctx, final, current)
                         audit_fields["audits"].append(audited)
                         if audited["confirmed"]:
                             survived = False
                             audit_fields["reason"] = "audit_confirmed"
             # This lint is run-slice-only; audit2 never calls the engineer or writes its lint.
-            attempts[-1].setdefault("lint", {"id": audit_procedure_id, "tests": [], "problems": []})["audit"] = audit.feedback(audited)
+            current.setdefault("lint", {"id": audit_procedure_id, "tests": [], "problems": []})["audit"] = audit.feedback(audited)
         if survived and not inert and not deferred:
             survivors.append(final)
             taken.add(final.target)
-        if attempts[-1].get("lint"):
-            lint.append(attempts[-1]["lint"])
+        if current.get("lint"):
+            lint.append(current["lint"])
+        if p.is_v291(ctx.configuration):
+            fault_fields['kept_attempt'] = next(index for index, attempt in enumerate(attempts) if attempt is current)
         outcomes.append({**final.to_json(), "attempts": attempts, "survived": survived, "inert": inert, "deferred": deferred,
                          "fix_calls": len(replies), "fix_replies": replies, "summary": e._summary(final),
-                         **({"reason": "unparseable"} if replies and replies[-1] == "unparseable" else {}), **audit_fields})
+                         **({"reason": "unparseable"} if replies and replies[-1] == "unparseable" else {}),
+                         **audit_fields, **fault_fields})
     package, kept = e._combined_train(ctx, survivors) if train else e._combined(ctx.parent, survivors, ctx.step)
     fields = {"bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
               "prompt_sha256": (engineer_v29.audit.text_sha256(engineer_v29.system(ctx.configuration, train=train))
@@ -318,6 +340,10 @@ def run(ctx):
                       audit_fix_calls=sum(row.get("audit_fix_calls", 0) for row in outcomes),
                       audit_tokens={judge: {key: sum(a["tokens"][judge][key] for a in audits)
                           for key in ("input", "output", "charged")} for judge in ("G", "D")})
+    if p.is_v291(ctx.configuration):
+        from . import engineer_v291
+        fields['prompt_sha256'] = engineer_v291.audit.text_sha256(engineer_v291.system(ctx.configuration, train=train))
+        fields['fault_repair_calls'] = sum(len(row.get('fault_repair', {}).get('calls', [])) for row in outcomes)
     if train:
         fields.update(mode=e.TRAIN, round=ctx.round, base_sha256=ctx.base.sha256, budget=e.budget(ctx), lint=lint,
                       analysis=analysis, analyst_prompt_sha256=e.ANALYST_PROMPT_SHA256, disclosed=e._disclosed_items(ctx))

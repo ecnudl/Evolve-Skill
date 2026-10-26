@@ -613,7 +613,7 @@ def sealed_cell(full):
         "answered": answered(full),  # §6.3's mask: whether the provider delivered any reply in this cell
         "solver_route": full.get("solver_route"),  # {"route", "model"} (cells.py); route None on chain G
         **({key: full[key] for key in ("configuration", "keyword_hits", "applies", "returned_model", "returned_models")}
-           if full.get("configuration") in ("zebra-pc-v7", "alfworld-v4") else {}),
+           if full.get("configuration") in ("zebra-pc-v7", "alfworld-v4", "zebra-pc-v8", "alfworld-v5") else {}),
         "stop": None if full["stop"] is None else {"kind": full["stop"]["kind"]}}
 
 

@@ -61,9 +61,66 @@ def extend_profiles(p):
 
 def identity(p, config):
     bench = p.CONFIGURATIONS[config]["order"][0]
-    return {"judge_max_tokens": JUDGE_MAX_TOKENS, "format_retries": FORMAT_RETRIES,
+    out = {"judge_max_tokens": JUDGE_MAX_TOKENS, "format_retries": FORMAT_RETRIES,
             "audit1_passes": AUDIT1_PASSES, "templates": TEMPLATE_LIMIT,
             "prompts_per_audit": prompts_per_audit(bench), "calls_per_judge": judge_calls(p, bench),
             "confirm_items": CONFIRM_ITEMS, "confirm_cells": p.TRAIN_ROUNDS * 2 * CONFIRM_ITEMS,
             "request_bytes_allowance": p.ROLE_INPUT_BYTES,
             "judge_reservation": reservation(p.ROLE_INPUT_BYTES, JUDGE_MAX_TOKENS)}
+    if p.is_v291(config):
+        out["fault_feedback"] = {"fault_repairs": p.FAULT_REPAIRS, "patience": p.train_patience(config),
+            "single_call_budget": p.ENGINEER_CALL_BUDGETS[config],
+            "train_call_budget": p.TRAIN_ENGINEER_CALL_BUDGETS[config],
+            "role_calls": v291_role_calls(p, config), "engineer_system_bytes_allowance": V291_ENGINEER_SYSTEM_BYTES,
+            "engineer_cap": v291_engineer_cap(p, config),
+            "selftest_cells": p.CONFIG_SCHEDULE_CELLS[config][bench]["selftest"][bench][1]}
+    return out
+
+
+# Includes the full proposal/fix system text in addition to the payload ceiling.
+# Asserted against the actual v2.9.1 prompts in the offline profile tests.
+V291_ENGINEER_SYSTEM_BYTES = 16_000
+
+
+def v291_role_calls(p, config):
+    """Six rounds at the full proposal/fix/format budgets, without request reuse."""
+    return {
+        "engineer": p.TRAIN_ROUNDS * (p.TRAIN_ENGINEER_CALL_BUDGETS[config] + p.TRAIN_ANALYST_CALLS),
+        "leakage": p.TRAIN_ROUNDS * p.MAX_CHANGES * (1 + p.TRAIN_FIXES + p.FAULT_REPAIRS + 1),
+        "describer": min(p.MAX_PROCEDURES, p.TRAIN_ROUNDS * p.MAX_CHANGES),
+    }
+
+
+def v291_engineer_cap(p, config):
+    calls = v291_role_calls(p, config)
+    engineer = reservation(p.ROLE_INPUT_BYTES + V291_ENGINEER_SYSTEM_BYTES, p.ENGINEER_MAX_TOKENS[config])
+    ordinary = reservation(p.ROLE_INPUT_BYTES, p.ROLE_MAX_TOKENS)
+    return calls["engineer"] * engineer + (calls["leakage"] + calls["describer"]) * ordinary + engineer
+
+
+def extend_v291_profiles(p):
+    """Reserve six full rounds on child profiles; inherited parent bytes stay fixed."""
+    for config in (p.ZEBRA_PC_V8, p.ALFWORLD_V5):
+        bench = p.CONFIGURATIONS[config]["order"][0]
+        old_role = p.CONFIG_ROLE_CAPS[config]["engineer"]
+        p.CONFIG_ROLE_CAPS[config]["engineer"] = max(old_role, v291_engineer_cap(p, config))
+        p.CONFIG_GLM_CAP[config] += p.CONFIG_ROLE_CAPS[config]["engineer"] - old_role
+        # ALF's selected forty games may appear in every train round, followed by
+        # the two conservative final self-test passes. Zebra has no generated set.
+        selected = p.ALFWORLD_SELECTED_MAX if p.is_alfworld(config) else 0
+        count = (p.TRAIN_ROUNDS * 2 * (p.SLICES[bench]["run"][0] * p.SLICES[bench]["run"][1] + selected)
+                 + p.SELFTEST_PASSES * 2 * selected)
+        cells = p.CONFIG_SCHEDULE_CELLS[config][bench]["selftest"]
+        cards, inherited = cells.get(bench, (0, 0))
+        cells[bench] = (cards, max(inherited, count))
+        reserve = p.ALFWORLD_V1_RESERVATION if p.is_alfworld(config) else p.READ_RESERVATION
+        amount = math.ceil(p.MAIN_CAP_FACTOR * (
+            sum(p.CELL_ANCHORS[b][1] * (card + p.PROCEDURE_ARM_FACTOR[1] * proc)
+                for b, (card, proc) in cells.items()) + p.MAIN_RESERVATIONS * reserve))
+        cap = math.ceil(amount / 100_000) * 100_000
+        previous = p.CONFIG_STEP_CAPS[config][bench]["selftest"]
+        p.CONFIG_STEP_CAPS[config][bench]["selftest"] = max(previous, cap)
+        plan = p.CONFIGURATIONS[config]
+        old_redo = plan["redo_reserve"]
+        plan["redo_reserve"] = max(old_redo, p.CONFIG_STEP_CAPS[config][bench]["selftest"])
+        plan["solver_cap"] += max(previous, cap) - previous + plan["redo_reserve"] - old_redo

@@ -670,13 +670,15 @@ class Context:
                     "unit")
         v24, v25 = protocol.is_v24(self.configuration), protocol.is_v25(self.configuration)
         require(isinstance(self.history, list) and all(_history_line(entry, self.round, v24=v24,
-                v28=protocol.is_v28(self.configuration), v29=protocol.is_v29(self.configuration)) for entry in self.history),
+                v28=protocol.is_v28(self.configuration), v29=protocol.is_v29(self.configuration),
+                v291=protocol.is_v291(self.configuration)) for entry in self.history),
                 "The history holds counts and flags only")
         require(isinstance(self.lint, list) and all(_lint_entry(entry, v25=v25,
                 **({"v26": True} if protocol.is_v26(self.configuration) else {}),
                 **({"v27": True} if protocol.is_v27(self.configuration) else {}),
                 **({"v28": True} if protocol.is_v28(self.configuration) else {}),
-                **({"v29": True} if protocol.is_v29(self.configuration) else {})) for entry in self.lint),
+                **({"v29": True} if protocol.is_v29(self.configuration) else {}),
+                **({"v291": True} if protocol.is_v291(self.configuration) else {})) for entry in self.lint),
                 "Lint entries are reports")
         require(isinstance(self.reserved, frozenset) and all(type(i) is str for i in self.reserved),
                 "Reserved procedure ids")
@@ -689,6 +691,7 @@ class Context:
         require(self.training is None or _training_ok(self.training, self.references, own, evaluated, self.bench,
                                                       v24=v24, v25=v25 and not protocol.is_alfworld(self.configuration),
                                                       v28=protocol.is_v28(self.configuration), v29=protocol.is_v29(self.configuration),
+                                                      v291=protocol.is_v291(self.configuration),
                                                       current={t["cell"]: t for t in self.current}),
                 "The training feedback shows this step's run-slice items with their own references only")
         output_refs = {e["task_id"] for e in (self.training or {}).get("unfixed_examples", [])} if v24 else set()
@@ -713,11 +716,15 @@ def _verdict_fields(entry):
             and (entry["reason"] is None or _text(entry["reason"], MAX_REASON_CHARS)))
 
 
-def _history_line(entry, before, *, v24=False, v28=False, v29=False):
+def _history_line(entry, before, *, v24=False, v28=False, v29=False, v291=False):
     """v2 (Codex review 2026-10-23 #4): a line of an earlier round exactly as ``step._line`` writes it -- counts,
     flags, the net, p and reason -- with its ``proposals`` (the step buffer): kind, registrar id, target, a description
     excerpt and the fate."""
     fields = HISTORY_FIELDS | ({"patience_counted"} if v24 else set())
+    if v291:
+        fields |= {"own_fault_cells", "format_cells"}
+        if not _count(entry.get("own_fault_cells")) or not _format_counts_ok(entry.get("format_cells")):
+            return False
     if v29 and "confirm" in entry:
         from .engineer_v29 import confirm_feedback_ok
         if not confirm_feedback_ok(entry["confirm"]):
@@ -739,14 +746,19 @@ def _history_line(entry, before, *, v24=False, v28=False, v29=False):
                for p in entry["proposals"])
 
 
-def _lint_entry(entry, *, v25=False, v26=False, v27=False, v28=False, v29=False):
+def _lint_entry(entry, *, v25=False, v26=False, v27=False, v28=False, v29=False, v291=False):
     """v2 (Codex review 2026-10-23 #3, #4): an advisory replay-test report exactly as ``_lint`` writes it."""
     if not isinstance(entry, dict):
         return False
     if v28 and "information" in entry:
+        from . import fault_feedback
         info = entry["information"]
         if not (isinstance(info, list) and len(info) <= 6 and all(isinstance(row, dict)
-                and set(row) == {"check", "passed", "counts"}
+                and set(row) == ({"check", "passed", "counts"} | (
+                    {"fired_items", "faulted_items", "signatures", "dropped_notes"}
+                    | ({"truncated"} if "truncated" in row else set())
+                    if v291 and row.get("check") == "C6" else set()))
+                and (not v291 or row.get("check") != "C6" or fault_feedback.lint_details_ok(row))
                 and row["check"] in ("C5b", "C6", "C6b", "C6c", "C7", "C9")
                 and type(row["passed"]) is bool and isinstance(row["counts"], dict)
                 and set(row["counts"]) <= engineer_v28.INFORMATION_COUNTS
@@ -785,12 +797,15 @@ def _lint_entry(entry, *, v25=False, v26=False, v27=False, v28=False, v29=False)
         for p in entry["problems"])
 
 
-def _training_ok(training, references, own, evaluated, bench, *, v24=False, v25=False, current=None, v28=False, v29=False):
+def _training_ok(training, references, own, evaluated, bench, *, v24=False, v25=False, current=None, v28=False, v29=False,
+                 v291=False):
     """v2 (Codex review 2026-10-23 #4): the last round's feedback exactly as ``step._feedback`` writes it; each
     example names one of this step's run-slice items (``own``) and that item's candidate-arm cell of the last training
     unit (``evaluated``: {cell: trajectory}), its texts within ``TRAIN_TEXT_CHARS``, and a reference only off ALFWorld
     and only the item's own (``Context.references``)."""
     fields = TRAINING_FIELDS | ({"unfixed_examples", "identical_items"} if v24 else set())
+    if v291:
+        fields |= {"format"}
     if v29 and "confirm" in training:
         from .engineer_v29 import confirm_feedback_ok
         if not confirm_feedback_ok(training["confirm"]):
@@ -808,13 +823,16 @@ def _training_ok(training, references, own, evaluated, bench, *, v24=False, v25=
             and all(_count(v) for v in training["generated"].values()) and isinstance(training["procedures"], list)):
         return False
     for entry in training["procedures"]:
-        if not (isinstance(entry, dict) and set(entry) == (FEEDBACK_FIELDS | ({"notes_coverage"} if v25 else set()))
+        if not (isinstance(entry, dict) and set(entry) == (FEEDBACK_FIELDS | ({"notes_coverage"} if v25 else set())
+                                                        | ({"faults"} if v291 else set()))
                 and _text(entry["id"], MAX_ID_CHARS, empty=False)
                 and entry["change"] in ("added", "removed", "narrowed")
                 and all(_count(entry[k]) for k in ("enabled_items", "fixed", "broken"))
                 and isinstance(entry["examples"], list) and len(entry["examples"]) <= 2 * TRAIN_EXAMPLES):
             return False
         if v25 and not _coverage_ok(entry["notes_coverage"], entry["enabled_items"]):
+            return False
+        if v291 and not _fault_feedback_ok(entry["faults"], own):
             return False
         if not all(_example_ok(example, references, own, evaluated, bench) for example in entry["examples"]):
             return False
@@ -843,6 +861,47 @@ def _training_ok(training, references, own, evaluated, bench, *, v24=False, v25=
                          if example["task_id"] in references else "reference unavailable")
             if example["reference"] != reference:
                 return False
+    if v291 and not _format_feedback_ok(training["format"], own, evaluated, training["guards"]["format"]):
+        return False
+    return True
+
+
+def _format_counts_ok(value):
+    return isinstance(value, dict) and set(value) == {"S", "S'"} and all(_count(n) for n in value.values())
+
+
+def _fault_feedback_ok(value, own):
+    if not (isinstance(value, dict) and set(value) == {"cells", "signatures"} and _count(value["cells"])
+            and isinstance(value["signatures"], list) and len(value["signatures"]) <= 3):
+        return False
+    return all(isinstance(row, dict) and set(row) == {"hook", "kind", "exc_type", "message", "cells", "example_task_id"}
+               and all(row[key] is None or type(row[key]) is str for key in ("hook", "kind", "exc_type"))
+               and _text(row["message"], 200) and _count(row["cells"]) and 0 < row["cells"] <= value["cells"]
+               and (row["example_task_id"] is None or type(row["example_task_id"]) is str and row["example_task_id"] in own)
+               for row in value["signatures"])
+
+
+def _format_feedback_ok(value, own, evaluated, passed):
+    if not (isinstance(value, dict) and set(value) == {"S", "S'", "margin", "blocked", "examples"}
+            and all(_count(value[key]) for key in ("S", "S'", "margin")) and type(value["blocked"]) is bool
+            and value["blocked"] == (not passed) and value["blocked"] == (value["S'"] - value["S"] > value["margin"])
+            and isinstance(value["examples"], list) and len(value["examples"]) <= 2):
+        return False
+    seen = set()
+    from .step import _format_example
+    for example in value["examples"]:
+        if not (isinstance(example, dict) and set(example) == {"task_id", "cell", "detail", "notes", "candidate_reply"}
+                and type(example["task_id"]) is str and example["task_id"] in own and example["task_id"] not in seen
+                and type(example["cell"]) is str
+                and all(_text(example[key], cap) for key, cap in (("detail", 300), ("notes", 600), ("candidate_reply", 600)))):
+            return False
+        trajectory = evaluated.get(example["cell"])
+        if trajectory is None or trajectory["task_id"] != example["task_id"] or trajectory.get("arm_kind") != "candidate":
+            return False
+        detail = (trajectory.get("judge") or {}).get("format") or {}
+        if not detail.get("violation") or example != _format_example(trajectory, detail):
+            return False
+        seen.add(example["task_id"])
     return True
 
 
@@ -1111,6 +1170,14 @@ def _ask(ctx, user, purpose):
         system = engineer_v29.system(ctx.configuration, train=ctx.mode == TRAIN)
         suffix = {"fix": engineer_v29.FIX_SYSTEM, "format_retry": engineer_v29.FORMAT_RETRY_SYSTEM,
                   "audit_fix": engineer_v29.AUDIT_FIX_SYSTEM}.get(user.get("request"))
+        if suffix:
+            system += suffix
+    if protocol.is_v291(ctx.configuration):
+        from . import engineer_v291
+        system = engineer_v291.system(ctx.configuration, train=ctx.mode == TRAIN)
+        suffix = {"fix": engineer_v29.FIX_SYSTEM, "format_retry": engineer_v29.FORMAT_RETRY_SYSTEM,
+                  "audit_fix": engineer_v29.AUDIT_FIX_SYSTEM,
+                  "fault_repair": engineer_v291.FAULT_REPAIR_INSTRUCTION}.get(user.get("request"))
         if suffix:
             system += suffix
     options = ({"max_tokens": protocol.ENGINEER_MAX_TOKENS[ctx.configuration]}
@@ -1790,6 +1857,10 @@ def _routing_checks(procedure, ctx, *, outcomes=None, actual=None):
     require(len(ctx.routing_items) <= 60, "C6c evaluates at most 60 registered routing items")
     firing = {"fires_on": 0, "items": len(ctx.routing_items), "predicate_faults": 0,
               "routing_view_keys": sorted({key for _, view in ctx.routing_items for key in view})}
+    capture_faults = protocol.is_v291(ctx.configuration)
+    if capture_faults:
+        from . import fault_feedback
+        firing["captures"] = []
     hook = "alf_before_step" if ctx.bench == "alfworld" else "before_call"
     run_items = set()
     run_entries = _run_entries(ctx, membership=run_items)
@@ -1828,7 +1899,10 @@ def _routing_checks(procedure, ctx, *, outcomes=None, actual=None):
     package = replay.solo(procedure)
 
     def count(item, view, worker):
-        routed = router.route(package, ctx.bench, view, worker)
+        capture = fault_feedback.CapturePredicate(worker) if capture_faults else worker
+        routed = router.route(package, ctx.bench, view, capture)
+        if capture_faults:
+            firing["captures"].append(fault_feedback.predicate_capture(procedure, item, view, routed, capture))
         faults = list(routed.faults)
         firing["predicate_faults"] += bool(routed.faults)
         if procedure.id not in routed.enabled:
@@ -1981,6 +2055,7 @@ def check(change, ctx, taken=()):
     entries = _scope(ctx, single, procedure)
     actual = {} if v24 else None
     crash, outcomes = replay.zero_crash(procedure, list(entries.values()), ctx.workers, inputs_dirs=ctx.inputs_dirs,
+                                       **({"capture_faults": True} if protocol.is_v291(ctx.configuration) else {}),
                                        **({"actual": actual} if v24 else {}),
                                        **({"diagnostic_cells": _feedback_cells(ctx)}
                                           if protocol.is_v26(ctx.configuration) else {}))
@@ -2044,7 +2119,8 @@ def check(change, ctx, taken=()):
     if not done("C9", not screen, screen if v28 else screen[:10]):
         return report
     if v28:
-        engineer_v28.advisory_feedback(change, report)
+        engineer_v28.advisory_feedback(change, report,
+                                       **({"configuration": ctx.configuration} if protocol.is_v291(ctx.configuration) else {}))
     report["passed"] = True
     return report
 

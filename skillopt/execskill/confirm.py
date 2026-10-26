@@ -16,6 +16,8 @@ ITEMS = 40
 FRESHNESS = {
     "zebra-pc-v7": "zebra_split_v1_confirm_spare_probe_smoke_first_use",
     "alfworld-v4": "alfworld_split_v1_confirm_spare_rooms_first_use",
+    "zebra-pc-v8": "zebra_split_v1_confirm_spare_probe_smoke_first_use",
+    "alfworld-v5": "alfworld_split_v1_confirm_spare_rooms_reused_after_alfworld_v4",
 }
 COUNT_FIELDS = ("items", "evaluated", "fixed", "broken", "net", "format_cells", "format_margin",
                 "candidate_cells", "passed", "reason", "reused_cells", "tokens", "exercise")
@@ -34,7 +36,7 @@ def slice_items(configuration, pool, *, excluded=()):
     require(len(by_id) == len(pool), "Duplicate confirmation pool item")
     require(not any(item.get("partition") in ("test", "sealed") for item in pool),
             "Confirmation uses practice pool items only")
-    if configuration == "zebra-pc-v7":
+    if profiles.is_zebra(configuration):
         split = zebralogic.slices(pool)
         require(len(split["spare"]) == 3 and len(split["smoke"]) == 10,
                 "Zebra confirmation needs the registered 3 spare and 10 smoke items")
