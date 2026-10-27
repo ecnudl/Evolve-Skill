@@ -671,7 +671,8 @@ class Context:
         v24, v25 = protocol.is_v24(self.configuration), protocol.is_v25(self.configuration)
         require(isinstance(self.history, list) and all(_history_line(entry, self.round, v24=v24,
                 v28=protocol.is_v28(self.configuration), v29=protocol.is_v29(self.configuration),
-                v291=protocol.is_v291(self.configuration)) for entry in self.history),
+                v291=protocol.is_v291(self.configuration),
+                v294=protocol.is_v294(self.configuration)) for entry in self.history),
                 "The history holds counts and flags only")
         require(isinstance(self.lint, list) and all(_lint_entry(entry, v25=v25,
                 **({"v26": True} if protocol.is_v26(self.configuration) else {}),
@@ -718,7 +719,7 @@ def _verdict_fields(entry):
             and (entry["reason"] is None or _text(entry["reason"], MAX_REASON_CHARS)))
 
 
-def _history_line(entry, before, *, v24=False, v28=False, v29=False, v291=False):
+def _history_line(entry, before, *, v24=False, v28=False, v29=False, v291=False, v294=False):
     """v2 (Codex review 2026-10-23 #4): a line of an earlier round exactly as ``step._line`` writes it -- counts,
     flags, the net, p and reason -- with its ``proposals`` (the step buffer): kind, registrar id, target, a description
     excerpt and the fate."""
@@ -742,7 +743,16 @@ def _history_line(entry, before, *, v24=False, v28=False, v29=False, v291=False)
         return False
     if v24 and (type(entry["patience_counted"]) is not bool or entry["patience_counted"] != entry["candidate"]):
         return False
-    return all(isinstance(p, dict) and set(p) == PROPOSAL_FIELDS and (p["kind"] is None or p["kind"] in EDIT_KINDS)
+    def proposal_fields(proposal):
+        fields = PROPOSAL_FIELDS
+        if v294 and proposal.get("fate") == "inert":
+            from . import inert_feedback
+            if not inert_feedback.causes_ok(proposal.get("inert_causes")):
+                return False
+            fields = fields | {"inert_causes"}
+        return set(proposal) == fields
+
+    return all(isinstance(p, dict) and proposal_fields(p) and (p["kind"] is None or p["kind"] in EDIT_KINDS)
                and all(p[k] is None or _text(p[k], MAX_ID_CHARS) for k in ("id", "target"))
                and _text(p["description"], TRAIN_PROPOSAL_CHARS) and _text(p["fate"], MAX_REASON_CHARS, empty=False)
                for p in entry["proposals"])
@@ -1193,12 +1203,22 @@ def _ask(ctx, user, purpose):
                   "fault_repair": engineer_v291.FAULT_REPAIR_INSTRUCTION}.get(user.get("request"))
         if suffix:
             system += suffix
-    if protocol.is_v293(ctx.configuration):
+    if protocol.is_v293(ctx.configuration) and not protocol.is_v294(ctx.configuration):
         from . import engineer_v293
         system = engineer_v293.system(ctx.configuration, train=ctx.mode == TRAIN)
         suffix = {"fix": engineer_v29.FIX_SYSTEM, "format_retry": engineer_v293.FORMAT_RETRY_SYSTEM,
                   "audit_fix": engineer_v29.AUDIT_FIX_SYSTEM,
                   "fault_repair": engineer_v291.FAULT_REPAIR_INSTRUCTION}.get(user.get("request"))
+        if suffix:
+            system += suffix
+    if protocol.is_v294(ctx.configuration):
+        from . import engineer_v293, engineer_v294
+        system = engineer_v294.system(ctx.configuration, train=ctx.mode == TRAIN)
+        suffix = {"fix": engineer_v29.FIX_SYSTEM, "format_retry": engineer_v293.FORMAT_RETRY_SYSTEM,
+                  "audit_fix": engineer_v29.AUDIT_FIX_SYSTEM,
+                  "fault_repair": engineer_v291.FAULT_REPAIR_INSTRUCTION,
+                  "inert_repair": engineer_v294.inert_repair_instruction(
+                      ctx.configuration, user.get("evidence", {}))}.get(user.get("request"))
         if suffix:
             system += suffix
     options = ({"max_tokens": protocol.ENGINEER_MAX_TOKENS[ctx.configuration]}
@@ -1911,6 +1931,14 @@ def _routing_checks(procedure, ctx, *, outcomes=None, actual=None):
                     current_views.setdefault(item, current["steps"][0]["view"])
     detail = {"hook": hook, "fired": 0, "empty": 0, "exceptions": 0, "nonempty": 0,
               "first_exception": None, "view_keys": [], "sample": None}
+    if protocol.is_v294(ctx.configuration):
+        detail["empty_task_ids"] = []
+
+    def empty_item(item):
+        # Only existing C6c calls that returned no screened note are sampled.
+        if (protocol.is_v294(ctx.configuration) and item in entries
+                and item not in detail["empty_task_ids"] and len(detail["empty_task_ids"]) < 2):
+            detail["empty_task_ids"].append(item)
     applicable = hook in procedure.hooks
     if not applicable:
         detail.update(status="not_applicable", reason="no_note_writing_hook")
@@ -1953,6 +1981,8 @@ def _routing_checks(procedure, ctx, *, outcomes=None, actual=None):
             present = any(note["hook"] == hook and bool(note["text"].strip())
                           for _, outcome in own for note in outcome.notes)
             detail["nonempty" if present else "empty"] += 1
+            if not present and any(outcome.applies and not outcome.faults for _, outcome in own):
+                empty_item(item)
             for cell, outcome in own:
                 failures = [fault for fault in outcome.faults if fault["kind"].startswith("crash:")
                             and fault["hook"] in replay.STEP_HOOKS]
@@ -1971,6 +2001,8 @@ def _routing_checks(procedure, ctx, *, outcomes=None, actual=None):
             return faults + [{"kind": result.get("fault")}]
         present = bool(replay.screened_note(procedure, ctx.bench, view, result).strip())
         detail["nonempty" if present else "empty"] += 1
+        if not present:
+            empty_item(item)
         return faults
 
     if ctx.routing_items and ctx.routing_shared_worker and protocol.is_v28(ctx.configuration):
@@ -2011,6 +2043,9 @@ def check(change, ctx, taken=()):
 
     benches = protocol.SUPPORTED_BENCHES if ctx.bench == "zebralogic" else BENCHES
     if v28:
+        if protocol.is_v294(ctx.configuration):
+            from . import inert_feedback
+            inert_feedback.remember_declaration(change, change.entry)
         try:
             report["dropped_tests"] = engineer_v28.prepare(change, ctx)
         except engineer_v28.reader.Unusable as error:
@@ -2111,6 +2146,11 @@ def check(change, ctx, taken=()):
             no_effect = not set(effect_hooks).intersection(procedure.hooks) or ctx.bench in procedure.excluded_benches
             report["inert"] = bool((from_replay and not routed["C6c"][1]["nonempty"])
                                    or from_routing or empty_notes or no_effect)
+            if protocol.is_v294(ctx.configuration) and report["inert"]:
+                from . import inert_feedback
+                report["inert_causes"], report["inert_evidence"] = inert_feedback.describe(
+                    change, ctx, report, effect_hooks=effect_hooks, from_replay=from_replay,
+                    from_routing=from_routing, outcomes=outcomes)
     elif protocol.CHECK_NON_FIRING[ctx.configuration] and not done("C6b", *_firing(procedure, ctx)):
         return report
     if not done("C4", *leak_check(change, ctx, outcomes, entries)):

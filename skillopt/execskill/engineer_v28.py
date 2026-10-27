@@ -259,6 +259,9 @@ def read_call(ctx, reply, call, purpose, *, change=None):
         entry = result["entry"]
         proposed = e.Change(change.n if change else n, entry["kind"], entry, result["source"], result_call,
                             repairs=(list(change.repairs or ()) if change else []) + result["repairs"])
+        if p.is_v294(ctx.configuration):
+            from . import inert_feedback
+            inert_feedback.remember_declaration(proposed, result.get('original', entry))
         changes.append(proposed)
     return changes, failures
 
@@ -319,6 +322,13 @@ def run(ctx):
                 repaired = {'fired': 0, 'faulted': 0, 'threshold': 1, 'triggered': False,
                             'calls': [], 'kept_index': 0, 'stop_reason': 'failed_checks', 'eligible': False}
             fault_fields['fault_repair'] = repaired
+        if p.is_v294(ctx.configuration) and final.kind in e.CODED:
+            from . import engineer_v294
+            final, current, checked, repaired = engineer_v294.repair(ctx, final, current, taken)
+            attempts.extend(checked)
+            survived = current['passed']
+            inert, deferred = bool(current.get('inert')), bool(current.get('deferred'))
+            fault_fields['inert_repair'] = repaired
         audit_fields = {}
         if p.is_v29(ctx.configuration) and survived and not inert and not deferred and final.kind in e.CODED:
             from . import audit
@@ -358,6 +368,8 @@ def run(ctx):
             lint.append(current["lint"])
         if p.is_v291(ctx.configuration):
             fault_fields['kept_attempt'] = next(index for index, attempt in enumerate(attempts) if attempt is current)
+        if p.is_v294(ctx.configuration) and inert:
+            fault_fields['inert_causes'] = current.get('inert_causes', [])
         outcomes.append({**final.to_json(), "attempts": attempts, "survived": survived, "inert": inert, "deferred": deferred,
                          "fix_calls": len(replies), "fix_replies": replies, "summary": e._summary(final),
                          **({"reason": "unparseable"} if replies and replies[-1] == "unparseable" else {}),
@@ -386,9 +398,13 @@ def run(ctx):
     if p.is_v292(ctx.configuration) and not p.is_v293(ctx.configuration):
         from . import engineer_v292
         fields['prompt_sha256'] = engineer_v292.audit.text_sha256(engineer_v292.system(ctx.configuration, train=train))
-    if p.is_v293(ctx.configuration):
+    if p.is_v293(ctx.configuration) and not p.is_v294(ctx.configuration):
         from . import engineer_v293
         fields['prompt_sha256'] = engineer_v293.audit.text_sha256(engineer_v293.system(ctx.configuration, train=train))
+    if p.is_v294(ctx.configuration):
+        from . import engineer_v294
+        fields['prompt_sha256'] = engineer_v294.audit.text_sha256(engineer_v294.system(ctx.configuration, train=train))
+        fields['inert_repair_calls'] = sum(len(row.get('inert_repair', {}).get('calls', [])) for row in outcomes)
     if train:
         fields.update(mode=e.TRAIN, round=ctx.round, base_sha256=ctx.base.sha256, budget=e.budget(ctx), lint=lint,
                       analysis=analysis, analyst_prompt_sha256=e.ANALYST_PROMPT_SHA256, disclosed=e._disclosed_items(ctx))

@@ -2041,7 +2041,9 @@ def _line(r, engineered, evaluated, *, configuration=None):
         leak_checked = stopped is None or stopped in ("C7", "C8", "C9")
         proposals.append({"kind": change["kind"] if change["kind"] in EDIT_KINDS else None, "id": change["id"],
                           "target": change["target"], "description": change["summary"] if leak_checked else "",
-                          "fate": fate})
+                          "fate": fate,
+                          **({"inert_causes": list(change.get("inert_causes", []))}
+                             if protocol.is_v294(configuration) and fate == "inert" else {})})
     line["proposals"] = proposals
     return line
 
