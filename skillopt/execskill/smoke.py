@@ -1353,8 +1353,8 @@ def max_role_calls(configuration=protocol.PILOT):
         return dict(MAX_ROLE_CALLS)
     train_calls = (protocol.TRAIN_ENGINEER_CALL_BUDGETS[configuration]
                    if protocol.is_v28(configuration) else protocol.TRAIN_ENGINEER_CALLS)
-    result = {"engineer": protocol.TRAIN_ROUNDS * (train_calls + protocol.TRAIN_ANALYST_CALLS),
-            "leakage": protocol.TRAIN_ROUNDS * (protocol.MAX_CHANGES + protocol.TRAIN_ENGINEER_CALLS - 1),
+    result = {"engineer": protocol.train_rounds(configuration) * (train_calls + protocol.TRAIN_ANALYST_CALLS),
+            "leakage": protocol.train_rounds(configuration) * (protocol.MAX_CHANGES + protocol.TRAIN_ENGINEER_CALLS - 1),
             "describer": DESCRIBER_CALLS,
             "examiner": MAX_ROLE_CALLS["examiner"]
             + protocol.GENERATOR_CALLS * protocol.BAND_ROUNDS * protocol.TOPUP_ROUNDS,
@@ -1362,8 +1362,8 @@ def max_role_calls(configuration=protocol.PILOT):
     if protocol.is_v29(configuration):
         from . import v29_limits
         bench = protocol.active_benches(configuration)[0]
-        result.update({role: v29_limits.judge_calls(protocol, bench) for role in v29_limits.JUDGE_ROLES})
-        result["leakage"] += protocol.TRAIN_ROUNDS * protocol.MAX_CHANGES
+        result.update({role: v29_limits.judge_calls(protocol, bench, configuration) for role in v29_limits.JUDGE_ROLES})
+        result["leakage"] += protocol.train_rounds(configuration) * protocol.MAX_CHANGES
         if protocol.is_v291(configuration):
             result.update(v29_limits.v291_role_calls(protocol, configuration))
     return result
@@ -1798,11 +1798,13 @@ def _sx(spec, m, setting, *, evidence=manifest.SMOKE_EVIDENCE, transport=None):
                               chain_root=chain_root, smoke=example)
     except Pause as pause:
         return {"stage": "SX", "complete": False, "stopped": pause.kind, "reason": pause.reason, "unit": pause.cell}
-    return record(spec, "SX", sx_judged(chain_root, found.record, registry, items, setting.budget.snapshot()),
+    return record(spec, "SX", sx_judged(chain_root, found.record, registry, items, setting.budget.snapshot(),
+                  **({"configuration": protocol.configuration_of(setting)}
+                     if protocol.is_v295(protocol.configuration_of(setting)) else {})),
                   evidence=evidence)
 
 
-def sx_judged(chain_root, value, registry, items, snapshot):
+def sx_judged(chain_root, value, registry, items, snapshot, *, configuration=None):
     """SX's rows from the example step's records: ``unit`` -- run, diagnose, generate, engineer-r1, selftest, accept
     and freeze complete and every completed unit named in the sealed step record; ``training`` -- at least one
     ``train-r<r>`` unit evaluated items (its cells > 0); ``acceptance`` -- the accept unit decided accept or reject on
@@ -1813,7 +1815,8 @@ def sx_judged(chain_root, value, registry, items, snapshot):
     open reservation and stay within their caps (``snapshot``). An acceptance on the last evaluated candidate because
     no round adopted is recorded as ``exercise``."""
     step_root = safe_path(chain_root) / ("s1-" + step.SMOKE_BENCH)
-    records = {name: _one(step_root / name / "unit.json", "unit") for name in step.UNITS_V2}
+    names = step.training_units(configuration) if protocol.is_v295(configuration) else step.UNITS_V2
+    records = {name: _one(step_root / name / "unit.json", "unit") for name in names}
     ran = {name: rec for name, rec in records.items() if rec is not None}
     needed = ("run", "diagnose", "generate", "engineer-r1", "selftest", "accept", "freeze")
     unit_ok = all(records[name] for name in needed) and value["units"] == {

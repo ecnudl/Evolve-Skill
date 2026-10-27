@@ -52,7 +52,7 @@ def test_child_clones_every_parent_table_with_only_registered_identity_changes(c
 
 
 def test_exact_child_roster_roots_and_freshness_labels():
-    assert {name for name in p.CONFIGURATIONS if p.is_v294(name)} == {p.ZEBRA_PC_V11, p.ALFWORLD_V8}
+    assert {name for name in p.CONFIGURATIONS if p.is_v294(name) and not p.is_v295(name)} == {p.ZEBRA_PC_V11, p.ALFWORLD_V8}
     assert p.ZEBRA_PC_V11_MANIFEST == p.ZEBRA_PC_V11_ROOT + '-manifest.json'
     assert p.ALFWORLD_V8_MANIFEST == p.ALFWORLD_V8_ROOT + '-manifest.json'
     assert p.ACCEPT_FRESHNESS[p.ZEBRA_PC_V11] == 'zebra_split_v1_slices_accept_after_zebra_pc_v9_v10_not_launched'

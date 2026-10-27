@@ -651,7 +651,8 @@ class Context:
     def _training_inputs(self, chain):
         """The train mode's own inputs (class docstring); returns the run-slice items a current or evaluated cell
         failed."""
-        require(type(self.round) is int and 1 <= self.round <= TRAIN_ROUNDS and isinstance(self.base, Package),
+        require(type(self.round) is int and 1 <= self.round <= protocol.train_rounds(self.configuration)
+                and isinstance(self.base, Package),
                 "A training round of the step's parent")
         require(self.parent.sha256 == self.base.sha256 or self.parent.parent_sha256 == self.base.sha256,
                 "The incumbent is the step's parent or one candidate of it")
@@ -1030,7 +1031,8 @@ def payload(ctx, analyses=None):
             user = engineer_payload.trim(user)
         return fit(user, "trajectories", ROLE_INPUT_BYTES)
     # v2: the round, the earlier rounds, the last evaluation and lint, the edit budget
-    user.update({"round": ctx.round, "rounds": TRAIN_ROUNDS, "history": ctx.history, "training": ctx.training,
+    user.update({"round": ctx.round, "rounds": protocol.train_rounds(ctx.configuration),
+                 "history": ctx.history, "training": ctx.training,
                  "lint": ctx.lint, "edits": budget(ctx), "analyses": list(analyses or [])})
     if protocol.TRIM_PAYLOADS[ctx.configuration]:
         user = engineer_payload.trim(user)
@@ -1211,9 +1213,19 @@ def _ask(ctx, user, purpose):
                   "fault_repair": engineer_v291.FAULT_REPAIR_INSTRUCTION}.get(user.get("request"))
         if suffix:
             system += suffix
-    if protocol.is_v294(ctx.configuration):
+    if protocol.is_v294(ctx.configuration) and not protocol.is_v295(ctx.configuration):
         from . import engineer_v293, engineer_v294
         system = engineer_v294.system(ctx.configuration, train=ctx.mode == TRAIN)
+        suffix = {"fix": engineer_v29.FIX_SYSTEM, "format_retry": engineer_v293.FORMAT_RETRY_SYSTEM,
+                  "audit_fix": engineer_v29.AUDIT_FIX_SYSTEM,
+                  "fault_repair": engineer_v291.FAULT_REPAIR_INSTRUCTION,
+                  "inert_repair": engineer_v294.inert_repair_instruction(
+                      ctx.configuration, user.get("evidence", {}))}.get(user.get("request"))
+        if suffix:
+            system += suffix
+    if protocol.is_v295(ctx.configuration):
+        from . import engineer_v293, engineer_v294, engineer_v295
+        system = engineer_v295.system(ctx.configuration, train=ctx.mode == TRAIN)
         suffix = {"fix": engineer_v29.FIX_SYSTEM, "format_retry": engineer_v293.FORMAT_RETRY_SYSTEM,
                   "audit_fix": engineer_v29.AUDIT_FIX_SYSTEM,
                   "fault_repair": engineer_v291.FAULT_REPAIR_INSTRUCTION,

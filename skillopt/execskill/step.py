@@ -200,6 +200,18 @@ UNITS_V29 = ("run", "diagnose", "generate",
              *("%s-r%d" % (kind, r) for r in range(1, TRAIN_ROUNDS + 1)
                for kind in ("engineer", "train", "confirm")),
              "audit-final", "selftest", "accept", "freeze")
+
+
+def training_units(configuration=None):
+    """Configuration-bound training unit names; legacy tuples remain frozen."""
+    if protocol.is_v295(configuration):
+        return ("run", "diagnose", "generate",
+                *("%s-r%d" % (kind, r) for r in range(1, protocol.train_rounds(configuration) + 1)
+                  for kind in ("engineer", "train", "confirm")),
+                "audit-final", "selftest", "accept", "freeze")
+    return UNITS_V29 if protocol.is_v29(configuration) else UNITS_V2
+
+
 QUESTION_FIELDS = {"searchqa": "question", "officeqa": "question", "livemath": "question",
                    "spreadsheetbench": "instruction", "alfworld": "task_text",
                    "zebralogic": "question"}  # v2 feedback: the item's question
@@ -300,9 +312,7 @@ class _Step:
     def units(self):
         """The step's sub-step units: v1's, the S4 mini-step's or v2's (``UNITS_V2``)."""
         if self.learning == TRAIN:
-            if protocol.is_v29(configuration_of(self.setting)):
-                return UNITS_V29
-            return UNITS_V2
+            return training_units(configuration_of(self.setting))
         return UNITS if self.smoke is None else SMOKE_UNITS
 
     def label(self, unit):
@@ -2053,7 +2063,7 @@ def _train(st, cut, generated):
     None)``. Completed round units are read back, so a restarted step passes through finished rounds without a call."""
     incumbent, done, fed, history, training, lint, reserved = st.parent, [], None, [], None, [], frozenset()
     out, last, misses, analysed, disclosed = [], None, 0, frozenset(), frozenset()
-    for r in range(1, TRAIN_ROUNDS + 1):
+    for r in range(1, protocol.train_rounds(configuration_of(st.setting)) + 1):
         engineered = _engineer_train(st, cut, r, incumbent, done=done, fed=fed, history=history, training=training,
                                      lint=lint, reserved=reserved, analysed=analysed, disclosed=disclosed,
                                      **({"generated": generated}

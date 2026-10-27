@@ -107,7 +107,7 @@ def prepare(change, ctx):
     change.repairs = log
     # Direct check() callers use exactly the same schema engine as model replies.
     change.entry = reader.normalize(change.entry, reader.schema(change.kind, train=ctx.mode == e.TRAIN,
-        source=change.source or "", entry=change.entry), repairs=log)
+        source=change.source or "", entry=change.entry), repairs=log, configuration=ctx.configuration)
     if change.kind not in e.CODED:
         return []
     entry = change.entry
@@ -153,7 +153,8 @@ def prepare(change, ctx):
         test = original
         if isinstance(test, dict):
             try:
-                test = reader.normalize(test, reader.test_schema(test), path="$.replay_tests[%d]" % (index - 1), repairs=log)
+                test = reader.normalize(test, reader.test_schema(test), path="$.replay_tests[%d]" % (index - 1),
+                                        repairs=log, configuration=ctx.configuration)
             except reader.Unusable:
                 pass
         reason = replay.validate_test(test, declared, scope)
@@ -402,8 +403,9 @@ def run(ctx):
         from . import engineer_v293
         fields['prompt_sha256'] = engineer_v293.audit.text_sha256(engineer_v293.system(ctx.configuration, train=train))
     if p.is_v294(ctx.configuration):
-        from . import engineer_v294
-        fields['prompt_sha256'] = engineer_v294.audit.text_sha256(engineer_v294.system(ctx.configuration, train=train))
+        from . import engineer_v294, engineer_v295
+        prompt = engineer_v295 if p.is_v295(ctx.configuration) else engineer_v294
+        fields['prompt_sha256'] = prompt.audit.text_sha256(prompt.system(ctx.configuration, train=train))
         fields['inert_repair_calls'] = sum(len(row.get('inert_repair', {}).get('calls', [])) for row in outcomes)
     if train:
         fields.update(mode=e.TRAIN, round=ctx.round, base_sha256=ctx.base.sha256, budget=e.budget(ctx), lint=lint,

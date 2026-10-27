@@ -270,8 +270,14 @@ def prompt_sha(configuration=None):
             from . import engineer_v293
             if protocol.is_v294(configuration):
                 from . import engineer_v294
-                out["engineer"] = _sha_text_digest(engineer_v294.system(configuration, train=False))
-                out["v2"]["engineer"] = _sha_text_digest(engineer_v294.system(configuration, train=True))
+                if protocol.is_v295(configuration):
+                    from . import engineer_v295
+                    out["engineer"] = _sha_text_digest(engineer_v295.system(configuration, train=False))
+                    out["v2"]["engineer"] = _sha_text_digest(engineer_v295.system(configuration, train=True))
+                    out["v295"] = engineer_v295.prompt_pins()
+                else:
+                    out["engineer"] = _sha_text_digest(engineer_v294.system(configuration, train=False))
+                    out["v2"]["engineer"] = _sha_text_digest(engineer_v294.system(configuration, train=True))
                 out["v294"] = engineer_v294.prompt_pins()
             else:
                 out["engineer"] = _sha_text_digest(engineer_v293.system(configuration, train=False))
@@ -902,7 +908,7 @@ def outcome_engineer_features(configuration):
                     "trigger": "faulted >= max(1, ceil(fired / 10))",
                     "keep": "passed_fatal_checks_and_not_deferred_and_strictly_fewer_faulted_items"},
                     "train_patience": protocol.train_patience(configuration),
-                    "train_rounds": protocol.TRAIN_ROUNDS, "fault_evidence": "captured_call_arguments_and_source_context"})
+                    "train_rounds": protocol.train_rounds(configuration), "fault_evidence": "captured_call_arguments_and_source_context"})
     if protocol.is_v294(configuration):
         out["inert_repair"] = {
             "calls_per_change": protocol.INERT_REPAIRS,
@@ -930,14 +936,14 @@ def audit_features(configuration):
 def alfworld_registration_key(configuration):
     """The configuration's preparation metadata field; v1 retains its original schema."""
     require(protocol.is_alfworld(configuration), "A registered ALFWorld configuration")
-    return ("alfworld_v8" if protocol.is_v294(configuration) else "alfworld_v7" if protocol.is_v293(configuration) else "alfworld_v6" if protocol.is_v292(configuration) else "alfworld_v5" if protocol.is_v291(configuration) else "alfworld_v4" if protocol.is_v29(configuration) else "alfworld_v3" if protocol.is_v28(configuration) else
+    return ("alfworld_v9" if protocol.is_v295(configuration) else "alfworld_v8" if protocol.is_v294(configuration) else "alfworld_v7" if protocol.is_v293(configuration) else "alfworld_v6" if protocol.is_v292(configuration) else "alfworld_v5" if protocol.is_v291(configuration) else "alfworld_v4" if protocol.is_v29(configuration) else "alfworld_v3" if protocol.is_v28(configuration) else
             "alfworld_v2" if protocol.is_alfworld_v2(configuration) else "alfworld_v1")
 
 
 def _check_alfworld(value):
     """Validate the preparation metadata linkage, without opening any test or pool file."""
     data = value["data"]
-    label = ("ALFWorld v8" if protocol.is_v294(value["configuration"]) else "ALFWorld v7" if protocol.is_v293(value["configuration"]) else "ALFWorld v6" if protocol.is_v292(value["configuration"]) else "ALFWorld v5" if protocol.is_v291(value["configuration"]) else "ALFWorld v4" if protocol.is_v29(value["configuration"]) else "ALFWorld v3" if protocol.is_v28(value["configuration"]) else
+    label = ("ALFWorld v9" if protocol.is_v295(value["configuration"]) else "ALFWorld v8" if protocol.is_v294(value["configuration"]) else "ALFWorld v7" if protocol.is_v293(value["configuration"]) else "ALFWorld v6" if protocol.is_v292(value["configuration"]) else "ALFWorld v5" if protocol.is_v291(value["configuration"]) else "ALFWorld v4" if protocol.is_v29(value["configuration"]) else "ALFWorld v3" if protocol.is_v28(value["configuration"]) else
              "ALFWorld v2" if protocol.is_alfworld_v2(value["configuration"]) else "ALFWorld v1")
     require(data.get("alfworld_features") == alfworld_features(value["configuration"]),
             "The ALFWorld feature family is pinned by value")

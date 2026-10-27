@@ -231,7 +231,7 @@ def _relocate(value, fields, path, repairs):
                             "to": path + "." + ".".join(target)})
 
 
-def normalize(value, fields, *, inherited=(), path="$", repairs=None):
+def normalize(value, fields, *, inherited=(), path="$", repairs=None, configuration=None):
     """One walker for every object: relocate, ignore, inherit, derive, default."""
     repairs = repairs if repairs is not None else []
     _bounded_structure(value)
@@ -269,6 +269,10 @@ def normalize(value, fields, *, inherited=(), path="$", repairs=None):
                 value[key], rule = copy.deepcopy(spec.default), "schema_default"
             repairs.append({"rule": rule, "path": path + "." + key})
         expected = spec.type if isinstance(spec.type, tuple) else (spec.type,)
+        if (p.is_v295(configuration) and expected == (bool,) and type(value[key]) is int
+                and value[key] in (0, 1)):
+            repairs.append({"rule": "integer_boolean", "path": path + "." + key, "from": value[key]})
+            value[key] = bool(value[key])
         if type(value[key]) not in expected:
             # Scalar wrapping and lossless numeric conversions are generic.
             original = value[key]
@@ -278,7 +282,8 @@ def normalize(value, fields, *, inherited=(), path="$", repairs=None):
                 value[key] = [original]
             elif expected == (int,) and isinstance(original, str) and re.fullmatch(r"[+-]?\d+", original):
                 value[key] = int(original)
-            elif expected == (bool,) and isinstance(original, str) and original.lower() in ("true", "false"):
+            elif (expected == (bool,) and isinstance(original, str)
+                  and original.lower() in ("true", "false")):
                 value[key] = original.lower() == "true"
             else:
                 raise Unusable("%s.%s must have type %s, got %s" % (
@@ -287,7 +292,7 @@ def normalize(value, fields, *, inherited=(), path="$", repairs=None):
         if spec.children:
             value[key] = normalize(value[key], spec.children,
                 inherited=tuple(parent.get(key, {}) if isinstance(parent, dict) else {} for parent in inherited),
-                path=path + "." + key, repairs=repairs)
+                path=path + "." + key, repairs=repairs, configuration=configuration)
     return value
 
 
@@ -552,7 +557,9 @@ def _read(reply, ctx, *, fix_change=None, selection=None, metadata=None):
             raise Unusable("expected one manifest object, found %d" % len(manifests))
         manifest, repairs = tolerant_json(manifests[0][1])
         excluded = {manifests[0][0]}
-    manifest = normalize(manifest, {"changes": Field(list, True, [])}, repairs=repairs)
+    configuration = getattr(ctx, "configuration", None)
+    manifest = normalize(manifest, {"changes": Field(list, True, [])}, repairs=repairs,
+                         configuration=configuration)
     entries = manifest["changes"]
     v292 = p.is_v292(getattr(ctx, "configuration", None))
     if v292 and metadata is not None:
@@ -608,12 +615,12 @@ def _read(reply, ctx, *, fix_change=None, selection=None, metadata=None):
                               else getattr(parent, key) for key in schema(kind) if hasattr(parent, key)} if parent else {})
             inherited = (fix_change.entry if fix_change else {}, parent_values)
             entry = normalize(entry, schema(kind, train=ctx.mode == "train", source=source or "", entry=entry, target=target),
-                              inherited=inherited, repairs=log)
+                              inherited=inherited, repairs=log, configuration=configuration)
             for n, test in enumerate(entry.get("replay_tests", [])):
                 if isinstance(test, dict):
                     try:
                         entry["replay_tests"][n] = normalize(test, test_schema(test),
-                            path="$.replay_tests[%d]" % n, repairs=log)
+                            path="$.replay_tests[%d]" % n, repairs=log, configuration=configuration)
                     except Unusable as error:
                         log.append({"rule": "malformed_test", "path": "$.replay_tests[%d]" % n, "reason": str(error)})
             results.append({"entry": entry, "source": source, "repairs": log, "error": None})
