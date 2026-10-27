@@ -46,7 +46,7 @@ from skillopt.continual_eval.code_delivery import extract_python
 from skillopt.continual_eval.core import require
 from skillopt.envs.searchqa.evaluator import extract_answer, normalize_answer
 
-from . import outcomes_ext, zebralogic
+from . import alfworld_format, outcomes_ext, zebralogic
 from .profiles import ALFWORLD_ADMISSIBLE_MIN, SUPPORTED_BENCHES as BENCHES, QA, kind
 
 SCORER = "execskill-judge-v2"  # §4.4: the scorer's own version
@@ -72,6 +72,7 @@ def judge(bench, public, private, prediction, receipts=(), *, runtime, score=Non
     (``outcomes_ext.deciding_receipt`` by default)."""
     require(bench in BENCHES, "Unknown benchmark")
     require(isinstance(prediction, dict) and isinstance(private, dict), "A prediction and a private part are mappings")
+    alf_v296 = bench == "alfworld" and alfworld_format.validate(runtime)
     receipts = list(receipts)
     if deciding is None:
         deciding = outcomes_ext.deciding_receipt(prediction, receipts)
@@ -99,14 +100,16 @@ def judge(bench, public, private, prediction, receipts=(), *, runtime, score=Non
     lenient = scoring.lenient(bench, private, {"status": "available", "output": TAG % answer}
                               if carrier == "json" else prediction)
     revised = runtime.get("code_extraction_version") == "explicit-python-fences-v2"
-    return {"version": kind("judge-v2-3" if revised else "judge"),
-            "scorer": "execskill-judge-v2-3" if revised else SCORER, "official": official,
+    return {"version": kind("judge-v2-9-6" if alf_v296 else "judge-v2-3" if revised else "judge"),
+            "scorer": "execskill-judge-v2-9-6" if alf_v296 else "execskill-judge-v2-3" if revised else SCORER,
+            "official": official,
             "final": {"token": final, "outcome": verdict.outcome, "kind": verdict.kind, "row": verdict.row,
                       "public": outcomes.public(verdict)},
             "v2": {"token": v2}, "lenient": {"pass": lenient},
             "format": ({"reply": reply is not None, "grid": zebralogic.format_valid(public, private, reply),
                         "violation": None if final in UNKNOWN_TOKENS else not zebralogic.format_valid(public, private, reply)}
-                       if bench == zebralogic.BENCH else _format(bench, prediction, reply, answer, final)),
+                       if bench == zebralogic.BENCH else _format(bench, prediction, reply, answer, final,
+                                                               alf_v296=alf_v296)),
             "flags": _flags(bench, private, prediction, receipts, deciding, final, v2, lenient), "carrier": carrier}
 
 
@@ -218,9 +221,9 @@ def _passes(bench, public, private, answer, runtime):
     return backends.score(bench, public, private, wrapped, runtime=runtime).get("status") == "pass"
 
 
-def _format(bench, prediction, reply, answer, final):
+def _format(bench, prediction, reply, answer, final, *, alf_v296=False):
     """The format flags of the cell; ``violation`` is J4's (§6.4: QA no usable answer tag, LiveMath not one letter,
-    SpreadsheetBench no program, ALFWorld an admissible share below 0.9), None for an unknown cell (J4 counts those by
+    SpreadsheetBench no program, ALFWorld its runtime-pinned rule), None for an unknown cell (J4 counts those by
     arm, coevo5 step.py:160-181)."""
     unknown = final in UNKNOWN_TOKENS
     if bench == "spreadsheetbench":
@@ -231,7 +234,7 @@ def _format(bench, prediction, reply, answer, final):
                 "cases_available": sum(isinstance(c, dict) and c.get("status") == "available" for c in cases),
                 "violation": None if unknown else not delivered}
     if bench == "alfworld":
-        return _alfworld_format(prediction, unknown)
+        return _alfworld_format(prediction, unknown, v296=alf_v296)
     if reply is None:
         return {"reply": False, "violation": None if unknown else True}
     tag = last_answer(reply)
@@ -250,9 +253,13 @@ def _format(bench, prediction, reply, answer, final):
     return flags
 
 
-def _alfworld_format(prediction, unknown):
+def _alfworld_format(prediction, unknown, *, v296=False):
     """The executed actions' admissible share, from the shell's step log (``shell.alfworld_steps[i].how`` of the
-    level-1 canonicaliser: every value but ``unchanged`` executed an admissible command); None without a shell."""
+    level-1 canonicaliser: every value but ``unchanged`` executed an admissible command).
+
+    v2.9.6 uses only unreadable actions for its primary flag, with None for an
+    unknown cell or absent/empty log. The two share rules remain diagnostics.
+    """
     shell = prediction.get("shell")
     hows = None
     if isinstance(shell, dict):
@@ -269,7 +276,15 @@ def _alfworld_format(prediction, unknown):
         violation = None
     else:
         violation = admissible * ALFWORLD_ADMISSIBLE_MIN.denominator < ALFWORLD_ADMISSIBLE_MIN.numerator * len(hows)
-    return {"steps": None if hows is None else len(hows), "admissible_steps": admissible, "violation": violation}
+    found = {"steps": None if hows is None else len(hows), "admissible_steps": admissible, "violation": violation}
+    if v296:
+        below_half = violation
+        if not unknown and prediction.get("reason") != "invalid_action_format" and hows:
+            below_half = 2 * admissible < len(hows)
+        found.update(violation_at_9_10=violation, violation_below_half=below_half, rule=alfworld_format.RULE)
+        found["violation"] = (None if unknown or not hows else
+                              prediction.get("reason") == "invalid_action_format")
+    return found
 
 
 def _flags(bench, private, prediction, receipts, deciding, final, v2, lenient):

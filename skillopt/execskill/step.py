@@ -494,7 +494,9 @@ def _alfworld_views(st, cut):
         cut["confirm"] = attach(cut["confirm"], st.setting.extra.get("alf_confirm_views"),
             configuration=configuration_of(st.setting), runtime=st.runtime(),
             confirm_pin=st.setting.extra.get("confirm"))
-    pinned = digest(st.runtime())
+    from .alfworld_format import environment_runtime, validate
+    validate(st.runtime(), configuration_of(st.setting))
+    pinned = digest(environment_runtime(st.runtime()))
     for name in (("run", "accept", "confirm") if "confirm" in cut else ("run", "accept")):
         for item in cut[name]:
             solver.routing_view(st.bench, item["public"], runtime=st.runtime())
@@ -1877,7 +1879,9 @@ def _confirm_identities(st, items, evaluated, incumbent, candidate, signatures):
                 item = items[key]
                 view_sha256 = item["public"].get("routing_view_sha256")
                 card = st.setting.cards.get(st.bench)
-                require(view_sha256 and item.get("views_runtime_sha256") == digest(st.runtime()),
+                from .alfworld_format import environment_runtime, validate
+                validate(st.runtime(), configuration_of(st.setting))
+                require(view_sha256 and item.get("views_runtime_sha256") == digest(environment_runtime(st.runtime())),
                         "ALFWorld confirmation requires pinned view and runtime identities")
                 require(isinstance(card, str) and bool(card), "ALFWorld confirmation requires its pinned card")
                 identities[key][arm] = {

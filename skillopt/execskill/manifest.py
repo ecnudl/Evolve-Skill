@@ -426,6 +426,9 @@ def check(manifest):
     configuration = value["configuration"]
     require(configuration in protocol.CONFIGURATIONS and value["caps"] == budgets.caps(configuration),
             "The manifest names a registered run configuration and carries its caps (registrar 17:0x)")
+    if "alfworld" in value["runtime"]:
+        from . import alfworld_format
+        alfworld_format.validate(value["runtime"]["alfworld"], configuration)
     real = set(protocol.REAL_RUN_EVIDENCE.values())
     require(value["evidence"] not in real or value["evidence"] == protocol.REAL_RUN_EVIDENCE[configuration],
             "A real run's evidence label is its configuration's: %s" % protocol.REAL_RUN_EVIDENCE[configuration])
@@ -485,6 +488,10 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
         given = {**given, "clients": {**given["clients"], "roles": role_settings(configuration)},
                  "data": {**given["data"], "zebra_pc_features": zebra_features(configuration)}}
     if protocol.is_alfworld(configuration):
+        if protocol.is_v296(configuration):
+            from . import alfworld_format
+            given = {**given, "runtime": {**given["runtime"], "alfworld":
+                     alfworld_format.bind(given["runtime"]["alfworld"], configuration)}}
         given = {**given, "clients": {**given["clients"], "roles": role_settings(configuration)},
                  "data": {**given["data"], "alfworld_features": alfworld_features(configuration)}}
     if protocol.is_v29(configuration):
@@ -879,6 +886,8 @@ def alfworld_features(configuration=protocol.ALFWORLD_V1):
                    "note_cap": p.MAX_NOTE_CHARS["alfworld"], "cell_anchors": p.CELL_ANCHORS["alfworld"],
                    "max_steps": p.ALFWORLD_MAX_STEPS, "routing_view": p.ALFWORLD_ROUTING_VIEW,
                    "generator": "selection_only", "placebo_i": False, "j7": False, "notes_coverage": False,
+                   **({"format_rule": p.alfworld_format_rule(configuration)}
+                      if p.is_v296(configuration) else {}),
                    **({"outcome_engineer": outcome_engineer_features(configuration)}
                       if p.is_v28(configuration) else {})})
 
@@ -936,14 +945,16 @@ def audit_features(configuration):
 def alfworld_registration_key(configuration):
     """The configuration's preparation metadata field; v1 retains its original schema."""
     require(protocol.is_alfworld(configuration), "A registered ALFWorld configuration")
-    return ("alfworld_v9" if protocol.is_v295(configuration) else "alfworld_v8" if protocol.is_v294(configuration) else "alfworld_v7" if protocol.is_v293(configuration) else "alfworld_v6" if protocol.is_v292(configuration) else "alfworld_v5" if protocol.is_v291(configuration) else "alfworld_v4" if protocol.is_v29(configuration) else "alfworld_v3" if protocol.is_v28(configuration) else
+    return ("alfworld_v10" if protocol.is_v296(configuration) else "alfworld_v9" if protocol.is_v295(configuration) else "alfworld_v8" if protocol.is_v294(configuration) else "alfworld_v7" if protocol.is_v293(configuration) else "alfworld_v6" if protocol.is_v292(configuration) else "alfworld_v5" if protocol.is_v291(configuration) else "alfworld_v4" if protocol.is_v29(configuration) else "alfworld_v3" if protocol.is_v28(configuration) else
             "alfworld_v2" if protocol.is_alfworld_v2(configuration) else "alfworld_v1")
 
 
 def _check_alfworld(value):
     """Validate the preparation metadata linkage, without opening any test or pool file."""
+    from . import alfworld_format
     data = value["data"]
-    label = ("ALFWorld v9" if protocol.is_v295(value["configuration"]) else "ALFWorld v8" if protocol.is_v294(value["configuration"]) else "ALFWorld v7" if protocol.is_v293(value["configuration"]) else "ALFWorld v6" if protocol.is_v292(value["configuration"]) else "ALFWorld v5" if protocol.is_v291(value["configuration"]) else "ALFWorld v4" if protocol.is_v29(value["configuration"]) else "ALFWorld v3" if protocol.is_v28(value["configuration"]) else
+    alfworld_format.validate(value["runtime"]["alfworld"], value["configuration"])
+    label = ("ALFWorld v10" if protocol.is_v296(value["configuration"]) else "ALFWorld v9" if protocol.is_v295(value["configuration"]) else "ALFWorld v8" if protocol.is_v294(value["configuration"]) else "ALFWorld v7" if protocol.is_v293(value["configuration"]) else "ALFWorld v6" if protocol.is_v292(value["configuration"]) else "ALFWorld v5" if protocol.is_v291(value["configuration"]) else "ALFWorld v4" if protocol.is_v29(value["configuration"]) else "ALFWorld v3" if protocol.is_v28(value["configuration"]) else
              "ALFWorld v2" if protocol.is_alfworld_v2(value["configuration"]) else "ALFWorld v1")
     require(data.get("alfworld_features") == alfworld_features(value["configuration"]),
             "The ALFWorld feature family is pinned by value")
@@ -975,7 +986,7 @@ def _check_alfworld(value):
             and type(contract["text"]) is str
             and contract["sha"] == registered["contract_sha256"] == hashlib.sha256(contract["text"].encode()).hexdigest(),
             "The ALFWorld contract differs from its preparation pin")
-    require(registered["runtime_sha256"] == digest(value["runtime"]["alfworld"]),
+    require(registered["runtime_sha256"] == digest(alfworld_format.environment_runtime(value["runtime"]["alfworld"])),
             "The ALFWorld runtime differs from its preparation pin")
     require(data["pools"]["alfworld"] == registered["pool"], "The ALFWorld pool differs from its preparation pin")
     if protocol.is_v29(value["configuration"]):

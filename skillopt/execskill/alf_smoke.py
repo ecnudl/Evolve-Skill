@@ -138,6 +138,8 @@ def preparation(path):
 
 
 def _slices(items, runtime):
+    from .alfworld_format import environment_runtime
+    runtime = environment_runtime(runtime)
     require(all(item.get("benchmark") == BENCH and item.get("part") == supply.FRESH_PART for item in items),
             "The registered fresh ALFWorld supply only")
     cut = supply.slices(BENCH, supply.order(BENCH, items), supply.registered_sizes(BENCH))
@@ -152,6 +154,8 @@ def _slices(items, runtime):
 
 def fixture_items(runtime):
     """Two authored stateful episodes; paths are labels consumed only by _FixtureEnv."""
+    from .alfworld_format import environment_runtime
+    runtime = environment_runtime(runtime)
     rows = []
     for number in range(2):
         view = solver.alfworld_routing_view(FIXTURE_INITIAL, ["look", "inventory", FIXTURE_EPISODE[0][0]])
@@ -221,6 +225,9 @@ def collect_s0(out, *, preparation_file, snapshot_root=manifest.REPO, selftest=N
     items = manifest._items(imported["pool"], BENCH)
     cut = _slices(items, imported["runtime"][BENCH])
     additional = {}
+    if p.is_v296(configuration):
+        from .alfworld_format import bind
+        additional["judge_runtime"] = bind(imported["runtime"][BENCH], configuration)
     if p.is_v29(configuration):
         from . import alf_confirm_views, confirm
         viewed = alf_confirm_views.load_for_preparation(confirm_views, configuration=configuration,
@@ -228,7 +235,7 @@ def collect_s0(out, *, preparation_file, snapshot_root=manifest.REPO, selftest=N
         selected, pin = confirm.slice_items(configuration, items)
         cut["confirm"] = alf_confirm_views.attach(selected, viewed, configuration=configuration,
                                                 runtime=imported["runtime"][BENCH], confirm_pin=pin)
-        additional = {"alf_confirm_views": viewed}
+        additional["alf_confirm_views"] = viewed
     out.mkdir(parents=True, exist_ok=True)
     fixtures = fixture_items(imported["runtime"][BENCH])
     fixture_file = out / "synthetic-fixtures.json"
@@ -260,6 +267,10 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, elucid_env, rou
     require(checked["passed"] and checked["configuration"] == configuration, "A passing ALFWorld S0")
     imported = preparation(checked["registration"]["preparation"]["path"])
     require(all(checked[key] == value for key, value in imported.items()), "The preparation still matches S0")
+    if p.is_v296(configuration):
+        from .alfworld_format import bind
+        require(checked.get("judge_runtime") == bind(imported["runtime"][BENCH], configuration),
+                "S0 pins the configured ALFWorld format runtime")
     additional = {}
     if p.is_v29(configuration):
         from . import alf_confirm_views, confirm

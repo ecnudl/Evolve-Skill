@@ -9,6 +9,8 @@ ABSTAIN_RULE = (
 
 
 def system(configuration, *, train):
+    if p.is_v296(configuration):
+        return system(p.ALFWORLD_V9, train=train)
     parent = {'zebra-pc-v12': 'zebra-pc-v11', 'alfworld-v9': 'alfworld-v8'}[configuration]
     text = engineer_v294.system(parent, train=train).replace('(v2.9.4)', '(v2.9.5)')
     # The parent's frozen wording remains exact except for L1's changed limits.

@@ -96,6 +96,9 @@ def _view(value):
 def validate(value, *, configuration, runtime, confirm_pin, preparation=None, pool=None, source=None):
     """Validate a by-value sealed record, including exactly the forty expected IDs."""
     _profile(configuration)
+    if p.is_v296(configuration):
+        from .alfworld_format import environment_runtime
+        runtime = environment_runtime(runtime)
     require(isinstance(value, dict), "v2.9 ALFWorld requires sealed confirm views before S0")
     value = p.verified(value, KIND)
     require(value.get("configuration") == configuration and value.get("runtime_sha256") == digest(runtime),

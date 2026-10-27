@@ -26,6 +26,7 @@ FRESHNESS = {
     "alfworld-v8": "alfworld_split_v1_confirm_spare_rooms_after_alfworld_v7",
     "zebra-pc-v12": "zebra_split_v1_confirm_after_zebra_pc_v9_v11",
     "alfworld-v9": "alfworld_split_v1_confirm_spare_rooms_after_alfworld_v7_v8_not_launched",
+    "alfworld-v10": "alfworld_split_v1_confirm_spare_rooms_after_alfworld_v7_v9_stopped",
 }
 COUNT_FIELDS = ("items", "evaluated", "fixed", "broken", "net", "format_cells", "format_margin",
                 "candidate_cells", "passed", "reason", "reused_cells", "tokens", "exercise")
