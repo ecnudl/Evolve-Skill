@@ -11,7 +11,7 @@ from skillopt.execskill.errors import CleanupUnconfirmed
 from skillopt.execskill.sandbox import client
 from tests.test_execskill_manifest import FakeDockerCLI, PING
 from tests.test_execskill_v292_cleanup_plumbing import setting, EVENT as CLEANUP
-from tests.test_execskill_v28_profile import tmp_path
+from tests.execskill_v293_fakes import tmp_path
 from tests.test_execskill_zpc_pipeline import offline  # noqa: F401
 
 CONFIGS = ('zebra-pc-v9', 'alfworld-v6', 'zebra-pc-v8', 'alfworld-v5')
@@ -21,7 +21,7 @@ START = {'container': client.PREFIX + 'a' * 32, 'seconds': 30.0,
 
 def test_ready_timeout_and_manifest_pin_only_change_the_two_children():
     for config in p.CONFIGURATIONS:
-        child = config in ('zebra-pc-v9', 'alfworld-v6')
+        child = p.is_v292(config)
         assert p.ready_timeout_seconds(config) == (90 if child else 20)
         pins = manifest.registered(config)['thresholds']
         assert ('sandbox_ready_timeout_seconds' in pins) is child

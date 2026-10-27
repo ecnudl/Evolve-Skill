@@ -185,18 +185,26 @@ def _retry(ctx, reply, error, purpose, *, change=None, index=None, change_count=
         request.update(instruction=engineer_v292.FORMAT_RETRY_SYSTEM, change_count=change_count)
         if isinstance(change_id, str):
             request["change_id"] = change_id
+    envelope = p.is_v293(ctx.configuration) and change is None and index is None
+    if p.is_v293(ctx.configuration):
+        from . import engineer_v293
+        request["instruction"] = engineer_v293.FORMAT_RETRY_SYSTEM
     if change is not None:
         request["change"] = dict(change.entry, source=change.source)
     fixed, call = e._ask(ctx, request, "format-retry/" + purpose)
     event = {"purpose": purpose, "call": call, "parse_problem": error, "parsed": False}
     ctx.sheet.setdefault("format_retries", []).append(event)
     selection = {"change_index": index, "change_count": change_count, "change_id": change_id} if v292 else None
+    envelope_metadata = {}
     try:
-        results = (reader.read(fixed, ctx, fix_change=change, selection=selection) if v292
+        results = (reader.read(fixed, ctx, metadata=envelope_metadata) if envelope else
+                   reader.read(fixed, ctx, fix_change=change, selection=selection) if v292
                    else reader.read(fixed, ctx, fix_change=change))
+        if envelope and not results:
+            raise reader.Unusable("format retry must contain at least one change")
         if index is not None and len(results) != 1:
             raise reader.Unusable("format retry must contain exactly the requested change")
-        if any(result["error"] for result in results):
+        if not envelope and any(result["error"] for result in results):
             raise reader.Unusable(next(result["error"] for result in results if result["error"]))
         event["parsed"] = True
         return results, call
@@ -204,7 +212,9 @@ def _retry(ctx, reply, error, purpose, *, change=None, index=None, change_count=
         event["reason"] = str(problem)
         return None, call
     finally:
-        if v292:
+        if envelope:
+            event.update(selected_by="envelope", reply_change_count=envelope_metadata.get("change_count"))
+        elif v292:
             event.update({key: selection[key] for key in ("selected_by", "reply_change_count") if key in selection})
 
 
@@ -217,6 +227,7 @@ def read_call(ctx, reply, call, purpose, *, change=None):
     """At most one format retry for each unusable change (or unreadable envelope)."""
     from . import engineer as e
     v292, metadata = p.is_v292(ctx.configuration), {}
+    envelope_retried = False
     try:
         results = (reader.read(reply, ctx, fix_change=change, metadata=metadata) if v292
                    else reader.read(reply, ctx, fix_change=change))
@@ -228,10 +239,14 @@ def read_call(ctx, reply, call, purpose, *, change=None):
                                  if v292 else {}))
         if results is None:
             return [], [{"n": change.n if change else 1, "reason": "unparseable", "detail": str(problem)}]
+        envelope_retried = p.is_v293(ctx.configuration) and change is None
     changes, failures = [], []
     for n, result in enumerate(results, 1):
         result_call = call
         if result["error"]:
+            if envelope_retried:
+                failures.append({"n": n, "reason": "unparseable", "detail": result["error"], "repairs": result["repairs"]})
+                continue
             attempted_repairs = list(result["repairs"])
             repaired, result_call = _retry(ctx, reply, result["error"], purpose + "/%d" % n, change=change, index=n,
                 **({"change_count": len(results), "change_id": _change_id(result["original"])}
@@ -368,9 +383,12 @@ def run(ctx):
         from . import engineer_v291
         fields['prompt_sha256'] = engineer_v291.audit.text_sha256(engineer_v291.system(ctx.configuration, train=train))
         fields['fault_repair_calls'] = sum(len(row.get('fault_repair', {}).get('calls', [])) for row in outcomes)
-    if p.is_v292(ctx.configuration):
+    if p.is_v292(ctx.configuration) and not p.is_v293(ctx.configuration):
         from . import engineer_v292
         fields['prompt_sha256'] = engineer_v292.audit.text_sha256(engineer_v292.system(ctx.configuration, train=train))
+    if p.is_v293(ctx.configuration):
+        from . import engineer_v293
+        fields['prompt_sha256'] = engineer_v293.audit.text_sha256(engineer_v293.system(ctx.configuration, train=train))
     if train:
         fields.update(mode=e.TRAIN, round=ctx.round, base_sha256=ctx.base.sha256, budget=e.budget(ctx), lint=lint,
                       analysis=analysis, analyst_prompt_sha256=e.ANALYST_PROMPT_SHA256, disclosed=e._disclosed_items(ctx))

@@ -266,8 +266,14 @@ def prompt_sha(configuration=None):
         out["v291"] = engineer_v291.prompt_pins()
     if protocol.is_v292(configuration):
         from . import engineer_v292
-        out["engineer"] = _sha_text_digest(engineer_v292.system(configuration, train=False))
-        out["v2"]["engineer"] = _sha_text_digest(engineer_v292.system(configuration, train=True))
+        if protocol.is_v293(configuration):
+            from . import engineer_v293
+            out["engineer"] = _sha_text_digest(engineer_v293.system(configuration, train=False))
+            out["v2"]["engineer"] = _sha_text_digest(engineer_v293.system(configuration, train=True))
+            out["v293"] = engineer_v293.prompt_pins()
+        else:
+            out["engineer"] = _sha_text_digest(engineer_v292.system(configuration, train=False))
+            out["v2"]["engineer"] = _sha_text_digest(engineer_v292.system(configuration, train=True))
         out["v292"] = engineer_v292.prompt_pins()
     return out
 
@@ -909,14 +915,14 @@ def audit_features(configuration):
 def alfworld_registration_key(configuration):
     """The configuration's preparation metadata field; v1 retains its original schema."""
     require(protocol.is_alfworld(configuration), "A registered ALFWorld configuration")
-    return ("alfworld_v6" if protocol.is_v292(configuration) else "alfworld_v5" if protocol.is_v291(configuration) else "alfworld_v4" if protocol.is_v29(configuration) else "alfworld_v3" if protocol.is_v28(configuration) else
+    return ("alfworld_v7" if protocol.is_v293(configuration) else "alfworld_v6" if protocol.is_v292(configuration) else "alfworld_v5" if protocol.is_v291(configuration) else "alfworld_v4" if protocol.is_v29(configuration) else "alfworld_v3" if protocol.is_v28(configuration) else
             "alfworld_v2" if protocol.is_alfworld_v2(configuration) else "alfworld_v1")
 
 
 def _check_alfworld(value):
     """Validate the preparation metadata linkage, without opening any test or pool file."""
     data = value["data"]
-    label = ("ALFWorld v6" if protocol.is_v292(value["configuration"]) else "ALFWorld v5" if protocol.is_v291(value["configuration"]) else "ALFWorld v4" if protocol.is_v29(value["configuration"]) else "ALFWorld v3" if protocol.is_v28(value["configuration"]) else
+    label = ("ALFWorld v7" if protocol.is_v293(value["configuration"]) else "ALFWorld v6" if protocol.is_v292(value["configuration"]) else "ALFWorld v5" if protocol.is_v291(value["configuration"]) else "ALFWorld v4" if protocol.is_v29(value["configuration"]) else "ALFWorld v3" if protocol.is_v28(value["configuration"]) else
              "ALFWorld v2" if protocol.is_alfworld_v2(value["configuration"]) else "ALFWorld v1")
     require(data.get("alfworld_features") == alfworld_features(value["configuration"]),
             "The ALFWorld feature family is pinned by value")

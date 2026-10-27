@@ -13,7 +13,7 @@ from skillopt.execskill.errors import CleanupUnconfirmed
 from skillopt.execskill.sandbox import client
 from tests.test_execskill_manifest import FakeDockerCLI, PING
 from tests.test_execskill_v292_cleanup import Clock, Docker
-from tests.test_execskill_v28_profile import tmp_path
+from tests.execskill_v293_fakes import tmp_path
 from tests.test_execskill_zpc_pipeline import offline  # noqa: F401
 
 
@@ -45,7 +45,7 @@ def closing_worker(local, docker, name):
 
 def test_only_two_registered_configurations_receive_cleanup_grace_and_new_pin():
     for config in p.CONFIGURATIONS:
-        expected = 120 if config in ('zebra-pc-v9', 'alfworld-v6') else 0
+        expected = 120 if p.is_v292(config) else 0
         assert p.cleanup_grace_seconds(config) == expected
         pin = manifest.registered(config)['thresholds']
         assert pin.get('sandbox_cleanup_grace_seconds', 0) == expected

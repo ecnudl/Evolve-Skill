@@ -8,7 +8,7 @@ import pytest
 from skillopt.execskill import (budgets, confirm, engineer_v291, manifest, profiles as p,
                                routes, smoke, v29_limits)
 from tests.test_execskill_zpc_pipeline import offline
-from tests.test_execskill_v28_profile import tmp_path
+from tests.execskill_v293_fakes import tmp_path
 from tests.test_execskill_zpc_regression import FEATURES
 
 CHILDREN = [(p.ZEBRA_PC_V9, p.ZEBRA_PC_V8, 'zpc9', 'zebralogic'),
@@ -48,7 +48,7 @@ def test_child_clones_every_parent_table_with_only_registered_identity_changes(c
 
 
 def test_exact_child_roster_roots_and_neutral_freshness_labels():
-    assert {name for name in p.CONFIGURATIONS if p.is_v292(name)} == {p.ZEBRA_PC_V9, p.ALFWORLD_V6}
+    assert {name for name in p.CONFIGURATIONS if p.is_v292(name) and not p.is_v293(name)} == {p.ZEBRA_PC_V9, p.ALFWORLD_V6}
     assert p.ZEBRA_PC_V9_MANIFEST == p.ZEBRA_PC_V9_ROOT + '-manifest.json'
     assert p.ALFWORLD_V6_MANIFEST == p.ALFWORLD_V6_ROOT + '-manifest.json'
     assert p.ACCEPT_FRESHNESS[p.ZEBRA_PC_V9] == 'zebra_split_v1_slices_accept_after_zebra_pc_v8'
@@ -145,8 +145,7 @@ def test_alf_v6_confirmation_preparation_is_distinct_and_s0_rejects_parent_ident
     with pytest.raises(ValueError, match='configuration|configured'):
         cv.load_for_preparation(target, configuration=p.ALFWORLD_V5,
             imported=alf_smoke.preparation(preparation), items=pool)
-    # S0 output must live outside the repository, and this module's tmp_path is inside it (test_execskill_v28_profile),
-    # so the parent-identity refusal is checked with a resolved (symlink-free) directory outside the repository.
+    # Check parent-identity refusal in a separate resolved OS scratch directory.
     from tempfile import TemporaryDirectory
     with TemporaryDirectory(prefix='alf6-s0-parent-') as outside:
         out = Path(outside).resolve() / 's0'

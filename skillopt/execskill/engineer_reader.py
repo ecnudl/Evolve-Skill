@@ -533,9 +533,25 @@ def _read(reply, ctx, *, fix_change=None, selection=None, metadata=None):
             manifests.append((n, body))
     if not manifests and not blocks:
         manifests = [(-1, reply.strip())]
-    if len(manifests) != 1:
-        raise Unusable("expected one manifest object, found %d" % len(manifests))
-    manifest, repairs = tolerant_json(manifests[0][1])
+    if len(manifests) > 1 and p.is_v293(getattr(ctx, "configuration", None)):
+        candidates = []
+        for number, body in manifests:
+            try:
+                value, fixes = tolerant_json(body)
+            except Unusable:
+                continue
+            if isinstance(value, dict) and "changes" in value:
+                candidates.append((value, fixes))
+        if len(candidates) != 1:
+            raise Unusable("expected one manifest object, found %d" % len(manifests))
+        manifest, repairs = candidates[0]
+        repairs.append({"rule": "extra_json_blocks_ignored", "path": "$", "count": len(manifests) - 1})
+        excluded = {number for number, _ in manifests}
+    else:
+        if len(manifests) != 1:
+            raise Unusable("expected one manifest object, found %d" % len(manifests))
+        manifest, repairs = tolerant_json(manifests[0][1])
+        excluded = {manifests[0][0]}
     manifest = normalize(manifest, {"changes": Field(list, True, [])}, repairs=repairs)
     entries = manifest["changes"]
     v292 = p.is_v292(getattr(ctx, "configuration", None))
@@ -554,7 +570,7 @@ def _read(reply, ctx, *, fix_change=None, selection=None, metadata=None):
     inline_repairs = [[] for entry in entries]
     if v292:
         entries = [_inline_source(entry, log) for entry, log in zip(entries, inline_repairs)]
-    code = [(n, lang, body) for n, lang, body in blocks if n != manifests[0][0]]
+    code = [(n, lang, body) for n, lang, body in blocks if n not in excluded]
     owners = (_large_retry_source_owner(entries, code, selected, ctx, fix_change) if len(entries) > p.MAX_CHANGES else
               _source_owners(entries, code, ctx, fix_change, selected=selected))
     results = []

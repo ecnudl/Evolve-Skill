@@ -1185,10 +1185,18 @@ def _ask(ctx, user, purpose):
                   "fault_repair": engineer_v291.FAULT_REPAIR_INSTRUCTION}.get(user.get("request"))
         if suffix:
             system += suffix
-    if protocol.is_v292(ctx.configuration):
+    if protocol.is_v292(ctx.configuration) and not protocol.is_v293(ctx.configuration):
         from . import engineer_v292
         system = engineer_v292.system(ctx.configuration, train=ctx.mode == TRAIN)
         suffix = {"fix": engineer_v29.FIX_SYSTEM, "format_retry": engineer_v292.FORMAT_RETRY_SYSTEM,
+                  "audit_fix": engineer_v29.AUDIT_FIX_SYSTEM,
+                  "fault_repair": engineer_v291.FAULT_REPAIR_INSTRUCTION}.get(user.get("request"))
+        if suffix:
+            system += suffix
+    if protocol.is_v293(ctx.configuration):
+        from . import engineer_v293
+        system = engineer_v293.system(ctx.configuration, train=ctx.mode == TRAIN)
+        suffix = {"fix": engineer_v29.FIX_SYSTEM, "format_retry": engineer_v293.FORMAT_RETRY_SYSTEM,
                   "audit_fix": engineer_v29.AUDIT_FIX_SYSTEM,
                   "fault_repair": engineer_v291.FAULT_REPAIR_INSTRUCTION}.get(user.get("request"))
         if suffix:

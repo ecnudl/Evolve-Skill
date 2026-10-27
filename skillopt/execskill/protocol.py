@@ -41,7 +41,8 @@ EVIDENCE = ("engineering_fixture", "smoke", "pilot_real_run", "historical_replay
             "main_v2_2_real_run", "main_v2_3_real_run", "zebra_pc_v1_real_run", "zebra_pc_v2_real_run",
             "zebra_pc_v3_real_run", "zebra_pc_v4_real_run", "alfworld_v1_real_run", "zebra_pc_v5_real_run",
             "alfworld_v2_real_run", "zebra_pc_v6_real_run", "alfworld_v3_real_run", "zebra_pc_v7_real_run", "alfworld_v4_real_run",
-            "zebra_pc_v8_real_run", "alfworld_v5_real_run", "zebra_pc_v9_real_run", "alfworld_v6_real_run")
+            "zebra_pc_v8_real_run", "alfworld_v5_real_run", "zebra_pc_v9_real_run", "alfworld_v6_real_run",
+            "zebra_pc_v10_real_run", "alfworld_v7_real_run")
 IMPORTABLE = ("fivebench-coevolution-v3-sheet-qualification",)  # §1, owner #7, Codex F15: the one v3 record kind read
 TEXTS_IMPORT = "fivebench-coevolution-v3-texts-import"  # §2.2: the v3 task cards, imported by value (plan §6)
 
@@ -71,7 +72,7 @@ def verified(value, name=None):
     revised = {"engineer", "procedure", "acceptance-sealed", "decision", "unit", "unit-started", "unit-status",
                "unit-completed", "manifest", "cell", "judge", "step"}
     require(name is None or version == kind(name) or (name in revised and version == kind(name + "-v2-3"))
-            or (name == "engineer" and version in (kind("engineer-v2-3-a2"), kind("engineer-v2-9-1"), kind("engineer-v2-9-2")))
+            or (name == "engineer" and version in (kind("engineer-v2-3-a2"), kind("engineer-v2-9-1"), kind("engineer-v2-9-2"), kind("engineer-v2-9-3")))
             or (name in {"engineer", "procedure", "manifest"}
                 and version in (kind(name + "-v2-4"), kind(name + "-v2-5")))
             or (name in {"engineer", "manifest"}
