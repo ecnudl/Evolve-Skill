@@ -1014,13 +1014,13 @@ def parser():
     command.add_argument("--chain", choices=("G", "D"), required=True)
     command.add_argument("--stage", choices=("S1", "S2", "S3", "SE6"), required=True)
     command = sub.add_parser("alf-snapshot")
-    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V1, protocol.ALFWORLD_V2, protocol.ALFWORLD_V3, protocol.ALFWORLD_V4, protocol.ALFWORLD_V5, protocol.ALFWORLD_V6, protocol.ALFWORLD_V7, protocol.ALFWORLD_V8, protocol.ALFWORLD_V9, protocol.ALFWORLD_V10),
+    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V1, protocol.ALFWORLD_V2, protocol.ALFWORLD_V3, protocol.ALFWORLD_V4, protocol.ALFWORLD_V5, protocol.ALFWORLD_V6, protocol.ALFWORLD_V7, protocol.ALFWORLD_V8, protocol.ALFWORLD_V9, protocol.ALFWORLD_V10, protocol.ALFWORLD_V11),
                          default=protocol.ALFWORLD_V1)
     command.add_argument("--source", default=str(PROJECT_ROOT))
     command.add_argument("--out", required=True)
     command.add_argument("--git-head", required=True)
     command = sub.add_parser("alf-s0")
-    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V1, protocol.ALFWORLD_V2, protocol.ALFWORLD_V3, protocol.ALFWORLD_V4, protocol.ALFWORLD_V5, protocol.ALFWORLD_V6, protocol.ALFWORLD_V7, protocol.ALFWORLD_V8, protocol.ALFWORLD_V9, protocol.ALFWORLD_V10),
+    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V1, protocol.ALFWORLD_V2, protocol.ALFWORLD_V3, protocol.ALFWORLD_V4, protocol.ALFWORLD_V5, protocol.ALFWORLD_V6, protocol.ALFWORLD_V7, protocol.ALFWORLD_V8, protocol.ALFWORLD_V9, protocol.ALFWORLD_V10, protocol.ALFWORLD_V11),
                          default=protocol.ALFWORLD_V1)
     command.add_argument("--out", required=True)
     command.add_argument("--preparation", required=True)
@@ -1028,12 +1028,12 @@ def parser():
     command.add_argument("--selftest")
     command.add_argument("--confirm-views", help="Required sealed forty-game pre-reset record for ALFWorld v2.9")
     command = sub.add_parser("alf-confirm-views")
-    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V4, protocol.ALFWORLD_V5, protocol.ALFWORLD_V6, protocol.ALFWORLD_V7, protocol.ALFWORLD_V8, protocol.ALFWORLD_V9, protocol.ALFWORLD_V10), required=True)
+    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V4, protocol.ALFWORLD_V5, protocol.ALFWORLD_V6, protocol.ALFWORLD_V7, protocol.ALFWORLD_V8, protocol.ALFWORLD_V9, protocol.ALFWORLD_V10, protocol.ALFWORLD_V11), required=True)
     command.add_argument("--preparation", required=True)
     command.add_argument("--data-root", required=True)
     command.add_argument("--out", required=True)
     command = sub.add_parser("alf-manifest")
-    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V1, protocol.ALFWORLD_V2, protocol.ALFWORLD_V3, protocol.ALFWORLD_V4, protocol.ALFWORLD_V5, protocol.ALFWORLD_V6, protocol.ALFWORLD_V7, protocol.ALFWORLD_V8, protocol.ALFWORLD_V9, protocol.ALFWORLD_V10),
+    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V1, protocol.ALFWORLD_V2, protocol.ALFWORLD_V3, protocol.ALFWORLD_V4, protocol.ALFWORLD_V5, protocol.ALFWORLD_V6, protocol.ALFWORLD_V7, protocol.ALFWORLD_V8, protocol.ALFWORLD_V9, protocol.ALFWORLD_V10, protocol.ALFWORLD_V11),
                          default=protocol.ALFWORLD_V1)
     command.add_argument("--out", required=True)
     command.add_argument("--root", required=True)
@@ -1045,7 +1045,7 @@ def parser():
     command.add_argument("--smoke-chain", choices=("D",))
     command.add_argument("--smoke-result", action="append", default=[])
     command = sub.add_parser("alf-smoke")
-    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V1, protocol.ALFWORLD_V2, protocol.ALFWORLD_V3, protocol.ALFWORLD_V4, protocol.ALFWORLD_V5, protocol.ALFWORLD_V6, protocol.ALFWORLD_V7, protocol.ALFWORLD_V8, protocol.ALFWORLD_V9, protocol.ALFWORLD_V10),
+    command.add_argument("--configuration", choices=(protocol.ALFWORLD_V1, protocol.ALFWORLD_V2, protocol.ALFWORLD_V3, protocol.ALFWORLD_V4, protocol.ALFWORLD_V5, protocol.ALFWORLD_V6, protocol.ALFWORLD_V7, protocol.ALFWORLD_V8, protocol.ALFWORLD_V9, protocol.ALFWORLD_V10, protocol.ALFWORLD_V11),
                          default=protocol.ALFWORLD_V1)
     command.add_argument("--manifest", required=True)
     command.add_argument("--chain", choices=("D",), default="D")

@@ -15,9 +15,10 @@ import re
 from collections import defaultdict
 
 from skillopt.coevo5.roles import Invalid, parse
+from skillopt.continual_eval.core import require
 from skillopt.validator_pilot.api import digest
 
-from . import notes, replay
+from . import notes, replay, profiles
 
 MAX_TEMPLATES = 60
 MAX_EXTRA_SITUATIONS = 4
@@ -70,18 +71,37 @@ HOOK_SEMANTICS = {
     "zebralogic": "applies(view) is optional (default true); before_call(view,state) runs before the solver request, with question and columns, state=None.",
     "alfworld": "applies(view) is optional (default true) at reset; alf_before_step(view,state) runs before each action; alf_after_step(event,state) updates explicit state after each action.",
 }
+EPISODE_HISTORY_RULE = (
+    "recent_history shows only the last 5 steps; episode_history is the whole episode before this step; a "
+    "note's claim about the whole episode (counts, visited places, earlier failures) must be checked against "
+    "episode_history, and is false only when episode_history contradicts it."
+)
+EPISODE_OBSERVATION_CHARS = 240
+EPISODE_TRUNCATION_MARK = '…[truncated]'
+
+
+def episode_disclosure(configuration, bench='alfworld'):
+    return bench == 'alfworld' and profiles.is_v297(configuration)
+
+
+def system_prompt(part, *, configuration=None, final=False):
+    text = A_SYSTEM if part == 'A' else B_SYSTEM + ('\n' + CONTRADICTIONS if final else '')
+    return text + '\n' + EPISODE_HISTORY_RULE if episode_disclosure(configuration) else text
 
 
 def text_sha256(text):
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def prompt_pins():
-    values = {"policy": POLICY, "templates_system": A_SYSTEM, "situations_system": B_SYSTEM,
-              "final_system": B_SYSTEM + '\n' + CONTRADICTIONS, "templates_schema": A_SCHEMA,
+def prompt_pins(configuration=None):
+    values = {"policy": POLICY, "templates_system": system_prompt('A', configuration=configuration),
+              "situations_system": system_prompt('B', configuration=configuration),
+              "final_system": system_prompt('B', configuration=configuration, final=True), "templates_schema": A_SCHEMA,
               "situations_schema": B_SCHEMA, "final_schema": B_FINAL_SCHEMA,
               "format_retry": FORMAT_RETRY, "audit_fix": C_PREFIX + '\n' + C_ADVISORY + '\n' + C_SUFFIX,
               "task_cards": TASK_CARDS, "hook_semantics": HOOK_SEMANTICS}
+    if episode_disclosure(configuration):
+        values['episode_history'] = EPISODE_HISTORY_RULE
     return {key: {"text": value, "sha256": text_sha256(value) if isinstance(value, str) else digest(value)} for key, value in values.items()}
 
 
@@ -135,7 +155,52 @@ def templates(source, bench):
             "always_check_truncated": max(0, len(priority) - MAX_TEMPLATES)}
 
 
-def public_view(bench, view):
+def _observation(text, limit=EPISODE_OBSERVATION_CHARS):
+    require(text is None or isinstance(text, str), "An episode observation is captured text or None")
+    require(limit >= len(EPISODE_TRUNCATION_MARK), "The observation cap keeps its truncation mark")
+    if text is None or len(text) <= limit:
+        return text
+    return text[:limit - len(EPISODE_TRUNCATION_MARK)] + EPISODE_TRUNCATION_MARK
+
+
+def _episode_history(steps, index):
+    """Earlier events only; the replay event is exactly what alf_after_step receives."""
+    require(type(index) is int and 0 <= index <= len(steps) <= 50,
+            "An ALFWorld audit step belongs to its at-most-fifty-step episode")
+    history = []
+    for i, step in enumerate(steps[:index]):
+        event = step.get('event')
+        require(isinstance(event, dict) and event.get('step') == i
+                and isinstance(event.get('action'), str) and event['action'] == step.get('action')
+                and 'observation' in event,
+                "Whole-episode audit history requires each earlier alf_after_step event")
+        history.append({'step': i, 'action': event['action'], 'observation': _observation(event['observation'])})
+    return history
+
+
+def _cell_episode_history(cell, index):
+    """Use executed actions and the following request observation, as the replay does.
+
+    Captured post_observation, where present, must agree with that event. A
+    pre-action observation, solver reply or hidden outcome never substitutes it.
+    """
+    stored = cell.get('alfworld_steps') or []
+    earlier = {row.get('i'): row for row in stored}
+    require(len(earlier) == len(stored) and all(i in earlier for i in range(index)),
+            "Whole-episode audit history requires every earlier logged action")
+    entry = replay.inputs_of(cell)
+    require(entry is not None, "Whole-episode audit history requires public step requests")
+    for i, step in enumerate(entry['steps'][:index]):
+        require(step['action'] == earlier[i].get('action'), "An episode's action log is in step order")
+        captured = earlier[i].get('post_observation')
+        if captured is not None:
+            require(isinstance(captured, str) and step['event'] is not None
+                    and captured[:replay.OBSERVATION_CHARS] == step['event']['observation'],
+                    "The captured post-action observation equals the alf_after_step event")
+    return _episode_history(entry['steps'], index)
+
+
+def public_view(bench, view, *, configuration=None, episode_history=None):
     """Build, rather than redact, an audit disclosure from hook-visible fields only."""
     if bench == 'zebralogic':
         return {key: copy.deepcopy(view.get(key)) for key in ('question', 'columns')}
@@ -143,12 +208,19 @@ def public_view(bench, view):
     out['recent_history'] = [{key: entry[key] for key in ('observation', 'action') if key in entry}
                              for entry in (view.get('recent_history') or [])[-5:] if isinstance(entry, dict)]
     out['admissible_commands'] = copy.deepcopy((view.get('admissible_commands') or [])[:60])
+    if episode_disclosure(configuration, bench):
+        require(isinstance(episode_history, list), "The new ALFWorld audit requires its episode history")
+        out['episode_history'] = copy.deepcopy(episode_history)
     return out
 
 
-def situations_from_replays(procedure, entries, outcomes):
+def situations_from_replays(procedure, entries, outcomes, *, configuration=None, trajectories=None):
     result = []
     for entry in entries:
+        disclose = episode_disclosure(configuration, entry['bench'])
+        if disclose:
+            require(trajectories is not None and entry['cell'] in trajectories,
+                    "Whole-episode audit history requires its verified raw trajectory")
         outcome = outcomes.get(entry['cell'])
         if outcome is None:
             continue
@@ -158,14 +230,21 @@ def situations_from_replays(procedure, entries, outcomes):
                 by_step[note.get('step')].append(note['text'])
         for index, texts in by_step.items():
             view = entry['request_view'] if index is None else entry['steps'][index]['view']
+            history = None
+            if disclose:
+                history = _cell_episode_history(trajectories[entry['cell']], index)
+                require(history == _episode_history(entry['steps'], index),
+                        "Captured replay history must equal its verified raw trajectory history")
             result.append({"item": entry['item'], "cell": entry['cell'], "step": index,
-                "view": public_view(entry['bench'], view), "notes": [{"procedure": procedure.id, "text": sentence}
+                "view": public_view(entry['bench'], view, configuration=configuration, episode_history=history),
+                "notes": [{"procedure": procedure.id, "text": sentence}
                     for text in texts for sentence in split_notes(text)], "source": "run"})
     return result
 
 
 def situation_key(situation):
     # Across candidate/confirm repeats a situation is identified by item + public step + actual public view.
+    # Only the opted-in ALFWorld view includes episode_history, so parent keys stay exact.
     return digest({"item": situation['item'], "step": situation['step'], "view": situation['view']})
 
 
@@ -259,6 +338,30 @@ def situation_prompt(procedures, bench, batch, counts, *, final=False):
                   '--- Notes it produced ---']
         lines += ['%s [%s]: %s' % (n['n'], n['procedure'], n['text']) for n in situation['notes']]
     return '\n'.join(lines + ['Return only JSON: ' + (B_FINAL_SCHEMA if final else B_SCHEMA)])
+
+
+def fit_episode_prompt(system, render, batch, *, prefix='', suffix=''):
+    """Fit only copied history observations, never steps, actions or retry text.
+
+    The same renderer is used for initial requests and format retries. If the
+    remaining immutable content cannot fit, return that explicit unavailable
+    size; _request records the refusal before calling either endpoint.
+    """
+    cap = EPISODE_OBSERVATION_CHARS
+    while True:
+        shown = copy.deepcopy(batch)
+        for situation in shown:
+            for event in situation['view'].get('episode_history', []):
+                event['observation'] = _observation(event['observation'], cap)
+        user = prefix + render(shown) + suffix
+        size = len((system + user).encode('utf-8'))
+        disclosure = {'observation_chars': cap, 'input_bytes': size,
+                      'limit_bytes': profiles.ROLE_INPUT_BYTES,
+                      'history_steps': sum(len(s['view'].get('episode_history', [])) for s in shown),
+                      'within_limit': size <= profiles.ROLE_INPUT_BYTES}
+        if disclosure['within_limit'] or cap == len(EPISODE_TRUNCATION_MARK):
+            return user, disclosure
+        cap = max(len(EPISODE_TRUNCATION_MARK), cap // 2)
 
 
 def _required_units(part, *, extracted=None, batch=()):
@@ -508,7 +611,9 @@ def _tokens(calls):
     return total
 
 
-def _request(judge, role, system, user, *, label, parser, cache, required=(), final=False):
+def _request(judge, role, system, user, *, label, parser, cache, required=(), final=False, fit_user=None):
+    if fit_user is not None:
+        user, disclosure = fit_user('', '')
     key = digest([judge, system, user, JUDGE_MAX_TOKENS])
     if key in cache:
         return dict(_json_copy(cache[key]), reused=True)
@@ -517,6 +622,8 @@ def _request(judge, role, system, user, *, label, parser, cache, required=(), fi
               "available": False, "reused": False, "tokens": {"input": 0, "output": 0, "charged": 0},
               "required": list(required), "covered": [], "ignored": [], "abstained": [],
               "attempts": [], "selected_attempt": None}
+    if fit_user is not None:
+        record['episode_disclosure'] = disclosure
     best = None
     if role is None:
         record['unavailable_reason'] = 'judge_not_configured'
@@ -524,6 +631,12 @@ def _request(judge, role, system, user, *, label, parser, cache, required=(), fi
         before = len(role.calls)
         current_user = user
         for attempt in range(2):
+            if fit_user is not None and not disclosure['within_limit']:
+                record['unavailable_reason'] = 'audit_input_limit_after_observation_truncation'
+                record['attempts'].append({'attempt': attempt, 'usable': False,
+                    'shape_problem': record['unavailable_reason'], 'covered': [], 'abstained': [],
+                    'dispatched': False, 'episode_disclosure': disclosure})
+                break
             raw = role.plain('audit_' + judge.lower(), system, current_user,
                              label=label + '/' + judge + ('/format-retry' if attempt else ''), max_tokens=JUDGE_MAX_TOKENS)
             # Invalid Unicode cannot be persisted as UTF-8. Keep its explicit
@@ -554,10 +667,15 @@ def _request(judge, role, system, user, *, label, parser, cache, required=(), fi
                                           'shape_problem': str(error), 'covered': [], 'abstained': [], 'ignored': []})
             if attempt == 0:
                 problem_text = '\n'.join(problems)
-                current_user = FORMAT_RETRY + ('\n' + user) + '\nPrevious reply: ' + str(stored_raw) + '\nParse problem: ' + problem_text
+                suffix = '\nPrevious reply: ' + str(stored_raw) + '\nParse problem: ' + problem_text
+                if fit_user is None:
+                    current_user = FORMAT_RETRY + ('\n' + user) + suffix
+                else:
+                    current_user, disclosure = fit_user(FORMAT_RETRY + '\n', suffix)
                 record['retries'].append({"label": label + "/" + judge + "/format-retry", "system": system, "user": current_user,
                     "prompt_sha256": text_sha256(system + "\n\n" + current_user), "prompt_text": system + "\n\n" + current_user,
-                    "parse_problem": problem_text, "problems": list(problems)})
+                    "parse_problem": problem_text, "problems": list(problems),
+                    **({'episode_disclosure': disclosure} if fit_user is not None else {})})
         record['tokens'] = _tokens(role.calls[before:])
     if best is not None:
         attempt, parsed = best
@@ -629,14 +747,19 @@ def run_audit(procedures, situations, judges, *, bench, configuration, step, rou
     requests, by_judge = [], {j: {} for j in JUDGES}
     available = {j: True for j in JUDGES}
     incomplete_units = []
-    def request_pair(part, system, user, procedure, *, extracted=None, batch=()):
+    def request_pair(part, system, user, procedure, *, extracted=None, batch=(), render=None):
         pair = {'part': part, 'procedure': procedure.id, 'requests': {}}
         parser = lambda raw: parse_verdict(raw, part, extracted=extracted, batch=batch, final=final,
                                           procedures=(procedure,) if part == 'A' else procedures)
+        fit_user = None
+        if episode_disclosure(configuration, bench):
+            render = render or (lambda shown: user)
+            fit_user = lambda prefix, suffix: fit_episode_prompt(system, render, batch, prefix=prefix, suffix=suffix)
         for judge in JUDGES:
             row = _request(judge, judges.get(judge), system, user,
                 label='audit/%s/%s/%s/%s' % (step, change_id, procedure.id, len(requests)), parser=parser, cache=cache,
-                required=_required_units(part, extracted=extracted, batch=batch), final=final and part == 'B')
+                required=_required_units(part, extracted=extracted, batch=batch), final=final and part == 'B',
+                fit_user=fit_user)
             pair['requests'][judge] = row
             available[judge] &= row['available']
             if row['available']:
@@ -663,16 +786,20 @@ def run_audit(procedures, situations, judges, *, bench, configuration, step, rou
     for procedure in procedures:
         extracted = templates(procedure.source, bench)
         extracted_records[procedure.id] = extracted
-        request_pair('A', A_SYSTEM, template_prompt(procedure, bench, extracted), procedure, extracted=extracted)
+        request_pair('A', system_prompt('A', configuration=configuration),
+                     template_prompt(procedure, bench, extracted), procedure, extracted=extracted)
         # Each program gets its own program-level P6 judgment, while final batches show all notes for contradictions.
         relevant = [s for s in samples if final or any(n['procedure'] == procedure.id for n in s['notes'])]
         for start in range(0, len(relevant), BATCH_SIZE[bench]):
             batch = relevant[start:start + BATCH_SIZE[bench]]
             shown = context_procedures if final else (procedure,)
-            user = situation_prompt(shown, bench, batch, counts, final=final)
-            if final:
-                user += '\nThe program-level verdict is for Program ' + procedure.id + '.'
-            request_pair('B', B_SYSTEM + ('\n' + CONTRADICTIONS if final else ''), user, procedure, batch=batch)
+            def render(rows):
+                user = situation_prompt(shown, bench, rows, counts, final=final)
+                if final:
+                    user += '\nThe program-level verdict is for Program ' + procedure.id + '.'
+                return user
+            request_pair('B', system_prompt('B', configuration=configuration, final=final), render(batch),
+                         procedure, batch=batch, render=render)
     confirmed, advisory = agreement(by_judge, available)
     totals = {j: {k: sum(pair['requests'][j]['tokens'][k] for pair in requests if not pair['requests'][j]['reused'])
                   for k in ('input', 'output', 'charged')} for j in JUDGES}
@@ -689,10 +816,12 @@ def audit1(ctx, change, report):
     entries, outcomes = captured if captured else ([], {})
     # Recheck run membership; generated/confirm/accept/test trajectories cannot enter an engineer fix.
     from . import engineer
-    own = set(engineer._verified_run_cells(ctx))
+    trajectories = engineer._verified_run_cells(ctx)
+    own = set(trajectories)
     entries = [e for e in entries if e['cell'] in own]
     outcomes = {cell: outcome for cell, outcome in outcomes.items() if cell in own}
-    situations = situations_from_replays(change.procedure, entries, outcomes)
+    situations = situations_from_replays(change.procedure, entries, outcomes, configuration=ctx.configuration,
+                                        trajectories=trajectories)
     result = run_audit([change.procedure], situations, ctx.audit_judges, bench=ctx.bench,
         configuration=ctx.configuration, step=ctx.step, round=ctx.round, change_id=str(change.n),
         counts={change.procedure.id: c6_counts(entries, outcomes)}, cache=ctx.sheet.setdefault('audit_cache', {}))
@@ -767,7 +896,7 @@ def removed_procedures(result, order):
     return sorted(remove, key=order.index)
 
 
-def situations_from_cells(cells, package):
+def situations_from_cells(cells, package, *, configuration=None):
     """Extract delivered note claims from S' practice trajectories without replay or solver-answer disclosure.
 
     Shell note logs contain typed fields in hook invocation order. Reconstruct each
@@ -829,9 +958,11 @@ def situations_from_cells(cells, package):
             if rendered and rendered in delivered[index]:
                 claims[index].extend({'procedure': pid, 'text': text} for text in split_notes(rendered))
         for index, content in sorted(claims.items()):
+            history = _cell_episode_history(cell, index) if episode_disclosure(configuration, bench) else None
             result.append({'item': cell['task_id'], 'cell': cell['cell'],
                            'step': index if bench == 'alfworld' else None,
-                           'view': public_view(bench, public_requests[index]), 'notes': content, 'source': provenance,
+                           'view': public_view(bench, public_requests[index], configuration=configuration,
+                                               episode_history=history), 'notes': content, 'source': provenance,
                            'package_sha256': cell.get('package_sha256'),
                            'package_procedures': copy.deepcopy(cell.get('package_procedures') or {})})
     return result

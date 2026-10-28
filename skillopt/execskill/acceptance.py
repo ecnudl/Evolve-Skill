@@ -131,6 +131,19 @@ EVIDENCE_KIND = "selection"  # Codex F2: the test read is the independent genera
 HARMFUL_WORDING = "superiority over the parent; content/effort explanation not excluded"
 SMALL = router.SMALL
 UNANSWERED = ("unknown",)
+POOLED_RULE_NAME = "practical-v2-9-7-pooled"
+
+
+def _v297_rule(configuration, bench, rule):
+    """Bind the pooled protocol to its child identity, never to an old record."""
+    child = profiles.is_v297(configuration)
+    if child:
+        require(bench == "alfworld" and rule == profiles.ACCEPT_RULES[configuration],
+                "ALFWorld v2.9.7 acceptance seals its exact pooled rule")
+    else:
+        require(not isinstance(rule, dict) or rule.get("name") != POOLED_RULE_NAME,
+                "The pooled acceptance rule belongs only to ALFWorld v2.9.7")
+    return child
 
 
 # ---------------------------------------------------------------------------------------------------- arms
@@ -183,6 +196,7 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
     practical rule (``protocol.ACCEPT_RULES``), sealed with its |A*| floor, None for the registered J1-J7. ``reuse``:
     v2.3's {card_text, runtime, views: {G_acc/probe: {item: shell view}}}, None for the historical full dispatch.
     v2.8 seals its configuration so J3 is reported without deciding; earlier records keep their exact shape."""
+    _v297_rule(configuration, bench, rule)
     require(set(blocks) == set(views), "Every acceptance item has a block")
     if bench == "zebralogic":
         require(generate is None and not dup and not probe,
@@ -683,6 +697,13 @@ def differences(cells_table, first, second, items):
     return [Fraction(0) if i in identical else adjusted[i] for i in items]
 
 
+def pooled_differences(cells_table, items):
+    """Exact S' - (S + C)/2, retaining each pair's unknown/reuse semantics."""
+    parent = differences(cells_table, CANDIDATE, PARENT, items)
+    card = differences(cells_table, CANDIDATE, CARD, items)
+    return [(a + b) / 2 for a, b in zip(parent, card)]
+
+
 def _design(sealed, items):
     bench = sealed["bench"]
     return {"strata": [sealed["blocks"][i] for i in items],
@@ -956,6 +977,8 @@ def decide(cells, sealed):
     """The round's ``fivebench-execskill-v1-decision`` record from the cell records and the sealed record alone
     (module docstring; plan §2.6)."""
     sealed = verified(sealed, "acceptance-sealed")
+    v297 = _v297_rule(sealed.get("configuration"), sealed["bench"], sealed.get("rule"))
+    pooled = v297 and sealed["card_is_parent"]
     plan = sealed["plan"]
     if plan["decision"] == SMALL:
         require(not cells, "A round that did not run has no cells")
@@ -1005,6 +1028,12 @@ def decide(cells, sealed):
         "S'-P_y": contrast(over_sham, design=design, whole=size_a, sensitivity=True),
         "S'-C": contrast(differences(cells_table, CANDIDATE, CARD, card_items), design=card_design, whole=size_a),
         "S-C": contrast(differences(cells_table, PARENT, CARD, card_items), design=card_design, whole=size_a)}
+    if pooled:
+        require(card_items == items, "The pooled baseline needs C on every analysed item")
+        gain = pooled_differences(cells_table, items)
+        contrasts["S'-(S+C)/2"] = contrast(gain, design=design, whole=size_a, sensitivity=True)
+        for name in ("S'-S", "S'-C"):
+            contrasts[name]["decides"] = False
     if sample is not None:
         for name in ("S'-C", "S-C"):
             contrasts[name].update({"sample": "sealed_C_instrument", "sample_items": card_items,
@@ -1020,12 +1049,16 @@ def decide(cells, sealed):
         rule = "harmful_sham_reported"
     alpha1 = HARMFUL_SHAM_ALPHA if hi < 0 else ALPHA
     first, second = contrasts["S'-S"], contrasts["S'-P_y"]
+    if pooled:
+        first = contrasts["S'-(S+C)/2"]
     j1 = {"p_t": first["p_t"], "alpha": alpha1, "whole_batch": first["whole_batch"],
           "ok": first["p_t"] <= alpha1 and first["whole_batch"] >= float(MIN_WHOLE_BATCH)}
     j2 = {"p_t": second["p_t"], "alpha": ALPHA, "informative": hi >= 0, "ok": hi < 0 or second["p_t"] <= ALPHA}
     gate = sealed.get("rule")
     if gate is not None:  # v2.2: the sealed practical rule replaces J1 and J2 (``rule`` is the placebo reading)
         j1, j2 = _practical(gate, sealed["bench"], gain, over_sham, size_a, first, second)
+    if v297:
+        j1.update(baseline="(S+C)/2" if pooled else "S", pooled=pooled)
     faults = _fault_items(cells, sealed)
     j3 = {"fault_items": len(faults), "items": faults, "A": size_a, "share": len(faults) / size_a,
           "max_items": fault_items_max(size_a), "ok": len(faults) * FAULT_SHARE_MAX.denominator

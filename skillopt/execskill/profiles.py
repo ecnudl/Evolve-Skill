@@ -33,6 +33,7 @@ ALFWORLD_V7 = "alfworld-v7"
 ALFWORLD_V8 = "alfworld-v8"
 ALFWORLD_V9 = "alfworld-v9"
 ALFWORLD_V10 = "alfworld-v10"
+ALFWORLD_V11 = "alfworld-v11"
 ZEBRA = "zebralogic"
 SUPPORTED_BENCHES = BENCHES + (ZEBRA,)
 FEATURE_FAMILIES = {name: ("v2.3" if name == MAIN_V2_3 else "historical") for name in CONFIGURATIONS}
@@ -58,6 +59,7 @@ FEATURE_FAMILIES[ALFWORLD_V8] = "v2.9"
 FEATURE_FAMILIES[ZEBRA_PC_V12] = "v2.9"
 FEATURE_FAMILIES[ALFWORLD_V9] = "v2.9"
 FEATURE_FAMILIES[ALFWORLD_V10] = "v2.9"
+FEATURE_FAMILIES[ALFWORLD_V11] = "v2.9"
 
 
 def is_v23(configuration):
@@ -105,37 +107,43 @@ def is_v29(configuration):
 def is_v291(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ZEBRA_PC_V8, ALFWORLD_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ALFWORLD_V9, ALFWORLD_V10)
+    return configuration in (ZEBRA_PC_V8, ALFWORLD_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v292(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ALFWORLD_V9, ALFWORLD_V10)
+    return configuration in (ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v293(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ALFWORLD_V9, ALFWORLD_V10)
+    return configuration in (ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v294(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ALFWORLD_V9, ALFWORLD_V10)
+    return configuration in (ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v295(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ZEBRA_PC_V12, ALFWORLD_V9, ALFWORLD_V10)
+    return configuration in (ZEBRA_PC_V12, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v296(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration == ALFWORLD_V10
+    return configuration in (ALFWORLD_V10, ALFWORLD_V11)
+
+
+def is_v297(configuration):
+    configuration = configuration or PILOT
+    require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
+    return configuration == ALFWORLD_V11
 
 
 def alfworld_format_rule(configuration):
@@ -175,13 +183,13 @@ def is_zebra(configuration):
 def is_alfworld(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ALFWORLD_V1, ALFWORLD_V2, ALFWORLD_V3, ALFWORLD_V4, ALFWORLD_V5, ALFWORLD_V6, ALFWORLD_V7, ALFWORLD_V8, ALFWORLD_V9, ALFWORLD_V10)
+    return configuration in (ALFWORLD_V1, ALFWORLD_V2, ALFWORLD_V3, ALFWORLD_V4, ALFWORLD_V5, ALFWORLD_V6, ALFWORLD_V7, ALFWORLD_V8, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_alfworld_v2(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ALFWORLD_V2, ALFWORLD_V3, ALFWORLD_V4, ALFWORLD_V5, ALFWORLD_V6, ALFWORLD_V7, ALFWORLD_V8, ALFWORLD_V9, ALFWORLD_V10)
+    return configuration in (ALFWORLD_V2, ALFWORLD_V3, ALFWORLD_V4, ALFWORLD_V5, ALFWORLD_V6, ALFWORLD_V7, ALFWORLD_V8, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def _extend(table, value, *, v2=None, v3=None, v4=None):
@@ -732,3 +740,23 @@ RUN_ROOTS[ALFWORLD_V10] = ALFWORLD_V10_ROOT
 CHAIN_NAMESPACES[ALFWORLD_V10] = ALFWORLD_V10_NAMESPACES
 ACCEPT_FRESHNESS[ALFWORLD_V10] = "alfworld_split_v1_slices_after_alfworld_v7_accept_v9_stopped"
 CONFIRM_FRESHNESS[ALFWORLD_V10] = "alfworld_split_v1_confirm_spare_rooms_after_alfworld_v7_v9_stopped"
+
+
+# v2.9.7 extends the audit disclosure and pools same-text acceptance baselines only.
+ALFWORLD_V11_ROOT = "/data/execskill-20261028-alfworld-v11"
+ALFWORLD_V11_MANIFEST = ALFWORLD_V11_ROOT + "-manifest.json"
+ALFWORLD_V11_NAMESPACES = {"G": "G-alf11", "D": "D-alf11"}
+SUPPORTED_NAMESPACES += tuple(ALFWORLD_V11_NAMESPACES.values())
+for _name in ("CONFIGURATIONS", "CONFIG_STEP_CAPS", "CONFIG_SCHEDULE_CELLS", "CONFIG_ROLE_CAPS", "CONFIG_GLM_CAP",
+              "CONFIG_CAP_FACTOR", "COST_CHECK_PAUSES", "TEST_READ_CELLS", "STAGE_READ", "LEARNING", "FIX_ECHO",
+              "META_COUNTERFACTUAL", "TRAIN_SIGN", "PRUNE_NON_FIRING", "ACCEPT_RULES", "ENGINEER_MAX_TOKENS",
+              "TRIM_PAYLOADS", "NORMALIZE_STRUCTURE", "CHECK_NON_FIRING", "IDENTICAL_REQUEST_REUSE",
+              "CODE_EXTRACTION", "MULTIPLE_PYTHON_BLOCKS", "POLICY_VERSIONS", "ENGINEER_CALL_BUDGETS",
+              "TRAIN_ENGINEER_CALL_BUDGETS", "ENGINEER_RECORDS"):
+    globals()[_name][ALFWORLD_V11] = deepcopy(globals()[_name][ALFWORLD_V10])
+ACCEPT_RULES[ALFWORLD_V11]["name"] = "practical-v2-9-7-pooled"
+REAL_RUN_EVIDENCE[ALFWORLD_V11] = "alfworld_v11_real_run"
+RUN_ROOTS[ALFWORLD_V11] = ALFWORLD_V11_ROOT
+CHAIN_NAMESPACES[ALFWORLD_V11] = ALFWORLD_V11_NAMESPACES
+ACCEPT_FRESHNESS[ALFWORLD_V11] = "alfworld_split_v1_slices_after_alfworld_v10_accept_test_read"
+CONFIRM_FRESHNESS[ALFWORLD_V11] = "alfworld_split_v1_confirm_spare_rooms_after_alfworld_v10"

@@ -1,0 +1,1785 @@
+{
+ "source": "alfworld-v10 D/s1-alfworld/accept/attempt-1/cells (read after the decision; outcomes only)",
+ "recorded": {
+  "decision": "accept",
+  "rule": "practical-v2-2",
+  "A": 150,
+  "A_star": 150,
+  "A_star_rooms": 40,
+  "blocks": [
+   "b1",
+   "b2",
+   "b3",
+   "b4"
+  ],
+  "contrasts": {
+   "S'-S": {
+    "n": 150,
+    "mean": 0.06,
+    "se": 0.034849765750138206,
+    "df": 36,
+    "p_t": 0.04685601553971806,
+    "p_two_sided": 0.09371203107943613,
+    "ci95": [
+     0.0,
+     0.12666666666666668
+    ],
+    "up": 15,
+    "down": 6,
+    "tie": 129,
+    "whole_batch": 0.06,
+    "sensitivity": {
+     "p_signflip": 0.06288937110628894,
+     "p_wilcoxon": 0.024767306717813353
+    }
+   },
+   "S'-P_y": {
+    "n": 150,
+    "mean": 0.04666666666666667,
+    "se": 0.03070669690096773,
+    "df": 36,
+    "p_t": 0.06865370762462408,
+    "p_two_sided": 0.13730741524924817,
+    "ci95": [
+     -0.006666666666666667,
+     0.10666666666666667
+    ],
+    "up": 12,
+    "down": 5,
+    "tie": 133,
+    "whole_batch": 0.04666666666666667,
+    "sensitivity": {
+     "p_signflip": 0.0965290347096529,
+     "p_wilcoxon": 0.044777537206821316
+    }
+   },
+   "S'-C": {
+    "n": 150,
+    "mean": -0.006666666666666667,
+    "se": 0.02976243385773083,
+    "df": 36,
+    "p_t": 0.5879866049512071,
+    "p_two_sided": 0.8240267900975857,
+    "ci95": [
+     -0.06,
+     0.04666666666666667
+    ],
+    "up": 7,
+    "down": 8,
+    "tie": 135,
+    "whole_batch": -0.006666666666666667
+   },
+   "S-C": {
+    "n": 150,
+    "mean": -0.06666666666666667,
+    "se": 0.0253676667929575,
+    "df": 36,
+    "p_t": 0.993727911743535,
+    "p_two_sided": 0.012544176512929939,
+    "ci95": [
+     -0.11333333333333333,
+     -0.02
+    ],
+    "up": 4,
+    "down": 14,
+    "tie": 132,
+    "whole_batch": -0.06666666666666667
+   },
+   "P_y-S": {
+    "n": 150,
+    "mean": 0.013333333333333334,
+    "se": 0.03408984925928108,
+    "df": 149,
+    "p_t": 0.3481324201940672,
+    "p_two_sided": 0.6962648403881344,
+    "ci95": [
+     -0.05517241379310345,
+     0.08496732026143791
+    ],
+    "up": 14,
+    "down": 12,
+    "tie": 124,
+    "whole_batch": 0.013333333333333334
+   }
+  },
+  "J1": {
+   "rule": "practical-v2-2",
+   "whole_batch": 0.06,
+   "p_t": 0.04685601553971806,
+   "gain_points": 5,
+   "practical": true,
+   "significant": false,
+   "ok": true
+  },
+  "J4_items": {
+   "S'": 0,
+   "S": 0,
+   "margin": 3,
+   "ok": true,
+   "compared_items": 150,
+   "interchangeable_items": 0
+  },
+  "J6_dup": {
+   "pairs": [
+    {
+     "pair": "C-S",
+     "p_two_sided": 0.012544176512929932,
+     "ok": true
+    }
+   ],
+   "ok": true
+  }
+ },
+ "items": [
+  {
+   "task_id": "alfworld-xs:008ef1ca9ef1533a",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S": 1,
+    "C": 0,
+    "P_y": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:00c2765d04333f96",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "C": 1,
+    "S'": 1,
+    "S": 1,
+    "P_y": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:0395900de6968827",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "S": 1,
+    "P_y": 1,
+    "C": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:055993afc4d2458f",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "S": 0,
+    "S'": 1,
+    "C": 0,
+    "P_y": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:06f8380730c5a7a7",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "S": 1,
+    "C": 1,
+    "S'": 1,
+    "P_y": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:08aa0a53ec46397d",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "P_y": 1,
+    "C": 1,
+    "S": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:09926ade828659bd",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "S'": 1,
+    "C": 1,
+    "S": 1,
+    "P_y": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:0a2d233d3d78d3a9",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "C": 1,
+    "S'": 1,
+    "P_y": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:0a7c6f1ee4a2adc9",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "S'": 1,
+    "P_y": 1,
+    "S": 1,
+    "C": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:0a966df8881537af",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S": 0,
+    "P_y": 0,
+    "C": 0,
+    "S'": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:0cca1008d5fa3ab8",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "P_y": 1,
+    "S": 1,
+    "C": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:143d5679f5fc21bd",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S'": 0,
+    "S": 0,
+    "P_y": 0,
+    "C": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:166faf0f32dfa8ba",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "C": 0,
+    "S'": 0,
+    "P_y": 0,
+    "S": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:1718652accb76cfd",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "C": 1,
+    "S": 1,
+    "S'": 1,
+    "P_y": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:17f189ee669e4a6c",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "C": 1,
+    "S'": 1,
+    "P_y": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:18db9618b791b0b3",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "C": 1,
+    "S": 1,
+    "P_y": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:19abe79458ec7d57",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S": 1,
+    "S'": 1,
+    "C": 1,
+    "P_y": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:1a31c5857858c393",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S": 1,
+    "C": 1,
+    "P_y": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:1c3b437fc48f48ac",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "P_y": 1,
+    "S'": 1,
+    "C": 1,
+    "S": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:1cb44895e520fd7b",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "P_y": 0,
+    "S'": 0,
+    "C": 0,
+    "S": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:20e9c3559fae1b9b",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "C": 0,
+    "S": 0,
+    "P_y": 0,
+    "S'": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:29f8e3d33574401d",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "S": 1,
+    "S'": 1,
+    "C": 1,
+    "P_y": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:2b85a61e5f3bd1bd",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "C": 1,
+    "S": 1,
+    "P_y": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:2c40a68bbfd253b0",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "S": 1,
+    "C": 1,
+    "S'": 1,
+    "P_y": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:2d137754027e33e0",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "C": 1,
+    "P_y": 1,
+    "S'": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:2fb68825fe2b6214",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "P_y": 0,
+    "C": 0,
+    "S'": 0,
+    "S": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:3016c11be51d0ba8",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "C": 1,
+    "P_y": 1,
+    "S'": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:31dbff21c8271b5e",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S": 0,
+    "P_y": 1,
+    "S'": 1,
+    "C": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:320e15b83e60966d",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "C": 0,
+    "S": 0,
+    "S'": 0,
+    "P_y": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:32aa417a0aee1899",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "P_y": 1,
+    "S": 1,
+    "C": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:35a1e1fa2c203057",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "P_y": 0,
+    "S'": 0,
+    "S": 0,
+    "C": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:364fe72dcff829ba",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "S'": 1,
+    "C": 1,
+    "S": 0,
+    "P_y": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:37eb2d8ae9364299",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "S'": 1,
+    "C": 1,
+    "P_y": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:390e4fe5fa11f572",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S'": 0,
+    "P_y": 0,
+    "C": 0,
+    "S": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:3ccf45ee13ff6a9b",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S": 1,
+    "P_y": 0,
+    "S'": 0,
+    "C": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:3e669055b16a72e5",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "P_y": 1,
+    "S'": 1,
+    "C": 1,
+    "S": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:3fb93ffe9b362269",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "S": 1,
+    "C": 1,
+    "P_y": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:4084a991484fafb1",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "S'": 1,
+    "P_y": 1,
+    "S": 1,
+    "C": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:4290815656f24108",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "P_y": 0,
+    "C": 0,
+    "S'": 0,
+    "S": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:4311880c7c92c75b",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S'": 0,
+    "C": 0,
+    "P_y": 0,
+    "S": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:44deccfad42ee673",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "C": 1,
+    "S": 1,
+    "S'": 1,
+    "P_y": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:459301d542fc4aec",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "S": 0,
+    "P_y": 0,
+    "C": 0,
+    "S'": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:477003e37b7f753b",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "S'": 1,
+    "C": 1,
+    "P_y": 0,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:4975b20f53f0da59",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "P_y": 0,
+    "S": 0,
+    "S'": 0,
+    "C": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:4a4855881290100f",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "P_y": 1,
+    "S'": 1,
+    "S": 1,
+    "C": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:4add08b46ad59f0c",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "C": 0,
+    "S'": 0,
+    "P_y": 0,
+    "S": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:4c949525acbf3332",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "P_y": 1,
+    "S": 0,
+    "S'": 1,
+    "C": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:4d2c4384754b0903",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "S": 1,
+    "C": 1,
+    "P_y": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:4e698a23fa71922a",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "S": 0,
+    "S'": 0,
+    "C": 0,
+    "P_y": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:4e6dbd3437caa705",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "S": 1,
+    "P_y": 1,
+    "S'": 1,
+    "C": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:4ece861baf49d63f",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "C": 0,
+    "P_y": 0,
+    "S": 0,
+    "S'": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:4f265fb705594d8a",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "P_y": 1,
+    "C": 1,
+    "S'": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:4fc0d3146642995c",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "S": 0,
+    "C": 1,
+    "P_y": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:501cd98c6cc6efcf",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "S": 1,
+    "S'": 1,
+    "C": 1,
+    "P_y": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:5085855b2cdd1324",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "P_y": 1,
+    "C": 1,
+    "S'": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:510703db17aa43fc",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "P_y": 1,
+    "S": 1,
+    "S'": 1,
+    "C": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:51463b8751b08687",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "C": 1,
+    "P_y": 1,
+    "S": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:51a51b5a1aeb8199",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "C": 1,
+    "P_y": 1,
+    "S": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:51ed380adbdc10f9",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "S": 0,
+    "P_y": 0,
+    "S'": 1,
+    "C": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:53302e734d772304",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "S'": 0,
+    "S": 0,
+    "P_y": 0,
+    "C": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:533c3a6d26d8de40",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "C": 1,
+    "S'": 1,
+    "P_y": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:57ce7e6dd38bf2fb",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "C": 0,
+    "S": 0,
+    "P_y": 0,
+    "S'": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:57e94675837a948f",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "S'": 1,
+    "P_y": 1,
+    "C": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:58fb26ee41c820ce",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "C": 0,
+    "P_y": 0,
+    "S": 0,
+    "S'": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:5ca393d18036df5a",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "C": 1,
+    "S": 1,
+    "S'": 1,
+    "P_y": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:5f8afb925d71b696",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S'": 1,
+    "P_y": 1,
+    "C": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:620b89856a3a0abf",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S'": 1,
+    "P_y": 0,
+    "C": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:62f3d51a68cbd8a1",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "C": 0,
+    "S'": 0,
+    "P_y": 0,
+    "S": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:630f3c2c5b11c64f",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "C": 0,
+    "S": 1,
+    "P_y": 0,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:632a0cfe9d232c8e",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "S": 0,
+    "C": 0,
+    "S'": 0,
+    "P_y": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:6373d6b8046a67cf",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "P_y": 0,
+    "C": 0,
+    "S": 0,
+    "S'": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:638042a7a94b327c",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "P_y": 1,
+    "C": 1,
+    "S'": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:6520bca1a804d6a3",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "S'": 1,
+    "C": 1,
+    "P_y": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:6716aa21ad5b3a66",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "C": 1,
+    "S'": 1,
+    "P_y": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:6db6e18d00ed3594",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "C": 0,
+    "S": 0,
+    "S'": 0,
+    "P_y": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:716c03cf5aa0a04b",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "S'": 1,
+    "C": 1,
+    "P_y": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:75afd9e74f424ee8",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "P_y": 1,
+    "S'": 1,
+    "S": 1,
+    "C": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:776a585da7525f48",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S'": 0,
+    "P_y": 0,
+    "S": 0,
+    "C": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:792831a5c9be6cc3",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "S": 1,
+    "S'": 1,
+    "P_y": 1,
+    "C": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:7aa940bc41be7b67",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S": 0,
+    "C": 0,
+    "P_y": 0,
+    "S'": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:7c65a942c244a9c5",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "S'": 0,
+    "C": 0,
+    "P_y": 0,
+    "S": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:7d6d49b66d813eaa",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "C": 0,
+    "S'": 0,
+    "S": 0,
+    "P_y": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:7dafd0f87e983a7d",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "P_y": 0,
+    "S": 0,
+    "C": 0,
+    "S'": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:842050c72bd9a9b8",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "S'": 1,
+    "P_y": 1,
+    "C": 1,
+    "S": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:897562e15c10f41c",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "S": 1,
+    "P_y": 1,
+    "C": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:8a02562ab8c0ef57",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "P_y": 1,
+    "C": 1,
+    "S": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:8be74c5632c33b62",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "S'": 0,
+    "S": 1,
+    "C": 1,
+    "P_y": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:90f9f8369092da47",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "C": 1,
+    "P_y": 1,
+    "S": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:9166eefe8e6a137f",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "S'": 1,
+    "P_y": 1,
+    "C": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:9726a8a194061b44",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "P_y": 1,
+    "S": 1,
+    "S'": 1,
+    "C": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:9908e23aa2d1aab6",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "C": 1,
+    "S'": 1,
+    "S": 1,
+    "P_y": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:9b9bd6198a165295",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "S'": 1,
+    "P_y": 1,
+    "S": 1,
+    "C": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:9b9ebcf32369008d",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "S": 0,
+    "P_y": 0,
+    "S'": 0,
+    "C": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:a2d5659a8dae7cc3",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "C": 0,
+    "S": 0,
+    "S'": 0,
+    "P_y": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:a335dabd101215f9",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "C": 0,
+    "S": 0,
+    "P_y": 0,
+    "S'": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:a3d4c3423effac45",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "P_y": 0,
+    "S": 0,
+    "S'": 0,
+    "C": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:a48cbf74a37b3155",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "S'": 1,
+    "C": 1,
+    "S": 1,
+    "P_y": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:a639429b9ff591b1",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "S": 1,
+    "S'": 1,
+    "P_y": 1,
+    "C": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:a66693684b722d99",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "C": 0,
+    "S'": 0,
+    "S": 0,
+    "P_y": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:a69d769400752079",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "P_y": 1,
+    "C": 0,
+    "S'": 1,
+    "S": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:a7b0e3bc08b8dada",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "P_y": 0,
+    "C": 0,
+    "S'": 0,
+    "S": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:a971d711383dcbf5",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S": 0,
+    "P_y": 1,
+    "C": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:a9cc1c69f9401b88",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S": 0,
+    "C": 0,
+    "S'": 0,
+    "P_y": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:aa5372a268b8e86f",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S'": 0,
+    "C": 0,
+    "S": 0,
+    "P_y": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:aa756ab0e7a61255",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "C": 0,
+    "P_y": 0,
+    "S'": 0,
+    "S": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:ab74875af88ea97c",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "S'": 1,
+    "S": 1,
+    "C": 1,
+    "P_y": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:ac2f5489ca6a6fa8",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "P_y": 1,
+    "S'": 1,
+    "S": 1,
+    "C": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:aec580169c58027d",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "C": 1,
+    "S'": 1,
+    "P_y": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:aff373765ed61484",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "C": 1,
+    "S'": 0,
+    "P_y": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:b0af9090ed0241e9",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "C": 1,
+    "S'": 1,
+    "P_y": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:b14fa6e0da1468e6",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "P_y": 1,
+    "S": 1,
+    "C": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:b2aeb07ab53ef182",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "S'": 0,
+    "S": 0,
+    "C": 1,
+    "P_y": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:b351add313124d9b",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "C": 1,
+    "P_y": 0,
+    "S": 0,
+    "S'": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:b47f4c902bd5b345",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "S'": 1,
+    "S": 1,
+    "P_y": 0,
+    "C": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:b4c7c074f9002bfa",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "C": 1,
+    "P_y": 1,
+    "S": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:b840e710f1fc7512",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "P_y": 0,
+    "C": 0,
+    "S'": 0,
+    "S": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:ba18c8061e7259b1",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "C": 1,
+    "S'": 1,
+    "S": 1,
+    "P_y": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:bba89e10917fa149",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S": 0,
+    "P_y": 1,
+    "C": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:bc8a1acdb6b6a598",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "S": 1,
+    "S'": 1,
+    "C": 1,
+    "P_y": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:bd0e637203823404",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S": 0,
+    "P_y": 0,
+    "S'": 0,
+    "C": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:bd820eaa6b53d9fe",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "P_y": 1,
+    "S'": 1,
+    "C": 1,
+    "S": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:bffcdf16f3288d5c",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "S": 0,
+    "P_y": 0,
+    "S'": 0,
+    "C": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:c08e6c8e3a415313",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "P_y": 1,
+    "C": 1,
+    "S'": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:c1892df4689f3565",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "P_y": 0,
+    "S'": 0,
+    "S": 0,
+    "C": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:c865ecd990b482d6",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S'": 1,
+    "P_y": 0,
+    "S": 0,
+    "C": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:c8e71d5a44d5a45c",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "S'": 1,
+    "P_y": 1,
+    "C": 1,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:cf1cc7f315ebff9c",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "C": 0,
+    "P_y": 0,
+    "S'": 0,
+    "S": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:d22350eaf6e0071b",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "P_y": 1,
+    "S": 1,
+    "C": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:d463478e5290c901",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "S'": 1,
+    "P_y": 1,
+    "S": 1,
+    "C": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:dacfe2a3bd4cc160",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "S'": 1,
+    "S": 1,
+    "C": 1,
+    "P_y": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:db193d148c0712d3",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "S": 1,
+    "S'": 1,
+    "C": 1,
+    "P_y": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:dc8540f770ffc5a5",
+   "room": null,
+   "block": "b4",
+   "outcomes": {
+    "S": 0,
+    "S'": 0,
+    "P_y": 0,
+    "C": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:e176233ef0ab93b8",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "P_y": 0,
+    "C": 0,
+    "S": 0,
+    "S'": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:e32fec80b30ba1ec",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "C": 0,
+    "P_y": 1,
+    "S": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:e352e1b5ff27a3f7",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S": 1,
+    "P_y": 1,
+    "C": 0,
+    "S'": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:e4956e93ff04ce1b",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "P_y": 1,
+    "S'": 0,
+    "C": 0,
+    "S": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:e67e851eff4f14f0",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "S": 0,
+    "P_y": 1,
+    "S'": 0,
+    "C": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:e849c76a48ee4da5",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "P_y": 1,
+    "S": 1,
+    "C": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:e85cabf8c6e70de4",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "S'": 0,
+    "S": 0,
+    "C": 0,
+    "P_y": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:e8fe3e1d156f9443",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "S": 1,
+    "P_y": 0,
+    "S'": 1,
+    "C": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:ea01c7877484498f",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "C": 0,
+    "S": 0,
+    "S'": 0,
+    "P_y": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:ec33b0dfc566205e",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "P_y": 1,
+    "C": 1,
+    "S": 1,
+    "S'": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:edf0c7d8cab9242f",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "S": 1,
+    "C": 1,
+    "S'": 1,
+    "P_y": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:ef0d75a05321ac8a",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "C": 1,
+    "S'": 0,
+    "P_y": 0,
+    "S": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:f2b5f288c02f0209",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "S": 1,
+    "P_y": 1,
+    "S'": 1,
+    "C": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:f339b693743d5dc1",
+   "room": null,
+   "block": "b2",
+   "outcomes": {
+    "S'": 0,
+    "S": 0,
+    "P_y": 0,
+    "C": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:f4ee440180885c30",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "C": 0,
+    "S'": 0,
+    "S": 0,
+    "P_y": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:fd03a9a6e0caacc9",
+   "room": null,
+   "block": "b3",
+   "outcomes": {
+    "P_y": 1,
+    "S'": 1,
+    "S": 0,
+    "C": 1
+   }
+  },
+  {
+   "task_id": "alfworld-xs:fdddfe1930999cb0",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "P_y": 0,
+    "S": 1,
+    "C": 1,
+    "S'": 0
+   }
+  },
+  {
+   "task_id": "alfworld-xs:ff98e4e0b3175c67",
+   "room": null,
+   "block": "b1",
+   "outcomes": {
+    "P_y": 0,
+    "S": 1,
+    "C": 1,
+    "S'": 1
+   }
+  }
+ ]
+}

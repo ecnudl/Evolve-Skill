@@ -2137,7 +2137,7 @@ def _audit_final(st, candidate, rounds_done):
                             snapshots.append({**trajectory, "audit_source": source,
                                 "package_procedures": {p.id: hashlib.sha256(p.source.encode("utf-8")).hexdigest()
                                                        for p in observed.procedures} if observed else {}})
-        situations = audit.situations_from_cells(snapshots, candidate)
+        situations = audit.situations_from_cells(snapshots, candidate, configuration=configuration_of(st.setting))
         excluded = {key for record in prior for key in record.get("situation_keys", ())}
         counts = {}
         for record in prior:

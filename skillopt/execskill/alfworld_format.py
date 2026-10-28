@@ -25,9 +25,11 @@ def validate(runtime, configuration=None):
             require(not marked, "A historical runtime cannot use the ALFWorld v2.9.6 format rule")
     if not marked:
         return False
-    require(runtime.get(CONFIGURATION_KEY) == p.ALFWORLD_V10,
+    actual = runtime.get(CONFIGURATION_KEY)
+    require(isinstance(actual, str) and actual in p.CONFIGURATIONS and p.is_v296(actual)
+            and (configuration is None or actual == configuration),
             "The ALFWorld format runtime has its exact configuration")
-    require(runtime.get(RULE_KEY) == p.alfworld_format_rule(p.ALFWORLD_V10) == RULE,
+    require(runtime.get(RULE_KEY) == p.alfworld_format_rule(actual) == RULE,
             "The ALFWorld format runtime has its exact rule")
     return True
 

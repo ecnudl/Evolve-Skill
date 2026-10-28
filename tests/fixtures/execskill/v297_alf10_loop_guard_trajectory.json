@@ -1,0 +1,1162 @@
+{
+ "source": "alfworld-v10 D/s1-alfworld/confirm-r5/attempt-1/trajectories/1e732a4bde45c5eefc3e41908e2220b3.json (confirm spare rooms, not test)",
+ "task_id": "alfworld/alfworld-xs:287593c7a0c34cbe",
+ "cell": "1e732a4bde45c5eefc3e41908e2220b3",
+ "arm": "S'",
+ "package_sha256": "58e669831924189cb4423fa5f8506d97e3f0698b4c8d9030b9141cfe2e060cea",
+ "alfworld_steps": [
+  {
+   "i": 0,
+   "observation": "-= Welcome to TextWorld, ALFRED! =-\n\nYou are in the middle of a room. Looking quickly around you, you see a armchair 2, a armchair 1, a coffeetable 1, a diningtable 1, a drawer 12, a drawer 11, a drawer 10, a drawer 9, a drawer 8, a drawer 7, a drawer 6, a drawer 5, a drawer 4, a drawer 3, a drawer 2, a drawer 1, a dresser 1, a garbagecan 1, a sidetable 3, a sidetable 2, a sidetable 1, and a sofa 1.\n\nYour task is to: put two creditcard in drawer.",
+   "action": "go to drawer 1",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 1. The drawer 1 is closed.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 1,
+   "observation": "You arrive at drawer 1. The drawer 1 is closed.",
+   "action": "open drawer 1",
+   "how": "tag_exact",
+   "post_observation": "You open the drawer 1. The drawer 1 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 2,
+   "observation": "You open the drawer 1. The drawer 1 is open. In it, you see nothing.",
+   "action": "go to drawer 2",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 2. The drawer 2 is closed.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 3,
+   "observation": "You arrive at drawer 2. The drawer 2 is closed.",
+   "action": "open drawer 2",
+   "how": "tag_exact",
+   "post_observation": "You open the drawer 2. The drawer 2 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 4,
+   "observation": "You open the drawer 2. The drawer 2 is open. In it, you see nothing.",
+   "action": "go to drawer 3",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 3. The drawer 3 is closed.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 5,
+   "observation": "You arrive at drawer 3. The drawer 3 is closed.",
+   "action": "open drawer 3",
+   "how": "tag_exact",
+   "post_observation": "You open the drawer 3. The drawer 3 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 6,
+   "observation": "You open the drawer 3. The drawer 3 is open. In it, you see nothing.",
+   "action": "go to drawer 4",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 4. The drawer 4 is closed.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 7,
+   "observation": "You arrive at drawer 4. The drawer 4 is closed.",
+   "action": "open drawer 4",
+   "how": "tag_exact",
+   "post_observation": "You open the drawer 4. The drawer 4 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 8,
+   "observation": "You open the drawer 4. The drawer 4 is open. In it, you see nothing.",
+   "action": "go to drawer 5",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 5. The drawer 5 is closed.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 9,
+   "observation": "You arrive at drawer 5. The drawer 5 is closed.",
+   "action": "open drawer 5",
+   "how": "tag_exact",
+   "post_observation": "You open the drawer 5. The drawer 5 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 10,
+   "observation": "You open the drawer 5. The drawer 5 is open. In it, you see nothing.",
+   "action": "go to drawer 6",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 6. The drawer 6 is closed.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 11,
+   "observation": "You arrive at drawer 6. The drawer 6 is closed.",
+   "action": "open drawer 6",
+   "how": "tag_exact",
+   "post_observation": "You open the drawer 6. The drawer 6 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 12,
+   "observation": "You open the drawer 6. The drawer 6 is open. In it, you see nothing.",
+   "action": "go to drawer 7",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 7. The drawer 7 is closed.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 13,
+   "observation": "You arrive at drawer 7. The drawer 7 is closed.",
+   "action": "open drawer 7",
+   "how": "tag_exact",
+   "post_observation": "You open the drawer 7. The drawer 7 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 14,
+   "observation": "You open the drawer 7. The drawer 7 is open. In it, you see nothing.",
+   "action": "go to drawer 8",
+   "how": "unchanged",
+   "post_observation": "Nothing happens.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 15,
+   "observation": "Nothing happens.",
+   "action": "open drawer 8",
+   "how": "tag_exact",
+   "post_observation": "You open the drawer 8. The drawer 8 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 16,
+   "observation": "You open the drawer 8. The drawer 8 is open. In it, you see nothing.",
+   "action": "examine drawer 8",
+   "how": "tag_exact",
+   "post_observation": "The drawer 8 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 17,
+   "observation": "The drawer 8 is open. In it, you see nothing.",
+   "action": "go to drawer 9",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 9. The drawer 9 is closed.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 18,
+   "observation": "You arrive at drawer 9. The drawer 9 is closed.",
+   "action": "open drawer 9",
+   "how": "tag_exact",
+   "post_observation": "You open the drawer 9. The drawer 9 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 19,
+   "observation": "You open the drawer 9. The drawer 9 is open. In it, you see nothing.",
+   "action": "go to drawer 10",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 10. The drawer 10 is closed.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 20,
+   "observation": "You arrive at drawer 10. The drawer 10 is closed.",
+   "action": "open drawer 10",
+   "how": "tag_exact",
+   "post_observation": "You open the drawer 10. The drawer 10 is open. In it, you see a watch 2.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 21,
+   "observation": "You open the drawer 10. The drawer 10 is open. In it, you see a watch 2.",
+   "action": "go to drawer 11",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 11. The drawer 11 is closed.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 22,
+   "observation": "You arrive at drawer 11. The drawer 11 is closed.",
+   "action": "open drawer 11",
+   "how": "tag_exact",
+   "post_observation": "You open the drawer 11. The drawer 11 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 23,
+   "observation": "You open the drawer 11. The drawer 11 is open. In it, you see nothing.",
+   "action": "go to drawer 12",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 12. The drawer 12 is closed.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 24,
+   "observation": "You arrive at drawer 12. The drawer 12 is closed.",
+   "action": "open drawer 12",
+   "how": "tag_exact",
+   "post_observation": "You open the drawer 12. The drawer 12 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 25,
+   "observation": "You open the drawer 12. The drawer 12 is open. In it, you see nothing.",
+   "action": "go to drawer 9",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 9. The drawer 9 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 26,
+   "observation": "You arrive at drawer 9. The drawer 9 is open. In it, you see nothing.",
+   "action": "go to drawer 8",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 8. The drawer 8 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 27,
+   "observation": "You arrive at drawer 8. The drawer 8 is open. In it, you see nothing.",
+   "action": "go to drawer 7",
+   "how": "unchanged",
+   "post_observation": "Nothing happens.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 28,
+   "observation": "Nothing happens.",
+   "action": "examine drawer 7",
+   "how": "tag_exact",
+   "post_observation": "The drawer 7 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 29,
+   "observation": "The drawer 7 is open. In it, you see nothing.",
+   "action": "examine drawer 7",
+   "how": "tag_exact",
+   "post_observation": "The drawer 7 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 30,
+   "observation": "The drawer 7 is open. In it, you see nothing.",
+   "action": "go to drawer 6",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 6. The drawer 6 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 31,
+   "observation": "You arrive at drawer 6. The drawer 6 is open. In it, you see nothing.",
+   "action": "go to drawer 5",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 5. The drawer 5 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 32,
+   "observation": "You arrive at drawer 5. The drawer 5 is open. In it, you see nothing.",
+   "action": "go to drawer 4",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 4. The drawer 4 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 33,
+   "observation": "You arrive at drawer 4. The drawer 4 is open. In it, you see nothing.",
+   "action": "go to drawer 3",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 3. The drawer 3 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 34,
+   "observation": "You arrive at drawer 3. The drawer 3 is open. In it, you see nothing.",
+   "action": "go to drawer 2",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 2. The drawer 2 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 35,
+   "observation": "You arrive at drawer 2. The drawer 2 is open. In it, you see nothing.",
+   "action": "go to drawer 1",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 1. The drawer 1 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 36,
+   "observation": "You arrive at drawer 1. The drawer 1 is open. In it, you see nothing.",
+   "action": "go to drawer 7",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 7. The drawer 7 is open. In it, you see nothing.",
+   "notes": "",
+   "discouraged": []
+  },
+  {
+   "i": 37,
+   "observation": "You arrive at drawer 7. The drawer 7 is open. In it, you see nothing.",
+   "action": "go to drawer 8",
+   "how": "unchanged",
+   "post_observation": "Nothing happens.",
+   "notes": "loop/action-repeat guard with untried go-to commands first\nFacts extracted by a helper program (may be incomplete):\n- Untried commands: go to armchair 1; go to armchair 2; go to coffeetable 1\nCautions noted by a helper program (may be incomplete):\n- Action 'go to drawer 7' run 3 times; avoid repeating it.",
+   "discouraged": []
+  },
+  {
+   "i": 38,
+   "observation": "Nothing happens.",
+   "action": "go to coffeetable 1",
+   "how": "tag_exact",
+   "post_observation": "You arrive at coffeetable 1. On the coffeetable 1, you see a book 2, a box 1, a keychain 1, and a statue 3.",
+   "notes": "loop/action-repeat guard with untried go-to commands first\nFacts extracted by a helper program (may be incomplete):\n- Untried commands: go to armchair 1; go to armchair 2; go to coffeetable 1\nCautions noted by a helper program (may be incomplete):\n- Action 'go to drawer 7' run 3 times; avoid repeating it.\n- Action 'go to drawer 8' run 3 times; avoid repeating it.\n- Action 'go to drawer 8' gave 'Nothing happens' 2 times; do not repeat it.",
+   "discouraged": []
+  },
+  {
+   "i": 39,
+   "observation": "You arrive at coffeetable 1. On the coffeetable 1, you see a book 2, a box 1, a keychain 1, and a statue 3.",
+   "action": "go to armchair 1",
+   "how": "tag_exact",
+   "post_observation": "You arrive at armchair 1. On the armchair 1, you see nothing.",
+   "notes": "loop/action-repeat guard with untried go-to commands first\nFacts extracted by a helper program (may be incomplete):\n- Untried commands: go to armchair 1; go to armchair 2; go to diningtable 1\nCautions noted by a helper program (may be incomplete):\n- Action 'go to drawer 7' run 3 times; avoid repeating it.\n- Action 'go to drawer 8' run 3 times; avoid repeating it.\n- Action 'go to drawer 8' gave 'Nothing happens' 2 times; do not repeat it.",
+   "discouraged": []
+  },
+  {
+   "i": 40,
+   "observation": "You arrive at armchair 1. On the armchair 1, you see nothing.",
+   "action": "go to armchair 2",
+   "how": "tag_exact",
+   "post_observation": "You arrive at armchair 2. On the armchair 2, you see a remotecontrol 1.",
+   "notes": "loop/action-repeat guard with untried go-to commands first\nFacts extracted by a helper program (may be incomplete):\n- Untried commands: go to armchair 2; go to diningtable 1; go to dresser 1\nCautions noted by a helper program (may be incomplete):\n- Action 'go to drawer 7' run 3 times; avoid repeating it.\n- Action 'go to drawer 8' run 3 times; avoid repeating it.\n- Action 'go to drawer 8' gave 'Nothing happens' 2 times; do not repeat it.",
+   "discouraged": []
+  },
+  {
+   "i": 41,
+   "observation": "You arrive at armchair 2. On the armchair 2, you see a remotecontrol 1.",
+   "action": "go to diningtable 1",
+   "how": "tag_exact",
+   "post_observation": "You arrive at diningtable 1. On the diningtable 1, you see a creditcard 2, and a laptop 2.",
+   "notes": "loop/action-repeat guard with untried go-to commands first\nFacts extracted by a helper program (may be incomplete):\n- Untried commands: go to diningtable 1; go to dresser 1; go to garbagecan 1\nCautions noted by a helper program (may be incomplete):\n- Action 'go to drawer 7' run 3 times; avoid repeating it.\n- Action 'go to drawer 8' run 3 times; avoid repeating it.\n- Action 'go to drawer 8' gave 'Nothing happens' 2 times; do not repeat it.",
+   "discouraged": []
+  },
+  {
+   "i": 42,
+   "observation": "You arrive at diningtable 1. On the diningtable 1, you see a creditcard 2, and a laptop 2.",
+   "action": "take creditcard 2 from diningtable 1",
+   "how": "tag_exact",
+   "post_observation": "You pick up the creditcard 2 from the diningtable 1.",
+   "notes": "loop/action-repeat guard with untried go-to commands first\nFacts extracted by a helper program (may be incomplete):\n- Untried commands: go to dresser 1; go to garbagecan 1; go to sidetable 1\nCautions noted by a helper program (may be incomplete):\n- Action 'go to drawer 7' run 3 times; avoid repeating it.\n- Action 'go to drawer 8' run 3 times; avoid repeating it.\n- Action 'go to drawer 8' gave 'Nothing happens' 2 times; do not repeat it.\n\ntask-object visibility via admissible commands\nFacts extracted by a helper program (may be incomplete):\n- Task object word is 'creditcard'; admissible commands containing it: take creditcard 2 from diningtable 1",
+   "discouraged": []
+  },
+  {
+   "i": 43,
+   "observation": "You pick up the creditcard 2 from the diningtable 1.",
+   "action": "go to drawer 1",
+   "how": "tag_exact",
+   "post_observation": "You arrive at drawer 1. The drawer 1 is open. In it, you see nothing.",
+   "notes": "loop/action-repeat guard with untried go-to commands first\nFacts extracted by a helper program (may be incomplete):\n- Untried commands: go to dresser 1; go to garbagecan 1; go to sidetable 1\nCautions noted by a helper program (may be incomplete):\n- Action 'go to drawer 7' run 3 times; avoid repeating it.\n- Action 'go to drawer 8' run 3 times; avoid repeating it.\n- Action 'go to drawer 8' gave 'Nothing happens' 2 times; do not repeat it.\n\ntask-object visibility via admissible commands\nFacts extracted by a helper program (may be incomplete):\n- Task object word is 'creditcard'; admissible commands containing it: examine creditcard 2; move creditcard 2 to diningtable 1",
+   "discouraged": []
+  },
+  {
+   "i": 44,
+   "observation": "You arrive at drawer 1. The drawer 1 is open. In it, you see nothing.",
+   "action": "move creditcard 2 to drawer 1",
+   "how": "tag_exact",
+   "post_observation": "You move the creditcard 2 to the drawer 1.",
+   "notes": "loop/action-repeat guard with untried go-to commands first\nFacts extracted by a helper program (may be incomplete):\n- Untried commands: go to dresser 1; go to garbagecan 1; go to sidetable 1\nCautions noted by a helper program (may be incomplete):\n- Action 'go to drawer 1' run 3 times; avoid repeating it.\n- Action 'go to drawer 7' run 3 times; avoid repeating it.\n- Action 'go to drawer 8' run 3 times; avoid repeating it.\n\ntask-object visibility via admissible commands\nFacts extracted by a helper program (may be incomplete):\n- Task object word is 'creditcard'; admissible commands containing it: examine creditcard 2; move creditcard 2 to drawer 1",
+   "discouraged": []
+  },
+  {
+   "i": 45,
+   "observation": "You move the creditcard 2 to the drawer 1.",
+   "action": "go to dresser 1",
+   "how": "tag_exact",
+   "post_observation": "You arrive at dresser 1. On the dresser 1, you see a book 1, a laptop 1, a statue 2, a television 1, and a watch 1.",
+   "notes": "loop/action-repeat guard with untried go-to commands first\nFacts extracted by a helper program (may be incomplete):\n- Untried commands: go to dresser 1; go to garbagecan 1; go to sidetable 1\nCautions noted by a helper program (may be incomplete):\n- Action 'go to drawer 1' run 3 times; avoid repeating it.\n- Action 'go to drawer 7' run 3 times; avoid repeating it.\n- Action 'go to drawer 8' run 3 times; avoid repeating it.\n\ntask-object visibility via admissible commands\nFacts extracted by a helper program (may be incomplete):\n- Task object word is 'creditcard'; admissible commands containing it: take creditcard 2 from drawer 1",
+   "discouraged": []
+  },
+  {
+   "i": 46,
+   "observation": "You arrive at dresser 1. On the dresser 1, you see a book 1, a laptop 1, a statue 2, a television 1, and a watch 1.",
+   "action": "go to sidetable 1",
+   "how": "tag_exact",
+   "post_observation": "You arrive at sidetable 1. On the sidetable 1, you see a statue 1.",
+   "notes": "loop/action-repeat guard with untried go-to commands first\nFacts extracted by a helper program (may be incomplete):\n- Untried commands: go to garbagecan 1; go to sidetable 1; go to sidetable 2\nCautions noted by a helper program (may be incomplete):\n- Action 'go to drawer 1' run 3 times; avoid repeating it.\n- Action 'go to drawer 7' run 3 times; avoid repeating it.\n- Action 'go to drawer 8' run 3 times; avoid repeating it.",
+   "discouraged": []
+  },
+  {
+   "i": 47,
+   "observation": "You arrive at sidetable 1. On the sidetable 1, you see a statue 1.",
+   "action": "go to sidetable 2",
+   "how": "tag_exact",
+   "post_observation": "You arrive at sidetable 2. On the sidetable 2, you see nothing.",
+   "notes": "loop/action-repeat guard with untried go-to commands first\nFacts extracted by a helper program (may be incomplete):\n- Untried commands: go to garbagecan 1; go to sidetable 2; go to sidetable 3\nCautions noted by a helper program (may be incomplete):\n- Action 'go to drawer 1' run 3 times; avoid repeating it.\n- Action 'go to drawer 7' run 3 times; avoid repeating it.\n- Action 'go to drawer 8' run 3 times; avoid repeating it.",
+   "discouraged": []
+  },
+  {
+   "i": 48,
+   "observation": "You arrive at sidetable 2. On the sidetable 2, you see nothing.",
+   "action": "go to sofa 1",
+   "how": "tag_exact",
+   "post_observation": "You arrive at sofa 1. On the sofa 1, you see a creditcard 1, and a pillow 1.",
+   "notes": "loop/action-repeat guard with untried go-to commands first\nFacts extracted by a helper program (may be incomplete):\n- Untried commands: go to garbagecan 1; go to sidetable 3; go to sofa 1\nCautions noted by a helper program (may be incomplete):\n- Action 'go to drawer 1' run 3 times; avoid repeating it.\n- Action 'go to drawer 7' run 3 times; avoid repeating it.\n- Action 'go to drawer 8' run 3 times; avoid repeating it.",
+   "discouraged": []
+  },
+  {
+   "i": 49,
+   "observation": "You arrive at sofa 1. On the sofa 1, you see a creditcard 1, and a pillow 1.",
+   "action": "take creditcard 1 from sofa 1",
+   "how": "tag_exact",
+   "post_observation": "You pick up the creditcard 1 from the sofa 1.",
+   "notes": "loop/action-repeat guard with untried go-to commands first\nFacts extracted by a helper program (may be incomplete):\n- Untried commands: go to garbagecan 1; go to sidetable 3; examine sofa 1\nCautions noted by a helper program (may be incomplete):\n- Action 'go to drawer 1' run 3 times; avoid repeating it.\n- Action 'go to drawer 7' run 3 times; avoid repeating it.\n- Action 'go to drawer 8' run 3 times; avoid repeating it.\n\ntask-object visibility via admissible commands\nFacts extracted by a helper program (may be incomplete):\n- Task object word is 'creditcard'; admissible commands containing it: take creditcard 1 from sofa 1",
+   "discouraged": []
+  }
+ ],
+ "final_audit_situations": [
+  {
+   "item": "alfworld/alfworld-xs:287593c7a0c34cbe",
+   "cell": "1e732a4bde45c5eefc3e41908e2220b3",
+   "step": 47,
+   "view": {
+    "task_text": "",
+    "initial_observation": "-= Welcome to TextWorld, ALFRED! =-\n\nYou are in the middle of a room. Looking quickly around you, you see a armchair 2, a armchair 1, a coffeetable 1, a diningtable 1, a drawer 12, a drawer 11, a drawer 10, a drawer 9, a drawer 8, a drawer 7, a drawer 6, a drawer 5, a drawer 4, a drawer 3, a drawer 2, a drawer 1, a dresser 1, a garbagecan 1, a sidetable 3, a sidetable 2, a sidetable 1, and a sofa 1.\n\nYour task is to: put two creditcard in drawer.",
+    "observation": "You arrive at sidetable 1. On the sidetable 1, you see a statue 1.",
+    "recent_history": [
+     {
+      "observation": "You arrive at diningtable 1. On the diningtable 1, you see a creditcard 2, and a laptop 2.",
+      "action": "take creditcard 2 from diningtable 1"
+     },
+     {
+      "observation": "You pick up the creditcard 2 from the diningtable 1.",
+      "action": "go to drawer 1"
+     },
+     {
+      "observation": "You arrive at drawer 1. The drawer 1 is open. In it, you see nothing.",
+      "action": "move creditcard 2 to drawer 1"
+     },
+     {
+      "observation": "You move the creditcard 2 to the drawer 1.",
+      "action": "go to dresser 1"
+     },
+     {
+      "observation": "You arrive at dresser 1. On the dresser 1, you see a book 1, a laptop 1, a statue 2, a television 1, and a watch 1.",
+      "action": "go to sidetable 1"
+     }
+    ],
+    "admissible_commands": [
+     "examine sidetable 1",
+     "go to armchair 1",
+     "go to armchair 2",
+     "go to coffeetable 1",
+     "go to diningtable 1",
+     "go to drawer 1",
+     "go to drawer 10",
+     "go to drawer 11",
+     "go to drawer 12",
+     "go to drawer 2",
+     "go to drawer 3",
+     "go to drawer 4",
+     "go to drawer 5",
+     "go to drawer 6",
+     "go to drawer 7",
+     "go to drawer 8",
+     "go to drawer 9",
+     "go to dresser 1",
+     "go to garbagecan 1",
+     "go to sidetable 2",
+     "go to sidetable 3",
+     "go to sofa 1",
+     "help",
+     "inventory",
+     "look",
+     "take statue 1 from sidetable 1"
+    ]
+   },
+   "notes": [
+    {
+     "procedure": "p-alfworld-1-13",
+     "text": "loop/action-repeat guard with untried go-to commands first",
+     "n": "N1"
+    },
+    {
+     "procedure": "p-alfworld-1-13",
+     "text": "Untried commands: go to garbagecan 1; go to sidetable 2; go to sidetable 3",
+     "n": "N2"
+    },
+    {
+     "procedure": "p-alfworld-1-13",
+     "text": "Action 'go to drawer 1' run 3 times; avoid repeating it.",
+     "n": "N3"
+    },
+    {
+     "procedure": "p-alfworld-1-13",
+     "text": "Action 'go to drawer 7' run 3 times; avoid repeating it.",
+     "n": "N4"
+    },
+    {
+     "procedure": "p-alfworld-1-13",
+     "text": "Action 'go to drawer 8' run 3 times; avoid repeating it.",
+     "n": "N5"
+    }
+   ],
+   "source": "confirm",
+   "package_sha256": "58e669831924189cb4423fa5f8506d97e3f0698b4c8d9030b9141cfe2e060cea",
+   "package_procedures": {
+    "p-alfworld-1-13": "2b52d1990503e646d8a44fd8f0d99871d5cef4774a95912313abab47f2ebf720",
+    "p-alfworld-1-12": "5b918cf3b4edc6073a46417676d3705c26524d1c12f24a342f85d67445f2fe76"
+   },
+   "s": "S16"
+  },
+  {
+   "item": "alfworld/alfworld-xs:287593c7a0c34cbe",
+   "cell": "1e732a4bde45c5eefc3e41908e2220b3",
+   "step": 44,
+   "view": {
+    "task_text": "",
+    "initial_observation": "-= Welcome to TextWorld, ALFRED! =-\n\nYou are in the middle of a room. Looking quickly around you, you see a armchair 2, a armchair 1, a coffeetable 1, a diningtable 1, a drawer 12, a drawer 11, a drawer 10, a drawer 9, a drawer 8, a drawer 7, a drawer 6, a drawer 5, a drawer 4, a drawer 3, a drawer 2, a drawer 1, a dresser 1, a garbagecan 1, a sidetable 3, a sidetable 2, a sidetable 1, and a sofa 1.\n\nYour task is to: put two creditcard in drawer.",
+    "observation": "You arrive at drawer 1. The drawer 1 is open. In it, you see nothing.",
+    "recent_history": [
+     {
+      "observation": "You arrive at coffeetable 1. On the coffeetable 1, you see a book 2, a box 1, a keychain 1, and a statue 3.",
+      "action": "go to armchair 1"
+     },
+     {
+      "observation": "You arrive at armchair 1. On the armchair 1, you see nothing.",
+      "action": "go to armchair 2"
+     },
+     {
+      "observation": "You arrive at armchair 2. On the armchair 2, you see a remotecontrol 1.",
+      "action": "go to diningtable 1"
+     },
+     {
+      "observation": "You arrive at diningtable 1. On the diningtable 1, you see a creditcard 2, and a laptop 2.",
+      "action": "take creditcard 2 from diningtable 1"
+     },
+     {
+      "observation": "You pick up the creditcard 2 from the diningtable 1.",
+      "action": "go to drawer 1"
+     }
+    ],
+    "admissible_commands": [
+     "close drawer 1",
+     "examine creditcard 2",
+     "examine drawer 1",
+     "go to armchair 1",
+     "go to armchair 2",
+     "go to coffeetable 1",
+     "go to diningtable 1",
+     "go to drawer 10",
+     "go to drawer 11",
+     "go to drawer 12",
+     "go to drawer 2",
+     "go to drawer 3",
+     "go to drawer 4",
+     "go to drawer 5",
+     "go to drawer 6",
+     "go to drawer 7",
+     "go to drawer 8",
+     "go to drawer 9",
+     "go to dresser 1",
+     "go to garbagecan 1",
+     "go to sidetable 1",
+     "go to sidetable 2",
+     "go to sidetable 3",
+     "go to sofa 1",
+     "help",
+     "inventory",
+     "look",
+     "move creditcard 2 to drawer 1"
+    ]
+   },
+   "notes": [
+    {
+     "procedure": "p-alfworld-1-13",
+     "text": "loop/action-repeat guard with untried go-to commands first",
+     "n": "N1"
+    },
+    {
+     "procedure": "p-alfworld-1-13",
+     "text": "Untried commands: go to dresser 1; go to garbagecan 1; go to sidetable 1",
+     "n": "N2"
+    },
+    {
+     "procedure": "p-alfworld-1-13",
+     "text": "Action 'go to drawer 1' run 3 times; avoid repeating it.",
+     "n": "N3"
+    },
+    {
+     "procedure": "p-alfworld-1-13",
+     "text": "Action 'go to drawer 7' run 3 times; avoid repeating it.",
+     "n": "N4"
+    },
+    {
+     "procedure": "p-alfworld-1-13",
+     "text": "Action 'go to drawer 8' run 3 times; avoid repeating it.",
+     "n": "N5"
+    },
+    {
+     "procedure": "p-alfworld-1-12",
+     "text": "task-object visibility via admissible commands",
+     "n": "N6"
+    },
+    {
+     "procedure": "p-alfworld-1-12",
+     "text": "Task object word is 'creditcard'; admissible commands containing it: examine creditcard 2; move creditcard 2 to drawer 1",
+     "n": "N7"
+    }
+   ],
+   "source": "confirm",
+   "package_sha256": "58e669831924189cb4423fa5f8506d97e3f0698b4c8d9030b9141cfe2e060cea",
+   "package_procedures": {
+    "p-alfworld-1-13": "2b52d1990503e646d8a44fd8f0d99871d5cef4774a95912313abab47f2ebf720",
+    "p-alfworld-1-12": "5b918cf3b4edc6073a46417676d3705c26524d1c12f24a342f85d67445f2fe76"
+   },
+   "s": "S17"
+  },
+  {
+   "item": "alfworld/alfworld-xs:287593c7a0c34cbe",
+   "cell": "1e732a4bde45c5eefc3e41908e2220b3",
+   "step": 45,
+   "view": {
+    "task_text": "",
+    "initial_observation": "-= Welcome to TextWorld, ALFRED! =-\n\nYou are in the middle of a room. Looking quickly around you, you see a armchair 2, a armchair 1, a coffeetable 1, a diningtable 1, a drawer 12, a drawer 11, a drawer 10, a drawer 9, a drawer 8, a drawer 7, a drawer 6, a drawer 5, a drawer 4, a drawer 3, a drawer 2, a drawer 1, a dresser 1, a garbagecan 1, a sidetable 3, a sidetable 2, a sidetable 1, and a sofa 1.\n\nYour task is to: put two creditcard in drawer.",
+    "observation": "You move the creditcard 2 to the drawer 1.",
+    "recent_history": [
+     {
+      "observation": "You arrive at armchair 1. On the armchair 1, you see nothing.",
+      "action": "go to armchair 2"
+     },
+     {
+      "observation": "You arrive at armchair 2. On the armchair 2, you see a remotecontrol 1.",
+      "action": "go to diningtable 1"
+     },
+     {
+      "observation": "You arrive at diningtable 1. On the diningtable 1, you see a creditcard 2, and a laptop 2.",
+      "action": "take creditcard 2 from diningtable 1"
+     },
+     {
+      "observation": "You pick up the creditcard 2 from the diningtable 1.",
+      "action": "go to drawer 1"
+     },
+     {
+      "observation": "You arrive at drawer 1. The drawer 1 is open. In it, you see nothing.",
+      "action": "move creditcard 2 to drawer 1"
+     }
+    ],
+    "admissible_commands": [
+     "close drawer 1",
+     "examine drawer 1",
+     "go to armchair 1",
+     "go to armchair 2",
+     "go to coffeetable 1",
+     "go to diningtable 1",
+     "go to drawer 10",
+     "go to drawer 11",
+     "go to drawer 12",
+     "go to drawer 2",
+     "go to drawer 3",
+     "go to drawer 4",
+     "go to drawer 5",
+     "go to drawer 6",
+     "go to drawer 7",
+     "go to drawer 8",
+     "go to drawer 9",
+     "go to dresser 1",
+     "go to garbagecan 1",
+     "go to sidetable 1",
+     "go to sidetable 2",
+     "go to sidetable 3",
+     "go to sofa 1",
+     "help",
+     "inventory",
+     "look",
+     "take creditcard 2 from drawer 1"
+    ]
+   },
+   "notes": [
+    {
+     "procedure": "p-alfworld-1-13",
+     "text": "loop/action-repeat guard with untried go-to commands first",
+     "n": "N1"
+    },
+    {
+     "procedure": "p-alfworld-1-13",
+     "text": "Untried commands: go to dresser 1; go to garbagecan 1; go to sidetable 1",
+     "n": "N2"
+    },
+    {
+     "procedure": "p-alfworld-1-13",
+     "text": "Action 'go to drawer 1' run 3 times; avoid repeating it.",
+     "n": "N3"
+    },
+    {
+     "procedure": "p-alfworld-1-13",
+     "text": "Action 'go to drawer 7' run 3 times; avoid repeating it.",
+     "n": "N4"
+    },
+    {
+     "procedure": "p-alfworld-1-13",
+     "text": "Action 'go to drawer 8' run 3 times; avoid repeating it.",
+     "n": "N5"
+    },
+    {
+     "procedure": "p-alfworld-1-12",
+     "text": "task-object visibility via admissible commands",
+     "n": "N6"
+    },
+    {
+     "procedure": "p-alfworld-1-12",
+     "text": "Task object word is 'creditcard'; admissible commands containing it: take creditcard 2 from drawer 1",
+     "n": "N7"
+    }
+   ],
+   "source": "confirm",
+   "package_sha256": "58e669831924189cb4423fa5f8506d97e3f0698b4c8d9030b9141cfe2e060cea",
+   "package_procedures": {
+    "p-alfworld-1-13": "2b52d1990503e646d8a44fd8f0d99871d5cef4774a95912313abab47f2ebf720",
+    "p-alfworld-1-12": "5b918cf3b4edc6073a46417676d3705c26524d1c12f24a342f85d67445f2fe76"
+   },
+   "s": "S18"
+  }
+ ],
+ "final_audit_confirmed_p_alfworld_1_13": [
+  {
+   "evidence": "recent_history actions: 'open cabinet 3', 'go to cabinet 4', ... no drawer actions",
+   "n": "N3",
+   "policy": "ok",
+   "reason": "Shown recent history (different item) contains no 'go to drawer 1'; cannot support 'run 3 times' claim from shown input — history shown is only 5 entries for a different room.",
+   "truth": "false",
+   "s": "S16",
+   "kind": "note",
+   "procedure": "p-alfworld-1-13",
+   "verdict": "P1",
+   "unit": [
+    "note",
+    "p-alfworld-1-13",
+    "S16",
+    "N3"
+   ],
+   "judges": {
+    "G": {
+     "evidence": "recent_history actions: 'open cabinet 3', 'go to cabinet 4', ... no drawer actions",
+     "n": "N3",
+     "policy": "ok",
+     "reason": "Shown recent history (different item) contains no 'go to drawer 1'; cannot support 'run 3 times' claim from shown input — history shown is only 5 entries for a different room.",
+     "truth": "false",
+     "s": "S16",
+     "kind": "note",
+     "procedure": "p-alfworld-1-13",
+     "verdict": "P1"
+    },
+    "D": {
+     "evidence": "recent_history shows 'go to drawer 1' only once",
+     "n": "N3",
+     "policy": "ok",
+     "reason": "'go to drawer 1' appears once in the shown history, not three times.",
+     "truth": "false",
+     "s": "S16",
+     "kind": "note",
+     "procedure": "p-alfworld-1-13",
+     "verdict": "P1"
+    }
+   }
+  },
+  {
+   "evidence": "shown history has no 'go to drawer 7'",
+   "n": "N4",
+   "policy": "ok",
+   "reason": "The shown input for this situation contains no occurrence of 'go to drawer 7'.",
+   "truth": "false",
+   "s": "S16",
+   "kind": "note",
+   "procedure": "p-alfworld-1-13",
+   "verdict": "P1",
+   "unit": [
+    "note",
+    "p-alfworld-1-13",
+    "S16",
+    "N4"
+   ],
+   "judges": {
+    "G": {
+     "evidence": "shown history has no 'go to drawer 7'",
+     "n": "N4",
+     "policy": "ok",
+     "reason": "The shown input for this situation contains no occurrence of 'go to drawer 7'.",
+     "truth": "false",
+     "s": "S16",
+     "kind": "note",
+     "procedure": "p-alfworld-1-13",
+     "verdict": "P1"
+    },
+    "D": {
+     "evidence": "no 'go to drawer 7' in recent_history",
+     "n": "N4",
+     "policy": "ok",
+     "reason": "The shown history contains no 'go to drawer 7' action at all.",
+     "truth": "false",
+     "s": "S16",
+     "kind": "note",
+     "procedure": "p-alfworld-1-13",
+     "verdict": "P1"
+    }
+   }
+  },
+  {
+   "evidence": "shown history has no 'go to drawer 8'",
+   "n": "N5",
+   "policy": "ok",
+   "reason": "The shown input contains no occurrence of 'go to drawer 8'.",
+   "truth": "false",
+   "s": "S16",
+   "kind": "note",
+   "procedure": "p-alfworld-1-13",
+   "verdict": "P1",
+   "unit": [
+    "note",
+    "p-alfworld-1-13",
+    "S16",
+    "N5"
+   ],
+   "judges": {
+    "G": {
+     "evidence": "shown history has no 'go to drawer 8'",
+     "n": "N5",
+     "policy": "ok",
+     "reason": "The shown input contains no occurrence of 'go to drawer 8'.",
+     "truth": "false",
+     "s": "S16",
+     "kind": "note",
+     "procedure": "p-alfworld-1-13",
+     "verdict": "P1"
+    },
+    "D": {
+     "evidence": "no 'go to drawer 8' in recent_history",
+     "n": "N5",
+     "policy": "ok",
+     "reason": "The shown history contains no 'go to drawer 8' action at all.",
+     "truth": "false",
+     "s": "S16",
+     "kind": "note",
+     "procedure": "p-alfworld-1-13",
+     "verdict": "P1"
+    }
+   }
+  },
+  {
+   "evidence": "recent_history: 'go to armchair 1', 'go to armchair 2', 'go to diningtable 1', 'take creditcard 2 from diningtable 1', 'go to drawer 1'",
+   "n": "N3",
+   "policy": "ok",
+   "reason": "'go to drawer 1' appears once in shown history, not 3 times.",
+   "truth": "false",
+   "s": "S17",
+   "kind": "note",
+   "procedure": "p-alfworld-1-13",
+   "verdict": "P1",
+   "unit": [
+    "note",
+    "p-alfworld-1-13",
+    "S17",
+    "N3"
+   ],
+   "judges": {
+    "G": {
+     "evidence": "recent_history: 'go to armchair 1', 'go to armchair 2', 'go to diningtable 1', 'take creditcard 2 from diningtable 1', 'go to drawer 1'",
+     "n": "N3",
+     "policy": "ok",
+     "reason": "'go to drawer 1' appears once in shown history, not 3 times.",
+     "truth": "false",
+     "s": "S17",
+     "kind": "note",
+     "procedure": "p-alfworld-1-13",
+     "verdict": "P1"
+    },
+    "D": {
+     "evidence": "recent_history shows 'go to drawer 1' once",
+     "n": "N3",
+     "policy": "ok",
+     "reason": "'go to drawer 1' occurs once in the shown history, not three times.",
+     "truth": "false",
+     "s": "S17",
+     "kind": "note",
+     "procedure": "p-alfworld-1-13",
+     "verdict": "P1"
+    }
+   }
+  },
+  {
+   "evidence": "no 'go to drawer 7' in shown input",
+   "n": "N4",
+   "policy": "ok",
+   "reason": "Not present in shown history.",
+   "truth": "false",
+   "s": "S17",
+   "kind": "note",
+   "procedure": "p-alfworld-1-13",
+   "verdict": "P1",
+   "unit": [
+    "note",
+    "p-alfworld-1-13",
+    "S17",
+    "N4"
+   ],
+   "judges": {
+    "G": {
+     "evidence": "no 'go to drawer 7' in shown input",
+     "n": "N4",
+     "policy": "ok",
+     "reason": "Not present in shown history.",
+     "truth": "false",
+     "s": "S17",
+     "kind": "note",
+     "procedure": "p-alfworld-1-13",
+     "verdict": "P1"
+    },
+    "D": {
+     "evidence": "no 'go to drawer 7' in recent_history",
+     "n": "N4",
+     "policy": "ok",
+     "reason": "No such action appears in the shown history.",
+     "truth": "false",
+     "s": "S17",
+     "kind": "note",
+     "procedure": "p-alfworld-1-13",
+     "verdict": "P1"
+    }
+   }
+  },
+  {
+   "evidence": "no 'go to drawer 8' in shown input",
+   "n": "N5",
+   "policy": "ok",
+   "reason": "Not present in shown history.",
+   "truth": "false",
+   "s": "S17",
+   "kind": "note",
+   "procedure": "p-alfworld-1-13",
+   "verdict": "P1",
+   "unit": [
+    "note",
+    "p-alfworld-1-13",
+    "S17",
+    "N5"
+   ],
+   "judges": {
+    "G": {
+     "evidence": "no 'go to drawer 8' in shown input",
+     "n": "N5",
+     "policy": "ok",
+     "reason": "Not present in shown history.",
+     "truth": "false",
+     "s": "S17",
+     "kind": "note",
+     "procedure": "p-alfworld-1-13",
+     "verdict": "P1"
+    },
+    "D": {
+     "evidence": "no 'go to drawer 8' in recent_history",
+     "n": "N5",
+     "policy": "ok",
+     "reason": "No such action appears in the shown history.",
+     "truth": "false",
+     "s": "S17",
+     "kind": "note",
+     "procedure": "p-alfworld-1-13",
+     "verdict": "P1"
+    }
+   }
+  },
+  {
+   "evidence": "'go to drawer 1' appears once in shown history",
+   "n": "N3",
+   "policy": "ok",
+   "reason": "Shown history has 'go to drawer 1' once, not 3 times.",
+   "truth": "false",
+   "s": "S18",
+   "kind": "note",
+   "procedure": "p-alfworld-1-13",
+   "verdict": "P1",
+   "unit": [
+    "note",
+    "p-alfworld-1-13",
+    "S18",
+    "N3"
+   ],
+   "judges": {
+    "G": {
+     "evidence": "'go to drawer 1' appears once in shown history",
+     "n": "N3",
+     "policy": "ok",
+     "reason": "Shown history has 'go to drawer 1' once, not 3 times.",
+     "truth": "false",
+     "s": "S18",
+     "kind": "note",
+     "procedure": "p-alfworld-1-13",
+     "verdict": "P1"
+    },
+    "D": {
+     "evidence": "recent_history shows 'go to drawer 1' once",
+     "n": "N3",
+     "policy": "ok",
+     "reason": "'go to drawer 1' appears once in the shown history, not three times.",
+     "truth": "false",
+     "s": "S18",
+     "kind": "note",
+     "procedure": "p-alfworld-1-13",
+     "verdict": "P1"
+    }
+   }
+  },
+  {
+   "evidence": "no 'go to drawer 7' in shown input",
+   "n": "N4",
+   "policy": "ok",
+   "reason": "Not present in shown history.",
+   "truth": "false",
+   "s": "S18",
+   "kind": "note",
+   "procedure": "p-alfworld-1-13",
+   "verdict": "P1",
+   "unit": [
+    "note",
+    "p-alfworld-1-13",
+    "S18",
+    "N4"
+   ],
+   "judges": {
+    "G": {
+     "evidence": "no 'go to drawer 7' in shown input",
+     "n": "N4",
+     "policy": "ok",
+     "reason": "Not present in shown history.",
+     "truth": "false",
+     "s": "S18",
+     "kind": "note",
+     "procedure": "p-alfworld-1-13",
+     "verdict": "P1"
+    },
+    "D": {
+     "evidence": "no 'go to drawer 7' in recent_history",
+     "n": "N4",
+     "policy": "ok",
+     "reason": "No such action appears in the shown history.",
+     "truth": "false",
+     "s": "S18",
+     "kind": "note",
+     "procedure": "p-alfworld-1-13",
+     "verdict": "P1"
+    }
+   }
+  },
+  {
+   "evidence": "no 'go to drawer 8' in shown input",
+   "n": "N5",
+   "policy": "ok",
+   "reason": "Not present in shown history.",
+   "truth": "false",
+   "s": "S18",
+   "kind": "note",
+   "procedure": "p-alfworld-1-13",
+   "verdict": "P1",
+   "unit": [
+    "note",
+    "p-alfworld-1-13",
+    "S18",
+    "N5"
+   ],
+   "judges": {
+    "G": {
+     "evidence": "no 'go to drawer 8' in shown input",
+     "n": "N5",
+     "policy": "ok",
+     "reason": "Not present in shown history.",
+     "truth": "false",
+     "s": "S18",
+     "kind": "note",
+     "procedure": "p-alfworld-1-13",
+     "verdict": "P1"
+    },
+    "D": {
+     "evidence": "no 'go to drawer 8' in recent_history",
+     "n": "N5",
+     "policy": "ok",
+     "reason": "No such action appears in the shown history.",
+     "truth": "false",
+     "s": "S18",
+     "kind": "note",
+     "procedure": "p-alfworld-1-13",
+     "verdict": "P1"
+    }
+   }
+  },
+  {
+   "reason": "For program p-alfworld-1-13 (which should list untried 'go to' commands first), no notes at all appear in any shown situation, including S1 where the history is empty and many untried 'go to' commands are admissible, so its promised suggestions are not being delivered; its own counts (non_empty 49 of 120 fired) corroborate frequent empty output.",
+   "verdict": "P6",
+   "kind": "program",
+   "procedure": "p-alfworld-1-13",
+   "unit": [
+    "program",
+    "p-alfworld-1-13",
+    "P6"
+   ],
+   "judges": {
+    "G": {
+     "reason": "For program p-alfworld-1-13 (which should list untried 'go to' commands first), no notes at all appear in any shown situation, including S1 where the history is empty and many untried 'go to' commands are admissible, so its promised suggestions are not being delivered; its own counts (non_empty 49 of 120 fired) corroborate frequent empty output.",
+     "verdict": "P6",
+     "kind": "program",
+     "procedure": "p-alfworld-1-13"
+    },
+    "D": {
+     "reason": "The repeat guard repeatedly reports actions like 'go to drawer 7'/'go to drawer 8' as run 3 times when they never appear in the history, so it does not work as described.",
+     "verdict": "P6",
+     "kind": "program",
+     "procedure": "p-alfworld-1-13"
+    }
+   }
+  }
+ ]
+}

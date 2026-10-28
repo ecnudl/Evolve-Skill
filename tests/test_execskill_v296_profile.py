@@ -18,10 +18,10 @@ SNAPSHOT = json.loads((Path(__file__).parent / 'fixtures/execskill/v296_parents_
 
 
 def test_only_alf_v10_is_new_and_all_inherited_feature_versions_apply():
-    assert {name for name in p.CONFIGURATIONS if p.is_v296(name)} == {CHILD}
+    assert {name for name in p.CONFIGURATIONS if p.is_v296(name) and not p.is_v297(name)} == {CHILD}
     assert not p.is_v296(None)
     for name in p.CONFIGURATIONS:
-        assert p.alfworld_format_rule(name) == ('alfworld-readable-action-v2-9-6' if name == CHILD
+        assert p.alfworld_format_rule(name) == ('alfworld-readable-action-v2-9-6' if p.is_v296(name)
                                                 else 'alfworld-admissible-9-10')
     assert all(fn(CHILD) for fn in (p.is_v23, p.is_v24, p.is_v25, p.is_v26, p.is_v27,
         p.is_v28, p.is_v29, p.is_v291, p.is_v292, p.is_v293, p.is_v294, p.is_v295))
