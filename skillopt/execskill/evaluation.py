@@ -141,7 +141,7 @@ __all__ = ("ARMS", "EvaluationStore", "LABELS", "alfworld_reset", "attempts", "c
            "unseal")
 
 ARMS = ("F", "C", "P_F", "T_F")  # the arms the caller builds; the twins F\p are the plan's (§8.1)
-ARM_KINDS = {"F": "candidate", "C": "card", "P_F": "placebo_y", "T_F": "text"}
+ARM_KINDS = {"F": "candidate", "C": "card", "P_F": "placebo_y", "T_F": "text", "B": "blank"}
 TWIN = "withhold:"
 STAGE_LABEL = re.compile(r"%s([1-9][0-9]*)" % STAGE_ARM)  # a stage arm "S<k>" (protocol.STAGE_ARM)
 SHEET_QUALIFICATION = "spreadsheetbench-qualification"
@@ -435,7 +435,7 @@ def mounting(workers, inputs):
     return factory
 
 
-def test_plan(tasks, final, *, bench, unit, runtime, workers, reset=None):
+def test_plan(tasks, final, *, bench, unit, runtime, workers, reset=None, run_configuration=None):
     """The read's zero-call plan (§8.1): {"tasks": the tasks with their routing views (ALFWorld: made by ``reset``,
     ``_with_views``), "routes": {item: RouteLog of F}, "zero": [items F enables nothing on], "twins": {item: [procedure
     ids withheld]}, "not_withheld": {...}, "sha256"}. ``workers(package, item)``: a context manager yielding a started
@@ -450,12 +450,16 @@ def test_plan(tasks, final, *, bench, unit, runtime, workers, reset=None):
     routes = {}
     for task in tasks:
         view = solver.routing_view(bench, task["public"], runtime=runtime)
-        with workers(final, task["task_id"]) as worker:
-            routes[task["task_id"]] = router.route(final, bench, view, worker)
+        if profiles.is_v210(run_configuration) and not final.for_bench(bench):
+            routes[task["task_id"]] = router.route(final, bench, view, None)
+        else:
+            with workers(final, task["task_id"]) as worker:
+                routes[task["task_id"]] = router.route(final, bench, view, worker)
     items = [t["task_id"] for t in tasks]
     firing = {p.id: [i for i in items if p.id in routes[i].enabled] for p in final.for_bench(bench)}
     priority = sorted((p for p in firing if firing[p]), key=lambda p: (-len(firing[p]), final.order.index(p)))
-    twins, skipped = router.draw_twins(firing, priority, {p: "withhold" for p in priority}, twin_unit(bench))
+    twins, skipped = (router.draw_twins(firing, priority, {p: "withhold" for p in priority}, twin_unit(bench))
+                      if profiles.TEST_WITHHOLDING.get(run_configuration, True) else ({}, {}))
     zero = [i for i in items if not routes[i].enabled]
     summary = {"package_sha256": final.sha256, "routes": {i: routes[i].sha256 for i in items}, "zero": zero,
                "twins": {i: [t["procedure"] for t in twins[i]] for i in sorted(twins)},
@@ -600,6 +604,7 @@ def sealed_cell(full):
     final, judged = full["final"], full["judge"]
     return {
         "cell": full["cell"], "arm_kind": full["arm_kind"], "package_sha256": full["package_sha256"],
+        **({"card": full["card"]} if full["arm_kind"] == "blank" else {}),
         "enabled": full["enabled"], "withheld": full["withheld"], "restored": full["restored"], "calls": calls,
         "sends": len(sends), "deciding_receipt": full["deciding_receipt"], "worst_delivery": full["worst_delivery"],
         "faults": [{k: f.get(k) for k in ("procedure", "hook", "kind", "exc_type", "step")} for f in full["faults"]],
@@ -790,6 +795,11 @@ def _canary_records(root, *, read, configuration=None):
                 and set(pools) == set(READ_CANARY_SOURCES)
                 and all(p is None or SHA256.fullmatch(str(p)) for p in pools.values()),
                 "The test read's canaries skip the texts of the training side (registrar decision PR-C31-3)")
+        if configuration == profiles.BASELINE_V210:
+            require(second.get("training_side") == {"skipped": True, "reason": "baseline_has_no_training",
+                                                     "pool_reads": 0}
+                    and all(pin is None for pin in pools.values()) and all(n == 0 for n in skipped.values()),
+                    "The baseline canaries skip training-side pools because the baseline has no training")
     require(second is not None or not read, "The test read's canaries are not made yet")
     return first, second
 
@@ -831,12 +841,14 @@ def make_read_canaries(root, pinned, *, pools, run, evidence, panel=data.test_pa
         require(tuple(order) == ("alfworld",), "The trusted ALFWorld run has one benchmark")
         return _make_alfworld_canaries(root, pinned, pools=pools, run=run, evidence=evidence, panel=panel,
                                       configuration=configuration)
-    allowed = consent(root / "shared")
+    allowed = (consent(root / "shared", configuration) if profiles.is_v210(configuration)
+               else consent(root / "shared"))
     first, _ = _canary_records(root, read=False, configuration=configuration)
     path = root / READ_CANARIES
     with exclusive(root / "shared" / "test-read-canaries.lock", wait=True):
         if not path.exists():
-            training, pins = _training_side(pools, order)
+            baseline = configuration == profiles.BASELINE_V210
+            training, pins = ({}, {bench: None for bench in READ_CANARY_SOURCES}) if baseline else _training_side(pools, order)
             access, texts, panels = data.TestAccess(READ_CANARY_UNIT), {}, {}
             for bench, field in sorted(READ_CANARY_SOURCES.items()):
                 tasks, report = panel(pinned, bench, access=access)
@@ -847,6 +859,8 @@ def make_read_canaries(root, pinned, *, pools, run, evidence, panel=data.test_pa
                 "canaries": found, "counts": counts, "per_bench": CANARIES_PER_BENCH, "seed_tag": CANARY_TAG,
                 "sources": {bench: "the public " + READ_CANARY_SOURCES[bench] for bench in counts},
                 "skipped": {bench: len(skip[bench]) for bench in counts}, "training_pools": pins,
+                **({"training_side": {"skipped": True, "reason": "baseline_has_no_training", "pool_reads": 0}}
+                   if baseline else {}),
                 "unit": READ_CANARY_UNIT, "run": run, "panels": panels, "consent_sha256": digest(allowed),
                 "extends": first[RECORD_HASH]}))
         _, value = _canary_records(root, read=True, configuration=configuration)
@@ -1290,9 +1304,16 @@ def _stage_arms(stages, final):
 def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, context, workers, route_workers, canaries,
               panel, reset, stages=None, run_configuration=None):
     require(not (unit_root / "unit.json").exists(), "This unit is complete")
-    require(set(arms) == set(ARMS), "The read's arms are F, C, P_F and T_F (§8.1)")
-    final, card = arms["F"].package, arms["C"].package
-    require(final.sha256 != card.sha256, "F = C: nothing was accepted, the read is not made (§8.1)")
+    child = profiles.is_v210(run_configuration)
+    expected = read_arms_of(run_configuration) if child else ARMS
+    require(set(arms) == set(expected), "The read's arms must match the configuration exactly")
+    if child:
+        require(context.configuration == run_configuration, "The read context belongs to its v2.10 configuration")
+        consent(shared, run_configuration)
+    final, card = arms.get("F", arms["C"]).package, arms["C"].package
+    require(child or final.sha256 != card.sha256, "F = C: nothing was accepted, the read is not made (§8.1)")
+    if child:
+        require(not arms["B"].package.procedures, "B runs no procedure")
     require(not card.for_bench(bench), "The card arm runs no procedure")
     rows, packages = _stage_arms(stages, final) if stages is not None else (None, {})
     if stages is not None:  # Codex stage review #4: the stage arms are read only under their exact consent
@@ -1302,8 +1323,12 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
     evidence = context.evidence
     config = configuration(context, bench)
     identity = {"run": run, "unit": unit, "chain": chain, "bench": bench, "config": config,
-                "packages": {"F": final.sha256, "C": card.sha256,
-                             **{label: p.sha256 for label, p in sorted(packages.items())}}}
+                "packages": ({label: arm.package.sha256 for label, arm in arms.items()} if child else
+                             {"F": final.sha256, "C": card.sha256,
+                              **{label: p.sha256 for label, p in sorted(packages.items())}})}
+    if child:
+        from .instruction_start import START, blank_definition
+        identity.update(instruction_start=START, blank_arm=blank_definition())
     attempt = context.attempt
     require(attempt == _next_attempt(unit_root) and not attempt.exists(),
             "A unit attempt runs in the next attempt directory; after a pause, only with the owner's recorded decision")
@@ -1324,7 +1349,7 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
         tasks = test_tasks(shared, pinned, bench, unit, run=run, runtime=context.runtime[bench],
                            native=context.native, workers=workers, evidence=evidence, panel=panel)
         plan = test_plan(tasks, final, bench=bench, unit=unit, runtime=context.runtime[bench], workers=route_workers,
-                         reset=reset)
+                         reset=reset, **({"run_configuration": run_configuration} if child else {}))
         staged = stage_plan(plan, final, packages, bench=bench, runtime=context.runtime[bench],
                             workers=route_workers) if packages else None
         by_id = {t["task_id"]: {"public": t["public"], "private": t["private"]} for t in plan["tasks"]}
@@ -1334,9 +1359,9 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
         jobs, shares, linked = [], [], []
         for item in sorted(by_id):
             for run_index in range(TEST_RUNS):
-                labels = ["C"] + ([] if item in zero else ["F", "P_F", "T_F"])
+                labels = list(expected) if child else ["C"] + ([] if item in zero else ["F", "P_F", "T_F"])
                 labels += [TWIN + p for p in plan["twins"].get(item, [])]
-                for label in labels + (["F", "P_F", "T_F"] if item in zero else []) + sorted(
+                for label in labels + (["F", "P_F", "T_F"] if item in zero and not child else []) + sorted(
                         packages, key=lambda found: int(found[len(STAGE_ARM):])):
                     cell = {"id": cell_id(unit, label, item, run_index), "unit": unit, "arm": label,
                             "benchmark": bench, "task_id": item, "run": run_index, "block": blocks[item],
@@ -1351,7 +1376,7 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
                         else:
                             linked.append((job, source))
                     else:
-                        (shares if item in zero and label != "C" else jobs).append(
+                        (shares if item in zero and label in (("F",) if child else ("F", "P_F", "T_F")) else jobs).append(
                             (cell, by_id[item], _arm(arms, label, cell, by_id[item])))
         sources = {}
         for block in sorted(set(blocks.values())):
@@ -1491,6 +1516,10 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
     if bench == "zebralogic" and panel is data.test_panel:
         from .zebralogic import test_panel as panel
     consent(setting.shared, configuration)  # a stage read's consent names its stage arms
+    if profiles.is_v210(configuration):
+        from .chain import confirmation
+        confirmation(setting.root, setting.run, chain, route="B" if chain == "D" else None,
+                     configuration=configuration)
     unit_root = read_root(setting, chain, bench)
     require(safe_path(found["unit_root"]) == unit_root, "The read unit's registered directory")
     attempt = _next_attempt(unit_root)
@@ -1501,7 +1530,7 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
     chain_root = safe_path(setting.root) / chain
     start = empty(step="%s/s0" % chain, evidence=setting.evidence)  # chain.run's start, which is never saved
     # a stage read whose later steps deleted every procedure reads with F the empty start (``chain.run``)
-    final = start if STAGE_READ[configuration] and found["package_sha256"] == start.sha256 else load(
+    final = start if (STAGE_READ[configuration] or profiles.is_v210(configuration)) and found["package_sha256"] == start.sha256 else load(
         chain_root / "packages" / (found["package_sha256"] + ".json"))
     require(final.sha256 == found["package_sha256"], "The final package of the chain")
     stages = stage_rows(chain_root, chain, order_of(setting), final, start) if STAGE_READ[configuration] else None
@@ -1517,18 +1546,26 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
                                                               longest=None if glm else own.longest))
     route_workers = functools.partial(_route_worker, own)
     runtime = setting.runtime[bench]
-    arms = {"F": Arm("candidate", final), "C": Arm("card", empty(step="%s/card" % chain, evidence=setting.evidence)),
-            "P_F": placebo_arm(final, donor_corpora(chain_root), bench=bench, unit=unit, runtime=runtime,
-                               workers=route_workers),
-            "T_F": Arm("text", final, text=frozen_texts(chain_root, final))}
+    card = final if configuration == profiles.BASELINE_V210 else empty(step="%s/card" % chain, evidence=setting.evidence)
+    if profiles.is_v210(configuration):
+        arms = {"C": Arm("card", card), "B": Arm("blank", card)}
+        if configuration != profiles.BASELINE_V210:
+            arms = {"F": Arm("candidate", final), **arms}
+    else:
+        arms = {"F": Arm("candidate", final), "C": Arm("card", card),
+                "P_F": placebo_arm(final, donor_corpora(chain_root), bench=bench, unit=unit, runtime=runtime,
+                                   workers=route_workers),
+                "T_F": Arm("text", final, text=frozen_texts(chain_root, final))}
     pinned = manifest["data"].get("pinned")
-    make_read_canaries(setting.root, pinned, pools=manifest["data"].get("pools"), run=setting.run,
+    make_read_canaries(setting.root, pinned,
+                       pools=None if configuration == profiles.BASELINE_V210 else manifest["data"].get("pools"), run=setting.run,
                        evidence=setting.evidence, panel=panel, order=order_of(setting), configuration=configuration)
     try:
         evaluate(unit_root, run=setting.run, shared=setting.shared, pinned=pinned, chain=chain, bench=bench, arms=arms,
                  context=units.cell_context(own, attempt, endpoint), workers=own.workers, route_workers=route_workers,
                  canaries=load_canaries(setting.root, read=True, configuration=configuration), panel=panel, reset=reset,
-                 drain=units.drainer(setting, chain, unit), stages=stages, run_configuration=configuration)
+                 drain=None if configuration == profiles.BASELINE_V210 else units.drainer(setting, chain, unit),
+                 stages=stages, run_configuration=configuration)
     except Pause as pause:
         return EXIT_AWAITING if pause.kind == "awaiting_owner_decision" else EXIT_PAUSED
     return EXIT_COMPLETE

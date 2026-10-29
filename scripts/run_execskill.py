@@ -606,6 +606,7 @@ def make_manifest(args):
     configuration = pins.pop("configuration")
     require(configuration in protocol.CONFIGURATIONS, "Unknown run configuration: %r" % (configuration,))
     require(not protocol.is_alfworld(configuration), "Use alf-manifest with the registered ALFWorld S0 and smoke")
+    require(not protocol.is_v210(configuration), "Use v210-manifest with its instruction pins and S0")
     require(pins["evidence"] not in protocol.REAL_RUN_EVIDENCE.values()
             or (pins["evidence"] == protocol.REAL_RUN_EVIDENCE[configuration]
                 and safe_path(pins["root"]) == safe_path((protocol.RUN_ROOTS if protocol.is_zebra(configuration)
@@ -841,6 +842,36 @@ def alf_smoke(args):
     return 0 if value["result"]["passed"] else 3
 
 
+def v210_snapshot(args):
+    from skillopt.execskill import v210_smoke
+    _print(v210_smoke.snapshot(args.out, source=args.source, git_head=args.git_head,
+                              configuration=args.configuration))
+
+
+def v210_s0(args):
+    from skillopt.execskill import v210_smoke
+    value = s0.v210_collect(args.out, preparation_file=args.preparation, root=args.root,
+        snapshot_root=args.snapshot, selftest=args.selftest, configuration=args.configuration)
+    _print({"s0": str(Path(args.out) / v210_smoke.S0_FILE), "passed": value["passed"],
+            "sandbox_required": value["sandbox_required"], "sealed_reads": value["sealed_reads"]})
+    return 0 if value["passed"] else 3
+
+
+def v210_manifest(args):
+    from skillopt.execskill import v210_smoke
+    value = v210_smoke.make_manifest(args.out, root=args.root, s0_file=args.s0,
+        provenance=args.provenance, roles_repo=args.roles_repo, route_b_env=args.route_b_env,
+        configuration=args.configuration, smoke_chain=args.smoke_chain, measured_smoke=args.measured_smoke)
+    _print({"manifest": str(args.out), "run": value[protocol.RECORD_HASH], "root": value["root"],
+            "launchable_chains": value["data"]["launchable_chains"], "sealed_reads": 0})
+
+
+def v210_smoke(args):
+    from skillopt.execskill import v210_smoke as preparation
+    value = preparation.structural_smoke(args.manifest, out=args.out, configuration=args.configuration)
+    _print({"passed": value["passed"], "model_calls": 0, "measured_readiness": False})
+
+
 def parser():
     top = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = top.add_subparsers(dest="command", required=True)
@@ -1050,6 +1081,28 @@ def parser():
     command.add_argument("--manifest", required=True)
     command.add_argument("--chain", choices=("D",), default="D")
     command.add_argument("--stage", choices=("S1", "S2", "S3", "SE6"), required=True)
+    for name in ("snapshot", "s0", "manifest", "smoke"):
+        command = sub.add_parser("v210-" + name)
+        command.add_argument("--configuration", choices=(protocol.BASELINE_V210, protocol.MAIN_V3), required=True)
+        command.add_argument("--out", required=True)
+        if name == "snapshot":
+            command.add_argument("--source", default=str(PROJECT_ROOT))
+            command.add_argument("--git-head", required=True)
+        elif name == "s0":
+            command.add_argument("--root", required=True, help="Run root carrying exact owner consent")
+            command.add_argument("--preparation", default="/data/execskill-20261024-main-v2-2-manifest.json")
+            command.add_argument("--snapshot", default=str(PROJECT_ROOT))
+            command.add_argument("--selftest", help="Required for main-v3; omitted for baseline-v210")
+        elif name == "manifest":
+            command.add_argument("--root", required=True)
+            command.add_argument("--s0", required=True)
+            command.add_argument("--provenance", required=True)
+            command.add_argument("--roles-repo", required=True)
+            command.add_argument("--route-b-env", required=True)
+            command.add_argument("--smoke-chain", choices=("G", "D"))
+            command.add_argument("--measured-smoke", help="Passed measured smoke root required for real main-v3")
+        else:
+            command.add_argument("--manifest", required=True)
     fixtures.add_arguments(sub)
     return top
 
@@ -1058,6 +1111,8 @@ BENCH_OPTIONS = {"alfworld": ("data_root", "pool_games"),
                  "searchqa": ("fresh_manifest", "dataset", "revision", "exclude", "cache_sha256")}
 
 HANDLERS = {"alf-confirm-views": alf_confirm_views,
+            "v210-snapshot": v210_snapshot, "v210-s0": v210_s0,
+            "v210-manifest": v210_manifest, "v210-smoke": v210_smoke,
             "alf-snapshot": alf_snapshot, "alf-s0": alf_s0, "alf-manifest": alf_manifest, "alf-smoke": alf_smoke,
             "zpc-snapshot": zpc_snapshot, "zpc-s0": zpc_s0, "zpc-manifest": zpc_manifest, "zpc-smoke": zpc_smoke,
             "verify-snapshot": verify_snapshot, "zero-call-checks": zero_call_checks, "leftovers": leftovers,

@@ -202,21 +202,23 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
         require(generate is None and not dup and not probe,
                 "zebra-pc-v1 has no generator, duplicate instrument or LiveMath probe")
     evidence = candidate.evidence
-    corpus = donors.donor_corpus(candidate, parent, trajectories, workers)
+    no_placebo = profiles.is_v210(configuration)
+    corpus = None if no_placebo else donors.donor_corpus(candidate, parent, trajectories, workers)
     minimum = None if rule is None else minimum_astar(rule, len(views), len(set(blocks.values())),
                                                       alfworld=bench == "alfworld")
-    plan = router.plan(candidate, parent, bench, views, workers, unit=unit, rooms=rooms, donors=corpus["donors"],
-                       minimum=minimum)
+    plan = router.plan(candidate, parent, bench, views, workers, unit=unit, rooms=rooms, donors=() if no_placebo else corpus["donors"],
+                       minimum=minimum, placebo_enabled=not no_placebo)
     astar = plan["astar"]
     changed = donors.changed(parent, candidate)
-    shams = placebo.placebo_package(candidate, parent)[1]
-    packages = round_packages(candidate, parent, step=step, twins=plan["twins"])
+    shams = [p.id for _, p, _ in changed] if no_placebo else placebo.placebo_package(candidate, parent)[1]
+    packages = round_packages(candidate, parent, step=step, twins=plan["twins"], configuration=configuration)
     placebo_y = placebo_i = g_acc = None
     if plan["decision"] != SMALL:
-        lengths = placebo.real_lengths(changed, {i: views[i] for i in astar}, workers, bench=bench,
-                                       packages={"candidate": candidate, "parent": parent})
-        placebo_y = placebo.build_y(corpus, plan["donors"]["pairs"], lengths, changed=changed)
-        placebo_i = placebo.build_i(placebo_y, {p.id: p for _, p, _ in changed}, bench=bench, unit=unit)
+        if not no_placebo:
+            lengths = placebo.real_lengths(changed, {i: views[i] for i in astar}, workers, bench=bench,
+                                           packages={"candidate": candidate, "parent": parent})
+            placebo_y = placebo.build_y(corpus, plan["donors"]["pairs"], lengths, changed=changed)
+            placebo_i = placebo.build_i(placebo_y, {p.id: p for _, p, _ in changed}, bench=bench, unit=unit)
         if generate is not None:
             g_acc = [{"id": g["id"], "source_item": g["source_item"]} for g in generate({i: views[i] for i in astar})]
             require(all(g["source_item"] in astar for g in g_acc) and len({g["id"] for g in g_acc}) == len(g_acc)
@@ -231,15 +233,15 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
         "plan": plan, "corpus": corpus, "placebo_y": placebo_y, "placebo_i": placebo_i, "g_acc": g_acc}
     if rule is not None:  # v2.2: the practical rule ``decide`` reads
         fields["rule"] = dict(rule)
-    if profiles.is_v28(configuration):
+    if profiles.is_v28(configuration) or no_placebo:
         fields["configuration"] = configuration
     if bench == "zebralogic":
         fields["j6_registered"] = False
     if reuse is not None:
         fields["seeds"] = {"request_reuse": SEED}
     fields["seals"] = {
-        "candidate": candidate.sha256, "parent": parent.sha256, "donor_corpus": corpus[RECORD_HASH],
-        "placebo_y": digest(placebo_y), "placebo_i": None if placebo_i is None else digest(placebo_i),
+        "candidate": candidate.sha256, "parent": parent.sha256, "donor_corpus": None if no_placebo else corpus[RECORD_HASH],
+        "placebo_y": None if no_placebo else digest(placebo_y), "placebo_i": None if placebo_i is None else digest(placebo_i),
         "plan_sha256": plan[RECORD_HASH], "twins_sha256": digest(plan["twins"]),
         "g_acc_sha256": None if g_acc is None else digest(g_acc)}
     sealed = record("acceptance-sealed", evidence, fields)
@@ -273,13 +275,14 @@ def with_reuse(sealed, plan):
     return record("acceptance-sealed-v2-3", sealed["evidence"], fields)
 
 
-def round_packages(candidate, parent, *, step, twins):
+def round_packages(candidate, parent, *, step, twins, configuration=None):
     """{key: Package} of a round's arms, keyed as ``cell_arm`` names them: the candidate, the parent, the card (the
     step's empty package), the placebo package of P_y and P_i (``placebo.placebo_package``) and one ``restore:<id>``
     package per restoration twin (``twins``: the plan's {item: [twin]}). ``prepare`` seals their hashes; the dispatch
     driver rebuilds them with the sealed ``step`` and ``plan["twins"]`` (integration B3)."""
-    found = {"candidate": candidate, "parent": parent, "card": empty(step=step, evidence=candidate.evidence),
-             "placebo": placebo.placebo_package(candidate, parent)[0]}
+    found = {"candidate": candidate, "parent": parent, "card": empty(step=step, evidence=candidate.evidence)}
+    if not profiles.is_v210(configuration):
+        found["placebo"] = placebo.placebo_package(candidate, parent)[0]
     for item_twins in twins.values():
         for twin in item_twins:
             if twin["kind"] == "restore":
@@ -319,7 +322,9 @@ def schedule(sealed, *, logical=False):
     plan = sealed["plan"]
     if plan["decision"] == SMALL:
         return {}
-    arms = [CANDIDATE, PARENT, CARD, PLACEBO_Y] + ([PLACEBO_I] if sealed["placebo_i"] is not None else [])
+    no_placebo = profiles.is_v210(sealed.get("configuration"))
+    arms = [CANDIDATE, PARENT, CARD] + ([] if no_placebo else [PLACEBO_Y])
+    arms += [PLACEBO_I] if sealed["placebo_i"] is not None and not no_placebo else []
     arms += [DUP] if sealed["dup"] else []
     jobs, outside = [], twin_only(sealed)
     alone = set(outside)
@@ -331,7 +336,8 @@ def schedule(sealed, *, logical=False):
     for generated in sealed["g_acc"] or []:
         source = generated["source_item"]
         jobs += [{"arm": a, "item": generated["id"], "run": 0, "set": "G_acc", "block": sealed["blocks"][source],
-                  "source_item": source} for a in G_ACC_ARMS + ((DUP,) if sealed["dup"] else ())]
+                  "source_item": source} for a in ((CANDIDATE, PARENT, CARD) if no_placebo else G_ACC_ARMS)
+                  + ((DUP,) if sealed["dup"] else ())]
     blocks = sorted(set(sealed["blocks"].values()), key=str)
     probes = sorted(sealed["probe"], key=lambda item: _seeded(round_tag(sealed["unit"]) + ":probe", item))
     jobs += [{"arm": a, "item": item, "run": 0, "set": "probe", "block": blocks[n % len(blocks)], "source_item": None}
@@ -954,7 +960,9 @@ def _header(sealed):
         dispatch_counts = {"physical_cells": len(jobs),
                            "dispatched_by_arm": {arm: sum(job["arm"] == arm for job in jobs) for arm in names}}
     return {**({"rule": sealed["rule"]["name"]} if sealed.get("rule") else {}),  # v2.2
-            **({"configuration": sealed["configuration"]} if profiles.is_v28(sealed.get("configuration")) else {}),
+            **({"configuration": sealed["configuration"]} if profiles.is_v28(sealed.get("configuration"))
+               or profiles.is_v210(sealed.get("configuration")) else {}),
+            **({"guards": {"J2": {"removed": True}}} if profiles.is_v210(sealed.get("configuration")) else {}),
             **({"reuse": {"plan_sha256": seals["reuse_sha256"], "card_sample": sealed["reuse"]["card_sample"],
                            "timing": "physical_dispatch_schedule", "infrastructure": "dispatched_representatives",
                            "identical_all": {name: len(items) for name, items in sealed["reuse"]["identical_all"].items()},
@@ -978,6 +986,7 @@ def decide(cells, sealed):
     (module docstring; plan §2.6)."""
     sealed = verified(sealed, "acceptance-sealed")
     v297 = _v297_rule(sealed.get("configuration"), sealed["bench"], sealed.get("rule"))
+    no_placebo = profiles.is_v210(sealed.get("configuration"))
     pooled = v297 and sealed["card_is_parent"]
     plan = sealed["plan"]
     if plan["decision"] == SMALL:
@@ -1014,7 +1023,7 @@ def decide(cells, sealed):
     design = _design(sealed, items)
     pairs = plan["donors"]["pairs"]
     gain, over_sham = (differences(cells_table, CANDIDATE, PARENT, items),
-                       differences(cells_table, CANDIDATE, PLACEBO_Y, items))
+                       [] if no_placebo else differences(cells_table, CANDIDATE, PLACEBO_Y, items))
     sample = (sealed.get("reuse") or {}).get("card_sample")
     card_items = [i for i in items if i in sample["items"]] if sample is not None else items
     if sample is not None and _too_few_units(sealed, card_items) is not None:
@@ -1025,7 +1034,8 @@ def decide(cells, sealed):
     card_design = _design(sealed, card_items)
     contrasts = {
         "S'-S": contrast(gain, design=design, whole=size_a, sensitivity=True),
-        "S'-P_y": contrast(over_sham, design=design, whole=size_a, sensitivity=True),
+        **({"S'-P_y": contrast(over_sham, design=design, whole=size_a, sensitivity=True)}
+           if not no_placebo else {}),
         "S'-C": contrast(differences(cells_table, CANDIDATE, CARD, card_items), design=card_design, whole=size_a),
         "S-C": contrast(differences(cells_table, PARENT, CARD, card_items), design=card_design, whole=size_a)}
     if pooled:
@@ -1038,22 +1048,26 @@ def decide(cells, sealed):
         for name in ("S'-C", "S-C"):
             contrasts[name].update({"sample": "sealed_C_instrument", "sample_items": card_items,
                                     "sample_size": len(card_items), "whole_batch": None})
-    sham = differences(cells_table, PLACEBO_Y, PARENT, items)
-    contrasts["P_y-S"] = {**contrast(sham, whole=size_a), "ci95": list(stats_ext.bootstrap_ci(
-        sham, clusters=[pairs[i] for i in items])), "by_donor": _by_donor(sham, items, pairs)}
-    if PLACEBO_I in arms:
-        contrasts["P_i-S"] = contrast(differences(cells_table, PLACEBO_I, PARENT, items), design=design, whole=size_a)
-    lo, hi = contrasts["P_y-S"]["ci95"]
-    rule = ("harmful_sham_parent_only_2.5pct" if hi < 0 else "helpful_sham_reported" if lo > 0 else "informative")
-    if hi < 0 and sealed.get("rule") is not None:  # v2.2 (Codex review MINOR 3): J1 tightens no alpha any more
-        rule = "harmful_sham_reported"
+    lo = hi = 0.0
+    rule = "removed"
+    if not no_placebo:
+        sham = differences(cells_table, PLACEBO_Y, PARENT, items)
+        contrasts["P_y-S"] = {**contrast(sham, whole=size_a), "ci95": list(stats_ext.bootstrap_ci(
+            sham, clusters=[pairs[i] for i in items])), "by_donor": _by_donor(sham, items, pairs)}
+        if PLACEBO_I in arms:
+            contrasts["P_i-S"] = contrast(differences(cells_table, PLACEBO_I, PARENT, items), design=design, whole=size_a)
+        lo, hi = contrasts["P_y-S"]["ci95"]
+        rule = ("harmful_sham_parent_only_2.5pct" if hi < 0 else "helpful_sham_reported" if lo > 0 else "informative")
+        if hi < 0 and sealed.get("rule") is not None:  # v2.2 (Codex review MINOR 3): J1 tightens no alpha any more
+            rule = "harmful_sham_reported"
     alpha1 = HARMFUL_SHAM_ALPHA if hi < 0 else ALPHA
-    first, second = contrasts["S'-S"], contrasts["S'-P_y"]
+    first, second = contrasts["S'-S"], contrasts.get("S'-P_y")
     if pooled:
         first = contrasts["S'-(S+C)/2"]
     j1 = {"p_t": first["p_t"], "alpha": alpha1, "whole_batch": first["whole_batch"],
           "ok": first["p_t"] <= alpha1 and first["whole_batch"] >= float(MIN_WHOLE_BATCH)}
-    j2 = {"p_t": second["p_t"], "alpha": ALPHA, "informative": hi >= 0, "ok": hi < 0 or second["p_t"] <= ALPHA}
+    j2 = ({"removed": True} if no_placebo else
+          {"p_t": second["p_t"], "alpha": ALPHA, "informative": hi >= 0, "ok": hi < 0 or second["p_t"] <= ALPHA})
     gate = sealed.get("rule")
     if gate is not None:  # v2.2: the sealed practical rule replaces J1 and J2 (``rule`` is the placebo reading)
         j1, j2 = _practical(gate, sealed["bench"], gain, over_sham, size_a, first, second)
@@ -1096,7 +1110,7 @@ def decide(cells, sealed):
     j6 = _duplicate(cells_table, sealed, items, design)
     j7 = _probe(cells, identical=identical.get("probe", []))
     failed = [name for name, check in (("J1", j1), ("J2", j2), ("J3", j3), ("J4", j4), ("J7", j7))
-              if check is not None and not check.get("informational") and not check["ok"]]
+              if check is not None and not check.get("informational") and not check.get("removed") and not check["ok"]]
     if not j5["ok"] or (j6 is not None and not j6["ok"]):
         verdict = "undetermined"
         reason = "instrument guard failed (%s); the run pauses, the batch is consumed but undecided" % (
@@ -1108,11 +1122,13 @@ def decide(cells, sealed):
         reason = HARMFUL_WORDING if hi < 0 else "J1-J7 hold"
         if gate is not None:
             reason = "J1 (%s: %+.1f points over the whole batch%s) and J3-J7 hold; placebo label %s" % (
-                gate["name"], 100 * first["whole_batch"], "" if j1["practical"] else ", significant", j2["label"])
+                gate["name"], 100 * first["whole_batch"], "" if j1["practical"] else ", significant", j2.get("label", "removed"))
+        if no_placebo:
+            reason = "J1 and J3-J7 hold; J2 removed"
         if j3.get("informational"):
             reason = reason.replace("J1-J7 hold", "J1, J2 and J4-J7 hold; J3 reported")
             reason = reason.replace("and J3-J7 hold", "and J4-J7 hold; J3 reported")
-    calls = (CANDIDATE, PLACEBO_Y) + ((PLACEBO_I,) if PLACEBO_I in arms else ())
+    calls = (CANDIDATE,) if no_placebo else (CANDIDATE, PLACEBO_Y) + ((PLACEBO_I,) if PLACEBO_I in arms else ())
     return record("decision-v2-3" if sealed.get("reuse") is not None else "decision", plan["evidence"], {
         **_header(sealed), "A_star": len(astar), "A_star_rooms": plan["astar_rooms"], "analysed": len(items),
         "shared_unanswered": unanswered,
@@ -1159,6 +1175,8 @@ def _practical(rule, bench, gain, over_sham, size_a, first, second):
     j1 = {"rule": rule["name"], "whole_batch": first["whole_batch"], "p_t": first["p_t"],
           "gain_points": rule["gain_points"], "practical": practical, "significant": significant,
           "ok": practical or significant}
+    if second is None:  # v2.10 has no placebo arm or J2 contrast.
+        return j1, {"removed": True}
     j2 = {"rule": rule["name"], "whole_batch": second["whole_batch"], "p_t": second["p_t"], "decides": False,
           "label": "content" if sham * 100 >= rule["content_points"] * size_a else "form", "ok": True}
     return j1, j2

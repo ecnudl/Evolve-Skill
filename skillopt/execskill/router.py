@@ -144,7 +144,7 @@ def yoke(items, donors, unit):
     return {"pairs": {item: pairs[item] for item in items}, "reuse": dict(sorted(Counter(pairs.values()).items()))}
 
 
-def plan(candidate, parent, bench, views, workers, *, unit, rooms=None, donors=(), minimum=None):
+def plan(candidate, parent, bench, views, workers, *, unit, rooms=None, donors=(), minimum=None, placebo_enabled=True):
     """The firing plan of one acceptance round (a sealed ``fivebench-execskill-v1-firing-plan`` record). ``views``:
     {item: routing view} of the acceptance slice in slice order, made from public data only; ``workers(package, item)``:
     a context manager yielding a started sandbox worker holding ``package`` for ``item`` (SpreadsheetBench mounts the
@@ -222,7 +222,7 @@ def plan(candidate, parent, bench, views, workers, *, unit, rooms=None, donors=(
         "twin_priority": priority, "twin_kinds": {p: kinds[p] for p in priority},
         "twins": {i: twins[i] for i in items if i in twins},
         "not_withheld": {i: skipped[i] for i in items if i in skipped}, "twin_only": twin_only,
-        "donors": yoke(astar, donors, unit) if not small else {"pairs": {}, "reuse": {}},
+        "donors": yoke(astar, donors, unit) if not small and placebo_enabled else {"pairs": {}, "reuse": {}},
         "decision": SMALL if small else RUN}
     if minimum is not None:  # v2.2: the practical rule's floor, sealed with the plan
         fields["minimum"] = dict(minimum)

@@ -1,0 +1,13 @@
+{
+  "identity": {
+    "run": "abec2d143ca26444a1d46794fb2edbdd10bb8ded89c795a1aa7b306bc5592cf2",
+    "chain": "D"
+  },
+  "package_sha256": "7d814ba51fb589ecd1480c14e57757cb383942520798eb10d43481f796520eb4",
+  "steps": [
+    "d9d35bd3c85887bb0d220559a25bd9d02c15a206c37e4429505b582e97649eba"
+  ],
+  "version": "fivebench-execskill-v1-chain-complete",
+  "evidence": "alfworld_v11_real_run",
+  "record_sha256": "765c6e15a97a00e2ed8070f8c5d91d918da4f2ba5e90600ca861214edfce9ef3"
+}

@@ -941,3 +941,9 @@ def zebra_collect(out, **options):
     """ZebraLogic preparation and sandbox/prelaunch checks without sealed-panel access."""
     from .zebra_smoke import collect_s0
     return collect_s0(out, **options)
+
+
+def v210_collect(out, **options):
+    """Five-bench instruction-start S0, with no procedure sandbox in the baseline."""
+    from .v210_smoke import collect_s0
+    return collect_s0(out, **options)

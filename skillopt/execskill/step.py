@@ -204,6 +204,8 @@ UNITS_V29 = ("run", "diagnose", "generate",
 
 def training_units(configuration=None):
     """Configuration-bound training unit names; legacy tuples remain frozen."""
+    if configuration == protocol.BASELINE_V210:
+        return ()
     if protocol.is_v295(configuration):
         return ("run", "diagnose", "generate",
                 *("%s-r%d" % (kind, r) for r in range(1, protocol.train_rounds(configuration) + 1)
@@ -2293,16 +2295,18 @@ def _accept(st, cut, candidate, generated):
         if probe:
             registry.register(st.namespace, st.bench, probe, unit=name, purpose="accept_probe",
                               run_root=str(st.setting.root), attempt=n)
-        donors_ = _run_trajectories(st, parent_only=True)
+        donors_ = [] if protocol.is_v210(configuration_of(st.setting)) else _run_trajectories(st, parent_only=True)
         acc = _g_acc(st, generated, attempt)
         publics = {item["task_id"]: item["public"] for item in accept + probe}
-        publics.update({rounds.key(st.bench, item["task_id"]): item["public"] for item in cut["run"]})  # donors
+        if not protocol.is_v210(configuration_of(st.setting)):
+            publics.update({rounds.key(st.bench, item["task_id"]): item["public"] for item in cut["run"]})  # donors
         if IDENTICAL_REQUEST_REUSE[configuration_of(st.setting)]:
             publics.update({g["id"]: g["public"] for g in acc or []})
         workers = _item_workers(st, publics)
         if (root / "sealed.json").exists():
             sealed = verified(read_json(root / "sealed.json"), "acceptance-sealed")
-            donors.verify(sealed["corpus"], donors_)
+            if not protocol.is_v210(configuration_of(st.setting)):
+                donors.verify(sealed["corpus"], donors_)
         else:
             views = {item["task_id"]: solver.routing_view(st.bench, item["public"], runtime=st.runtime())
                      for item in accept}
@@ -2326,8 +2330,11 @@ def _accept(st, cut, candidate, generated):
                 mde=MDE_POINTS[st.bench],  # A9-3: the registered MDE in decision.json
                 rule=ACCEPT_RULES[configuration_of(st.setting)], reuse=reuse,
                 **({"configuration": configuration_of(st.setting)}
-                   if protocol.is_v28(configuration_of(st.setting)) else {}))
-        packages = acceptance.round_packages(candidate, st.parent, step=sealed["step"], twins=sealed["plan"]["twins"])
+                   if protocol.is_v28(configuration_of(st.setting)) or protocol.is_v210(configuration_of(st.setting))
+                   else {}))
+        packages = acceptance.round_packages(candidate, st.parent, step=sealed["step"], twins=sealed["plan"]["twins"],
+                    **({"configuration": configuration_of(st.setting)}
+                       if protocol.is_v210(configuration_of(st.setting)) else {}))
         tasks = _round_tasks(records, probe, acc)  # §6.4 J7: the probe items options-only
         earlier = acceptance.earlier_blocks(sealed, root, attempt) if n > 1 else None  # §9.3, owner decision #15
         context = units.cell_context(st.setting, attempt, first)
@@ -2417,6 +2424,15 @@ def run_step(setting, chain, bench, k, parent, *, services, chain_root=None, smo
     resumes by itself) or ``chain.Terminated``."""
     require(smoke is None or not protocol.is_v27(configuration_of(setting)),
             "The v2.7 benchmark profiles require their dedicated smoke stages")
+    require(configuration_of(setting) != protocol.BASELINE_V210, "The baseline-v210 configuration has no learning steps")
+    if configuration_of(setting) == protocol.MAIN_V3 and bench == "alfworld":
+        from . import v210_import
+        package, value = v210_import.import_step(setting, chain_root or Path(setting.root) / chain,
+                                                 chain, k, bench, parent)
+        return StepRecord(package, value)
+    if configuration_of(setting) == protocol.MAIN_V3:
+        from .v210_import import check_learning_capacity
+        check_learning_capacity(parent)
     if smoke is None:
         require(chain in CHAINS and bench in protocol.SUPPORTED_BENCHES and type(k) is int and k >= 1
                 and isinstance(parent, Package),
@@ -2512,20 +2528,23 @@ def run_unit_spec(manifest, *, spec):
     unit paused); ``chain.Terminated`` propagates."""
     from . import manifest as manifests  # imported here: manifest imports this module (services_of)
 
+    configuration = manifest["configuration"]
+    require(configuration != protocol.BASELINE_V210, "The baseline-v210 configuration has no learning steps")
     found = read_json(spec)
     require(isinstance(found, dict) and set(found) == SPEC_FIELDS, "A step-unit spec names chain, k and bench")
     chain, k, bench = found["chain"], found["k"], found["bench"]
-    configuration = manifest["configuration"]
     order = CONFIGURATIONS[configuration]["order"]
     require(chain in CHAINS and type(k) is int and 1 <= k <= len(order) and order[k - 1] == bench,
             "A step of the order of the manifest's run configuration")
     confirmation(manifest["root"], manifest[RECORD_HASH], chain,
                  **({"configuration": manifest["configuration"]}
-                    if protocol.is_v29(manifest["configuration"]) else {}))  # P2C-1: before anything is touched
+                    if protocol.is_v29(configuration) or protocol.is_v210(configuration)
+                    else {}))  # P2C-1: before anything is touched
     setting = manifests.setting_of(manifest, chain)
     budgets.own_ledger(setting, chain).declare({**budgets.chain_caps(chain, configuration),
                                                 **budgets.first_call_caps(chain)})
-    services = manifests.services_of(manifest, chain, setting=setting)
+    services = (None if configuration == protocol.MAIN_V3 and bench == "alfworld" else
+                manifests.services_of(manifest, chain, setting=setting))
     chain_root = safe_path(setting.root) / chain
     try:
         run_step(setting, chain, bench, k, parent_of(setting, chain_root, chain, k), services=services,

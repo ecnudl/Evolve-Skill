@@ -64,6 +64,7 @@ from skillopt.validator_pilot.api import digest
 from . import judge as judges
 from . import outcomes_ext, solver, trajectories, zebralogic, notes
 from .profiles import is_v29
+from . import profiles
 from .client import route_of
 from .errors import AssumptionBroken, ConfigurationError, LedgerFailure, stop_kind
 from .outcomes_ext import REPLAY_MISMATCH
@@ -74,7 +75,7 @@ __all__ = ("ARM_KINDS", "Arm", "Calls", "Context", "Pause", "Replay", "TrainingS
            "run_cells", "run_parallel", "share_cell", "share_same")
 
 LIMITS = {REEXECUTE: MAX_REEXECUTIONS, RESCORE: MAX_RESCORES, RESTART: MAX_EPISODE_RESTARTS}  # cells.py:44
-ARM_KINDS = ("candidate", "parent", "card", "placebo_y", "placebo_i", "dup", "text")
+ARM_KINDS = ("candidate", "parent", "card", "placebo_y", "placebo_i", "dup", "text", "blank")
 ARM_PREFIXES = ("withhold:", "restore:", "gen:")
 CELL_KEYS = ("id", "unit", "arm", "benchmark", "task_id", "run")
 ROUND_KEYS = ("arm", "task_id", "run", "set", "block")  # copied to the record's top level when the cell has them
@@ -128,6 +129,9 @@ class Context:
 
     def __post_init__(self):
         self.attempt = safe_path(self.attempt)
+        if profiles.is_v210(self.configuration):
+            from .instruction_start import active_cards
+            self.cards = active_cards(self.cards, self.configuration)
         require(self.evidence in EVIDENCE and set(self.nominal) <= set(BENCHES), "Invalid cell context")
         require(set(self.endpoints) <= set(BENCHES) and all(
             getattr(found, "model", None) == getattr(self.endpoint, "model", None)
@@ -151,7 +155,7 @@ def _worker(context, bench, package):
     """An unstarted sandbox worker for one cell or episode (plan §4); None when the package holds no procedure for a
     QA or SpreadsheetBench item. An ALFWorld episode always gets one: the shell pings it, so every arm takes the same
     slot path (§6.2)."""
-    if bench != "alfworld" and not package.for_bench(bench):
+    if (bench != "alfworld" or context.configuration == profiles.BASELINE_V210) and not package.for_bench(bench):
         return None
     return context.worker(bench)
 
@@ -160,7 +164,12 @@ def _shell(context, cell, task, arm, call, **extra):
     bench = cell["benchmark"]
     if cell.get("shortcut") is not None:  # a shortcut-probe cell (§7.2, ticket C1-2); absent otherwise
         extra["shortcut"] = cell["shortcut"]
-    return context.solve(bench, deepcopy(task["public"]), context.cards[bench], arm.package, call,
+    card = context.cards[bench]
+    if arm.kind == "blank":
+        require(profiles.is_v210(context.configuration) and not arm.package.procedures,
+                "B has empty guidance and no procedure in v2.10 only")
+        card = ""
+    return context.solve(bench, deepcopy(task["public"]), card, arm.package, call,
                          runtime=deepcopy(context.runtime[bench]), worker=_worker(context, bench, arm.package),
                          withhold=arm.withhold, restore=arm.restore, placebo=arm.placebo, text=arm.text,
                          native=context.native, nominal_tokens=context.nominal.get(bench), **extra)
@@ -458,6 +467,7 @@ def run_cell(context, cell, task, arm, *, store):
         "cell": cell, **{name: cell[name] for name in ROUND_KEYS if name in cell},
         **({"shortcut": _shortcut(runs)} if cell.get("shortcut") is not None else {}),
         "package_sha256": arm.package.sha256, "arm_kind": arm.kind,
+        **({"card": ""} if arm.kind == "blank" else {}),
         "enabled": None if route is None else list(route["enabled"]),
         "withheld": sorted(arm.withhold), "restored": sorted(arm.restore),
         "attempts": attempts, "remedies": dict(counts), "spent": sorted(spent),

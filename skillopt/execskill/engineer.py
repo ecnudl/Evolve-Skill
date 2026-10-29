@@ -98,7 +98,7 @@ from skillopt.coevo5.roles import Invalid, fit, message_bytes, parse as parse_re
 from skillopt.continual_eval.core import require
 from skillopt.validator_pilot.api import digest
 
-from . import engineer_payload, notes, policy, profiles as protocol, replay, router
+from . import engineer_payload, instruction_start, notes, policy, profiles as protocol, replay, router
 from .donors import public_text
 from .errors import PackageInvalid
 from .package import EDIT_KINDS, FIXTURE, Package, Procedure, edits, validate, with_
@@ -603,6 +603,9 @@ class Context:
                 else protocol.ENGINEER_CALL_BUDGETS[self.configuration])
 
     def __post_init__(self):
+        if protocol.is_v210(self.configuration):
+            from .instruction_start import active_cards
+            self.card = active_cards({self.bench: self.card}, self.configuration)[self.bench]
         require(self.bench in protocol.SUPPORTED_BENCHES and type(self.k) is int and 0 <= self.k <= 999,
                 "A known bench and step number")
         require(self.mode in ("single", TRAIN), "A known learning mode")
@@ -1024,6 +1027,9 @@ def payload(ctx, analyses=None):
             "package": [_listed(p, ctx.parent) for p in ctx.parent.procedures],
             "trajectories": [_shown_view(kind, t, ctx.references, ctx.echo) for kind, t in shown(ctx)],
             "detectors": ctx.detectors, "previous": ctx.previous}
+    if ctx.configuration == protocol.MAIN_V3:
+        from .v210_import import learning_capacity
+        user["package_capacity"] = learning_capacity(ctx.parent)
     if protocol.is_v24(ctx.configuration):
         user["hook_views"] = hook_views(ctx)
     if ctx.mode != TRAIN:
@@ -1233,6 +1239,9 @@ def _ask(ctx, user, purpose):
                       ctx.configuration, user.get("evidence", {}))}.get(user.get("request"))
         if suffix:
             system += suffix
+    if protocol.is_v210(ctx.configuration):
+        from .instruction_start import engineer_system
+        system = engineer_system(ctx.configuration, train=ctx.mode == TRAIN)
     options = ({"max_tokens": protocol.ENGINEER_MAX_TOKENS[ctx.configuration]}
                if modern and ctx.mode == TRAIN and purpose in ("propose", "repropose") else {})
     reply = ctx.roles.plain(ROLE, system, json.dumps(user, ensure_ascii=False, sort_keys=True),
@@ -1529,7 +1538,11 @@ def _build(change, ctx):
     else:
         change.target = entry["id"]
         change.benches = tuple(b for b in benches if b in entry.get("benches", []))
-    return candidate(parent, [change], step=ctx.step)
+    result = candidate(parent, [change], step=ctx.step)
+    if ctx.configuration == protocol.MAIN_V3:
+        from .v210_import import check_learning_capacity
+        check_learning_capacity(result)
+    return result
 
 
 def candidate(parent, changes, *, step, evidence=None):
@@ -2097,7 +2110,8 @@ def check(change, ctx, taken=()):
             done("C3", True, {"system_deferred": str(error)[:MAX_DETAIL_CHARS]})
             report.update(passed=True, deferred=True)
             return report
-        done("C3", False, _size_detail(change, error, **({"configuration": ctx.configuration} if v24 else {}))
+        done("C3", False, _size_detail(change, error, **({"configuration": ctx.configuration}
+             if v24 or ctx.configuration == protocol.MAIN_V3 else {}))
              if train or protocol.is_v25(ctx.configuration) else str(error)[:300])
         return report
     if train:  # v2: the step's edit budget against S (``rebase``); a change beyond it gets no fix call
@@ -2274,6 +2288,9 @@ def _size_detail(change, error, *, configuration=None):
         detail["caps"] = {"description_chars": MAX_DESCRIPTION_CHARS, "header_chars": MAX_HEADER_CHARS,
                           "source_bytes": MAX_PROCEDURE_BYTES, "package_source_bytes": MAX_PACKAGE_BYTES,
                           "max_note_chars": "1-4000 when a hook writes notes, else 0"}
+        if configuration == protocol.MAIN_V3:
+            from .v210_import import LEARNED_SOURCE_BYTES, LEARNED_PROCEDURES
+            detail["caps"].update(package_source_bytes=LEARNED_SOURCE_BYTES, package_procedures=LEARNED_PROCEDURES)
         if configuration is not None and protocol.is_v24(configuration):
             detail["caps"]["source_bytes"] = policy.source_limit(protocol.POLICY_VERSIONS[configuration])
         if configuration is not None and protocol.is_v25(configuration):
@@ -2368,12 +2385,16 @@ def _redacted(result):
     return {**result, "detail": shown}
 
 
-def _combined(parent, survivors, step):
+def _combined(parent, survivors, step, *, configuration=None):
     """S' from the surviving changes, dropping from the last any whose combination breaks the package."""
     survivors = list(survivors)
     while survivors:
         try:
-            return candidate(parent, survivors, step=step), survivors
+            result = candidate(parent, survivors, step=step)
+            if configuration == protocol.MAIN_V3:
+                from .v210_import import check_learning_capacity
+                check_learning_capacity(result)
+            return result, survivors
         except PackageInvalid:
             survivors.pop()
     return None, []
@@ -2411,11 +2432,13 @@ def run(ctx):
             survivors.append(final)
             taken.add(final.target)
         outcomes.append({**final.to_json(), "attempts": attempts, "survived": survived})
-    package, kept = _combined(ctx.parent, survivors, ctx.step)
+    package, kept = _combined(ctx.parent, survivors, ctx.step,
+                             **({"configuration": ctx.configuration} if ctx.configuration == protocol.MAIN_V3 else {}))
     modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
     sealed = record(protocol.ENGINEER_RECORDS[ctx.configuration], ctx.evidence, {
         "bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
-        "prompt_sha256": (ENGINEER_PROMPT_SINGLE_ALF_V2_SHA256 if protocol.is_alfworld_v2(ctx.configuration) else
+        "prompt_sha256": (instruction_start.engineer_sha256(ctx.configuration, train=False) if protocol.is_v210(ctx.configuration) else
+                          ENGINEER_PROMPT_SINGLE_ALF_V2_SHA256 if protocol.is_alfworld_v2(ctx.configuration) else
                           ENGINEER_PROMPT_SINGLE_ALF_V1_SHA256 if protocol.is_alfworld(ctx.configuration) else
                           ENGINEER_PROMPT_SINGLE_ZPC_V27_SHA256 if protocol.is_v27(ctx.configuration) else
                           ENGINEER_PROMPT_SINGLE_ZPC_V26_SHA256 if protocol.is_v26(ctx.configuration) else
@@ -2464,8 +2487,11 @@ def _combined_train(ctx, survivors):
     survivors = list(survivors)
     while survivors:
         try:
-            return rebase(candidate(ctx.parent, survivors, step=ctx.step), ctx.base, ctx.parent,
-                          step=ctx.step), survivors
+            result = rebase(candidate(ctx.parent, survivors, step=ctx.step), ctx.base, ctx.parent, step=ctx.step)
+            if ctx.configuration == protocol.MAIN_V3:
+                from .v210_import import check_learning_capacity
+                check_learning_capacity(result)
+            return result, survivors
         except PackageInvalid:
             survivors.pop()
     return None, []
@@ -2521,7 +2547,8 @@ def run_train(ctx):
     modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
     sealed = record(protocol.ENGINEER_RECORDS[ctx.configuration], ctx.evidence, {
         "bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
-        "prompt_sha256": (ENGINEER_PROMPT_ALF_V2_SHA256 if protocol.is_alfworld_v2(ctx.configuration) else
+        "prompt_sha256": (instruction_start.engineer_sha256(ctx.configuration, train=True) if protocol.is_v210(ctx.configuration) else
+                          ENGINEER_PROMPT_ALF_V2_SHA256 if protocol.is_alfworld_v2(ctx.configuration) else
                           ENGINEER_PROMPT_ALF_V1_SHA256 if protocol.is_alfworld(ctx.configuration) else
                           ENGINEER_PROMPT_ZPC_V27_SHA256 if protocol.is_v27(ctx.configuration) else
                           ENGINEER_PROMPT_ZPC_V26_SHA256 if protocol.is_v26(ctx.configuration) else

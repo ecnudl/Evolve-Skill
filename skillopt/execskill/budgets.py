@@ -156,7 +156,10 @@ def chain_caps(chain, pilot=PILOT):
     plan, step_caps, glm = PILOTS[pilot], CONFIG_STEP_CAPS[pilot], CONFIG_GLM_CAP[pilot]
     out = {ROOT: plan["solver_cap"] + glm, chain + ":solver": plan["solver_cap"],
            chain + ":test": plan["test_read_cap"], chain + ":redo": plan["redo_reserve"], chain + ":glm": glm}
+    out = {scope: cap for scope, cap in out.items() if cap > 0}
     for k, bench in enumerate(plan["order"], 1):
+        if bench not in step_caps:
+            continue  # v2.10: baseline has no learning; ALFWorld is a zero-call import.
         for kind in step_kinds(pilot):
             cap = step_caps[bench][kind]
             out[solver_scopes(chain, bench, k, kind)[-1]] = cap

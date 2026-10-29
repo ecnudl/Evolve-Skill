@@ -88,7 +88,7 @@ def history(chain_root, *, run=None, chain="D"):
 def current(chain_root, *, run=None, chain="D", configuration=None):
     """The route ``chain`` runs on now: the last switch's, else the registered start (route A)."""
     records = history(chain_root, run=run, chain=chain)
-    if protocol.is_v29(configuration) and chain == "D":
+    if (protocol.is_v29(configuration) or protocol.is_v210(configuration)) and chain == "D":
         require(not records, "v2.9 stays on northgate; route switching requires a new owner decision")
         return client.ROUTE_B
     return records[-1]["to"] if records else ROUTED[chain][0]

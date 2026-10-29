@@ -191,6 +191,15 @@ def _environment_for_manifest(out, configuration):
             write_json(path.with_name(path.name + ".sandbox-starts.json"), {"starts": starts})
 
 
+def baseline_environment():
+    """The instruction/card baseline needs the host interpreter, never a procedure sandbox."""
+    import openpyxl
+    libs = {name: "not-required-no-procedures" for name in IN_IMAGE_LIBS}
+    return {"python": sys.version.split()[0], "openpyxl": openpyxl.__version__,
+            "docker": "not-required-no-procedures", "image_digests": {}, "in_image_libs": libs,
+            "in_image_pip_freeze_sha256": digest(libs)}
+
+
 def verify_code(manifest, repo=REPO):
     """The code map holds every file this process has loaded, every pinned file still has its pinned hash, and the
     process runs on the manifest's Python and openpyxl (coevo5 manifest.py:71-81); raises otherwise."""
@@ -213,7 +222,8 @@ def verify_unit(manifest, *, docker=None, repo=REPO):
         verify_code(manifest, repo)
     except ValueError as error:
         raise ConfigurationError(str(error)) from None
-    image_id(docker, manifest["sandbox"]["image_id"])
+    if manifest.get("configuration") != protocol.BASELINE_V210:
+        image_id(docker, manifest["sandbox"]["image_id"])
 
 
 def prompt_sha(configuration=None):
@@ -287,6 +297,12 @@ def prompt_sha(configuration=None):
             out["engineer"] = _sha_text_digest(engineer_v292.system(configuration, train=False))
             out["v2"]["engineer"] = _sha_text_digest(engineer_v292.system(configuration, train=True))
         out["v292"] = engineer_v292.prompt_pins()
+    if protocol.is_v210(configuration):
+        from . import instruction_start
+        out["engineer"] = _sha_text_digest(instruction_start.engineer_system(configuration, train=False))
+        if "v2" in out:
+            out["v2"]["engineer"] = _sha_text_digest(instruction_start.engineer_system(configuration, train=True))
+        out["instructions"] = {bench: value["sha256"] for bench, value in instruction_start.pins().items()}
     return out
 
 
@@ -337,7 +353,7 @@ def _solver_fields(chain, env_path, branch, longest, configuration=None):
     elucid = model == client.ELUCID_MODEL
     require(branch in protocol.BRANCHES if elucid else branch is None, "Chain D names its S1 branch; chain G none")
     benches = protocol.active_benches(configuration)
-    northgate = elucid and protocol.is_v29(configuration)
+    northgate = elucid and (protocol.is_v29(configuration) or protocol.is_v210(configuration))
     return {"backend": "northgate" if northgate else "elucid" if elucid else "bigmodel", "model": model,
             "url_host": client.NORTHGATE_HOST if northgate else client.ELUCID_HOST if elucid else BIGMODEL_HOST, "env_path": str(safe_path(env_path)),
             "proxy": protocol.GATEWAY, "reasoning_effort": protocol.REASONING_EFFORT if elucid else "low",
@@ -433,6 +449,8 @@ def check(manifest):
     require(value["evidence"] not in real or value["evidence"] == protocol.REAL_RUN_EVIDENCE[configuration],
             "A real run's evidence label is its configuration's: %s" % protocol.REAL_RUN_EVIDENCE[configuration])
     check_clients(value["clients"], configuration=configuration)
+    if protocol.is_v210(configuration):
+        _check_v210(value)
     if protocol.is_v29(configuration):
         from . import confirm
         require(value["prompt_sha"] == prompt_sha(configuration), "The v2.9 prompt pins")
@@ -465,6 +483,35 @@ def _card_texts(cards, configuration=None):
         for text in cards.values())
 
 
+def _check_v210(value):
+    """Refuse resealed instruction/import drift without opening a test panel."""
+    from . import instruction_start
+    configuration, data = value["configuration"], value["data"]
+    require(data.get("instructions") == instruction_start.pins(),
+            "Instruction pins differ from the frozen fixture")
+    require(data.get("instruction_start") == instruction_start.START,
+            "The instruction start is the historical solver card")
+    require(data.get("blank_arm") == instruction_start.blank_definition(),
+            "The blank arm has no guidance card")
+    originals = data.get("original_cards")
+    require(_card_texts(originals, configuration), "The five historical instruction-card texts are pinned")
+    require(data.get("card_sha256") == {bench: _sha_text_digest(text) for bench, text in originals.items()},
+            "Original card hashes differ")
+    require(value["cards"] == instruction_start.active_cards(originals, configuration),
+            "Active cards equal the historical frozen instructions byte-for-byte")
+    require(value["prompt_sha"] == prompt_sha(configuration), "The v2.10 prompt pins")
+    if configuration == protocol.MAIN_V3:
+        from . import v210_import
+        require(data.get("alfworld_v11_import") == v210_import.pins(),
+                "The imported ALFWorld package differs from the fixture")
+    else:
+        require("alfworld_v11_import" not in data, "The baseline has no imported procedures")
+        require(value["sandbox"]["image_id"] is None
+                and all(item is None for item in value["sandbox"]["measured"].values()),
+                "The baseline records sandbox measurements as not applicable")
+    return value
+
+
 def make(out, *, evidence, environment_found=None, limits=None, measured, configuration=protocol.PILOT, **given):
     """The sealed manifest at ``out`` (a new file; zero calls). ``given``: exactly ``GIVEN``; ``limits``: {kind:
     sandbox.Limits} registered from S0 (None: the start values); ``measured``: the S0 measurements
@@ -474,6 +521,30 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
     out = safe_path(out)
     require(not out.exists(), "A new manifest file")
     require(set(given) == GIVEN, "The manifest's given fields: %s" % sorted(GIVEN))
+    if configuration == protocol.BASELINE_V210:
+        measured = {key: None for key in MEASURED_FIELDS}
+    if protocol.is_v210(configuration):
+        from . import instruction_start
+        original = instruction_start.active_cards(given["cards"], configuration)
+        existing = given["data"].get("instructions", instruction_start.pins())
+        require(existing == instruction_start.pins(), "Instruction pins differ from the frozen fixture")
+        require(given["data"].get("instruction_start", instruction_start.START) == instruction_start.START,
+                "The instruction start is the historical solver card")
+        require(given["data"].get("blank_arm", instruction_start.blank_definition()) == instruction_start.blank_definition(),
+                "The blank arm has no guidance card")
+        data = {**given["data"], "instructions": instruction_start.pins(), "original_cards": original,
+                "instruction_start": instruction_start.START, "blank_arm": instruction_start.blank_definition(),
+                "card_sha256": {bench: _sha_text_digest(text) for bench, text in original.items()}}
+        if configuration == protocol.MAIN_V3:
+            from . import v210_import
+            require(data.get("alfworld_v11_import", v210_import.pins()) == v210_import.pins(),
+                    "The imported ALFWorld package differs from the fixture")
+            data["alfworld_v11_import"] = v210_import.pins()
+        else:
+            require("alfworld_v11_import" not in data, "The baseline has no imported procedures")
+        given = {**given, "cards": instruction_start.active_cards(original, configuration), "data": data}
+        if environment_found is None and configuration == protocol.BASELINE_V210:
+            environment_found = baseline_environment()
     limits = dict(sandbox.LIMITS if limits is None else limits)
     require(set(limits) == set(sandbox.KINDS) and all(isinstance(v, sandbox.Limits) for v in limits.values()),
             "Registered limits for every sandbox kind")
@@ -508,7 +579,8 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
         "caps": budgets.caps(configuration),
         "importable_versions": ([*protocol.IMPORTABLE, CARD_VERSION]
                                 if protocol.is_zebra(configuration) else [*protocol.IMPORTABLE, protocol.TEXTS_IMPORT]),
-        "sandbox": {"image_id": sandbox.IMAGE, "worker_sha256": sandbox.worker_sha256(),
+        "sandbox": {"image_id": None if configuration == protocol.BASELINE_V210 else sandbox.IMAGE,
+                    "worker_sha256": sandbox.worker_sha256(),
                     "policy_sha256": policy.policy_sha256(version=protocol.POLICY_VERSIONS[configuration]),
                     "docker_argv_template_sha": digest({k: sandbox.argv_template(k, v) for k, v in limits.items()}),
                     "limits": {k: asdict(v) for k, v in sorted(limits.items())}, "measured": measured},
@@ -542,7 +614,7 @@ def solver_config(manifest, chain, bench, route=None):
     """The ``client.solver_client`` config of ``chain``'s solver on ``bench``: the manifest block projected onto
     ``client.CONFIG_KEYS`` (A2's note). ``route``: chain D's route (``routes``; None or route A: the solver block,
     another route: its pin with the route named; registrar row "deepseek route B")."""
-    if chain == "D" and protocol.is_v29(manifest["configuration"]):
+    if chain == "D" and (protocol.is_v29(manifest["configuration"]) or protocol.is_v210(manifest["configuration"])):
         require(route in (None, "B"), "v2.9 chain D stays on northgate")
         route = "B"
     if route is not None and route != routes.ROUTED[chain][0]:
@@ -605,6 +677,8 @@ def _smoke_pools(m, root):
 
 
 def _pools(m, chain, root):
+    if m["configuration"] == protocol.BASELINE_V210:
+        return {}  # the baseline never opens training pools
     if chain == budgets.SMOKE:
         return _smoke_pools(m, root)
     order = protocol.CONFIGURATIONS[m["configuration"]]["order"]
@@ -616,6 +690,8 @@ def _pools(m, chain, root):
 
 def _slot_sizes(m):
     """The registered pool-size changes from S0 (plan §5): native 3 -> 2 above a 2 GiB native peak RSS."""
+    if m["configuration"] == protocol.BASELINE_V210:
+        return None  # no procedure-sandbox measurements exist in the baseline
     peak = m["sandbox"]["measured"]["native_peak_rss_kib"]
     require(type(peak) is int and peak > 0, "The S0 native peak RSS")
     return {slots.NATIVE: protocol.NATIVE_SLOTS_LOW_MEMORY} if peak > NATIVE_LOW_KIB else None
@@ -635,7 +711,10 @@ def _clients(m, chain, transport, route=None):
     cache = {}
 
     def make(wanted, bench):
-        if bench is not None and route is not None:  # M4: the chain D client factory reads the route at unit start
+        if bench is not None and route is not None and protocol.is_v210(m["configuration"]):
+            routes.check_bound(safe_path(m["root"]) / run, route, run=m[protocol.RECORD_HASH], chain=run,
+                               configuration=m["configuration"])
+        elif bench is not None and route is not None:  # M4: the chain D client factory reads the route at unit start
             routes.check_bound(safe_path(m["root"]) / run, route, run=m[protocol.RECORD_HASH], chain=run, **({"configuration": m["configuration"]} if protocol.is_v29(m["configuration"]) else {}))
         key = (wanted, bench)
         if key not in cache:
@@ -693,7 +772,7 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
     if protocol.is_alfworld_v2(m["configuration"]):
         require(chain in protocol.launchable_chains(m["configuration"]), "ALFWorld v2 launches only chain D")
     require((m["evidence"] == SMOKE_EVIDENCE) == (chain == budgets.SMOKE)
-            or ((protocol.is_zebra(m["configuration"]) or protocol.is_alfworld(m["configuration"]))
+            or ((protocol.is_zebra(m["configuration"]) or protocol.is_alfworld(m["configuration"]) or protocol.is_v210(m["configuration"]))
                 and m["evidence"] == SMOKE_EVIDENCE),
             "The smoke runs on a smoke manifest and the chains on a pilot manifest")
     require(m["lexicon_sha"] == notes.lexicon_sha256() and m["prompt_sha"] == prompt_sha(m["configuration"]),
@@ -705,9 +784,11 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
                 and chain in m["data"].get("launchable_chains", ()),
                 "ALFWorld v2 launches only chain D" if protocol.is_alfworld_v2(m["configuration"])
                 else "ALFWorld v1 launches only chain D")
-    root, docker = safe_path(m["root"]), docker or sandbox.Docker()
+    root = safe_path(m["root"])
+    baseline = m["configuration"] == protocol.BASELINE_V210
+    docker = None if baseline else docker or sandbox.Docker()
     solver_chain = _solver_chain(chain, root)  # the smoke: its specification's (registrar addendum 2026-10-23 02:3x)
-    route = routes.current(root / chain, run=m[protocol.RECORD_HASH], chain=chain, **({"configuration": m["configuration"]} if protocol.is_v29(m["configuration"]) else {})) if chain in routes.ROUTED else None
+    route = routes.current(root / chain, run=m[protocol.RECORD_HASH], chain=chain, **({"configuration": m["configuration"]} if protocol.is_v29(m["configuration"]) or protocol.is_v210(m["configuration"]) else {})) if chain in routes.ROUTED else None
     block = m["clients"]["solver"][solver_chain]
     bound = block if route is None else {**routes.block_of(m, chain, route), "model": block["model"]}  # M4
     pools = slots.pools(m["slot_root"], sizes=_slot_sizes(m))
@@ -715,12 +796,23 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
     extra = {"verify": functools.partial(verify_unit, m, docker=docker),
              "drain": functools.partial(sandbox.drain_unit, docker=docker), "slot_root": m["slot_root"],
              "configuration": m["configuration"]}
+    if baseline:
+        extra["drain"] = lambda *_args, **_kwargs: None
+    if protocol.is_v210(m["configuration"]):
+        extra["instructions"] = deepcopy(m["data"]["instructions"])
+        extra["original_cards"] = deepcopy(m["data"]["original_cards"])
+        extra["instruction_start"] = m["data"]["instruction_start"]
+        extra["blank_arm"] = deepcopy(m["data"]["blank_arm"])
+        if not baseline:
+            extra["alfworld_v11_import"] = deepcopy(m["data"]["alfworld_v11_import"])
     cleanup_options = ({"cleanup_grace_seconds": protocol.cleanup_grace_seconds(m["configuration"])}
                        if protocol.is_v292(m["configuration"]) else {})
     if cleanup_options:
         extra["drain"] = functools.partial(sandbox.drain_unit, docker=docker, **cleanup_options)
     worker_options = {**cleanup_options, **({"ready_timeout_seconds": protocol.ready_timeout_seconds(m["configuration"])}
                                            if protocol.is_v292(m["configuration"]) else {})}
+    if m["configuration"] == protocol.MAIN_V3:
+        worker_options["mixed_policy_bundle"] = "main-v3-alfworld-v11"
     if protocol.is_v29(m["configuration"]) and protocol.is_alfworld(m["configuration"]):
         extra.update(alf_confirm_views=deepcopy(m["data"]["alf_confirm_views"]),
                      confirm=deepcopy(m["data"]["confirm"]))
@@ -740,13 +832,13 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
                 "per-bench terms of that estimate (data.test_read_terms[%s], {bench: \"p/q\"} whose sum rounds up to "
                 "it; registrar addendum 15:3x, ticket P2C-2)" % chain)
         extra["test_read_terms"] = {chain: dict(terms[chain])}
-        if "searchqa" in protocol.CONFIGURATIONS[m["configuration"]]["order"]:
+        if not baseline and "searchqa" in protocol.CONFIGURATIONS[m["configuration"]]["order"]:
             extra["searchqa_tail"] = _searchqa_tail(m["data"])
     setting = units.Setting(
         run=m[protocol.RECORD_HASH], root=root, shared=root / "shared", pools=_pools(m, chain, root),
         cards=dict(m["cards"]), runtime=dict(m["runtime"]), clients=_clients(m, chain, transport, route),
         budget=budget, slots=pools,
-        sandbox={"docker": docker, "limits": limits_of(m), "image": m["sandbox"]["image_id"], **worker_options},
+        sandbox={} if baseline else {"docker": docker, "limits": limits_of(m), "image": m["sandbox"]["image_id"], **worker_options},
         evidence=m["evidence"], branch=bound["branch"], longest=bound["longest"], extra=extra)
     if protocol.is_v29(m["configuration"]):
         from . import confirm

@@ -1,0 +1,27 @@
+{
+  "id": "p-alfworld-1-15",
+  "origin": "alfworld",
+  "accepted_at": null,
+  "description": "Keeps the repetition guard (non-navigation actions warned at 3+, navigation at 4+, look/inventory at 5+, discourage at 4+) and the 'Nothing happens' streak note unchanged, but makes the step-budget reminder earlier and periodic: from step 20 on, emit 'Steps used so far: N of 50' on every step that is a multiple of 5, so the agent notices the budget before it has burned most of it. All notes state only counts and observed 'Nothing happens' results from the episode's own stream.",
+  "hooks": [
+    "applies",
+    "alf_before_step",
+    "alf_after_step"
+  ],
+  "source": "# change: alf_loop_guard_v4 (p-alfworld-2-2)\ndef applies(view):\n    return True\n\n\ndef alf_after_step(event, state):\n    st = state if isinstance(state, dict) else {}\n    counts = dict(st.get(\"counts\", {}))\n    a = event.get(\"action\") or \"\"\n    counts[a] = counts.get(a, 0) + 1\n    o = (event.get(\"observation\") or \"\").strip()\n    if o.startswith(\"Nothing happens\"):\n        ns = st.get(\"nothing_streak\", 0) + 1\n    else:\n        ns = 0\n    return {\"step\": st.get(\"step\", -1) + 1, \"counts\": counts,\n            \"nothing_streak\": ns}\n\n\ndef alf_before_step(view, state):\n    if not isinstance(state, dict):\n        return {\"fields\": {}, \"discourage\": []}\n    warn = []\n    disc = []\n    n = state.get(\"step\", -1) + 1\n    for a, c in sorted(state.get(\"counts\", {}).items()):\n        nav = isinstance(a, str) and a.startswith(\"go to \")\n        if c >= 5 and a in (\"look\", \"inventory\"):\n            warn.append((\"'%s' has been used %d times so far this episode.\"\n                         % (a, c))[:200])\n        elif c >= 3 and not nav:\n            warn.append((\"Action '%s' has been executed %d times so far this \"\n                         \"episode.\" % (a[:80], c))[:200])\n        elif c >= 4 and nav:\n            warn.append((\"Action '%s' has been executed %d times so far this \"\n                         \"episode.\" % (a[:80], c))[:200])\n        if c >= 4:\n            disc.append(a)\n    ns = state.get(\"nothing_streak\", 0)\n    if ns >= 2:\n        warn.append(\"The last %d actions in a row each returned 'Nothing \"\n                    \"happens'.\" % ns)\n    if n >= 20 and n % 5 == 0:\n        warn.append(\"Steps used so far: %d of 50.\" % n)\n    if warn:\n        return {\"fields\": {\"warnings\": warn[:4]}, \"discourage\": disc[:5]}\n    return {\"fields\": {}, \"discourage\": []}\n",
+  "header": "Action counts, failure streaks, and earlier periodic step-budget reminders.",
+  "max_note_chars": 800,
+  "requests_second_call": false,
+  "state_bytes": 4096,
+  "excluded_benches": [],
+  "replay_tests": [],
+  "lineage": {
+    "parent": null,
+    "revises": null,
+    "engineer_call": "75f3a2a4139fe971bab2c50f8a0392a882dab59a180f9b00f2b9cef25c69dae4"
+  },
+  "policy_version": "fivebench-execskill-v2-9-policy",
+  "version": "fivebench-execskill-v1-procedure-v2-9",
+  "evidence": "alfworld_v11_real_run",
+  "record_sha256": "768778bd771e5c9470f8faf1e36e51af33418503c492e77b8db8044f02ac689c"
+}

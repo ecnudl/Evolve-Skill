@@ -1349,6 +1349,8 @@ def max_role_calls(configuration=protocol.PILOT):
     first checks and one after each fix call, all calls but one proposal being fix calls --, the same describer calls,
     and the examiner's v1 calls plus ``TOPUP_ROUNDS`` top-up writes of ``GENERATOR_CALLS`` after each of its
     ``BAND_ROUNDS`` builds."""
+    if configuration == protocol.BASELINE_V210:
+        return {role: 0 for role in MAX_ROLE_CALLS}
     if protocol.LEARNING[configuration] != "train":
         return dict(MAX_ROLE_CALLS)
     train_calls = (protocol.TRAIN_ENGINEER_CALL_BUDGETS[configuration]
@@ -1409,6 +1411,10 @@ def engineer_request_floor(configuration=protocol.PILOT):
     if configuration == protocol.ZEBRA_PC_V1:
         return protocol.ROLE_INPUT_BYTES + max(len(prompt.encode()) for prompt in (
             engineer.ENGINEER_SYSTEM_ZPC, engineer.ENGINEER_SYSTEM_SINGLE_ZPC, engineer.ANALYST_SYSTEM))
+    if protocol.is_v210(configuration):
+        from .instruction_start import engineer_system
+        return protocol.ROLE_INPUT_BYTES + max(len(prompt.encode()) for prompt in (
+            engineer_system(configuration), engineer_system(configuration, train=True), engineer.ANALYST_SYSTEM))
     if protocol.is_v23(configuration):
         return protocol.ROLE_INPUT_BYTES + max(len(prompt.encode()) for prompt in (
             engineer.ENGINEER_SYSTEM_V23, engineer.ENGINEER_SYSTEM_SINGLE_V23, engineer.ANALYST_SYSTEM))
@@ -1481,6 +1487,8 @@ def _scope_cells(chain, pilot=protocol.PILOT):
     plan, schedule, out = protocol.PILOTS[pilot], protocol.CONFIG_SCHEDULE_CELLS[pilot], {}
     blocks, totals = [], {}
     for k, bench in enumerate(plan["order"], 1):
+        if bench not in schedule:
+            continue
         for kind in budgets.step_kinds(pilot):
             cells = schedule[bench][kind]
             out[budgets.solver_scopes(chain, bench, k, kind)[-1]] = [cells]
@@ -1496,7 +1504,8 @@ def _scope_cells(chain, pilot=protocol.PILOT):
                 totals[b] = (was[0] + card, was[1] + proc)
     test = protocol.TEST_READ_CELLS[pilot]
     out[chain + ":test"] = [test]
-    out[chain + ":redo"] = blocks
+    if blocks:
+        out[chain + ":redo"] = blocks
     for b, (card, proc) in test.items():
         was = totals.get(b, (0, 0))
         totals[b] = (was[0] + card, was[1] + proc)
@@ -1507,7 +1516,7 @@ def _scope_cells(chain, pilot=protocol.PILOT):
             was = whole.get(b, (0, 0))
             whole[b] = (was[0] + card, was[1] + proc)
         solver_total.append(whole)
-    out[chain + ":solver"] = solver_total
+    out[chain + ":solver"] = solver_total or [totals]
     return out
 
 
@@ -1642,6 +1651,8 @@ def glm_projection(measured, pilot=protocol.PILOT):
     ``role_calls_measured``; a role S3 did not measure is priced at the dearest measured role call and the widest
     measured request (``assumed``). Returns {scope: {"settled", "reservation", "needed", "cap", "fits"} (+ "roles",
     "assumed")}; a scope fits when needed <= cap."""
+    if pilot == protocol.BASELINE_V210:
+        return {}
     require(measured and all(entry["calls"] > 0 for entry in measured.values()), "S3 measured role calls")
     plan, calls = protocol.PILOTS[pilot], max_role_calls(pilot)
     roles = tuple(budgets.ROLES) + (("audit_g", "audit_d") if protocol.is_v29(pilot) else ())
@@ -1657,6 +1668,8 @@ def glm_projection(measured, pilot=protocol.PILOT):
     for chain in sorted(protocol.CHAINS):
         caps, total, widest_reserve = budgets.chain_caps(chain, pilot), 0, 0
         for k, bench in enumerate(plan["order"], 1):
+            if bench not in protocol.CONFIG_STEP_CAPS[pilot]:
+                continue
             charged = {}
             for role in roles:
                 scope = (budgets.audit_scopes(chain, role[-1].upper(), bench, k) if role.startswith("audit_")

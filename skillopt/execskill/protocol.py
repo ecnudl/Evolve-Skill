@@ -42,7 +42,8 @@ EVIDENCE = ("engineering_fixture", "smoke", "pilot_real_run", "historical_replay
             "zebra_pc_v3_real_run", "zebra_pc_v4_real_run", "alfworld_v1_real_run", "zebra_pc_v5_real_run",
             "alfworld_v2_real_run", "zebra_pc_v6_real_run", "alfworld_v3_real_run", "zebra_pc_v7_real_run", "alfworld_v4_real_run",
             "zebra_pc_v8_real_run", "alfworld_v5_real_run", "zebra_pc_v9_real_run", "alfworld_v6_real_run",
-            "zebra_pc_v10_real_run", "alfworld_v7_real_run", "zebra_pc_v11_real_run", "alfworld_v8_real_run", "zebra_pc_v12_real_run", "alfworld_v9_real_run", "alfworld_v10_real_run", "alfworld_v11_real_run")
+            "zebra_pc_v10_real_run", "alfworld_v7_real_run", "zebra_pc_v11_real_run", "alfworld_v8_real_run", "zebra_pc_v12_real_run", "alfworld_v9_real_run", "alfworld_v10_real_run", "alfworld_v11_real_run",
+            "baseline_v210_real_run", "main_v3_real_run")
 IMPORTABLE = ("fivebench-coevolution-v3-sheet-qualification",)  # §1, owner #7, Codex F15: the one v3 record kind read
 TEXTS_IMPORT = "fivebench-coevolution-v3-texts-import"  # §2.2: the v3 task cards, imported by value (plan §6)
 
@@ -840,6 +841,8 @@ def stage_arms_max(configuration):
 def read_arms_of(configuration):
     """The arms the owner's read consent names for ``configuration`` (``multi_arm_arms``): ``TEST_ARMS``, with
     ``STAGES`` in a stage-read configuration. Named without a ``test_`` prefix, so pytest never collects it."""
+    if configuration in ('baseline-v210', 'main-v3'):
+        return ('C', 'B') if configuration == 'baseline-v210' else ('F', 'C', 'B')
     require(configuration in STAGE_READ, "Unknown run configuration")
     return TEST_ARMS + ((STAGES,) if STAGE_READ[configuration] else ())
 

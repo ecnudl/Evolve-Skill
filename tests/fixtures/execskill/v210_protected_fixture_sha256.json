@@ -1,0 +1,34 @@
+{
+  "provenance": {
+    "captured_at": "2026-10-29T02:37:26.828385+00:00",
+    "source": "V210-INITIAL-SHA256.json",
+    "source_sha256": "a765f01b752d59ee82c7b76b13267f8cfc05c93c5fbccce8c8be13eccc67cd49"
+  },
+  "sha256": {
+    "tests/fixtures/execskill/__init__.py": "0cbca955d65c067b0387a6df7791b2f758b4cc7cd14bf72f18793fbb2931dc93",
+    "tests/fixtures/execskill/alf6_s3b_replies.json": "6019eae277d6a0673a8ed6de2ce101f4f2d834809489dadb8867829b6db7c2e0",
+    "tests/fixtures/execskill/alf7_s3b_replies.json": "fad86bf0f48e2acf800ef976962c1443f0dae1f8939a4e5b10f135f378308e94",
+    "tests/fixtures/execskill/items.py": "5a0ff1a839e1f13f5beed057adfd64019552f3919b6fed177dc5b01b8afa8847",
+    "tests/fixtures/execskill/v210_alfworld_v11_package/README.md": "a6d3b947625f2d1ab519633d02dca74349e298cc7c83158a44780a52e569a082",
+    "tests/fixtures/execskill/v210_alfworld_v11_package/accept/decision.json": "74ba1641c555ed5d0437d1214e7f0d88c119080e074ed58d3a104e25e5ac6843",
+    "tests/fixtures/execskill/v210_alfworld_v11_package/chain-complete.json": "4faf82f34d87bc83bef7c9900d085e07899a9b34931d4602d58d780026dab0eb",
+    "tests/fixtures/execskill/v210_alfworld_v11_package/packages/7d814ba51fb589ecd1480c14e57757cb383942520798eb10d43481f796520eb4.json": "be9acfdc7311a9fe099e7fdd5b3289a68ddf53c076944b49f80a24e46c0eae00",
+    "tests/fixtures/execskill/v210_alfworld_v11_package/procedures/768778bd771e5c9470f8faf1e36e51af33418503c492e77b8db8044f02ac689c.json": "a137e94c664dedbc5b2a42038208181c7d7481a3dd266e58a086b84d87c01142",
+    "tests/fixtures/execskill/v210_alfworld_v11_package/procedures/9ab7ff8b708e0992ffa1ecaa8a68334587e63e6523e0fe61d8960992709fa919.json": "cfeb6dad0e3fa24b81ae3129b92c61cbb274d93df4c2bbe03ae463547854f8f8",
+    "tests/fixtures/execskill/v210_alfworld_v11_package/procedures/a93758eae5454350a6cbb1301032f4de94c05d82159edc699e72d065e530f262.json": "70b5837d3443bffe6d68e61234c81e9670e7ea03e56245f0332c7fbd3184675a",
+    "tests/fixtures/execskill/v291_parents_before.json": "9265fd7317e4c659f6a779ef4b3535cdbdf5c054e6d324bc666cbbe4da5a1a45",
+    "tests/fixtures/execskill/v292_parents_before.json": "f68e9ee52ef0a84a62c140333bbc0f96f05d91502dd6f08bfe288d3a1c55978a",
+    "tests/fixtures/execskill/v293_parents_before.json": "dc152b3fcc6d3990c827010f5da6e9d6bb009894c1592f038bcc300fa78af8fa",
+    "tests/fixtures/execskill/v294_parents_before.json": "f30ee94f30026ce49e75a92ac2c7673b63646f0b2caca6c6c787bd4db8c9e6fd",
+    "tests/fixtures/execskill/v295_parents_before.json": "3be881ffe0aefdb83f8c8088820dfade774cbe20e1b8cc57da3d474441506de6",
+    "tests/fixtures/execskill/v296_parents_before.json": "ed88862d6cb0abed2ff901496edf42a6a5c5511f96ba6a7c2476c99a8b583395",
+    "tests/fixtures/execskill/v297_alf10_acceptance_outcomes.json": "896fc9f33b5372f39832ed31a3a90c695cec1b8c676401d461ca64b122de64ef",
+    "tests/fixtures/execskill/v297_alf10_loop_guard_trajectory.json": "f683beee7e5959a43eaefbb33901ccc3b03f6d23303b5cc693468ffe7a407e2c",
+    "tests/fixtures/execskill/v297_parents_before.json": "b21a12fae1001225d644423a5dff0e2325899221c9a164a2bd5102bdec89ad23",
+    "tests/fixtures/execskill/zebralogic_upstream/PROVENANCE.md": "73eceb530ba4ba11b239f032a87bae861e2bccc1673811e568728b89f644016c",
+    "tests/fixtures/execskill/zebralogic_upstream/ZEBRA_GRID.py.txt": "bbeed4d971d19dc04b84e888255598ab1d35c3de6701aad240d7d26abfd4bd08",
+    "tests/fixtures/execskill/zebralogic_upstream/apply_lgp_grid_template.py.txt": "3b5b7dc9ea9f099a73981ddb830e77e51a02a91d7525b61f2e51f2a89258e296",
+    "tests/fixtures/execskill/zpc8_r1_replies.json": "5abae2bcdfc7e4722194f0e670d0b6904464a0e66bd9aa4568ae0c6dd8f7142c",
+    "tests/fixtures/execskill/zpc9_r5_replies.json": "3ad6732695a4a9190dbe490617517c9f0eec04c1299a5ecccd72704fafb80bd7"
+  }
+}

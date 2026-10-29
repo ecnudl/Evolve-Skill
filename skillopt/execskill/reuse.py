@@ -18,7 +18,7 @@ import json
 from skillopt.coevo5.calls import _request_hash
 from skillopt.continual_eval.core import require
 
-from . import solver
+from . import solver, profiles
 from .protocol import NOTES_KEY, SEED, round_tag
 
 VERSION = "identical-request-classes-v2-3"
@@ -85,13 +85,14 @@ def card_sample(sealed, preferred=None):
 def _item_arms(sealed, signatures):
     """Every scheduled arm, including ones whose replay identity is missing, in the representative priority order."""
     items = {name: {item: list(arms) for item, arms in entries.items()} for name, entries in signatures.items()}
-    main = ["S", "S'", "C", "P_y"] + (["P_i"] if sealed["placebo_i"] is not None else [])
+    core = ["S", "S'", "C"] + ([] if profiles.is_v210(sealed.get("configuration")) else ["P_y"])
+    main = core + (["P_i"] if sealed["placebo_i"] is not None else [])
     main += ["S_dup"] if sealed["dup"] else []
     for item in sealed["plan"]["astar"] + sealed["plan"].get("twin_only", []):
         twins = [t["kind"] + ":" + t["procedure"] for t in sealed["plan"]["twins"].get(item, [])]
         items.setdefault("real", {})[item] = (main if item in sealed["plan"]["astar"] else ["S'"]) + twins
     for generated in sealed["g_acc"] or []:
-        items.setdefault("G_acc", {})[generated["id"]] = ["S", "S'", "C", "P_y"] + (["S_dup"] if sealed["dup"] else [])
+        items.setdefault("G_acc", {})[generated["id"]] = core + (["S_dup"] if sealed["dup"] else [])
     for item in sealed["probe"]:
         items.setdefault("probe", {})[item] = ["S'", "C"]
     priority = {arm: n for n, arm in enumerate(("S", "S'", "C", "P_y", "P_i"))}

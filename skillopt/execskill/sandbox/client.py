@@ -409,6 +409,27 @@ def _entries(package):
     return entries
 
 
+def _load_request(package, entries, limits, *, mixed_policy_bundle=None):
+    """Historical load bytes, with one explicit main-v3 imported-package compatibility marker.
+
+    The marker changes which declared policies may coexist, never the policy used
+    to validate an individual procedure's source.
+    """
+    versions = {e.get("policy_version", policy.POLICY_VERSION) for e in entries}
+    version = (policy.POLICY_VERSION_V29 if policy.POLICY_VERSION_V29 in versions else
+               policy.POLICY_VERSION_V28 if policy.POLICY_VERSION_V28 in versions else
+               policy.POLICY_VERSION_V25 if policy.POLICY_VERSION_V25 in versions else
+               policy.POLICY_VERSION_V24 if policy.POLICY_VERSION_V24 in versions else
+               policy.POLICY_VERSION_V23 if policy.POLICY_VERSION_V23 in versions else policy.POLICY_VERSION)
+    mixed = mixed_policy_bundle == "main-v3-alfworld-v11" and {
+        policy.POLICY_VERSION_V23, policy.POLICY_VERSION_V29} <= versions
+    return {"op": "load", "package_sha256": package.sha256,
+            "policy_sha256": policy.policy_sha256(version=version),
+            **({"policy_version": version} if version != policy.POLICY_VERSION else {}),
+            **({"mixed_policy_bundle": mixed_policy_bundle} if mixed else {}),
+            "limits": limits, "procedures": entries}
+
+
 class Worker:
     """One sandbox container at a time for one cell, episode, detector or generator run (plan §4).
 
@@ -428,19 +449,21 @@ class Worker:
 
     def __init__(self, *, docker=None, limits=None, hashseed=0, live=None, per_call=None, scratch=None, image=IMAGE,
                  tag=None, cleanup_grace_seconds=0, cleanup_events=None,
-                 ready_timeout_seconds=SANDBOX_READY_SECONDS, start_events=None):
+                 ready_timeout_seconds=SANDBOX_READY_SECONDS, start_events=None, mixed_policy_bundle=None):
         require(hashseed in (0, 1) and (limits is None or set(limits) <= set(KINDS))
                 and (tag is None or (type(tag) is str and TAG.fullmatch(tag) is not None)), "Invalid worker settings")
         require(_cleanup_grace_valid(cleanup_grace_seconds)
                 and (cleanup_events is None or type(cleanup_events) is list), "Invalid sandbox cleanup grace or events")
         require(_cleanup_grace_valid(ready_timeout_seconds) and ready_timeout_seconds > 0
                 and (start_events is None or type(start_events) is list), "Invalid sandbox ready timeout or events")
+        require(mixed_policy_bundle in (None, "main-v3-alfworld-v11"), "Unknown mixed-policy import bundle")
         self.docker = docker or Docker()
         self.limits = {**LIMITS, **(limits or {})}
         self.hashseed, self.live, self.per_call, self.image, self.tag = hashseed, live, per_call, image, tag
         self.scratch = scratch
         self.cleanup_grace_seconds, self.cleanup_events = cleanup_grace_seconds, cleanup_events
         self.ready_timeout_seconds, self.start_events = ready_timeout_seconds, start_events
+        self.mixed_policy_bundle = mixed_policy_bundle
         self.starts, self._start_started = [], None
         self.package = self.kind = self.inputs_dir = None
         self.dropped, self.rejected, self.names, self.unconfirmed, self.info = [], {}, [], [], None
@@ -618,18 +641,8 @@ class Worker:
                     self.start_events.append(dict(event))
                 self._start_started = None
         entries = [e for e in self._entries if e["id"] not in self.dropped]
-        versions = {e.get("policy_version", policy.POLICY_VERSION) for e in entries}
-        version = (policy.POLICY_VERSION_V29 if policy.POLICY_VERSION_V29 in versions else
-                   policy.POLICY_VERSION_V28 if policy.POLICY_VERSION_V28 in versions else
-                   policy.POLICY_VERSION_V25 if policy.POLICY_VERSION_V25 in versions else
-                   policy.POLICY_VERSION_V24 if policy.POLICY_VERSION_V24 in versions else
-                   policy.POLICY_VERSION_V23 if policy.POLICY_VERSION_V23 in versions else policy.POLICY_VERSION)
-        modern = version != policy.POLICY_VERSION
-        reply = self._exchange({"op": "load", "package_sha256": self.package.sha256,
-                                "policy_sha256": policy.policy_sha256(version=version),
-                                **({"policy_version": version} if modern else {}),
-                                "limits": self.limits[self.kind].worker(),
-                                "procedures": entries}, SANDBOX_READY_SECONDS)
+        reply = self._exchange(_load_request(self.package, entries, self.limits[self.kind].worker(),
+                                            mixed_policy_bundle=self.mixed_policy_bundle), SANDBOX_READY_SECONDS)
         rejected = reply.get("rejected")
         if (reply.get("ok") is not True or reply.get("package_sha256") != self.package.sha256
                 or not isinstance(rejected, list) or not all(isinstance(r, dict) for r in rejected)

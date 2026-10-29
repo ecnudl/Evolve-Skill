@@ -499,10 +499,14 @@ def stage_arms_max(configuration):
 
 def read_arms_of(configuration):
     require(supports_configuration(configuration), "Unknown run configuration")
+    if is_v210(configuration):
+        return ("C", "B") if configuration == BASELINE_V210 else ("F", "C", "B")
     return TEST_ARMS + ((STAGES,) if STAGE_READ[configuration] else ())
 
 
 def estimate_arms(configuration):
+    if is_v210(configuration):
+        return 0 if configuration == BASELINE_V210 else 1
     return TEST_READ_ESTIMATE_ARMS + stage_arms_max(configuration)
 
 
@@ -542,6 +546,18 @@ def fired_share(bench, pilot=PILOT):
 
 
 def read_estimate_terms(per_cell, ratio, pilot=PILOT):
+    if is_v210(pilot):
+        require(isinstance(per_cell, dict) and set(per_cell) == set(BENCHES), 'Five-bench per-cell measurement required')
+        terms = {}
+        for bench in BENCHES:
+            entry = per_cell[bench]
+            card = legacy._exact(entry['card'], 'card cell')
+            proc = (card * PROCEDURE_ARM_FACTOR[1]
+                    if entry.get('procedure_assumed') is True or entry.get('procedure') is None
+                    else legacy._exact(entry['procedure'], 'procedure cell'))
+            c, p = TEST_READ_CELLS[pilot][bench]
+            terms[bench] = legacy._exact(ratio, 'ratio') * (c * card + p * proc)
+        return terms
     if is_alfworld(pilot):
         require(isinstance(per_cell, dict) and set(per_cell) == {"alfworld"}
                 and isinstance(per_cell["alfworld"], dict), "ALFWorld per-cell measurement required")
@@ -760,3 +776,84 @@ RUN_ROOTS[ALFWORLD_V11] = ALFWORLD_V11_ROOT
 CHAIN_NAMESPACES[ALFWORLD_V11] = ALFWORLD_V11_NAMESPACES
 ACCEPT_FRESHNESS[ALFWORLD_V11] = "alfworld_split_v1_slices_after_alfworld_v10_accept_test_read"
 CONFIRM_FRESHNESS[ALFWORLD_V11] = "alfworld_split_v1_confirm_spare_rooms_after_alfworld_v10"
+
+
+# v2.10 inherits the five-bench v2.3 family; no single-bench v2.4+ behavior is ported.
+BASELINE_V210 = 'baseline-v210'
+MAIN_V3 = 'main-v3'
+BASELINE_V210_ROOT = '/data/execskill-20261029-baseline-v210'
+MAIN_V3_ROOT = '/data/execskill-20261029-main-v3'
+BASELINE_V210_MANIFEST = BASELINE_V210_ROOT + '-manifest.json'
+MAIN_V3_MANIFEST = MAIN_V3_ROOT + '-manifest.json'
+BASELINE_V210_NAMESPACES = {'G': 'G-base210', 'D': 'D-base210'}
+MAIN_V3_NAMESPACES = {'G': 'G-v3', 'D': 'D-v3'}
+
+
+def is_v210(configuration):
+    return configuration in (BASELINE_V210, MAIN_V3)
+
+
+def read_items(configuration, bench):
+    """Number of test items; TEST_READ_CELLS instead counts card/procedure work."""
+    return TEST_READ_CELLS[MAIN_V2_3 if is_v210(configuration) else configuration][bench][0]
+
+
+for _child in (BASELINE_V210, MAIN_V3):
+    for _name in ('CONFIGURATIONS', 'CONFIG_STEP_CAPS', 'CONFIG_SCHEDULE_CELLS', 'CONFIG_ROLE_CAPS',
+                  'CONFIG_GLM_CAP', 'CONFIG_CAP_FACTOR', 'COST_CHECK_PAUSES', 'TEST_READ_CELLS', 'STAGE_READ',
+                  'LEARNING', 'FIX_ECHO', 'META_COUNTERFACTUAL', 'TRAIN_SIGN', 'PRUNE_NON_FIRING', 'ACCEPT_RULES',
+                  'ENGINEER_MAX_TOKENS', 'TRIM_PAYLOADS', 'NORMALIZE_STRUCTURE', 'CHECK_NON_FIRING',
+                  'IDENTICAL_REQUEST_REUSE', 'CODE_EXTRACTION', 'MULTIPLE_PYTHON_BLOCKS', 'POLICY_VERSIONS',
+                  'ENGINEER_CALL_BUDGETS', 'TRAIN_ENGINEER_CALL_BUDGETS', 'ENGINEER_RECORDS'):
+        globals()[_name][_child] = deepcopy(globals()[_name][MAIN_V2_3])
+    FEATURE_FAMILIES[_child] = 'v2.3'
+    STAGE_READ[_child] = False
+    ACCEPT_FRESHNESS[_child] = 'fivebench_slices_after_main_v2_2_v2_3_not_launched'
+    TEST_READ_CELLS[_child] = {b: (2 * n, n if _child == MAIN_V3 else 0)
+                              for b, (n, _) in TEST_READ_CELLS[MAIN_V2_3].items()}
+    _tokens = sum(CELL_ANCHORS[b][1] * (c + PROCEDURE_ARM_FACTOR[1] * p)
+                  for b, (c, p) in TEST_READ_CELLS[_child].items())
+    CONFIGURATIONS[_child]['test_read_cap'] = legacy._round_up(MAIN_CAP_FACTOR * (
+        _tokens + len(BENCHES) * MAIN_RESERVATIONS * READ_RESERVATION), MILLION)
+
+# Subtract P_y from acceptance and G_acc, and P_i on the three generating benches.
+# Keep the S_dup instrument, J7 probes and acceptance withholding cells unchanged.
+for _bench in BENCHES[:-1]:
+    _n, _runs = SLICES[_bench]['accept']
+    _removed = _n * _runs * (2 if _bench in GENERATING else 1)
+    _card, _proc = CONFIG_SCHEDULE_CELLS[MAIN_V3][_bench]['accept'][_bench]
+    CONFIG_SCHEDULE_CELLS[MAIN_V3][_bench]['accept'][_bench] = (_card, _proc - _removed)
+    _card, _proc = CONFIG_SCHEDULE_CELLS[MAIN_V3][_bench]['examiner'][_bench]
+    CONFIG_SCHEDULE_CELLS[MAIN_V3][_bench]['examiner'][_bench] = (_card, _proc - G_ACC[_bench])
+    for _kind in ('accept', 'examiner'):
+        _cells = CONFIG_SCHEDULE_CELLS[MAIN_V3][_bench][_kind]
+        CONFIG_STEP_CAPS[MAIN_V3][_bench][_kind] = legacy._round_up(MAIN_CAP_FACTOR * (
+            sum(CELL_ANCHORS[b][1] * (c + PROCEDURE_ARM_FACTOR[1] * p) for b, (c, p) in _cells.items())
+            + MAIN_RESERVATIONS * READ_RESERVATION), 100_000)
+CONFIG_SCHEDULE_CELLS[MAIN_V3].pop('alfworld')
+CONFIG_STEP_CAPS[MAIN_V3].pop('alfworld')
+CONFIG_SCHEDULE_CELLS[BASELINE_V210] = {}
+CONFIG_STEP_CAPS[BASELINE_V210] = {}
+CONFIG_ROLE_CAPS[BASELINE_V210] = {key: 0 for key in CONFIG_ROLE_CAPS[MAIN_V2_3]}
+CONFIG_GLM_CAP[BASELINE_V210] = 0
+CONFIG_GLM_CAP[MAIN_V3] = MAIN_CAP_FACTOR * 4 * sum(CONFIG_ROLE_CAPS[MAIN_V3].values())
+LEARNING[BASELINE_V210] = 'none'
+ENGINEER_CALL_BUDGETS[BASELINE_V210] = TRAIN_ENGINEER_CALL_BUDGETS[BASELINE_V210] = 0
+CONFIGURATIONS[BASELINE_V210]['redo_reserve'] = 0
+# One redo: largest retained whole non-accept unit or single acceptance block.
+CONFIGURATIONS[MAIN_V3]['redo_reserve'] = max(
+    legacy._round_up(MAIN_CAP_FACTOR * (
+        sum(CELL_ANCHORS[b][1] * (c + PROCEDURE_ARM_FACTOR[1] * p)
+            / (SLICES[bench]['blocks'] if kind == 'accept' else 1) for b, (c, p) in cells.items())
+        + MAIN_RESERVATIONS * READ_RESERVATION), 100_000)
+    for bench, kinds in CONFIG_SCHEDULE_CELLS[MAIN_V3].items() for kind, cells in kinds.items())
+for _child, _root, _names, _evidence in (
+        (BASELINE_V210, BASELINE_V210_ROOT, BASELINE_V210_NAMESPACES, 'baseline_v210_real_run'),
+        (MAIN_V3, MAIN_V3_ROOT, MAIN_V3_NAMESPACES, 'main_v3_real_run')):
+    RUN_ROOTS[_child], CHAIN_NAMESPACES[_child], REAL_RUN_EVIDENCE[_child] = _root, _names, _evidence
+    SUPPORTED_NAMESPACES += tuple(_names.values())
+    CONFIGURATIONS[_child]['solver_cap'] = legacy._round_up(
+        sum(sum(c.values()) for c in CONFIG_STEP_CAPS[_child].values())
+        + CONFIGURATIONS[_child]['test_read_cap'] + CONFIGURATIONS[_child]['redo_reserve'], 5 * MILLION)
+PLACEBO_ARMS = {name: not is_v210(name) for name in CONFIGURATIONS}
+TEST_WITHHOLDING = {name: not is_v210(name) for name in CONFIGURATIONS}

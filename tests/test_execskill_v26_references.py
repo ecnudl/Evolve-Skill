@@ -244,7 +244,7 @@ def test_resolution_logs_are_bounded_and_resolution_does_not_relax_test_truth():
 
 @pytest.mark.parametrize("mode", ["train", "single"])
 def test_reference_and_determinism_instructions_reach_only_v4_engineer_requests(mode):
-    for configuration in p.CONFIGURATIONS:
+    for configuration in (name for name in p.CONFIGURATIONS if not p.is_v210(name)):
         for purpose in ("propose", "repropose", "fix/1"):
             ctx, _ = fixture(configuration=configuration, mode=mode)
             ctx.roles = WireRoles()

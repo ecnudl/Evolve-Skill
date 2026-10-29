@@ -1,0 +1,33 @@
+{
+  "parent_sha256": "73aa43b57f8ad6928a7e3361967fd8b5abe17a349d1c13531dcad803eefb17ef",
+  "procedures": [
+    "768778bd771e5c9470f8faf1e36e51af33418503c492e77b8db8044f02ac689c",
+    "9ab7ff8b708e0992ffa1ecaa8a68334587e63e6523e0fe61d8960992709fa919",
+    "a93758eae5454350a6cbb1301032f4de94c05d82159edc699e72d065e530f262"
+  ],
+  "order": [
+    "p-alfworld-1-15",
+    "p-alfworld-1-14",
+    "p-alfworld-1-6"
+  ],
+  "retired": [],
+  "narrowed": {},
+  "step": "D/s1-alfworld",
+  "describer": {
+    "p-alfworld-1-14": {
+      "text_sha256": "93d56d17d5a3452720c63cf981c15e13e3e8a65beebae27f004b72e0fd76dddf",
+      "prompt_sha256": "a74134550d765b896a45ce520595240bf749c7a1cd301eb21a23c741765bfd00"
+    },
+    "p-alfworld-1-15": {
+      "text_sha256": "0fb597bce81e15f9bca5037500061250671cec6730de5cb28ceab1644f8fb60d",
+      "prompt_sha256": "a74134550d765b896a45ce520595240bf749c7a1cd301eb21a23c741765bfd00"
+    },
+    "p-alfworld-1-6": {
+      "text_sha256": "4e2af8448049bdae83a60cf66ca261a329d949eb041e7742bec6daec46fda4c2",
+      "prompt_sha256": "a74134550d765b896a45ce520595240bf749c7a1cd301eb21a23c741765bfd00"
+    }
+  },
+  "version": "fivebench-execskill-v1-package",
+  "evidence": "alfworld_v11_real_run",
+  "record_sha256": "7d814ba51fb589ecd1480c14e57757cb383942520798eb10d43481f796520eb4"
+}

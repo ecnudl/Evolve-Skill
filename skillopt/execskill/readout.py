@@ -553,10 +553,40 @@ def stage_table(units, rows):
 
 
 # ---------------------------------------------------------------------------------------------- the readout
-def readout(units, *, learned, procedures, label, evidence, stages=None):
+def readout(units, *, learned, procedures, label, evidence, stages=None, configuration=None):
     """The sealed readout record (``fivebench-execskill-v1-readout``) of one chain's unsealed read; ``label``: the
     unseal's read label (Codex F17); ``stages``: a stage read's rows (``stage_table``; F's readings are left out,
     None, only where F learned nothing and the stage arms carry the read)."""
+    from . import profiles
+    if profiles.is_v210(configuration):
+        contrasts = {}
+        baseline = configuration == profiles.BASELINE_V210
+        imported = [] if baseline else ["alfworld"]
+        # Imported programs are not newly learned here, and their home bench is
+        # not an unexposed transfer target. Its F-C remains measured below.
+        exposed = [bench for bench in BENCHES if bench in set(learned) | set(imported)]
+        pairs = (("C", "B"),) if baseline else (("F", "C"), ("C", "B"), ("F", "B"))
+        for bench in sorted(units, key=SUPPORTED_BENCHES.index):
+            cells = units[bench]
+            require({arm for arm, _, _ in cells} == set(profiles.read_arms_of(configuration)),
+                    "v2.10 readout arms must match the configuration")
+            _clustered(bench, cells)
+            contrasts[bench] = {first + "-" + second: _contrast(
+                cells, first, second, _items(cells, first, second), bootstrap=True, sensitivity=True)
+                for first, second in pairs}
+        return record("readout", evidence, {
+            "configuration": configuration, "evidence_kind": EVIDENCE_KIND, "read_label": label,
+            "learned": list(learned), "imported": imported,
+            "contrasts": contrasts, "contrasts_reading": "descriptive",
+            **({"reading": "descriptive"} if baseline else {
+                "similar": similar(exposed), "dissimilar": dissimilar(exposed),
+                "q1_home": q1_home(units, learned) if learned else None,
+                "q2_similar": q2_similar(units, exposed, procedures),
+                "q3_noninferiority": q3_noninferiority(units, exposed)
+                    if any(bench in units for bench in dissimilar(exposed)) else None}),
+            "shared_unanswered": {bench: len(unanswered(cells)) for bench, cells in units.items()},
+            "arms": {bench: arm_table(cells) for bench, cells in units.items()},
+            "placebo": {"removed": True}, "code_vs_text": {"removed": True}, "twins": {"removed": True}})
     return record("readout", evidence, {
         "evidence_kind": "pipeline_control" if set(units) == {ZEBRA} else EVIDENCE_KIND,
         "read_label": label, "learned": list(learned),
@@ -578,6 +608,7 @@ def report(manifest, *, out):
     read nothing (F = C) or was terminated before its read is listed as such, and one that has neither read nor ended
     is refused. ``evaluation.unseal`` refuses before every chain has ended and the owner's continuation file exists;
     nothing is written after a refusal. Returns {chain: the readout's record hash, or "not_read"}."""
+    from . import profiles
     out = safe_path(out)
     require(not out.exists(), "The readout goes to a new directory")
     root, run, evidence = safe_path(manifest["root"]), manifest[RECORD_HASH], manifest["evidence"]
@@ -599,16 +630,19 @@ def report(manifest, *, out):
             chain_root / "packages" / (read["package_sha256"] + ".json"))
         procedures = {p.id: p.origin for p in final.procedures}
         roster = read_benches(manifest["configuration"])
-        learned = [b for b in roster if b in procedures.values()]
+        learned = [b for b in roster if b in procedures.values()
+                   and not (manifest["configuration"] == profiles.MAIN_V3 and b == "alfworld")]
         units = [chain_root / "test" / b for b in roster if (chain_root / "test" / b / "unit.json").exists()]
         opened = evaluation.unseal(root, chain_root, chain, units, run=run, evidence=evidence,
                                    **({"configuration": manifest["configuration"]}
-                                      if is_zebra(manifest["configuration"]) or is_alfworld(manifest["configuration"]) else {}))
+                                      if is_zebra(manifest["configuration"]) or is_alfworld(manifest["configuration"])
+                                      or profiles.is_v210(manifest["configuration"]) else {}))
         rows = {tuple(found) for found in (opened.get("stages") or {}).values()}
         require(len(rows) <= 1 and (not rows or set(opened["stages"]) == set(opened["units"])),
                 "Every read unit of a stage read names the same rows")
         value = readout(opened["units"], learned=learned, procedures=procedures, label=opened["label"],
-                        evidence=evidence, stages=list(rows.pop()) if rows else None)
+                        evidence=evidence, stages=list(rows.pop()) if rows else None,
+                        **({"configuration": manifest["configuration"]} if profiles.is_v210(manifest["configuration"]) else {}))
         written[chain], found[chain] = value, value[RECORD_HASH]
     out.mkdir(parents=True)
     for chain, value in written.items():

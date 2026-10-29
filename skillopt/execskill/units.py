@@ -96,6 +96,11 @@ class Setting:
     cooldown: int = RESEND_COOLDOWN_SECONDS
     extra: dict = field(default_factory=dict)
 
+    def __post_init__(self):
+        from .instruction_start import active_cards
+        if protocol.is_v210(protocol.configuration_of(self)):
+            self.cards = active_cards(self.cards, protocol.configuration_of(self))
+
 
 def attempt_number(attempt):
     """N of an ``attempt-N`` directory."""
@@ -225,7 +230,9 @@ def cell_context(setting, attempt, endpoint, *, solve=solver.solve):
 
     nominal = ({bench: solver_tokens(endpoint.model, bench) for bench in protocol.active_benches(protocol.configuration_of(setting))}
                if endpoint.model == protocol.CHAINS["D"] else {})
-    return Context(attempt=attempt, endpoint=endpoint, runtime=setting.runtime, cards=setting.cards,
+    from .instruction_start import active_cards
+    cards = active_cards(setting.cards, protocol.configuration_of(setting))
+    return Context(attempt=attempt, endpoint=endpoint, runtime=setting.runtime, cards=cards,
                    native=pools[NATIVE], episodes=pools[EPISODE], worker=worker, evidence=setting.evidence,
                    nominal=nominal, solve=solve, configuration=protocol.configuration_of(setting))
 

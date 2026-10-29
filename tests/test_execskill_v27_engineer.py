@@ -141,7 +141,7 @@ def test_single_mode_missing_test_list_reports_its_actual_required_keys():
 
 @pytest.mark.parametrize("mode", ["train", "single"])
 def test_v27_instructions_reach_every_engineer_proposal_and_fix_channel_only_v27(mode):
-    for configuration in (name for name in p.CONFIGURATIONS if not p.is_v28(name)):
+    for configuration in (name for name in p.CONFIGURATIONS if not p.is_v28(name) and not p.is_v210(name)):
         for purpose in ("propose", "repropose", "fix/1"):
             ctx, _ = fixture(configuration=configuration, mode=mode)
             ctx.roles = WireRoles()

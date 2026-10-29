@@ -25,9 +25,8 @@ from skillopt.execskill.errors import (AssumptionBroken, BudgetStop, CleanupUnco
 from skillopt.validator_pilot.api import digest
 
 PACKAGE = Path(protocol.__file__).resolve().parent
-# the registration's zero-call arithmetic (appendix A): in the build tree, and beside it when a snapshot holds only
-# skillopt/, scripts/ and tests/ (plan §10 step 1); pinned by its sha256
-CALC_NAME = "docs/handoff/execskill-calc-20261021.py"
+# The immutable registration arithmetic travels inside every standalone snapshot (plan §10 step 1).
+CALC_NAME = "tests/fixtures/execskill/execskill-calc-20261021.py"
 CALC_SHA256 = "d4d8a81e36548902b364c30f5cc34d8d773bc38757d4af615a10746df886bb51"
 FROZEN = ("AssumptionBroken", "BudgetStop", "CleanupUnconfirmed", "ConfigurationError", "LedgerFailure")
 M = 1_000_000
@@ -313,11 +312,9 @@ def test_registered_mde_points():
 
 def _calc():
     """The calc module, executed once with its tables printed into a buffer (it reads no file, calls nothing)."""
-    found = [path for path in (PACKAGE.parents[1] / CALC_NAME, Path(protocol.BUILD_TREE) / CALC_NAME) if path.exists()]
-    if not found:
-        pytest.skip("the registration's calc file is not beside this tree")
-    assert hashlib.sha256(found[0].read_bytes()).hexdigest() == CALC_SHA256
-    spec = importlib.util.spec_from_file_location("execskill_calc", found[0])
+    path = PACKAGE.parents[1] / CALC_NAME
+    assert hashlib.sha256(path.read_bytes()).hexdigest() == CALC_SHA256
+    spec = importlib.util.spec_from_file_location("execskill_calc", path)
     calc = importlib.util.module_from_spec(spec)
     with contextlib.redirect_stdout(io.StringIO()):
         spec.loader.exec_module(calc)

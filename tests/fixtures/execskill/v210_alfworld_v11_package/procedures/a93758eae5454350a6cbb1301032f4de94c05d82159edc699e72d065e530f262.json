@@ -1,0 +1,27 @@
+{
+  "id": "p-alfworld-1-6",
+  "origin": "alfworld",
+  "accepted_at": null,
+  "description": "Tracks, via alf_after_step state, how many times each executed action returned an observation starting with 'Nothing happens'. In alf_before_step, warns about and discourages (via the discourage field) any action that has returned 'Nothing happens' 2 or more times, using only the episode's own action/observation stream. Threshold of 2 avoids penalizing actions that fail once due to positioning but would succeed later.",
+  "hooks": [
+    "applies",
+    "alf_before_step",
+    "alf_after_step"
+  ],
+  "source": "# change: nothing_happens_action_guard\ndef applies(view):\n    return True\n\n\ndef alf_after_step(event, state):\n    st = state if isinstance(state, dict) else {}\n    fails = dict(st.get(\"fails\") or {})\n    a = event.get(\"action\") or \"\"\n    o = (event.get(\"observation\") or \"\").strip()\n    if (isinstance(a, str) and a and len(a) <= 120\n            and o.startswith(\"Nothing happens\")):\n        fails[a] = fails.get(a, 0) + 1\n    return {\"step\": st.get(\"step\", -1) + 1, \"fails\": fails}\n\n\ndef alf_before_step(view, state):\n    if not isinstance(state, dict):\n        return {\"fields\": {}, \"discourage\": []}\n    fails = state.get(\"fails\") or {}\n    warn, disc = [], []\n    for a, c in sorted(fails.items()):\n        if not isinstance(a, str) or not isinstance(c, int):\n            continue\n        if c >= 2:\n            warn.append((\"Action '%s' returned 'Nothing happens' %d \"\n                         \"times; it may not be applicable.\"\n                         % (a[:100], c))[:200])\n            disc.append(a)\n        if len(warn) >= 3:\n            break\n    if warn:\n        return {\"fields\": {\"warnings\": warn}, \"discourage\": disc[:5]}\n    return {\"fields\": {}, \"discourage\": []}\n",
+  "header": "Discourages actions that repeatedly returned 'Nothing happens'.",
+  "max_note_chars": 800,
+  "requests_second_call": false,
+  "state_bytes": 4096,
+  "excluded_benches": [],
+  "replay_tests": [],
+  "lineage": {
+    "parent": null,
+    "revises": null,
+    "engineer_call": "0dafafc1400bbae8063089bd6e926a12f16eaad8205fed43ac2bcce090773c8f"
+  },
+  "policy_version": "fivebench-execskill-v2-9-policy",
+  "version": "fivebench-execskill-v1-procedure-v2-9",
+  "evidence": "alfworld_v11_real_run",
+  "record_sha256": "a93758eae5454350a6cbb1301032f4de94c05d82159edc699e72d065e530f262"
+}

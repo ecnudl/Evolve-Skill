@@ -65,7 +65,7 @@ from skillopt.coevo5.cells import exclusive
 from skillopt.coevo5.evaluation import _next_attempt, attempts
 from skillopt.continual_eval.core import read_json, require, safe_path, write_json
 
-from . import budgets, prelaunch, routes
+from . import budgets, prelaunch, routes, profiles as p
 from .cells import Pause
 from .client import ELUCID_RESPONSE_MODEL_IDS, ROUTE_A, ROUTES
 from .errors import AssumptionBroken, BudgetStop, ConfigurationError, LedgerFailure
@@ -193,7 +193,7 @@ def first_call(setting, chain, *, before=lambda: None):
     Chain D on route B (registrar row "deepseek route B", 17:3x; M4): the route ``manifest.setting_of`` bound
     (``setting.extra["route"]``) confirms its own first reply the same way (``_confirm_of``)."""
     root = chain_root(setting, chain)
-    route = ("B" if chain == "D" and is_v29(configuration_of(setting)) else
+    route = ("B" if chain == "D" and (is_v29(configuration_of(setting)) or p.is_v210(configuration_of(setting))) else
              setting.extra.get("route") if chain in routes.ROUTED else None)  # M4: the route this process runs on
     identity, confirm, failed_name, echo = _confirm_of(setting.run, chain, route)
     if (root / confirm).exists():
@@ -377,13 +377,20 @@ def read_estimate_record(smoke_root, configuration=None):
         "smoke": {"root": str(root), "spec": spec[RECORD_HASH], "result": result[RECORD_HASH],
                   "se6": stage[RECORD_HASH]},
         "waiver": waived,  # registrar addendum 2026-10-23 05:3x: None, or {"sha256", "rows"} of the owner's waiver
-        "pilot": projected, "formula": "ceil(ratio x sum_b n_b x (card_b + %d x f_b x proc_b)); registrar addendum "
-                                        "2026-10-22 14:10, row 8" % estimate_arms(projected),
+        "pilot": projected, "formula": (
+            "ceil(ratio x sum_b n_b x (2 x card_b + %d x proc_b)); v2.10 registered C/B and F arms"
+            % estimate_arms(projected) if p.is_v210(projected) else
+            "ceil(ratio x sum_b n_b x (card_b + %d x f_b x proc_b)); registrar addendum "
+            "2026-10-22 14:10, row 8" % estimate_arms(projected)),
         "inputs": {"ratio": se6["ratio"], "per_cell": per_cell,
-                   "n": {bench: TEST_READ_CELLS[projected][bench][0] for bench in roster},
-                   "fired": {bench: str(fired_share(bench, projected)) for bench in roster},
+                   "n": {bench: p.read_items(projected, bench) if p.is_v210(projected)
+                         else TEST_READ_CELLS[projected][bench][0] for bench in roster},
+                   "fired": {bench: "1" if p.is_v210(projected) else str(fired_share(bench, projected))
+                             for bench in roster},
                    "arms": estimate_arms(projected),  # 4; with main-v2's stage arms 8
-                   "procedure_factor": str(PROCEDURE_ARM_FACTOR[1])},
+                   "procedure_factor": str(PROCEDURE_ARM_FACTOR[1]),
+                   **({"card_arms": 2, "procedure_arms": estimate_arms(projected)}
+                      if p.is_v210(projected) else {})},
         "value": value, "test_read_estimate": {chain: value for chain in sorted(CHAINS)},
         "terms": {bench: "%d/%d" % (term.numerator, term.denominator) for bench, term in terms.items()}})
 
@@ -433,7 +440,7 @@ def read_budget(setting, chain):
                 "estimate (data.test_read_terms; registrar addendum 15:3x, ticket P2C-2)")
         part = math.ceil(sum((Fraction(terms[bench]) for bench in units), Fraction(0)))
     factor, check, used = None, None, part
-    if chain == "G":
+    if chain == "G" and configuration_of(setting) != p.BASELINE_V210:
         path, found = latest_cap_check(setting)
         factor = Fraction(found["per_cell"]) / found["anchor_high"]
         used = math.ceil(part * max(Fraction(1), factor))
@@ -446,7 +453,9 @@ def read_budget(setting, chain):
             raise Pause("test_read_budget", "%s leaves less than 1.3 x the estimate %d of the read units %s (§9.3)"
                         % (scope, used, ", ".join(units)), "%s/test" % chain)
     return {"estimate": estimate, "units": units, "part": part, "factor": None if factor is None else float(factor),
-            "cap_check": check, "used": used, "need": need}
+            "cap_check": check, "used": used, "need": need,
+            **({"cost_check": "not_applicable_no_learning_run", "factor": 1.0}
+               if configuration_of(setting) == p.BASELINE_V210 else {})}
 
 
 def read_consent(setting, chain):
@@ -489,7 +498,9 @@ def evaluate(setting, chain, package, *, launch=launch_child):
                     _failed_start(setting, root, code)
                 return _status(root, name, code)
         found = verified(read_json(root / "unit.json"), "evaluation")
-        require(found["run"] == setting.run and found["chain"] == chain and found["packages"]["F"] == package.sha256,
+        require(found["run"] == setting.run and found["chain"] == chain
+                and (found["packages"].get("C") == package.sha256
+                     if configuration_of(setting) == p.BASELINE_V210 else found["packages"]["F"] == package.sha256),
                 "A read unit of another run, chain or package")
         return None
 
@@ -549,6 +560,11 @@ def run(setting, chain, *, learn, launch=launch_child):
     identity = {"run": setting.run, "chain": chain}
     configuration = configuration_of(setting)
     order = order_of(setting)
+    read_definition = {}
+    if p.is_v210(configuration):
+        from .instruction_start import START, blank_definition
+        read_definition = {"arms": list(p.read_arms_of(configuration)),
+                           "instruction_start": START, "blank_arm": blank_definition()}
     with exclusive(root / RUNNER_LOCK):
         ended = _terminal(root, identity)
         if ended is not None:
@@ -567,7 +583,7 @@ def run(setting, chain, *, learn, launch=launch_child):
             # registrar addendum 14:10, row 7: one confirmed reply before the first unit (a relaunch checks its pins)
             first_call(setting, chain, before=functools.partial(_verified, setting, root, identity, verify)
                        if started else (lambda: None))
-            for k, bench in enumerate(order, 1):
+            for k, bench in enumerate(() if configuration == p.BASELINE_V210 else order, 1):
                 _verified(setting, root, identity, verify)
                 package, step_record = learn(setting, root, chain, k, bench, package)
                 steps.append(step_record["record_sha256"])
@@ -575,17 +591,23 @@ def run(setting, chain, *, learn, launch=launch_child):
             _verified(setting, root, identity, verify)
             if STAGE_READ[configuration] and not any(found.order for found in passed):
                 write_json(root / TEST_READ, record("test-read", setting.evidence, {
-                    "identity": identity, "status": "not_read", "reason": "Every step's package is C: nothing was "
+                    **read_definition, "identity": identity, "status": "not_read", "reason": "Every step's package is C: nothing was "
                     "accepted (§8.1; v2 stage reads)"}))
-            elif not STAGE_READ[configuration] and (package.sha256 == start.sha256 or not package.order):
+            elif (configuration != p.BASELINE_V210 and not STAGE_READ[configuration]
+                  and (package.sha256 == start.sha256 or not package.order)):
                 write_json(root / TEST_READ, record("test-read", setting.evidence, {
-                    "identity": identity, "status": "not_read", "reason": "F = C: nothing was accepted (§8.1)"}))
+                    **read_definition, "identity": identity, "status": "not_read", "reason": "F = C: nothing was accepted (§8.1)"}))
             else:
                 read_consent(setting, chain)  # registrar addendum 14:10, row 9: before any read child starts
                 gate = read_budget(setting, chain)
+                if configuration == p.BASELINE_V210:
+                    from .package import save
+                    save(root, package)  # the evaluation children load the no-program identity by hash
                 evaluate(setting, chain, package, launch=launch)
                 write_json(root / TEST_READ, record("test-read", setting.evidence, {
-                    "identity": identity, "status": "read", "package_sha256": package.sha256, "gate": gate}))
+                    **read_definition, "identity": identity, "status": "read", "package_sha256": package.sha256, "gate": gate,
+                    **({"learning": "none"}
+                       if configuration == p.BASELINE_V210 else {})}))
         except Pause as pause:
             return {"status": "paused", "kind": pause.kind, "reason": pause.reason, "unit": pause.cell}
         except Terminated as ended_:
@@ -628,7 +650,8 @@ def run_manifest(manifest, *, chain, path, docker=None, transport=None):
 
     require(manifest["evidence"] != "smoke", "A smoke manifest runs through its registered smoke command")
     setting = manifests.setting_of(manifest, chain, path=path, docker=docker, transport=transport)
-    services = manifests.services_of(manifest, chain, setting=setting, transport=transport)
+    services = (None if manifest["configuration"] == p.BASELINE_V210 else
+                manifests.services_of(manifest, chain, setting=setting, transport=transport))
     return run(setting, chain, learn=functools.partial(step.learn, services=services))
 
 

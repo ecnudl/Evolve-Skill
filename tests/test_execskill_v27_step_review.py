@@ -26,7 +26,7 @@ def test_generic_training_smoke_refused_before_step_or_path_access(monkeypatch, 
                       smoke=valid_training_smoke())
 
 
-@pytest.mark.parametrize("configuration", [name for name in p.CONFIGURATIONS if not p.is_v27(name)])
+@pytest.mark.parametrize("configuration", [name for name in p.CONFIGURATIONS if not p.is_v27(name) and not p.is_v210(name)])
 def test_older_profiles_still_reach_generic_training_smoke_step(tmp_path, monkeypatch, configuration):
     reached = []
     def intercepted(*args):

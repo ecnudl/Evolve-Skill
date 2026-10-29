@@ -1,4 +1,4 @@
-"""Codex findings #1 and #3 of 2026-10-22 (docs/handoff/execskill-codex-review-code-20261022.md; registration §2.5-§2.6,
+"""Codex findings #1 and #3 of 2026-10-22 (registration §2.5-§2.6,
 §8.1/F16; registrar fixer-1). #1: a SpreadsheetBench test read routes (``test_plan``) and measures placebo lengths
 (``placebo_arm``) with each item's PUBLIC input workbook mounted, as training does (``step._item_workers``), so a
 workbook-dependent procedure dispatches real F/P_F/T_F cells instead of a silent structural zero; a reference workbook

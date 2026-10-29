@@ -264,7 +264,7 @@ def test_missing_kind_proposal_is_still_unparseable_and_only_the_fix_path_infers
     assert not any(row.get("rule", "").startswith("fix_") for row in record["changes"][0].get("normalized", []))
 
 
-@pytest.mark.parametrize("configuration", [name for name in p.CONFIGURATIONS if name not in NEW and not p.is_v28(name)])
+@pytest.mark.parametrize("configuration", [name for name in p.CONFIGURATIONS if name not in NEW and not p.is_v28(name) and not p.is_v210(name)])
 def test_older_fix_reply_shapes_and_error_strings_stay_exact(configuration):
     ctx, _, original, correct = authored(configuration)
     missing = {key: value for key, value in correct.entry.items() if key != "kind"}
