@@ -125,6 +125,8 @@ def build(cell, *, evidence, arm_kind, package_sha256, calls, prediction, judge,
                   "fallback": shell.get("fallback")},
         "alfworld_steps": _steps(calls, prediction, shell) if cell["benchmark"] == "alfworld" else None,
         "judge": judge, "token": judge["v2"]["token"], "dispatch_ts": dispatch_ts, "finish_ts": finish_ts}
+    if configuration == 'main-v4':
+        fields['shell']['effects'] = list(shell.get('effects', ()))
     if is_v29(configuration):
         models = list(dict.fromkeys(call["receipt"].get("returned_model") for call in calls
                                    if isinstance(call.get("receipt"), dict) and call["receipt"].get("returned_model")))

@@ -11,6 +11,7 @@ from .protocol import *  # re-export the historical vocabulary, without mutating
 from . import protocol as legacy
 from .policy import POLICY_VERSION_V24, POLICY_VERSION_V25, POLICY_VERSION_V28, POLICY_VERSION_V29, MAX_SOURCE_BYTES_V28, MAX_SOURCE_BYTES_V29
 
+MAIN_V4 = "main-v4"
 ZEBRA_PC_V1 = "zebra-pc-v1"
 ZEBRA_PC_V2 = "zebra-pc-v2"
 ZEBRA_PC_V3 = "zebra-pc-v3"
@@ -107,31 +108,31 @@ def is_v29(configuration):
 def is_v291(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ZEBRA_PC_V8, ALFWORLD_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, ZEBRA_PC_V8, ALFWORLD_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v292(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v293(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v294(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v295(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ZEBRA_PC_V12, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, ZEBRA_PC_V12, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v296(configuration):
@@ -146,14 +147,14 @@ def is_v297(configuration):
     return configuration == ALFWORLD_V11
 
 
-def alfworld_format_rule(configuration):
+def alfworld_format_rule(configuration, bench=None):
     """The format rule for this run; the historical admissible-share rule stays frozen."""
-    return "alfworld-readable-action-v2-9-6" if is_v296(configuration) else "alfworld-admissible-9-10"
+    return "alfworld-readable-action-v2-9-6" if is_v296(configuration) or (configuration == MAIN_V4 and bench == "alfworld") else "alfworld-admissible-9-10"
 
 
-def train_rounds(configuration):
+def train_rounds(configuration, bench=None):
     """The historical six-round limit, extended only for the Zebra v12 search."""
-    return 10 if configuration == ZEBRA_PC_V12 else TRAIN_ROUNDS
+    return 0 if configuration == MAIN_V4 and bench == "alfworld" else 10 if configuration == ZEBRA_PC_V12 else TRAIN_ROUNDS
 
 
 def cleanup_grace_seconds(configuration):
@@ -166,7 +167,7 @@ def ready_timeout_seconds(configuration):
     return 90 if is_v292(configuration) else SANDBOX_READY_SECONDS
 
 
-def train_patience(configuration):
+def train_patience(configuration, bench=None):
     return 8 if configuration == ZEBRA_PC_V12 else 4 if is_v291(configuration) else TRAIN_PATIENCE
 
 
@@ -440,7 +441,7 @@ V28_HASHSEED = 0
 
 def launchable_chains(configuration):
     require(configuration in CONFIGURATIONS, "Unknown run configuration")
-    return ("D",) if is_alfworld(configuration) or is_v27(configuration) else tuple(CHAINS)
+    return tuple(CHAINS) if is_v211(configuration) else (("D",) if is_alfworld(configuration) or is_v27(configuration) else tuple(CHAINS))
 
 
 def supports_configuration(name):
@@ -790,7 +791,7 @@ MAIN_V3_NAMESPACES = {'G': 'G-v3', 'D': 'D-v3'}
 
 
 def is_v210(configuration):
-    return configuration in (BASELINE_V210, MAIN_V3)
+    return configuration in (BASELINE_V210, MAIN_V3, MAIN_V4)
 
 
 def read_items(configuration, bench):
@@ -857,3 +858,91 @@ for _child, _root, _names, _evidence in (
         + CONFIGURATIONS[_child]['test_read_cap'] + CONFIGURATIONS[_child]['redo_reserve'], 5 * MILLION)
 PLACEBO_ARMS = {name: not is_v210(name) for name in CONFIGURATIONS}
 TEST_WITHHOLDING = {name: not is_v210(name) for name in CONFIGURATIONS}
+
+
+# v2.11 is copied only after every historical table has been fully constructed.
+MAIN_V4_ROOT = '/data/execskill-20261029-main-v4'
+MAIN_V4_MANIFEST = MAIN_V4_ROOT + '-manifest.json'
+MAIN_V4_NAMESPACES = {'G': 'G-v4', 'D': 'D-v4'}
+
+
+def is_v211(configuration):
+    return configuration == MAIN_V4
+
+
+def uses_readable_alf_format(configuration, bench):
+    return bench == 'alfworld' and (is_v296(configuration) or is_v211(configuration))
+
+
+def uses_episode_audit(configuration, bench):
+    return bench == 'alfworld' and (is_v297(configuration) or is_v211(configuration))
+
+
+def uses_pooled_j1(configuration, bench):
+    return is_v297(configuration) or (is_v211(configuration) and bench in BENCHES[:-1])
+
+
+for _name, _table in list(globals().items()):
+    if _name.isupper() and isinstance(_table, dict) and MAIN_V3 in _table:
+        _table[MAIN_V4] = deepcopy(_table[MAIN_V3])
+FEATURE_FAMILIES[MAIN_V4] = 'v2.9'
+RUN_ROOTS[MAIN_V4] = MAIN_V4_ROOT
+CHAIN_NAMESPACES[MAIN_V4] = MAIN_V4_NAMESPACES
+SUPPORTED_NAMESPACES += tuple(MAIN_V4_NAMESPACES.values())
+REAL_RUN_EVIDENCE[MAIN_V4] = 'main_v4_real_run'
+ACCEPT_FRESHNESS[MAIN_V4] = 'v211_training_supply_historical_exposure_disclosed_accept_once_in_run'
+CONFIRM_FRESHNESS[MAIN_V4] = 'v211_training_supply_disjoint_confirm_round_once_in_run'
+ACCEPT_RULES[MAIN_V4]['name'] = 'practical-v2-11-pooled'
+POLICY_VERSIONS[MAIN_V4] = POLICY_VERSION_V29
+ENGINEER_RECORDS[MAIN_V4] = 'engineer-v2-11'
+ENGINEER_CALL_BUDGETS[MAIN_V4] = 31
+TRAIN_ENGINEER_CALL_BUDGETS[MAIN_V4] = 41
+ENGINEER_MAX_TOKENS[MAIN_V4] = 32768
+
+V211_SLICES = {
+    'searchqa': {'run': (300, 1), 'accept': (1000, 1), 'blocks': 1},
+    'officeqa': {'run': (18, 2), 'accept': (32, 4), 'blocks': 2},
+    'livemath': {'run': (95, 1), 'accept': (100, 2), 'blocks': 1},
+    'spreadsheetbench': {'run': (31, 2), 'accept': (36, 2), 'blocks': 1},
+}
+
+
+def slice_spec(configuration, bench):
+    return deepcopy(V211_SLICES[bench] if is_v211(configuration) else SLICES[bench])
+
+
+def confirm_spec(configuration, bench, round):
+    require(type(round) is int and 1 <= round <= train_rounds(configuration, bench), 'Registered confirm round')
+    if is_v211(configuration):
+        require(bench in V211_SLICES, 'Only learned benchmarks have confirmation')
+        return {'items': 40 if bench == 'searchqa' else 4, 'runs': 1, 'round': round,
+                'selection_check': 'preregistered', 'freshness': CONFIRM_FRESHNESS[configuration]}
+    return {'items': 40, 'runs': 1, 'round': round, 'freshness': CONFIRM_FRESHNESS[configuration]}
+
+
+def audit_spec(configuration, bench):
+    if is_v211(configuration) and bench in V211_SLICES:
+        sheet = bench == 'spreadsheetbench'
+        return {'base_items': 8 if sheet else 12, 'extra_items': 4,
+                'batch_items': 2 if sheet else 4, 'max_batches': 6 if sheet else 4,
+                'group_bytes': 64000 if sheet else 32000, 'request_bytes': 220000,
+                'field_limits': {'question': 8000, 'context': 24000, 'choice': 2000, 'instruction': 8000,
+                    'report_message': 2000, 'answer_cells': 100, 'qa_group_bytes': 32000,
+                    'sheet_group_bytes': 64000, 'judge_input_bytes': 220000}}
+    return {'base_items': 12 if bench == ZEBRA else 8, 'extra_items': 4,
+            'batch_items': 4 if bench == ZEBRA else 6}
+
+
+def engineer_prompt(configuration, bench, mode='single', purpose='propose'):
+    require(mode in ('single', 'train'), 'Registered engineer mode')
+    if is_v211(configuration):
+        from . import engineer_v211
+        return engineer_v211.system(bench, train=mode == 'train', purpose=purpose)
+    from types import SimpleNamespace
+    from . import engineer
+    context = SimpleNamespace(configuration=configuration, bench=bench, mode=mode)
+    return engineer._legacy_system(context, {'request': purpose})
+
+
+from . import v211_limits as _v211_limits
+_v211_limits.extend(_sys.modules[__name__])

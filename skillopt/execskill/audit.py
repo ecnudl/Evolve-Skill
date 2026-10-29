@@ -81,12 +81,15 @@ EPISODE_TRUNCATION_MARK = '…[truncated]'
 
 
 def episode_disclosure(configuration, bench='alfworld'):
-    return bench == 'alfworld' and profiles.is_v297(configuration)
+    return profiles.uses_episode_audit(configuration, bench)
 
 
-def system_prompt(part, *, configuration=None, final=False):
+def system_prompt(part, *, configuration=None, final=False, bench='alfworld'):
+    if profiles.is_v211(configuration) and bench != 'alfworld':
+        from . import engineer_v211
+        return engineer_v211.audit_system(part, final=final)
     text = A_SYSTEM if part == 'A' else B_SYSTEM + ('\n' + CONTRADICTIONS if final else '')
-    return text + '\n' + EPISODE_HISTORY_RULE if episode_disclosure(configuration) else text
+    return text + '\n' + EPISODE_HISTORY_RULE if episode_disclosure(configuration, bench) else text
 
 
 def text_sha256(text):
@@ -202,6 +205,9 @@ def _cell_episode_history(cell, index):
 
 def public_view(bench, view, *, configuration=None, episode_history=None):
     """Build, rather than redact, an audit disclosure from hook-visible fields only."""
+    if profiles.is_v211(configuration) and bench != 'alfworld':
+        from . import v211_audit
+        return v211_audit.public_view(bench, view)
     if bench == 'zebralogic':
         return {key: copy.deepcopy(view.get(key)) for key in ('question', 'columns')}
     out = {key: copy.deepcopy(view.get(key, '')) for key in ('task_text', 'initial_observation', 'observation')}
@@ -215,6 +221,9 @@ def public_view(bench, view, *, configuration=None, episode_history=None):
 
 
 def situations_from_replays(procedure, entries, outcomes, *, configuration=None, trajectories=None):
+    if profiles.is_v211(configuration) and entries and entries[0]['bench'] != 'alfworld':
+        from . import v211_audit
+        return v211_audit.situations_from_replays(procedure, entries, outcomes, trajectories=trajectories)
     result = []
     for entry in entries:
         disclose = episode_disclosure(configuration, entry['bench'])
@@ -245,11 +254,19 @@ def situations_from_replays(procedure, entries, outcomes, *, configuration=None,
 def situation_key(situation):
     # Across candidate/confirm repeats a situation is identified by item + public step + actual public view.
     # Only the opted-in ALFWorld view includes episode_history, so parent keys stay exact.
+    if 'delivered_note_identity' in situation:
+        from . import v211_audit
+        return v211_audit.situation_key(situation)
     return digest({"item": situation['item'], "step": situation['step'], "view": situation['view']})
 
 
 def sample_situations(situations, *, bench, configuration, step, round, change_id, source_sha256, exclude=(), final=False,
                       final_package_sha256=None, final_procedures=None):
+    if profiles.is_v211(configuration) and bench != 'alfworld':
+        from . import v211_audit
+        return v211_audit.sample_situations(situations, bench=bench, configuration=configuration, step=step,
+            round=round, change_id=change_id, source_sha256=source_sha256, exclude=exclude, final=final,
+            final_package_sha256=final_package_sha256, final_procedures=final_procedures)
     seed = digest([configuration, step, round, change_id, source_sha256])
     rng = random.Random(int(seed, 16))
     def priority(situation):
@@ -316,8 +333,12 @@ def c6_counts(entries, outcomes):
             "keyword_hits": notes.keyword_summary(events)}
 
 
-def template_prompt(procedure, bench, extracted):
-    lines = ['Benchmark %s: %s; When the program runs: %s;' % (bench, TASK_CARDS[bench], HOOK_SEMANTICS[bench]),
+def template_prompt(procedure, bench, extracted, *, configuration=None):
+    cards, hooks = TASK_CARDS, HOOK_SEMANTICS
+    if profiles.is_v211(configuration) and bench != 'alfworld':
+        from . import engineer_v211
+        cards, hooks = engineer_v211.TASK_CARDS, engineer_v211.HOOKS
+    lines = ['Benchmark %s: %s; When the program runs: %s;' % (bench, cards[bench], hooks[bench]),
              "Program %s; author's description: %s; Source:\n```python\n%s\n```" % (procedure.id, procedure.description, procedure.source),
              'Sentence templates found in the source (computed parts shown as {...}):']
     lines += ['%s: %s' % (t['t'], t['text']) for t in extracted['templates']]
@@ -328,14 +349,22 @@ def template_prompt(procedure, bench, extracted):
     return '\n'.join(lines)
 
 
-def situation_prompt(procedures, bench, batch, counts, *, final=False):
-    lines = ['Benchmark %s: %s' % (bench, TASK_CARDS[bench])]
+def situation_prompt(procedures, bench, batch, counts, *, final=False, configuration=None):
+    cards = TASK_CARDS
+    if profiles.is_v211(configuration) and bench != 'alfworld':
+        from . import engineer_v211
+        cards = engineer_v211.TASK_CARDS
+    lines = ['Benchmark %s: %s' % (bench, cards[bench])]
     lines += ["Program %s; author's description: %s; C6 counts: %s" % (p.id, p.description,
                 json.dumps(counts.get(p.id, {}), sort_keys=True)) for p in procedures]
     for situation in batch:
         lines += ['Situation %s (item %s, step %s)' % (situation['s'], situation['item'], situation['step']),
                   '--- What the helper saw ---', json.dumps(situation['view'], ensure_ascii=False, sort_keys=True),
                   '--- Notes it produced ---']
+        if profiles.is_v211(configuration):
+            lines += ['Hook %s; phase %s; public-view hash %s; truncation %s' %
+                      (situation.get('hook'), situation.get('phase'), situation.get('public_view_sha256'),
+                       json.dumps(situation.get('truncation', {}), ensure_ascii=False, sort_keys=True))]
         lines += ['%s [%s]: %s' % (n['n'], n['procedure'], n['text']) for n in situation['notes']]
     return '\n'.join(lines + ['Return only JSON: ' + (B_FINAL_SCHEMA if final else B_SCHEMA)])
 
@@ -611,7 +640,8 @@ def _tokens(calls):
     return total
 
 
-def _request(judge, role, system, user, *, label, parser, cache, required=(), final=False, fit_user=None):
+def _request(judge, role, system, user, *, label, parser, cache, required=(), final=False, fit_user=None,
+             disclosure_name='episode_disclosure'):
     if fit_user is not None:
         user, disclosure = fit_user('', '')
     key = digest([judge, system, user, JUDGE_MAX_TOKENS])
@@ -623,7 +653,7 @@ def _request(judge, role, system, user, *, label, parser, cache, required=(), fi
               "required": list(required), "covered": [], "ignored": [], "abstained": [],
               "attempts": [], "selected_attempt": None}
     if fit_user is not None:
-        record['episode_disclosure'] = disclosure
+        record[disclosure_name] = disclosure
     best = None
     if role is None:
         record['unavailable_reason'] = 'judge_not_configured'
@@ -632,10 +662,11 @@ def _request(judge, role, system, user, *, label, parser, cache, required=(), fi
         current_user = user
         for attempt in range(2):
             if fit_user is not None and not disclosure['within_limit']:
-                record['unavailable_reason'] = 'audit_input_limit_after_observation_truncation'
+                record['unavailable_reason'] = ('audit_input_limit_after_public_truncation' if disclosure_name == 'public_view_disclosure'
+                                                else 'audit_input_limit_after_observation_truncation')
                 record['attempts'].append({'attempt': attempt, 'usable': False,
                     'shape_problem': record['unavailable_reason'], 'covered': [], 'abstained': [],
-                    'dispatched': False, 'episode_disclosure': disclosure})
+                    'dispatched': False, disclosure_name: disclosure})
                 break
             raw = role.plain('audit_' + judge.lower(), system, current_user,
                              label=label + '/' + judge + ('/format-retry' if attempt else ''), max_tokens=JUDGE_MAX_TOKENS)
@@ -675,7 +706,7 @@ def _request(judge, role, system, user, *, label, parser, cache, required=(), fi
                 record['retries'].append({"label": label + "/" + judge + "/format-retry", "system": system, "user": current_user,
                     "prompt_sha256": text_sha256(system + "\n\n" + current_user), "prompt_text": system + "\n\n" + current_user,
                     "parse_problem": problem_text, "problems": list(problems),
-                    **({'episode_disclosure': disclosure} if fit_user is not None else {})})
+                    **({disclosure_name: disclosure} if fit_user is not None else {})})
         record['tokens'] = _tokens(role.calls[before:])
     if best is not None:
         attempt, parsed = best
@@ -735,6 +766,11 @@ def agreement(by_judge, available):
 
 def run_audit(procedures, situations, judges, *, bench, configuration, step, round=0, change_id='', counts=None,
               final=False, cache=None, exclude=(), context_procedures=None, final_package_sha256=None):
+    if profiles.is_v211(configuration) and bench != 'alfworld':
+        from . import v211_audit
+        return v211_audit.run_audit(tuple(procedures), situations, judges, bench=bench, configuration=configuration,
+            step=step, round=round, change_id=change_id, counts=counts, final=final, cache=cache,
+            exclude=exclude, context_procedures=context_procedures, final_package_sha256=final_package_sha256)
     cache = {} if cache is None else cache
     procedures = tuple(procedures)
     context_procedures = tuple(context_procedures or procedures)
@@ -786,7 +822,7 @@ def run_audit(procedures, situations, judges, *, bench, configuration, step, rou
     for procedure in procedures:
         extracted = templates(procedure.source, bench)
         extracted_records[procedure.id] = extracted
-        request_pair('A', system_prompt('A', configuration=configuration),
+        request_pair('A', system_prompt('A', configuration=configuration, bench=bench),
                      template_prompt(procedure, bench, extracted), procedure, extracted=extracted)
         # Each program gets its own program-level P6 judgment, while final batches show all notes for contradictions.
         relevant = [s for s in samples if final or any(n['procedure'] == procedure.id for n in s['notes'])]
@@ -798,7 +834,7 @@ def run_audit(procedures, situations, judges, *, bench, configuration, step, rou
                 if final:
                     user += '\nThe program-level verdict is for Program ' + procedure.id + '.'
                 return user
-            request_pair('B', system_prompt('B', configuration=configuration, final=final), render(batch),
+            request_pair('B', system_prompt('B', configuration=configuration, final=final, bench=bench), render(batch),
                          procedure, batch=batch, render=render)
     confirmed, advisory = agreement(by_judge, available)
     totals = {j: {k: sum(pair['requests'][j]['tokens'][k] for pair in requests if not pair['requests'][j]['reused'])
@@ -905,6 +941,12 @@ def situations_from_cells(cells, package, *, configuration=None):
     audit evidence. Each ALF hook is invoked at most once per procedure per step.
     """
     from .protocol import NOTES_KEY
+    if profiles.is_v211(configuration):
+        from . import v211_audit
+        learned = [cell for cell in cells if cell['bench'] != 'alfworld']
+        alf = [cell for cell in cells if cell['bench'] == 'alfworld']
+        if learned:
+            return v211_audit.situations_from_cells(learned, package) + situations_from_cells(alf, package, configuration=configuration)
     result = []
     by_id = {p.id: p for p in package.procedures}
     for cell in cells:

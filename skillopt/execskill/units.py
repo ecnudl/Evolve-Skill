@@ -210,8 +210,10 @@ def audit_judges(setting, chain, bench, k):
             require(getattr(made, "route", None) == client.ROUTE_B,
                     "J-D uses the pinned northgate route")
         made.max_tokens = JUDGE_MAX_TOKENS
-        endpoint = budgets.endpoint(setting, budgets.audit_scopes(chain, judge, bench, k),
-                                    client=made, max_tokens_bound=JUDGE_MAX_TOKENS)
+        scopes = (("overall", "smoke:glm", "smoke:role:audit_" + judge.lower())
+                  if chain == budgets.SMOKE and protocol.is_v211(protocol.configuration_of(setting))
+                  else budgets.audit_scopes(chain, judge, bench, k))
+        endpoint = budgets.endpoint(setting, scopes, client=made, max_tokens_bound=JUDGE_MAX_TOKENS)
         out[judge] = AuditRoles(endpoint)
     return out
 

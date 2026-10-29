@@ -232,6 +232,15 @@ def prompt_sha(configuration=None):
     trains (``protocol.LEARNING``) also ``v2``: v2's engineer and examiner prompts (owner decision 2026-10-23 13:3x)
     and its analysts' (owner suggestion 2026-10-23 15:1x). A v1 configuration binds exactly the first three (Codex
     review 2026-10-23 #1)."""
+    if protocol.is_v211(configuration):
+        from . import engineer_v211
+        out = prompt_sha(protocol.MAIN_V3)
+        out["engineer"] = {bench: engineer_v211.text_sha(engineer_v211.system(bench, train=False))
+                           for bench in engineer_v211.BENCHES}
+        out["v2"]["engineer"] = {bench: engineer_v211.text_sha(engineer_v211.system(bench, train=True))
+                                 for bench in engineer_v211.BENCHES}
+        out["v211"] = engineer_v211.pins()
+        return out
     out = {"describer": describer.DESCRIBER_PROMPT_SHA256, "engineer": engineer.ENGINEER_PROMPT_SHA256,
            "examiner": dict(examiner.PROMPT_SHA256)}
     if protocol.is_v23(configuration):
@@ -324,6 +333,16 @@ def _plain(value):
 
 def registered(configuration=None):
     """The registered seeds, sizes and thresholds the manifest binds (values of ``protocol``)."""
+    if protocol.is_v211(configuration):
+        from . import acceptance, v211_limits
+        found = registered(protocol.MAIN_V3)
+        found['sizes']['slices'] = _plain(protocol.V211_SLICES)
+        found['sizes']['min_astar'] = {bench: acceptance.minimum_astar(protocol.ACCEPT_RULES[configuration],
+            spec['accept'][0], spec['blocks']) for bench, spec in protocol.V211_SLICES.items()}
+        found['sizes']['v211'] = _plain(v211_limits.identity())
+        found['thresholds'].update(sandbox_cleanup_grace_seconds=protocol.cleanup_grace_seconds(configuration),
+                                  sandbox_ready_timeout_seconds=protocol.ready_timeout_seconds(configuration))
+        return found
     from . import protocol as historical
     p = protocol if protocol.is_zebra(configuration) else historical
     return _plain({
@@ -451,7 +470,9 @@ def check(manifest):
     check_clients(value["clients"], configuration=configuration)
     if protocol.is_v210(configuration):
         _check_v210(value)
-    if protocol.is_v29(configuration):
+    if protocol.is_v211(configuration):
+        _check_v211(value)
+    elif protocol.is_v29(configuration):
         from . import confirm
         require(value["prompt_sha"] == prompt_sha(configuration), "The v2.9 prompt pins")
         pin = value["data"].get("confirm")
@@ -500,7 +521,7 @@ def _check_v210(value):
     require(value["cards"] == instruction_start.active_cards(originals, configuration),
             "Active cards equal the historical frozen instructions byte-for-byte")
     require(value["prompt_sha"] == prompt_sha(configuration), "The v2.10 prompt pins")
-    if configuration == protocol.MAIN_V3:
+    if configuration in (protocol.MAIN_V3, protocol.MAIN_V4):
         from . import v210_import
         require(data.get("alfworld_v11_import") == v210_import.pins(),
                 "The imported ALFWorld package differs from the fixture")
@@ -509,6 +530,62 @@ def _check_v210(value):
         require(value["sandbox"]["image_id"] is None
                 and all(item is None for item in value["sandbox"]["measured"].values()),
                 "The baseline records sandbox measurements as not applicable")
+    return value
+
+
+def _check_v211(value):
+    """Child identities are validated before any launch, without sealed-panel reads."""
+    from . import engineer_v211, v211_allocation, v211_limits, v211_smoke, v211_protection
+    data = value['data']
+    require(data.get('v211_prompt_pins') == engineer_v211.pins(), 'The main-v4 per-benchmark prompt pins')
+    require(data.get('freshness_amendment') == v211_smoke.AMENDMENT,
+            'The coordinator-approved within-run freshness amendment is explicit')
+    require(data.get('smoke_schedule') == v211_smoke.schedule(), 'The main-v4 smoke schedule is frozen')
+    s0 = protocol.verified(data.get('v211_s0'), 'v211-s0')
+    require(s0.get('passed') is True and s0.get('configuration') == protocol.MAIN_V4
+            and s0.get('sealed_reads') == 0 and s0.get('pytest', {}).get('passed') is True
+            and s0.get('historical_fingerprints', {}).get('count') == 32
+            and s0[protocol.RECORD_HASH] == data.get('s0_sha256')
+            and s0.get('snapshot_sha256') == data.get('snapshot_sha256')
+            and s0.get('v211_prompt_pins') == data['v211_prompt_pins']
+            and s0.get('allocations') == data.get('allocations')
+            and s0.get('protected_ids') == data.get('protected_ids'),
+            'The main-v4 manifest binds its complete passing S0')
+    allocations = data.get('allocations')
+    require(isinstance(allocations, dict) and set(allocations) == set(v211_allocation.LEARNED),
+            'Four main-v4 allocations are pinned')
+    protected = v211_protection.validate(data.get('protected_ids'))
+    for bench, allocation in allocations.items():
+        v211_allocation.freshness(allocation.get('provenance'))
+        require(allocation.get('bench') == bench and allocation.get('configuration') == protocol.MAIN_V4
+                and allocation.get('allocation_sha256') == digest({k: v for k, v in allocation.items()
+                                                                  if k != 'allocation_sha256'}),
+                'The main-v4 allocation identity is sealed')
+        slices = allocation['slices']
+        require(len(slices['run']) == protocol.slice_spec(protocol.MAIN_V4, bench)['run'][0]
+                and len(slices['accept']) == protocol.slice_spec(protocol.MAIN_V4, bench)['accept'][0]
+                and all(len(slices.get('confirm-r%d' % r, ())) == protocol.confirm_spec(protocol.MAIN_V4, bench, r)['items']
+                        for r in range(1, 7)), 'Exact child run, acceptance and round confirmation counts')
+        ids = [key for rows in slices.values() for key in rows]
+        require(len(ids) == len(set(ids)), 'Child slices are pairwise disjoint')
+        require(allocation.get('protected_ids_sha256') == protected[bench]['protected_ids_sha256']
+                and allocation.get('source_pins', {}).get('protected_ids') == protected[bench]
+                and not {v211_protection.id_hash(v) for v in ids} & set(protected[bench]['id_hashes']),
+                'Child slices bind and exclude the protected IDs')
+    require(value['sizes']['v211'] == _plain(v211_limits.identity()), 'The child maximum schedule and caps agree')
+    require(data.get('launchable_chains') in (['G'], ['G', 'D']), 'Child chain-G smoke or both real chains')
+    if value['evidence'] == protocol.REAL_RUN_EVIDENCE[protocol.MAIN_V4]:
+        require(data.get('readiness', {}).get('measured') is True,
+                'Real main-v4 requires measured smoke readiness')
+        receipt = protocol.verified(data['readiness'].get('receipt'), 'v211-smoke-result')
+        require(receipt.get('passed') is True and receipt['evidence'] == 'smoke'
+                and receipt.get('configuration') == protocol.MAIN_V4 and receipt.get('chain') == 'G'
+                and receipt.get('s0_sha256') == data['s0_sha256']
+                and receipt.get('snapshot_sha256') == data['snapshot_sha256']
+                and receipt.get('schedule_sha256') == digest(v211_smoke.schedule())
+                and set(receipt.get('stages', {})) == set(v211_smoke.STAGES),
+                'Real main-v4 requires all measured stages on its S0, source and schedule')
+        v211_smoke.check_route_probes(data.get('route_probes'))
     return value
 
 
@@ -535,7 +612,7 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
         data = {**given["data"], "instructions": instruction_start.pins(), "original_cards": original,
                 "instruction_start": instruction_start.START, "blank_arm": instruction_start.blank_definition(),
                 "card_sha256": {bench: _sha_text_digest(text) for bench, text in original.items()}}
-        if configuration == protocol.MAIN_V3:
+        if configuration in (protocol.MAIN_V3, protocol.MAIN_V4):
             from . import v210_import
             require(data.get("alfworld_v11_import", v210_import.pins()) == v210_import.pins(),
                     "The imported ALFWorld package differs from the fixture")
@@ -565,7 +642,11 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
                      alfworld_format.bind(given["runtime"]["alfworld"], configuration)}}
         given = {**given, "clients": {**given["clients"], "roles": role_settings(configuration)},
                  "data": {**given["data"], "alfworld_features": alfworld_features(configuration)}}
-    if protocol.is_v29(configuration):
+    if protocol.is_v211(configuration):
+        from . import alfworld_format
+        given = {**given, 'runtime': {**given['runtime'], 'alfworld':
+            alfworld_format.bind(given['runtime']['alfworld'], configuration)}}
+    elif protocol.is_v29(configuration):
         from . import confirm
         bench = protocol.active_benches(configuration)[0]
         given = {**given, "data": {**given["data"], "confirm": confirm.identity(
@@ -728,6 +809,9 @@ def _clients(m, chain, transport, route=None):
                         proxy=solvers["G"]["proxy"], read_timeout=roles["read_timeout"], transport=transport)
                 except (SystemExit, OSError) as refusal:  # the frozen refusals carry no secret
                     raise ConfigurationError("glm-5.3 role credentials: %s" % refusal) from None
+            elif protocol.is_v211(m['configuration']) and wanted == protocol.CHAINS['D'] and model != wanted:
+                require(bench in protocol.active_benches(m['configuration']), 'The audit benchmark is registered')
+                cache[key] = client.solver_client(wanted, config=solver_config(m, 'D', bench, 'B'), transport=transport)
             else:
                 require(wanted == model and bench in protocol.active_benches(m["configuration"]), "The run's solver on a known bench")
                 cache[key] = client.solver_client(model, config=solver_config(m, run, bench, route),
@@ -805,6 +889,11 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
         extra["blank_arm"] = deepcopy(m["data"]["blank_arm"])
         if not baseline:
             extra["alfworld_v11_import"] = deepcopy(m["data"]["alfworld_v11_import"])
+    if protocol.is_v211(m['configuration']):
+        extra.update(v211_allocation=deepcopy(m['data']['allocations']),
+                     allocations=deepcopy(m['data']['allocations']),
+                     v211_prompt_pins=deepcopy(m['data']['v211_prompt_pins']),
+                     freshness_amendment=deepcopy(m['data']['freshness_amendment']))
     cleanup_options = ({"cleanup_grace_seconds": protocol.cleanup_grace_seconds(m["configuration"])}
                        if protocol.is_v292(m["configuration"]) else {})
     if cleanup_options:
@@ -840,7 +929,18 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
         budget=budget, slots=pools,
         sandbox={} if baseline else {"docker": docker, "limits": limits_of(m), "image": m["sandbox"]["image_id"], **worker_options},
         evidence=m["evidence"], branch=bound["branch"], longest=bound["longest"], extra=extra)
-    if protocol.is_v29(m["configuration"]):
+    if protocol.is_v211(m['configuration']):
+        from . import v211_allocation
+        tail, kept = step._tail(SimpleNamespace(setting=setting))
+        for bench, pinned in m['data']['allocations'].items():
+            _, actual = v211_allocation.allocate(bench, setting.pools[bench],
+                tail=tail if bench == 'searchqa' else (), kept=kept if bench == 'searchqa' else None,
+                protected_hashes=m['data']['protected_ids'][bench]['id_hashes'],
+                source_pins=pinned['source_pins'], provenance=pinned['provenance'])
+            require(actual['slices'] == pinned['slices'] and actual['source_items_sha256'] == pinned['source_items_sha256']
+                    and actual['tail_items_sha256'] == pinned['tail_items_sha256'],
+                    'Loaded pools match the child S0 allocation and source hashes')
+    elif protocol.is_v29(m["configuration"]):
         from . import confirm
         bench = protocol.active_benches(m["configuration"])[0]
         require(m["data"]["confirm"] == confirm.identity(m["configuration"], setting.pools[bench]),

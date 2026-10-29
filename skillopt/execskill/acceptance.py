@@ -146,6 +146,33 @@ def _v297_rule(configuration, bench, rule):
     return child
 
 
+V211_POOLED_RULE_NAME = "practical-v2-11-pooled"
+
+
+def _v211_rule(configuration, bench, rule):
+    """The four learned steps seal the distinct main-v4 rule, never relabel a parent."""
+    child = profiles.is_v211(configuration)
+    if child:
+        require(bench in profiles.V211_SLICES and rule == profiles.ACCEPT_RULES[configuration],
+                "main-v4 acceptance seals its exact four-bench pooled rule")
+    else:
+        require(not isinstance(rule, dict) or rule.get("name") != V211_POOLED_RULE_NAME,
+                "The v2.11 pooled acceptance rule belongs only to main-v4")
+    return child
+
+
+def _pooled_rule(configuration, bench, rule):
+    historical = _v297_rule(configuration, bench, rule)
+    return _v211_rule(configuration, bench, rule) or historical
+
+
+def _v211_reuse(sealed, plan):
+    """Independent C is mandatory, including otherwise zero-dispatch request classes."""
+    if profiles.is_v211(sealed.get("configuration")):
+        require(plan == request_reuse.from_signatures(sealed, plan.get("signatures", {})),
+                "main-v4 reuse must preserve full independent C on every A* item")
+
+
 # ---------------------------------------------------------------------------------------------------- arms
 def twin_arm(kind, procedure_id):
     """A twin arm's label (plan §2.8 ``arm_kind``): ``withhold:<id>`` or ``restore:<id>``."""
@@ -196,7 +223,7 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
     practical rule (``protocol.ACCEPT_RULES``), sealed with its |A*| floor, None for the registered J1-J7. ``reuse``:
     v2.3's {card_text, runtime, views: {G_acc/probe: {item: shell view}}}, None for the historical full dispatch.
     v2.8 seals its configuration so J3 is reported without deciding; earlier records keep their exact shape."""
-    _v297_rule(configuration, bench, rule)
+    _pooled_rule(configuration, bench, rule)
     require(set(blocks) == set(views), "Every acceptance item has a block")
     if bench == "zebralogic":
         require(generate is None and not dup and not probe,
@@ -225,7 +252,7 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
                     and len({g["source_item"] for g in g_acc}) == len(g_acc) and len(g_acc) <= G_ACC[bench],
                     "G_acc holds one generated item per A* item at most, within the bench's registered maximum")
     fields = {
-        "chain": chain, "bench": bench, "step": step, "unit": unit, "runs": SLICES[bench]["accept"][1],
+        "chain": chain, "bench": bench, "step": step, "unit": unit, "runs": profiles.slice_spec(configuration, bench)["accept"][1],
         "A": list(views), "blocks": dict(blocks), "rooms": dict(rooms) if rooms else None,
         "freshness": freshness, "mde_registered": mde, "dup": bool(dup), "probe": list(probe),
         "card_is_parent": not parent.for_bench(bench), "shams": list(shams),
@@ -269,6 +296,7 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
 def with_reuse(sealed, plan):
     """Seal v2.3's zero-call plan, or an explicitly labelled offline counterfactual, without changing an old file."""
     require(plan.get("version") == request_reuse.VERSION, "The registered request reuse plan")
+    _v211_reuse(sealed, plan)
     fields = {k: v for k, v in sealed.items() if k not in ("version", "evidence", RECORD_HASH)}
     fields["reuse"] = plan
     fields["seals"] = {**fields["seals"], "reuse_sha256": digest(plan)}
@@ -320,6 +348,10 @@ def schedule(sealed, *, logical=False):
     block (Codex review 2026-10-22 #12). Nothing when the round does not run."""
     sealed = verified(sealed, "acceptance-sealed")
     plan = sealed["plan"]
+    if profiles.is_v211(sealed.get("configuration")):
+        _v211_rule(sealed["configuration"], sealed["bench"], sealed.get("rule"))
+        if sealed.get("reuse") is not None:
+            _v211_reuse(sealed, sealed["reuse"])
     if plan["decision"] == SMALL:
         return {}
     no_placebo = profiles.is_v210(sealed.get("configuration"))
@@ -985,9 +1017,9 @@ def decide(cells, sealed):
     """The round's ``fivebench-execskill-v1-decision`` record from the cell records and the sealed record alone
     (module docstring; plan §2.6)."""
     sealed = verified(sealed, "acceptance-sealed")
-    v297 = _v297_rule(sealed.get("configuration"), sealed["bench"], sealed.get("rule"))
+    pooled_rule = _pooled_rule(sealed.get("configuration"), sealed["bench"], sealed.get("rule"))
     no_placebo = profiles.is_v210(sealed.get("configuration"))
-    pooled = v297 and sealed["card_is_parent"]
+    pooled = pooled_rule and sealed["card_is_parent"]
     plan = sealed["plan"]
     if plan["decision"] == SMALL:
         require(not cells, "A round that did not run has no cells")
@@ -1046,8 +1078,10 @@ def decide(cells, sealed):
             contrasts[name]["decides"] = False
     if sample is not None:
         for name in ("S'-C", "S-C"):
-            contrasts[name].update({"sample": "sealed_C_instrument", "sample_items": card_items,
-                                    "sample_size": len(card_items), "whole_batch": None})
+            full = profiles.is_v211(sealed.get("configuration"))
+            contrasts[name].update({"sample": "full_independent_C" if full else "sealed_C_instrument",
+                                    "sample_items": card_items, "sample_size": len(card_items),
+                                    **({} if full else {"whole_batch": None})})
     lo = hi = 0.0
     rule = "removed"
     if not no_placebo:
@@ -1071,7 +1105,7 @@ def decide(cells, sealed):
     gate = sealed.get("rule")
     if gate is not None:  # v2.2: the sealed practical rule replaces J1 and J2 (``rule`` is the placebo reading)
         j1, j2 = _practical(gate, sealed["bench"], gain, over_sham, size_a, first, second)
-    if v297:
+    if pooled_rule:
         j1.update(baseline="(S+C)/2" if pooled else "S", pooled=pooled)
     faults = _fault_items(cells, sealed)
     j3 = {"fault_items": len(faults), "items": faults, "A": size_a, "share": len(faults) / size_a,
@@ -1206,7 +1240,8 @@ def _duplicate(cells_table, sealed, items, design):
         d = differences(cells_table, first, second, members)
         p = _two_sided(stats_ext.paired_t(d, **(_design(sealed, members) if sample is not None else design)))
         tested.append({"pair": "%s-%s" % (first, second), "p_two_sided": p, "ok": p >= DUP_ALPHA,
-                       **({"sample": "sealed_C_instrument", "sample_items": members, "sample_size": len(members),
+                       **({"sample": "full_independent_C" if profiles.is_v211(sealed.get("configuration")) else "sealed_C_instrument",
+                           "sample_items": members, "sample_size": len(members),
                            "runs": sample["runs"]} if sample is not None else {})})
     return {"pairs": tested, "ok": all(t["ok"] for t in tested)}
 

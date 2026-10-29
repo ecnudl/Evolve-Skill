@@ -164,6 +164,8 @@ def _shell(context, cell, task, arm, call, **extra):
     bench = cell["benchmark"]
     if cell.get("shortcut") is not None:  # a shortcut-probe cell (§7.2, ticket C1-2); absent otherwise
         extra["shortcut"] = cell["shortcut"]
+    if profiles.is_v211(context.configuration):
+        extra['configuration'] = context.configuration
     card = context.cards[bench]
     if arm.kind == "blank":
         require(profiles.is_v210(context.configuration) and not arm.package.procedures,

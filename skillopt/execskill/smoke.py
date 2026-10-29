@@ -1341,7 +1341,7 @@ MAX_ROLE_CALLS = {
 CARD, PROCEDURE = "card", "procedure"  # a cell with no procedure enabled is a card cell (§9.1: x1 / x1.25-1.6)
 
 
-def max_role_calls(configuration=protocol.PILOT):
+def max_role_calls(configuration=protocol.PILOT, bench=None):
     """The maximum calls per step and bench of each method role in a run configuration: ``MAX_ROLE_CALLS``; in a
     train configuration (main-v2, owner decision 2026-10-23 13:3x) ``TRAIN_ROUNDS`` engineer units of
     ``TRAIN_ENGINEER_CALLS`` calls and ``TRAIN_ANALYST_CALLS`` analyst calls each, at most one leakage judge call per
@@ -1349,6 +1349,9 @@ def max_role_calls(configuration=protocol.PILOT):
     first checks and one after each fix call, all calls but one proposal being fix calls --, the same describer calls,
     and the examiner's v1 calls plus ``TOPUP_ROUNDS`` top-up writes of ``GENERATOR_CALLS`` after each of its
     ``BAND_ROUNDS`` builds."""
+    if protocol.is_v211(configuration):
+        from . import v211_limits
+        return v211_limits.role_calls(bench or 'spreadsheetbench')
     if configuration == protocol.BASELINE_V210:
         return {role: 0 for role in MAX_ROLE_CALLS}
     if protocol.LEARNING[configuration] != "train":
@@ -1494,7 +1497,7 @@ def _scope_cells(chain, pilot=protocol.PILOT):
             out[budgets.solver_scopes(chain, bench, k, kind)[-1]] = [cells]
             redo = cells
             if kind == "accept":
-                share = protocol.SLICES[bench]["blocks"]
+                share = protocol.slice_spec(pilot, bench)["blocks"]
                 redo = {b: (card / share, proc / share) for b, (card, proc) in cells.items()}
                 blocks.append(redo)
             for attempt in range(2, protocol.MAX_REDOS + 2):
@@ -1651,6 +1654,9 @@ def glm_projection(measured, pilot=protocol.PILOT):
     ``role_calls_measured``; a role S3 did not measure is priced at the dearest measured role call and the widest
     measured request (``assumed``). Returns {scope: {"settled", "reservation", "needed", "cap", "fits"} (+ "roles",
     "assumed")}; a scope fits when needed <= cap."""
+    if protocol.is_v211(pilot):
+        from . import v211_limits
+        return v211_limits.method_projection(measured)
     if pilot == protocol.BASELINE_V210:
         return {}
     require(measured and all(entry["calls"] > 0 for entry in measured.values()), "S3 measured role calls")

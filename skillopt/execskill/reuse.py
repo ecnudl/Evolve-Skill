@@ -67,6 +67,15 @@ def interchangeable(first, second, *, bench):
 
 def card_sample(sealed, preferred=None):
     """The seeded C instrument sample, taking already-dispatched S items before supplemental S dispatches."""
+    if profiles.is_v211(sealed.get("configuration")):
+        require(sealed["bench"] in profiles.V211_SLICES, "Only four learned steps have main-v4 acceptance")
+        items = list(sealed["plan"]["astar"])
+        preferred = set(preferred or [])
+        return {"items": items, "runs": sealed["runs"], "seed": sealed.get("seeds", {}).get("request_reuse", SEED),
+                "tag": round_tag(sealed["unit"]) + ":full-independent-C-v211",
+                "preferred_items": [item for item in items if item in preferred],
+                "supplemental_items": [item for item in items if item not in preferred],
+                "coverage": "full_independent_astar"}
     if sealed.get("j6_registered") is False or sealed["bench"] not in BENCHES or not sealed["card_is_parent"]:
         return None
     if preferred is None and sealed.get("reuse") is not None:

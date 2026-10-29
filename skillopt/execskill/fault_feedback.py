@@ -215,6 +215,9 @@ def summarize(procedure, report, *, limit=SIGNATURES, example=True, configuratio
     """Count complete attempts; signatures are stable and count distinct items."""
     from . import profiles as p
     v292 = configuration is not None and p.is_v292(configuration)
+    child = p.is_v211(configuration)
+    eligible = {row['task_id'] for row in _detail(report, 'C6b').get('captures', ())
+                if row.get('example_eligible')} if child else None
     fired, observed = set(), []
     for item in _detail(report, "C6").get("items", ()):
         task = item.get("task_id", item.get("item", item.get("cell")))
@@ -256,7 +259,7 @@ def summarize(procedure, report, *, limit=SIGNATURES, example=True, configuratio
         first_step = min((step for step in steps if type(step) is int), default=None)
         hook, kind, exc_type, message, line = key
         row = {"hook": hook, "kind": kind, "exc_type": exc_type, "message": message, "line": line,
-               "items": len(tasks), "first_step": first_step, "example_task_ids": tasks[:2]}
+               "items": len(tasks), "first_step": first_step, "example_task_ids": [task for task in tasks if eligible is None or task in eligible][:2]}
         row.update(output_shape_fields(hook, kind, message, v292=v292))
         if type(line) is int and 1 <= line <= len(source):
             row["source_line"] = _source_text(source[line - 1])
@@ -295,6 +298,11 @@ def summarize(procedure, report, *, limit=SIGNATURES, example=True, configuratio
         if ordered:
             entries = sorted(grouped[ordered[0]], key=lambda item: (item[0],
                 -1 if item[1].get("step") is None else item[1]["step"]))
+            if eligible is not None:
+                entries = [entry for key in ordered for entry in sorted(grouped[key], key=lambda row: row[0])
+                           if entry[0] in eligible]
+            if not entries:
+                return bound_diagnostics(result, example=example)
             task, fault = entries[0]
             result["example_call"] = {"task_id": task, "hook": fault.get("hook"), "step": fault.get("step"),
                                       "arguments": copy.deepcopy(fault.get("arguments", {}))}

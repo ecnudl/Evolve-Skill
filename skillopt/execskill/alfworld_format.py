@@ -19,17 +19,17 @@ def validate(runtime, configuration=None):
     marked = CONFIGURATION_KEY in runtime or RULE_KEY in runtime
     if configuration is not None:
         require(configuration in p.CONFIGURATIONS, "Unknown ALFWorld format configuration")
-        if p.is_v296(configuration):
+        if p.uses_readable_alf_format(configuration, 'alfworld'):
             require(marked, "The ALFWorld v2.9.6 format runtime is required")
         else:
             require(not marked, "A historical runtime cannot use the ALFWorld v2.9.6 format rule")
     if not marked:
         return False
     actual = runtime.get(CONFIGURATION_KEY)
-    require(isinstance(actual, str) and actual in p.CONFIGURATIONS and p.is_v296(actual)
+    require(isinstance(actual, str) and actual in p.CONFIGURATIONS and p.uses_readable_alf_format(actual, 'alfworld')
             and (configuration is None or actual == configuration),
             "The ALFWorld format runtime has its exact configuration")
-    require(runtime.get(RULE_KEY) == p.alfworld_format_rule(actual) == RULE,
+    require(runtime.get(RULE_KEY) == p.alfworld_format_rule(actual, 'alfworld') == RULE,
             "The ALFWorld format runtime has its exact rule")
     return True
 
@@ -42,7 +42,7 @@ def bind(runtime, configuration):
     """
     require(isinstance(runtime, dict), "An ALFWorld runtime is a mapping")
     require(configuration in p.CONFIGURATIONS, "Unknown ALFWorld format configuration")
-    if not p.is_v296(configuration):
+    if not p.uses_readable_alf_format(configuration, 'alfworld'):
         validate(runtime, configuration)
         return dict(runtime)
     if CONFIGURATION_KEY in runtime or RULE_KEY in runtime:

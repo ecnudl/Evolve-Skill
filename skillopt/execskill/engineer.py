@@ -654,7 +654,7 @@ class Context:
     def _training_inputs(self, chain):
         """The train mode's own inputs (class docstring); returns the run-slice items a current or evaluated cell
         failed."""
-        require(type(self.round) is int and 1 <= self.round <= protocol.train_rounds(self.configuration)
+        require(type(self.round) is int and 1 <= self.round <= protocol.train_rounds(self.configuration, self.bench)
                 and isinstance(self.base, Package),
                 "A training round of the step's parent")
         require(self.parent.sha256 == self.base.sha256 or self.parent.parent_sha256 == self.base.sha256,
@@ -698,7 +698,7 @@ class Context:
                                                       v24=v24, v25=v25 and not protocol.is_alfworld(self.configuration),
                                                       v28=protocol.is_v28(self.configuration), v29=protocol.is_v29(self.configuration),
                                                       v291=protocol.is_v291(self.configuration),
-                                                      v292=protocol.is_v292(self.configuration),
+                                                      v292=protocol.is_v292(self.configuration), v211=protocol.is_v211(self.configuration),
                                                       current={t["cell"]: t for t in self.current}),
                 "The training feedback shows this step's run-slice items with their own references only")
         output_refs = {e["task_id"] for e in (self.training or {}).get("unfixed_examples", [])} if v24 else set()
@@ -814,7 +814,7 @@ def _lint_entry(entry, *, v25=False, v26=False, v27=False, v28=False, v29=False,
 
 
 def _training_ok(training, references, own, evaluated, bench, *, v24=False, v25=False, current=None, v28=False, v29=False,
-                 v291=False, v292=False):
+                 v291=False, v292=False, v211=False):
     """v2 (Codex review 2026-10-23 #4): the last round's feedback exactly as ``step._feedback`` writes it; each
     example names one of this step's run-slice items (``own``) and that item's candidate-arm cell of the last training
     unit (``evaluated``: {cell: trajectory}), its texts within ``TRAIN_TEXT_CHARS``, and a reference only off ALFWorld
@@ -846,7 +846,7 @@ def _training_ok(training, references, own, evaluated, bench, *, v24=False, v25=
                 and all(_count(entry[k]) for k in ("enabled_items", "fixed", "broken"))
                 and isinstance(entry["examples"], list) and len(entry["examples"]) <= 2 * TRAIN_EXAMPLES):
             return False
-        if v25 and not _coverage_ok(entry["notes_coverage"], entry["enabled_items"]):
+        if v25 and not _coverage_ok(entry["notes_coverage"], entry["enabled_items"], bench=bench if v211 else None):
             return False
         if v291 and not _fault_feedback_ok(entry["faults"], own, v292=v292):
             return False
@@ -924,8 +924,19 @@ def _format_feedback_ok(value, own, evaluated, passed):
     return True
 
 
-def _coverage_ok(value, enabled):
+def _coverage_ok(value, enabled, *, bench=None):
     """v2.5 delivered-note coverage is counts only, once per enabled run item and field."""
+    if bench is not None:
+        if not (isinstance(value, dict) and set(value) == {'items', 'with_notes', 'fields', 'faults',
+                    'bench', 'phases', 'repair_requests'} and value['bench'] == bench
+                and _count(value['items'])
+                and _count(value['repair_requests']) and value['repair_requests'] <= value['items']
+                and (bench == 'spreadsheetbench' or value['repair_requests'] == 0)
+                and isinstance(value['phases'], dict) and set(value['phases']) == {'first', 'repair'}
+                and all(_count(n) and n <= value['items'] for n in value['phases'].values())
+                and (bench == 'spreadsheetbench' or value['phases']['repair'] == 0)):
+            return False
+        value = {key: value[key] for key in ('items', 'with_notes', 'fields', 'faults')}
     return (isinstance(value, dict) and set(value) == {"items", "with_notes", "fields", "faults"}
             and all(_count(value[key]) for key in ("items", "with_notes", "faults"))
             and value["items"] <= enabled and value["with_notes"] <= value["items"]
@@ -1027,7 +1038,7 @@ def payload(ctx, analyses=None):
             "package": [_listed(p, ctx.parent) for p in ctx.parent.procedures],
             "trajectories": [_shown_view(kind, t, ctx.references, ctx.echo) for kind, t in shown(ctx)],
             "detectors": ctx.detectors, "previous": ctx.previous}
-    if ctx.configuration == protocol.MAIN_V3:
+    if ctx.configuration in (protocol.MAIN_V3, protocol.MAIN_V4):
         from .v210_import import learning_capacity
         user["package_capacity"] = learning_capacity(ctx.parent)
     if protocol.is_v24(ctx.configuration):
@@ -1151,13 +1162,8 @@ def budget(ctx):
             "step_procedures": [p.id for p in ctx.parent.procedures if p.id not in ctx.base.order]}
 
 
-def _ask(ctx, user, purpose):
-    """``(reply or None, request sha256)`` of one engineer call; (None, None) once the step's calls are spent: this
-    unit's and, for ``engineer-2``, those of the step's first engineer unit (``ctx.spent``; R7a); in the train mode
-    the unit's own ``TRAIN_ENGINEER_CALLS`` under ``ENGINEER_SYSTEM_V2``."""
-    prefix = "engineer/%s/" % ctx.label
-    if ctx.spent + ctx.roles.count(prefix) >= ctx.calls_cap:
-        return None, None
+def _legacy_system(ctx, user):
+    """The historical selector, shared by dispatch and the benchmark-aware accessor."""
     system = ENGINEER_SYSTEM_V2 if ctx.mode == TRAIN else ENGINEER_SYSTEM
     modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
     if modern:
@@ -1242,6 +1248,28 @@ def _ask(ctx, user, purpose):
     if protocol.is_v210(ctx.configuration):
         from .instruction_start import engineer_system
         system = engineer_system(ctx.configuration, train=ctx.mode == TRAIN)
+    return system
+
+
+def _ask(ctx, user, purpose):
+    """``(reply or None, request sha256)`` of one engineer call; (None, None) once the step's calls are spent: this
+    unit's and, for ``engineer-2``, those of the step's first engineer unit (``ctx.spent``; R7a); in the train mode
+    the unit's own ``TRAIN_ENGINEER_CALLS`` under ``ENGINEER_SYSTEM_V2``."""
+    prefix = "engineer/%s/" % ctx.label
+    if ctx.spent + ctx.roles.count(prefix) >= ctx.calls_cap:
+        return None, None
+    if protocol.is_v211(ctx.configuration):
+        from . import engineer_v211
+        system = engineer_v211.dispatch(ctx, user)
+        options = ({"max_tokens": protocol.ENGINEER_MAX_TOKENS[ctx.configuration]}
+                   if ctx.mode == TRAIN and purpose in ("propose", "repropose") else {})
+        rendered = engineer_v211.request_pin(ctx, user, system, purpose)
+        reply = ctx.roles.plain(ROLE, system, rendered, label=prefix + purpose, **options)
+        if purpose in ("propose", "repropose"):
+            _remember_shown(ctx, user)
+        return reply, ctx.roles.calls[-1]["request_sha256"]
+    system = _legacy_system(ctx, user)
+    modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
     options = ({"max_tokens": protocol.ENGINEER_MAX_TOKENS[ctx.configuration]}
                if modern and ctx.mode == TRAIN and purpose in ("propose", "repropose") else {})
     reply = ctx.roles.plain(ROLE, system, json.dumps(user, ensure_ascii=False, sort_keys=True),
@@ -1539,7 +1567,7 @@ def _build(change, ctx):
         change.target = entry["id"]
         change.benches = tuple(b for b in benches if b in entry.get("benches", []))
     result = candidate(parent, [change], step=ctx.step)
-    if ctx.configuration == protocol.MAIN_V3:
+    if ctx.configuration in (protocol.MAIN_V3, protocol.MAIN_V4):
         from .v210_import import check_learning_capacity
         check_learning_capacity(result)
     return result
@@ -1920,6 +1948,9 @@ def hook_views(ctx):
 
 def _routing_checks(procedure, ctx, *, outcomes=None, actual=None):
     """v2.4 C6b/C6c on the same views and workers. Callable by the zero-call handoff with a Context-like object."""
+    if protocol.is_v211(ctx.configuration):
+        from . import v211_effects
+        return v211_effects.routing_checks(procedure, ctx, outcomes=outcomes, actual=actual)
     require(len(ctx.routing_items) <= 60, "C6c evaluates at most 60 registered routing items")
     firing = {"fires_on": 0, "items": len(ctx.routing_items), "predicate_faults": 0,
               "routing_view_keys": sorted({key for _, view in ctx.routing_items for key in view})}
@@ -2111,7 +2142,7 @@ def check(change, ctx, taken=()):
             report.update(passed=True, deferred=True)
             return report
         done("C3", False, _size_detail(change, error, **({"configuration": ctx.configuration}
-             if v24 or ctx.configuration == protocol.MAIN_V3 else {}))
+             if v24 or ctx.configuration in (protocol.MAIN_V3, protocol.MAIN_V4) else {}))
              if train or protocol.is_v25(ctx.configuration) else str(error)[:300])
         return report
     if train:  # v2: the step's edit budget against S (``rebase``); a change beyond it gets no fix call
@@ -2288,7 +2319,7 @@ def _size_detail(change, error, *, configuration=None):
         detail["caps"] = {"description_chars": MAX_DESCRIPTION_CHARS, "header_chars": MAX_HEADER_CHARS,
                           "source_bytes": MAX_PROCEDURE_BYTES, "package_source_bytes": MAX_PACKAGE_BYTES,
                           "max_note_chars": "1-4000 when a hook writes notes, else 0"}
-        if configuration == protocol.MAIN_V3:
+        if configuration in (protocol.MAIN_V3, protocol.MAIN_V4):
             from .v210_import import LEARNED_SOURCE_BYTES, LEARNED_PROCEDURES
             detail["caps"].update(package_source_bytes=LEARNED_SOURCE_BYTES, package_procedures=LEARNED_PROCEDURES)
         if configuration is not None and protocol.is_v24(configuration):
@@ -2391,7 +2422,7 @@ def _combined(parent, survivors, step, *, configuration=None):
     while survivors:
         try:
             result = candidate(parent, survivors, step=step)
-            if configuration == protocol.MAIN_V3:
+            if configuration in (protocol.MAIN_V3, protocol.MAIN_V4):
                 from .v210_import import check_learning_capacity
                 check_learning_capacity(result)
             return result, survivors
@@ -2433,7 +2464,7 @@ def run(ctx):
             taken.add(final.target)
         outcomes.append({**final.to_json(), "attempts": attempts, "survived": survived})
     package, kept = _combined(ctx.parent, survivors, ctx.step,
-                             **({"configuration": ctx.configuration} if ctx.configuration == protocol.MAIN_V3 else {}))
+                             **({"configuration": ctx.configuration} if ctx.configuration in (protocol.MAIN_V3, protocol.MAIN_V4) else {}))
     modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
     sealed = record(protocol.ENGINEER_RECORDS[ctx.configuration], ctx.evidence, {
         "bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
@@ -2488,7 +2519,7 @@ def _combined_train(ctx, survivors):
     while survivors:
         try:
             result = rebase(candidate(ctx.parent, survivors, step=ctx.step), ctx.base, ctx.parent, step=ctx.step)
-            if ctx.configuration == protocol.MAIN_V3:
+            if ctx.configuration in (protocol.MAIN_V3, protocol.MAIN_V4):
                 from .v210_import import check_learning_capacity
                 check_learning_capacity(result)
             return result, survivors

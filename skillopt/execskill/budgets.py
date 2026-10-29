@@ -123,11 +123,16 @@ def glm_scopes(chain, role, bench, k):
     return ROOT, chain + ":glm", "%s:role:%s" % (_step(chain, bench, k), ROLES[role])
 
 
-def role_scope_caps(pilot=PILOT):
+def role_scope_caps(pilot=PILOT, bench=None):
     """{role scope: cap} per step of the run configuration ``pilot`` (§9.3; R7b for the pilots; main: engineer 5M,
     examiner 5M, examiner research 9.2M, registrar 17:0x)."""
     require(pilot in PILOTS, "Unknown run configuration")
-    caps = CONFIG_ROLE_CAPS[pilot]
+    from . import profiles
+    if profiles.is_v211(pilot):
+        from . import v211_limits
+        caps = v211_limits.role_caps(bench or 'spreadsheetbench')
+    else:
+        caps = CONFIG_ROLE_CAPS[pilot]
     out = {"engineer": caps["engineer"], "examiner": caps["examiner"], "examiner:research": caps["examiner_research"]}
     from . import profiles
     if profiles.is_v29(pilot):
@@ -165,7 +170,7 @@ def chain_caps(chain, pilot=PILOT):
             out[solver_scopes(chain, bench, k, kind)[-1]] = cap
             for attempt in range(2, MAX_REDOS + 2):
                 out[solver_scopes(chain, bench, k, kind, attempt)[-1]] = min(cap, plan["redo_reserve"])
-        for role, cap in role_scope_caps(pilot).items():
+        for role, cap in role_scope_caps(pilot, bench).items():
             out["%s:role:%s" % (_step(chain, bench, k), role)] = cap
     return out
 

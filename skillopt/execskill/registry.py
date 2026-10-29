@@ -42,7 +42,7 @@ from .protocol import BENCHES, EVIDENCE, HISTORY_ROOT, NAMESPACES, record, verif
 from .profiles import SUPPORTED_BENCHES, SUPPORTED_NAMESPACES
 
 RECORD_KIND = "consumption"  # version fivebench-execskill-v1-consumption
-PURPOSES = ("smoke", "run", "accept", "accept_probe", "examiner", "detector_holdout")  # plan §2.7
+PURPOSES = ("smoke", "run", "accept", "accept_probe", "examiner", "detector_holdout", "confirm")  # plan §2.7
 REGISTERED, DISPATCHED, DECIDED, RELEASED = "registered", "dispatched", "decided", "routed_not_dispatched"
 STATES = (REGISTERED, DISPATCHED, DECIDED, RELEASED)
 HELD = frozenset({REGISTERED, DISPATCHED, DECIDED})  # not available to the supply

@@ -56,7 +56,7 @@ def test_k1_every_snapshotted_parent_judge_output_is_byte_identical(configuratio
     assert wire(run_episode(label, runtime)) == wire(parent['k1_judge'][label])
 
 
-@pytest.mark.parametrize('configuration', p.CONFIGURATIONS)
+@pytest.mark.parametrize('configuration', [name for name in p.CONFIGURATIONS if not p.is_v211(name)])
 def test_configuration_rule_and_runtime_binding(configuration):
     source = {'existing_runtime': {'value': 1}}
     runtime = rule.bind(source, configuration)
@@ -100,7 +100,7 @@ def test_new_run_cannot_validate_a_missing_runtime_binding():
         rule.validate({}, p.ALFWORLD_V10)
 
 
-@pytest.mark.parametrize('configuration', [name for name in p.CONFIGURATIONS if not p.is_v296(name)])
+@pytest.mark.parametrize('configuration', [name for name in p.CONFIGURATIONS if not p.is_v296(name) and not p.is_v211(name)])
 def test_new_runtime_cannot_be_used_for_any_older_run(configuration):
     runtime = rule.bind({}, p.ALFWORLD_V10)
     with pytest.raises(ValueError, match='historical runtime'):

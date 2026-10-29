@@ -246,7 +246,7 @@ class _Shell:
     """One cell's (or episode's) hooks, calls and logs."""
 
     def __init__(self, bench, package, call, worker, *, withhold, restore, placebo, text, native, nominal,
-                 shortcut=None):
+                 shortcut=None, configuration=None):
         require(bench in BENCHES and isinstance(package, Package), "A known bench and a package")
         require(shortcut is None or (shortcut == NO_WORKBOOK and bench == "spreadsheetbench"),
                 "The one shortcut mode is SpreadsheetBench's no-workbook probe (registration §7.2)")
@@ -271,6 +271,8 @@ class _Shell:
         self.withhold, self.restore = frozenset(withhold), frozenset(restore)
         self.placebo, self.text, self.native, self.nominal = placebo, dict(text or {}), native, nominal
         self.shortcut = shortcut
+        self.configuration = configuration
+        self.effects = []
         self.shams = frozenset(placebo["procedures"]) if placebo else frozenset()
         self.receipts, self.calls, self.events, self.faults, self.notes = [], [], [], [], []
         self.dropped, self.route, self.started = set(), None, False
@@ -510,6 +512,8 @@ class _Shell:
                   "arm": {"withheld": sorted(self.withhold), "restored": sorted(self.restore),
                           "placebo": sorted(self.shams), "text": sorted(self.text)},
                   "sandbox": self.sandbox()}
+        if self.configuration == 'main-v4':
+            fields['effects'] = list(self.effects)
         if any(notes.audited(p) for p in self.package.procedures):
             fields["keyword_hits"] = notes.keyword_summary([row for entry in self.notes for row in entry["dropped"]])
         if self.steps is not None:
@@ -564,6 +568,10 @@ class _Shell:
                 requests.append(procedure)
             entries.append((procedure.id + "/sheet_feedback", text, procedure.max_note_chars))
         text, _ = self.assemble(entries)
+        if self.configuration == 'main-v4':
+            self.effects.extend({'procedure': p.id, 'hook': 'sheet_feedback',
+                'kind': 'request_repair', 'permitted': not (notes.outcome_judged(p) and p.id in self.dropped),
+                'source_sha256': hashlib.sha256(p.source.encode()).hexdigest()} for p in requests)
         self.notes_chars = max(self.notes_chars, len(text))
         return text, any(not (notes.outcome_judged(p) and p.id in self.dropped) for p in requests)
 
@@ -616,7 +624,7 @@ class _Shell:
 
 def solve(bench, public, card_text, package, call, *, runtime=None, worker=None, withhold=frozenset(),
           restore=frozenset(), placebo=None, text=None, native=None, nominal_tokens=None, precheck_report=None,
-          shortcut=None):
+          shortcut=None, configuration=None):
     """One item through the shell (module docstring). ``card_text``: the active bench card only (§2.2);
     ``call(system, user) -> receipt``: the cell's call function (the frozen Recorder); ``worker``: an unstarted sandbox
     worker, started and closed here; ``native``: the ``spreadsheet-native`` slot pool (its ``hold()``);
@@ -626,7 +634,7 @@ def solve(bench, public, card_text, package, call, *, runtime=None, worker=None,
     require(type(card_text) is str, "The card text is text")
     runtime = runtime or {}
     shell = _Shell(bench, package, call, worker, withhold=withhold, restore=restore, placebo=placebo, text=text,
-                   native=native, nominal=nominal_tokens, shortcut=shortcut)
+                   native=native, nominal=nominal_tokens, shortcut=shortcut, configuration=configuration)
     try:
         prediction = _solve(shell, bench, public, card_text, runtime, precheck_report)
     finally:

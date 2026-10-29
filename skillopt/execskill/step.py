@@ -515,6 +515,18 @@ def _cut(st, held):
     acceptance (150) slices from the registered room groups of the fresh-supply pool (§3.1 O6: 16 and 40 rooms of the
     seeded room order, <= 5 games per room; ``supply.alfworld_pool``), each game with its view (``_alfworld_views``)."""
     bench, pool = st.bench, st.setting.pools[st.bench]
+    if protocol.is_v211(configuration_of(st.setting)):
+        from . import v211_allocation
+        kwargs = dict(zip(('tail', 'kept'), _tail(st))) if bench == 'searchqa' else {}
+        registered = st.setting.extra.get('v211_allocation', {}).get(bench)
+        require(registered is not None, 'A child step needs its S0 protected allocation')
+        cut, pin = v211_allocation.allocate(bench, pool,
+            protected_hashes=registered['source_pins']['protected_ids']['id_hashes'], **kwargs)
+        required = {item['task_id'] for name, rows in cut.items() if name not in ('smoke', 'spare') for item in rows}
+        require(not set(held) & required, 'Registered child allocation overlaps held or consumed items')
+        if registered is not None:
+            require(registered['slices'] == pin['slices'], 'Child slices differ from their S0 allocation')
+        return {name: rows for name, rows in cut.items() if name not in ('smoke', 'spare')}
     if bench == "zebralogic":
         from . import zebralogic
         sliced = zebralogic.slices(pool)
@@ -561,6 +573,12 @@ def _slices(st):
         require(len(items) == run + sizes["accept"], "The smoke step runs on its %d smoke items"
                 % (run + sizes["accept"]))
         cut = {"run": items[:run], "accept": items[run:]}
+        if protocol.is_v211(configuration_of(st.setting)):
+            confirms = st.setting.extra.get("v211_smoke_confirms", {})
+            require(set(confirms) == {"confirm-r%d" % r for r in range(1, 7)}
+                    and all(len(rows) == 2 for rows in confirms.values()),
+                    "main-v4 SX requires two authored exercise items for every round")
+            cut.update(confirms)
     else:
         # Codex finding #7 (§3.1-§3.4): a unit is its label and its run root; the same labels under another run root
         # are other units, whose held items never enter a slice
@@ -573,7 +591,11 @@ def _slices(st):
         "chain": st.chain, "k": st.k, "bench": st.bench,
         "slices": {name: [item["task_id"] for item in items] for name, items in sorted(cut.items())},
         **({"confirm": practice_confirm.identity(configuration_of(st.setting), st.setting.pools[st.bench])}
-           if protocol.is_v29(configuration_of(st.setting)) and st.smoke is None else {})}))
+           if protocol.is_v29(configuration_of(st.setting)) and not protocol.is_v211(configuration_of(st.setting))
+           and st.smoke is None else {}),
+        **({'v211_allocation': st.setting.extra.get('v211_allocation', {}).get(st.bench),
+            'freshness': protocol.CONFIRM_FRESHNESS[configuration_of(st.setting)],
+            'selection_check': 'preregistered'} if protocol.is_v211(configuration_of(st.setting)) else {})}))
     return _slices(st)
 
 
@@ -704,7 +726,7 @@ def cost_projection(setting, chain, bench, k, cells, attempt=1):
 
 def _run(st, cut):
     bench, items = st.bench, cut["run"]
-    runs = SLICES[bench]["run"][1]
+    runs = protocol.slice_spec(configuration_of(st.setting), bench)["run"][1]
     tasks = {rounds.key(bench, item["task_id"]): {"public": item["public"], "private": item["private"]}
              for item in items}
     name = st.label("run")
@@ -1092,6 +1114,8 @@ def _engineer(st, cut, unit, previous):
                                    previous=previous, spent=spent, configuration=configuration_of(st.setting),
                                    **({"audit_judges": units.audit_judges(st.setting, st.chain, st.bench, st.k)}
                                       if protocol.is_v29(configuration_of(st.setting)) else {}))
+            if protocol.is_v211(configuration_of(st.setting)):
+                ctx.sheet['v211_prompt_pins'] = st.setting.extra['v211_prompt_pins']
             candidate, sealed = engineer.run(ctx)
         if candidate is not None:
             save(st.chain_root, candidate)
@@ -1196,7 +1220,7 @@ def _pair_signatures(st, candidate, parent, publics, views, *, note_coverage=Non
                 if note_coverage is not None:
                     def capture(shell, text):
                         note_coverage.setdefault(item, {})[arm] = _shown_note_fields(
-                            st.bench, package, shell.notes, view, text)
+                            st.bench, package, shell.notes, view, text, configuration=configuration_of(st.setting))
                     observe = {"note_observer": capture}
                 out[item][arm] = request_reuse.signature(st.bench, package, view, worker,
                                                        card_text=st.setting.cards.get(st.bench, ""), runtime=st.runtime(),
@@ -1369,6 +1393,8 @@ def _engineer_train(st, cut, r, incumbent, *, done, fed, history, training, lint
                                    counterfactual=META_COUNTERFACTUAL[configuration_of(st.setting)], **routing,
                                    **({"audit_judges": units.audit_judges(st.setting, st.chain, st.bench, st.k)}
                                       if protocol.is_v29(configuration_of(st.setting)) else {}))
+            if protocol.is_v211(configuration_of(st.setting)):
+                ctx.sheet['v211_prompt_pins'] = st.setting.extra['v211_prompt_pins']
             candidate, sealed = engineer.run_train(ctx)
         if candidate is not None:
             save(st.chain_root, candidate)
@@ -1494,9 +1520,19 @@ def _attempt_trajectories(attempt):
     return {t["cell"]: t for t in (verified(read_json(path), "trajectory") for path in sorted(directory.glob("*.json")))}
 
 
-def _notes_text(trajectory):
+def _notes_text(trajectory, *, configuration=None):
     """The procedure notes the solver saw: the first request's (QA, SpreadsheetBench), every step's distinct ones
     (ALFWorld)."""
+    if protocol.is_v211(configuration or trajectory.get('configuration')) and trajectory['bench'] != 'alfworld':
+        from .v211_effects import delivered
+        chunks = []
+        for call in trajectory.get('calls', ()):
+            if call.get('purpose') in ('first', 'repair') and delivered(call):
+                request = json.loads(call['user'])
+                key = 'repair_notes' if call['purpose'] == 'repair' else NOTES_KEY
+                if request.get(key):
+                    chunks.append(str(request[key]))
+        return '\n'.join(dict.fromkeys(chunks))
     if trajectory["bench"] == "alfworld":
         return "\n".join(dict.fromkeys(step["notes"] for step in trajectory.get("alfworld_steps") or ()
                                        if step.get("notes")))
@@ -1517,12 +1553,15 @@ def _last_reply(trajectory):
     return replies[-1] if replies else ""
 
 
-def _shown_note_fields(bench, package, stored, view, delivered):
+def _shown_note_fields(bench, package, stored, view, delivered, *, configuration=None):
     """v2.5 Zebra: attribute the exact final request's notes using stored screened fields, never executing hooks.
 
     Shell note records precede assembly, so a rendered note can still be omitted by either cap. Reconstruct that
     deterministic assembly in stored package order and require its text to match the request before counting it.
     """
+    if protocol.is_v211(configuration):
+        from . import v211_effects
+        return v211_effects.shown_fields(bench, package, stored, view, delivered)
     require(bench == "zebralogic", "v2.5 note coverage is registered only for ZebraLogic")
     entries, fields = [], {}
     for note in stored:
@@ -1559,6 +1598,9 @@ def _notes_coverage(st, pid, enabled, candidate, cells, made, current, identical
     zero-call signature shell. This handles changed procedure IDs without crediting an unrelated incumbent note.
     The transient capture contains field names only and never enters a record or engineer prompt.
     """
+    if st.bench != 'zebralogic' and protocol.is_v211(configuration_of(st.setting)):
+        from . import v211_effects
+        return v211_effects.coverage(st, pid, enabled, candidate, cells, made, current, identical, captured)
     out = {"items": len(enabled), "with_notes": 0, "fields": {name: 0 for name in notes.FIELD_ORDER}, "faults": 0}
     for key in enabled:
         fields, fault = set(), False
@@ -1788,7 +1830,7 @@ def _train_eval(st, cut, r, incumbent, candidate, generated, *, current=None):
     feedback. Returns the unit's result."""
     unit = "train-r%d" % r
     name = st.label(unit)
-    runs = SLICES[st.bench]["run"][1]
+    runs = protocol.slice_spec(configuration_of(st.setting), st.bench)["run"][1]
     admitted = bool(generated and generated.get("generator") and generated["generator"]["status"] == "admitted")
     g_self = list(generated.get("g_self") or [])[:G_SELF_MAX] if admitted else []
 
@@ -1942,14 +1984,24 @@ def _confirm_eval(st, cut, r, incumbent, candidate, *, exercise=False):
     ``exercise=True``; its measured verdict is explicitly unused for adoption.
     """
     require(protocol.is_v29(configuration_of(st.setting)), "Confirmation requires v2.9")
-    selected = list(cut["confirm"])
-    require(len(selected) == (2 if exercise else practice_confirm.ITEMS),
-            "Confirmation has its registered 40 items (two authored exercise items in smoke)")
+    child = protocol.is_v211(configuration_of(st.setting))
+    selected = list(cut[('confirm-r%d' % r) if child and (not exercise or ('confirm-r%d' % r) in cut) else 'confirm'])
+    required = protocol.confirm_spec(configuration_of(st.setting), st.bench, r)['items'] if child else practice_confirm.ITEMS
+    require(len(selected) == (2 if exercise else required),
+            "Confirmation has its registered per-round items (two authored exercise items in smoke)")
     ids = [item["task_id"] for item in selected]
     require(len(ids) == len(set(ids)), "Distinct confirmation items")
     require(not set(ids) & {item["task_id"] for name in ("run", "accept", "select", "generated", "sealed")
                            for item in cut.get(name, ())}, "Confirmation slices are disjoint")
     unit, name = "confirm-r%d" % r, st.label("confirm-r%d" % r)
+    if child:
+        other = {i['task_id'] for key, rows in cut.items() if key.startswith('confirm-r')
+                 and key != unit for i in rows}
+        require(not set(ids) & other, 'Confirmation rounds are pairwise disjoint')
+        prior = st.done(unit)
+        require(prior is None or (prior['incumbent_sha256'] == incumbent.sha256
+                and prior['candidate_sha256'] == candidate.sha256 and prior['slice_ids'] == ids),
+                'Resume requires the same sealed confirmation candidate, incumbent and slice')
 
     def work(attempt):
         items = {rounds.key(st.bench, item["task_id"]): item for item in selected}
@@ -1963,7 +2015,23 @@ def _confirm_eval(st, cut, r, incumbent, candidate, *, exercise=False):
         identical = [key for key, arms in signatures.items()
                      if request_reuse.interchangeable(arms["S'"], arms["S"], bench=st.bench)]
         identities = _confirm_identities(st, items, evaluated, incumbent, candidate, signatures)
-        cached = _confirm_cached(st, r, incumbent, identities)
+        cached = {} if child else _confirm_cached(st, r, incumbent, identities)
+        if child:
+            binding = {'configuration': configuration_of(st.setting), 'bench': st.bench, 'round': r,
+                       'slice_ids': ids, 'candidate_sha256': candidate.sha256,
+                       'incumbent_sha256': incumbent.sha256, 'request_identities': identities,
+                       'request_signatures': signatures, 'exercise': exercise}
+            path = st.root / ('confirm-selection-r%d.json' % r)
+            if path.exists():
+                require(read_json(path) == binding, 'Resume requires the same sealed confirmation request identities')
+            else:
+                write_json(path, binding)
+            n = units.attempt_number(attempt)
+            registry = st.services.registry
+            # Consume the decision occasion even for exact-request zero differences.
+            registry.register(st.namespace, st.bench, selected, unit=name,
+                              purpose='smoke' if st.namespace == budgets.SMOKE else 'confirm', run_root=str(st.setting.root), attempt=n)
+            registry.dispatch(st.namespace, st.bench, selected, unit=name, attempt=n)
         jobs, cells, reused = [], {}, {}
         for key in evaluated:
             if key in identical:
@@ -1985,7 +2053,9 @@ def _confirm_eval(st, cut, r, incumbent, candidate, *, exercise=False):
                       exercise=exercise)
         return {"confirm": result, "round": r, "incumbent_sha256": incumbent.sha256,
                 "candidate_sha256": candidate.sha256, "slice_ids": ids,
-                "freshness": practice_confirm.FRESHNESS[configuration_of(st.setting)],
+                "freshness": (protocol.CONFIRM_FRESHNESS[configuration_of(st.setting)] if child
+                              else practice_confirm.FRESHNESS[configuration_of(st.setting)]),
+                **({'selection_check': 'preregistered', 'cross_round_cache': False} if child else {}),
                 "routed": {key: {"incumbent": list(before[key].enabled), "candidate": list(after[key].enabled)}
                            for key, _ in views}, "identical": identical, "request_signatures": signatures,
                 "request_identities": identities,
@@ -1994,7 +2064,11 @@ def _confirm_eval(st, cut, r, incumbent, candidate, *, exercise=False):
                 "incumbent_cells": {key: rows[0] for (arm, key), rows in cells.items() if arm == "S"},
                 "candidate_cells": {key: rows[0] for (arm, key), rows in cells.items() if arm == "S'"}}
 
-    return st.unit(unit, work)
+    def settle(attempt, result):
+        st.services.registry.decide(st.namespace, st.bench, selected, unit=name,
+                                    attempt=units.attempt_number(attempt))
+
+    return st.unit(unit, work, **({'settle': settle} if child else {}))
 
 
 def _confirmed_training(evaluated, confirmation):
@@ -2087,7 +2161,8 @@ def _train(st, cut, generated):
             if evaluated["candidate_sha256"] != candidate.sha256:  # v2.2: idle procedures were pruned
                 candidate = _package(st, evaluated["candidate_sha256"])
             if protocol.is_v29(configuration_of(st.setting)) and evaluated["adopted"]:
-                evaluated = _confirmed_training(evaluated, _confirm_eval(st, cut, r, incumbent, candidate))
+                evaluated = _confirmed_training(evaluated, _confirm_eval(st, cut, r, incumbent, candidate,
+                    **({"exercise": True} if protocol.is_v211(configuration_of(st.setting)) and st.smoke is not None else {})))
             done.append(("train-r%d" % r, evaluated["adopted"]))
             fed, training = "train-r%d" % r, evaluated["feedback"]
             if evaluated["cells"]:
@@ -2192,9 +2267,14 @@ def _audit_summary(st, rounds_done, final=None):
             records.extend(found["engineer"].get("audits", ()))
     if final is not None:
         records.append(final["audit_final"])
-    return {"audits": len(records), "audit_incomplete": sum(bool(r.get("audit_incomplete")) for r in records),
+    summary = {"audits": len(records), "audit_incomplete": sum(bool(r.get("audit_incomplete")) for r in records),
             "tokens": {judge: {name: sum(r.get("tokens", {}).get(judge, {}).get(name, 0) for r in records)
                                for name in ("input", "output", "charged")} for judge in ("G", "D")}}
+
+    if protocol.is_v211(configuration_of(st.setting)):
+        summary['coverage_by_bench'] = {st.bench: [record['coverage_by_bench'][st.bench]
+            for record in records if st.bench in record.get('coverage_by_bench', {})]}
+    return summary
 
 
 def _trained(st, cut, generated):
@@ -2228,7 +2308,7 @@ def _blocks(st, items):
     """{item: block}: the bench's registered acceptance blocks as consecutive parts of the slice order (§3.3, §6.2;
     ALFWorld: whole rooms, consecutive in the seeded room order ``supply.room_order``, §3.1 O6 -- not in the rooms'
     names, whose scene numbers group the room types)."""
-    count = SLICES[st.bench]["blocks"]
+    count = protocol.slice_spec(configuration_of(st.setting), st.bench)["blocks"]
     if st.bench == "alfworld":
         rooms = supply.room_order(items)
         return {item["task_id"]: "b%d" % (1 + rooms.index(item["room"]) * count // len(rooms)) for item in items}
@@ -2422,15 +2502,15 @@ def run_step(setting, chain, bench, k, parent, *, services, chain_root=None, smo
     by default. ``smoke``: a ``SmokeStep`` -- the S4 mini-step (chain ``budgets.SMOKE``, SearchQA step 1 from the
     empty parent; run, accept and freeze with the given candidate). Raises ``cells.Pause`` (a unit paused; nothing
     resumes by itself) or ``chain.Terminated``."""
-    require(smoke is None or not protocol.is_v27(configuration_of(setting)),
+    require(smoke is None or protocol.is_v211(configuration_of(setting)) or not protocol.is_v27(configuration_of(setting)),
             "The v2.7 benchmark profiles require their dedicated smoke stages")
     require(configuration_of(setting) != protocol.BASELINE_V210, "The baseline-v210 configuration has no learning steps")
-    if configuration_of(setting) == protocol.MAIN_V3 and bench == "alfworld":
+    if configuration_of(setting) in (protocol.MAIN_V3, protocol.MAIN_V4) and bench == "alfworld":
         from . import v210_import
         package, value = v210_import.import_step(setting, chain_root or Path(setting.root) / chain,
                                                  chain, k, bench, parent)
         return StepRecord(package, value)
-    if configuration_of(setting) == protocol.MAIN_V3:
+    if configuration_of(setting) in (protocol.MAIN_V3, protocol.MAIN_V4):
         from .v210_import import check_learning_capacity
         check_learning_capacity(parent)
     if smoke is None:
@@ -2543,7 +2623,7 @@ def run_unit_spec(manifest, *, spec):
     setting = manifests.setting_of(manifest, chain)
     budgets.own_ledger(setting, chain).declare({**budgets.chain_caps(chain, configuration),
                                                 **budgets.first_call_caps(chain)})
-    services = (None if configuration == protocol.MAIN_V3 and bench == "alfworld" else
+    services = (None if configuration in (protocol.MAIN_V3, protocol.MAIN_V4) and bench == "alfworld" else
                 manifests.services_of(manifest, chain, setting=setting))
     chain_root = safe_path(setting.root) / chain
     try:

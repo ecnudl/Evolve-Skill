@@ -872,6 +872,68 @@ def v210_smoke(args):
     _print({"passed": value["passed"], "model_calls": 0, "measured_readiness": False})
 
 
+def v211_snapshot(args):
+    from skillopt.execskill import v211_smoke
+    _print(v211_smoke.snapshot(args.out, source=args.source, git_head=args.git_head))
+
+
+def v211_selftest(args):
+    from skillopt.execskill import v211_smoke
+    value = v211_smoke.selftest(args.out, preparation_file=args.preparation)
+    _print({'passed': value['passed'], 'selftest': str(Path(args.out) / 'sandbox-selftest.json')})
+    return 0 if value['passed'] else 3
+
+
+def v211_s0(args):
+    from skillopt.execskill import v211_smoke
+    value = v211_smoke.collect_s0(args.out, preparation_file=args.preparation, root=args.root,
+        snapshot_root=args.snapshot, selftest=args.selftest)
+    _print({'s0': str(Path(args.out) / v211_smoke.S0_FILE), 'passed': value['passed'], 'sealed_reads': 0})
+    return 0 if value['passed'] else 3
+
+
+def v211_manifest(args):
+    from skillopt.execskill import v211_smoke
+    value = v211_smoke.make_manifest(args.out, root=args.root, s0_file=args.s0,
+        provenance=args.provenance, roles_repo=args.roles_repo, route_b_env=args.route_b_env,
+        smoke_chain=args.smoke_chain, measured_smoke=args.measured_smoke, route_probes=args.route_probes)
+    _print({'manifest': str(args.out), 'run': value[protocol.RECORD_HASH], 'root': value['root'],
+            'launchable_chains': value['data']['launchable_chains'], 'sealed_reads': 0})
+
+
+def v211_structural_smoke(args):
+    from skillopt.execskill import v211_smoke
+    value = v211_smoke.structural_smoke(args.manifest, out=args.out)
+    _print({'passed': value['passed'], 'model_calls': 0, 'measured_readiness': False})
+
+
+def v211_route_probes(args):
+    from skillopt.execskill import v29_route_probe
+    value = manifest.load(args.manifest)
+    require(value['configuration'] == protocol.MAIN_V4 and value['evidence'] == 'smoke',
+            'The separate D readiness probe uses the main-v4 smoke manifest')
+    setting = manifest.setting_of(value, 'D', path=args.manifest)
+    setting.budget.declare({**budgets.chain_caps('D', protocol.MAIN_V4), **budgets.first_call_caps('D')})
+    result = v29_route_probe.measure_all(setting)
+    _print({'passed': result['passed'], 'calls': result['calls'],
+            'path': str(Path(setting.root) / 'D/v211-route-probes.json')})
+
+
+
+def v211_smoke_run(args):
+    from skillopt.execskill import v211_smoke
+    value = v211_smoke.run_stage(args.manifest, args.stage)
+    _print({'stage': args.stage, 'passed': value['result']['passed'], 'measured': value['measured'],
+            'record_sha256': value[protocol.RECORD_HASH]})
+    return 0 if value['result']['passed'] else 3
+
+
+def v211_smoke_summary(args):
+    from skillopt.execskill import v211_smoke
+    value = v211_smoke.summarize(args.manifest)
+    _print({'passed': value['passed'], 'record_sha256': value[protocol.RECORD_HASH]})
+
+
 def parser():
     top = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = top.add_subparsers(dest="command", required=True)
@@ -1103,6 +1165,30 @@ def parser():
             command.add_argument("--measured-smoke", help="Passed measured smoke root required for real main-v3")
         else:
             command.add_argument("--manifest", required=True)
+    for name in ('snapshot', 'selftest', 's0', 'manifest', 'structural-smoke', 'route-probes', 'smoke-run', 'smoke-summary'):
+        command = sub.add_parser('v211-' + name)
+        if name not in ('route-probes', 'smoke-run', 'smoke-summary'):
+            command.add_argument('--out', required=True)
+        if name == 'snapshot':
+            command.add_argument('--source', default=str(PROJECT_ROOT))
+            command.add_argument('--git-head', required=True)
+        elif name == 'selftest':
+            command.add_argument('--preparation', default='/data/execskill-20261024-main-v2-2-manifest.json')
+        elif name == 's0':
+            command.add_argument('--root', required=True)
+            command.add_argument('--preparation', default='/data/execskill-20261024-main-v2-2-manifest.json')
+            command.add_argument('--snapshot', default=str(PROJECT_ROOT))
+            command.add_argument('--selftest', required=True)
+        elif name == 'manifest':
+            for flag in ('root', 's0', 'provenance', 'roles-repo', 'route-b-env'):
+                command.add_argument('--' + flag, required=True)
+            command.add_argument('--smoke-chain', choices=('G',))
+            command.add_argument('--measured-smoke')
+            command.add_argument('--route-probes')
+        else:
+            command.add_argument('--manifest', required=True)
+        if name == 'smoke-run':
+            command.add_argument('--stage', choices=('S0', 'S2', 'S3', 'SE6', 'SX'), required=True)
     fixtures.add_arguments(sub)
     return top
 
@@ -1111,6 +1197,9 @@ BENCH_OPTIONS = {"alfworld": ("data_root", "pool_games"),
                  "searchqa": ("fresh_manifest", "dataset", "revision", "exclude", "cache_sha256")}
 
 HANDLERS = {"alf-confirm-views": alf_confirm_views,
+            'v211-snapshot': v211_snapshot, 'v211-selftest': v211_selftest, 'v211-s0': v211_s0, 'v211-manifest': v211_manifest,
+            'v211-structural-smoke': v211_structural_smoke, 'v211-route-probes': v211_route_probes,
+            'v211-smoke-run': v211_smoke_run, 'v211-smoke-summary': v211_smoke_summary,
             "v210-snapshot": v210_snapshot, "v210-s0": v210_s0,
             "v210-manifest": v210_manifest, "v210-smoke": v210_smoke,
             "alf-snapshot": alf_snapshot, "alf-s0": alf_s0, "alf-manifest": alf_manifest, "alf-smoke": alf_smoke,

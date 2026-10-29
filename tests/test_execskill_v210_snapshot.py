@@ -12,7 +12,7 @@ import pytest
 from skillopt.execskill import prelaunch, profiles, v210_smoke
 
 ROOT = Path(__file__).resolve().parents[1]
-CONFIGURATIONS = (profiles.BASELINE_V210, profiles.MAIN_V3)
+CONFIGURATIONS = (profiles.BASELINE_V210, profiles.MAIN_V3, profiles.MAIN_V4)
 INSTRUCTION = Path('docs/handoff/v29-20261026/v210-instructions-coevo5-v1.json')
 
 
@@ -62,8 +62,8 @@ def registered_snapshot_checks():
                           for path in (target / INSTRUCTION.parent.parent).rglob('*') if path.is_file()) == [
                               INSTRUCTION.as_posix()]
             checks[configuration] = _collect(target)
-        baseline, main = (snapshots[configuration] for configuration in CONFIGURATIONS)
-        assert _files(baseline) == _files(main)
+        baseline = snapshots[CONFIGURATIONS[0]]
+        assert all(_files(baseline) == _files(snapshot) for snapshot in snapshots.values())
         yield snapshots, checks
 
 

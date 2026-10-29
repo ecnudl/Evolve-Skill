@@ -631,7 +631,7 @@ def report(manifest, *, out):
         procedures = {p.id: p.origin for p in final.procedures}
         roster = read_benches(manifest["configuration"])
         learned = [b for b in roster if b in procedures.values()
-                   and not (manifest["configuration"] == profiles.MAIN_V3 and b == "alfworld")]
+                   and not (manifest["configuration"] in (profiles.MAIN_V3, profiles.MAIN_V4) and b == "alfworld")]
         units = [chain_root / "test" / b for b in roster if (chain_root / "test" / b / "unit.json").exists()]
         opened = evaluation.unseal(root, chain_root, chain, units, run=run, evidence=evidence,
                                    **({"configuration": manifest["configuration"]}

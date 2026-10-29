@@ -40,6 +40,10 @@ def _examples(ctx, tasks):
             continue  # Never invent a shortened task ID.
         entry = entries[task]
         view = views.get(task, entry.get('request_view') or entry.get('view'))
+        if getattr(ctx, 'configuration', None) == 'main-v4' and ctx.bench == 'spreadsheetbench':
+            view = copy.deepcopy(view)
+            if entry.get('report') is not None:
+                view['run_report'] = {k: entry['report'].get(k) for k in ('status', 'exc_type', 'message', 'answer_cells')}
         result.append({'task_id': task, 'view': faults.bounded_json(view, faults.VIEW_CHARS)})
         if len(result) == EXAMPLES:
             break
