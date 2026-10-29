@@ -16,6 +16,7 @@ from tests.execskill_v293_fakes import tmp_path  # noqa: F401
 from tests.test_execskill_manifest import MEASURED, fake_environment
 from tests.test_execskill_v210_manifest import consent, preparation as parent_preparation
 from tests.test_execskill_v211_allocation import pool, tail
+from tests.execskill_sheet_runtime_fakes import make_runtime
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -75,14 +76,16 @@ def setup(root, monkeypatch):
     selftest = root / 'selftest.json'
     write_json(selftest, p.record('sandbox-selftest', 'smoke', {'passed': True, 'measured': MEASURED,
         'limits': {k: asdict(l) for k, l in sandbox.LIMITS.items()}}))
+    runtime_file = make_runtime(root / 'launch-sheet', monkeypatch)
     checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
-        selftest=selftest, checks={'passed': True, 'summary': 'authored injected zero-call receipt'})
+        selftest=selftest, sheet_runtime=runtime_file,
+        checks={'passed': True, 'summary': 'authored injected zero-call receipt'})
     provenance = root / 'provenance.json'
     write_json(provenance, {'build_tree': str(ROOT), 'git_head': 'f' * 40, 'snapshot_root': str(ROOT),
         'sha256_list_sha256': checked['snapshot_sha256'], 'env_files_absent': True})
     options = {'root': run, 's0_file': root / 's0' / v.S0_FILE, 'provenance': provenance,
         'roles_repo': root / 'roles', 'route_b_env': root / 'route.env', 'smoke_chain': 'G',
-        'environment_found': fake_environment()}
+        'sheet_runtime': runtime_file, 'environment_found': fake_environment()}
     return checked, options, before
 
 
@@ -166,7 +169,8 @@ def test_g_chain_auditor_gets_independent_pinned_northgate_client(tmp_path, monk
 def test_new_cli_choices_keep_g_measured_smoke_and_require_selftest():
     from scripts.run_execskill import parser
     args = parser().parse_args(['v211-manifest', '--out', '/tmp/m.json', '--root', '/tmp/r', '--s0', '/tmp/s0',
-        '--provenance', '/tmp/p.json', '--roles-repo', '/tmp/roles', '--route-b-env', '/tmp/route.env', '--smoke-chain', 'G'])
+        '--provenance', '/tmp/p.json', '--roles-repo', '/tmp/roles', '--route-b-env', '/tmp/route.env',
+        '--sheet-runtime', '/tmp/sheet-runtime.json', '--smoke-chain', 'G'])
     assert args.smoke_chain == 'G' and args.measured_smoke is None
     with pytest.raises(SystemExit):
         parser().parse_args(['v211-s0', '--out', '/tmp/s0', '--root', '/tmp/r'])

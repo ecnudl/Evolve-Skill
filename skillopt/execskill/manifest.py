@@ -530,6 +530,9 @@ def _check_v210(value):
         require(value["sandbox"]["image_id"] is None
                 and all(item is None for item in value["sandbox"]["measured"].values()),
                 "The baseline records sandbox measurements as not applicable")
+    if configuration != protocol.MAIN_V4:  # main-v4 also binds its full S0 below
+        from . import sheet_runtime
+        sheet_runtime.verify_manifest(value, snapshot_root=REPO)
     return value
 
 
@@ -537,6 +540,8 @@ def _check_v211(value):
     """Child identities are validated before any launch, without sealed-panel reads."""
     from . import engineer_v211, v211_allocation, v211_limits, v211_smoke, v211_protection
     data = value['data']
+    from . import sheet_runtime
+    sheet_runtime.verify_manifest(value, snapshot_root=REPO)
     require(data.get('v211_prompt_pins') == engineer_v211.pins(), 'The main-v4 per-benchmark prompt pins')
     require(data.get('freshness_amendment') == v211_smoke.AMENDMENT,
             'The coordinator-approved within-run freshness amendment is explicit')
@@ -549,7 +554,8 @@ def _check_v211(value):
             and s0.get('snapshot_sha256') == data.get('snapshot_sha256')
             and s0.get('v211_prompt_pins') == data['v211_prompt_pins']
             and s0.get('allocations') == data.get('allocations')
-            and s0.get('protected_ids') == data.get('protected_ids'),
+            and s0.get('protected_ids') == data.get('protected_ids')
+            and s0.get('launch_sheet_runtime') == data.get('launch_sheet_runtime'),
             'The main-v4 manifest binds its complete passing S0')
     allocations = data.get('allocations')
     require(isinstance(allocations, dict) and set(allocations) == set(v211_allocation.LEARNED),

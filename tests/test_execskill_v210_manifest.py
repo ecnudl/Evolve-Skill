@@ -17,6 +17,7 @@ from skillopt.validator_pilot.api import digest
 from tests.execskill_v293_fakes import tmp_path  # noqa: F401
 from tests.test_execskill_zpc_pipeline import offline  # noqa: F401
 from tests.test_execskill_manifest import given, fake_environment, MEASURED, tree
+from tests.execskill_sheet_runtime_fakes import make_runtime
 
 CONFIGS = (p.BASELINE_V210, p.MAIN_V3)
 PREPARATION_SHAPE = Path(__file__).parent / "fixtures/execskill/v210_main_v2_2_preparation_shape.json"
@@ -80,8 +81,8 @@ def preparation(root, monkeypatch):
 def setup(root, monkeypatch, configuration):
     source, old, records = preparation(root / "source", monkeypatch)
     forbid_sealed_opens(monkeypatch, old)
-    snapshot = tree(root / "snapshot")
-    monkeypatch.setattr(manifest, "REPO", snapshot)
+    snapshot = Path(__file__).resolve().parents[1]
+    runtime_file = make_runtime(root / 'launch-sheet', monkeypatch)
     run = root / "run"
     consent(run, configuration)
     selftest = None
@@ -90,13 +91,15 @@ def setup(root, monkeypatch, configuration):
         write_json(selftest, p.record("sandbox-selftest", "smoke", {"passed": True,
             "measured": MEASURED, "limits": {k: asdict(l) for k, l in sandbox.LIMITS.items()}}))
     checked = v.collect_s0(root / "s0", preparation_file=source, root=run, configuration=configuration,
-        snapshot_root=snapshot, selftest=selftest, checks={"passed": True, "summary": "authored checks"})
+        snapshot_root=snapshot, selftest=selftest, sheet_runtime=runtime_file,
+        checks={"passed": True, "summary": "authored checks"})
     provenance = root / "provenance.json"
     write_json(provenance, {"build_tree": str(snapshot), "git_head": "f" * 40,
         "snapshot_root": str(snapshot), "sha256_list_sha256": checked["snapshot_sha256"], "env_files_absent": True})
     options = {"root": run, "s0_file": root / "s0" / v.S0_FILE, "provenance": provenance,
         "roles_repo": root / "roles", "route_b_env": root / "route.env", "configuration": configuration,
-        "smoke_chain": "D", "environment_found": fake_environment() if configuration == p.MAIN_V3 else None}
+        "smoke_chain": "D", "sheet_runtime": runtime_file,
+        "environment_found": fake_environment() if configuration == p.MAIN_V3 else None}
     return checked, options, old, records
 
 

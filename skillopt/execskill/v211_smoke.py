@@ -165,7 +165,7 @@ def allocations(imported, *, protected=None):
     return output
 
 
-def collect_s0(out, *, preparation_file, root, snapshot_root=None, selftest, checks=None):
+def collect_s0(out, *, preparation_file, root, snapshot_root=None, selftest, sheet_runtime=None, checks=None):
     from . import engineer_v211
     out, root = safe_path(out), safe_path(root)
     require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
@@ -177,12 +177,15 @@ def collect_s0(out, *, preparation_file, root, snapshot_root=None, selftest, che
     require(tested.get('passed') is True and set(tested['measured']) == manifest.MEASURED_FIELDS,
             'A passing measured sandbox selftest')
     source = safe_path(snapshot_root or manifest.REPO)
+    from . import sheet_runtime as launch_sheet
+    sheet = launch_sheet.read(sheet_runtime, snapshot_root=source) if sheet_runtime is not None else None
     history = historical_fingerprints(source)
     protected = protected_ids(imported)
     allocated = allocations(imported, protected=protected)
     checked = prelaunch.zero_call_checks(source, python=sys.executable) if checks is None else checks
     value = p.record('v211-s0', 'smoke', {
         'configuration': p.MAIN_V4, 'root': str(root), **imported,
+        'launch_sheet_runtime': sheet,
         'active_cards': cards, 'instructions': instruction_start.pins(),
         'instruction_start': instruction_start.START, 'blank_arm': instruction_start.blank_definition(),
         'consent': deepcopy(allowed), 'consent_sha256': digest(allowed),
@@ -258,7 +261,7 @@ def measured_readiness(root, *, source_sha256, s0_sha256):
     return found, se6
 
 
-def make_manifest(out, *, root, s0_file, provenance, roles_repo, route_b_env,
+def make_manifest(out, *, root, s0_file, provenance, roles_repo, route_b_env, sheet_runtime,
                   smoke_chain=None, measured_smoke=None, route_probes=None, environment_found=None):
     from . import engineer_v211
     checked = p.verified(read_json(s0_file), 'v211-s0')
@@ -271,6 +274,8 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, route_b_env,
     require(digest(allowed) == checked['consent_sha256'], 'S0 and manifest bind the same exact consent')
     imported = v210_smoke.preparation(checked['registration']['preparation']['path'])
     require(all(checked[key] == value for key, value in imported.items()), 'Preparation still matches S0')
+    from . import sheet_runtime as launch_sheet
+    sheet = launch_sheet.for_manifest(sheet_runtime, checked, snapshot_root=manifest.REPO)
     protected = protected_ids(imported)
     require(checked['protected_ids'] == protected, 'S0 protected-ID source identity remains unchanged')
     require(checked['allocations'] == allocations(imported, protected=protected),
@@ -305,6 +310,7 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, route_b_env,
         'D': manifest.solver_block('D', env_path=route_b_env, branch='N', longest=longest,
                                   configuration=p.MAIN_V4)}
     data = {**imported['data'], 'exclusion': _bind_exclusion(root, imported),
+        'launch_sheet_runtime': sheet, 'inherited_sheet_runtime': launch_sheet.inherited(imported),
         'v211_preparation': imported['registration'], 'v211_s0': checked,
         's0_sha256': checked[p.RECORD_HASH], 'snapshot_sha256': source,
         'allocations': deepcopy(checked['allocations']), 'protected_ids': deepcopy(protected),
@@ -317,8 +323,9 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, route_b_env,
     return manifest.make(out, evidence='smoke' if smoke_chain else p.REAL_RUN_EVIDENCE[p.MAIN_V4],
         measured=checked['measured'], limits={k: sandbox.Limits(**v) for k, v in checked['limits'].items()},
         environment_found=environment_found, configuration=p.MAIN_V4, root=str(root), data=data,
-        cards=imported['cards'], contracts=imported['contracts'], runtime=imported['runtime'],
-        sheet_qualification=imported['sheet_qualification'], fixtures=imported['fixtures'], provenance=proven,
+        cards=imported['cards'], contracts=imported['contracts'],
+        runtime={**imported['runtime'], 'spreadsheetbench': sheet['runtime']},
+        sheet_qualification=sheet['qualification'], fixtures=imported['fixtures'], provenance=proven,
         clients={'solver': blocks, 'roles': manifest.role_settings(p.MAIN_V4), 'routes': {'D': {'B':
             routes.pin('D', 'B', env_path=route_b_env, solver_block=blocks['D'], configuration=p.MAIN_V4)}}})
 

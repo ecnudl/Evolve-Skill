@@ -851,7 +851,8 @@ def v210_snapshot(args):
 def v210_s0(args):
     from skillopt.execskill import v210_smoke
     value = s0.v210_collect(args.out, preparation_file=args.preparation, root=args.root,
-        snapshot_root=args.snapshot, selftest=args.selftest, configuration=args.configuration)
+        snapshot_root=args.snapshot, selftest=args.selftest, configuration=args.configuration,
+        sheet_runtime=args.sheet_runtime)
     _print({"s0": str(Path(args.out) / v210_smoke.S0_FILE), "passed": value["passed"],
             "sandbox_required": value["sandbox_required"], "sealed_reads": value["sealed_reads"]})
     return 0 if value["passed"] else 3
@@ -861,7 +862,8 @@ def v210_manifest(args):
     from skillopt.execskill import v210_smoke
     value = v210_smoke.make_manifest(args.out, root=args.root, s0_file=args.s0,
         provenance=args.provenance, roles_repo=args.roles_repo, route_b_env=args.route_b_env,
-        configuration=args.configuration, smoke_chain=args.smoke_chain, measured_smoke=args.measured_smoke)
+        configuration=args.configuration, smoke_chain=args.smoke_chain, measured_smoke=args.measured_smoke,
+        sheet_runtime=args.sheet_runtime)
     _print({"manifest": str(args.out), "run": value[protocol.RECORD_HASH], "root": value["root"],
             "launchable_chains": value["data"]["launchable_chains"], "sealed_reads": 0})
 
@@ -887,7 +889,7 @@ def v211_selftest(args):
 def v211_s0(args):
     from skillopt.execskill import v211_smoke
     value = v211_smoke.collect_s0(args.out, preparation_file=args.preparation, root=args.root,
-        snapshot_root=args.snapshot, selftest=args.selftest)
+        snapshot_root=args.snapshot, selftest=args.selftest, sheet_runtime=args.sheet_runtime)
     _print({'s0': str(Path(args.out) / v211_smoke.S0_FILE), 'passed': value['passed'], 'sealed_reads': 0})
     return 0 if value['passed'] else 3
 
@@ -896,7 +898,8 @@ def v211_manifest(args):
     from skillopt.execskill import v211_smoke
     value = v211_smoke.make_manifest(args.out, root=args.root, s0_file=args.s0,
         provenance=args.provenance, roles_repo=args.roles_repo, route_b_env=args.route_b_env,
-        smoke_chain=args.smoke_chain, measured_smoke=args.measured_smoke, route_probes=args.route_probes)
+        smoke_chain=args.smoke_chain, measured_smoke=args.measured_smoke, route_probes=args.route_probes,
+        sheet_runtime=args.sheet_runtime)
     _print({'manifest': str(args.out), 'run': value[protocol.RECORD_HASH], 'root': value['root'],
             'launchable_chains': value['data']['launchable_chains'], 'sealed_reads': 0})
 
@@ -1155,12 +1158,14 @@ def parser():
             command.add_argument("--preparation", default="/data/execskill-20261024-main-v2-2-manifest.json")
             command.add_argument("--snapshot", default=str(PROJECT_ROOT))
             command.add_argument("--selftest", help="Required for main-v3; omitted for baseline-v210")
+            command.add_argument("--sheet-runtime", help="Snapshot-qualified sheet runtime; required for manifest use")
         elif name == "manifest":
             command.add_argument("--root", required=True)
             command.add_argument("--s0", required=True)
             command.add_argument("--provenance", required=True)
             command.add_argument("--roles-repo", required=True)
             command.add_argument("--route-b-env", required=True)
+            command.add_argument("--sheet-runtime", required=True)
             command.add_argument("--smoke-chain", choices=("G", "D"))
             command.add_argument("--measured-smoke", help="Passed measured smoke root required for real main-v3")
         else:
@@ -1179,8 +1184,9 @@ def parser():
             command.add_argument('--preparation', default='/data/execskill-20261024-main-v2-2-manifest.json')
             command.add_argument('--snapshot', default=str(PROJECT_ROOT))
             command.add_argument('--selftest', required=True)
+            command.add_argument('--sheet-runtime', help='Snapshot-qualified sheet runtime; required for manifest use')
         elif name == 'manifest':
-            for flag in ('root', 's0', 'provenance', 'roles-repo', 'route-b-env'):
+            for flag in ('root', 's0', 'provenance', 'roles-repo', 'route-b-env', 'sheet-runtime'):
                 command.add_argument('--' + flag, required=True)
             command.add_argument('--smoke-chain', choices=('G',))
             command.add_argument('--measured-smoke')

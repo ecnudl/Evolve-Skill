@@ -132,7 +132,8 @@ def preparation(path):
             "fixtures": deepcopy(source["fixtures"])}
 
 
-def collect_s0(out, *, preparation_file, root, configuration, snapshot_root=None, selftest=None, checks=None):
+def collect_s0(out, *, preparation_file, root, configuration, snapshot_root=None, selftest=None,
+               sheet_runtime=None, checks=None):
     _profile(configuration)
     out, root = safe_path(out), safe_path(root)
     require(not (out / S0_FILE).exists(), "S0 is written once")
@@ -154,6 +155,8 @@ def collect_s0(out, *, preparation_file, root, configuration, snapshot_root=None
         measured, limits = deepcopy(tested["measured"]), deepcopy(tested["limits"])
         require(set(measured) == manifest.MEASURED_FIELDS, "Complete S0 measurements")
     snapshot_root = safe_path(snapshot_root or manifest.REPO)
+    from . import sheet_runtime as launch_sheet
+    sheet = launch_sheet.read(sheet_runtime, snapshot_root=snapshot_root) if sheet_runtime is not None else None
     checked = prelaunch.zero_call_checks(snapshot_root, python=sys.executable) if checks is None else checks
     imports = {}
     if not baseline:
@@ -161,6 +164,7 @@ def collect_s0(out, *, preparation_file, root, configuration, snapshot_root=None
         imports["alfworld_v11_import"] = v210_import.pins()
     value = p.record("v210-s0", "smoke", {"configuration": configuration, "root": str(root),
         **imported, "instructions": instruction_start.pins(),
+        "launch_sheet_runtime": sheet,
         "instruction_start": instruction_start.START, "blank_arm": instruction_start.blank_definition(),
         "card_sha256": {bench: hashlib.sha256(text.encode()).hexdigest() for bench, text in original.items()},
         "active_cards": active,
@@ -189,7 +193,7 @@ def _bind_exclusion(root, imported):
     return bound
 
 
-def make_manifest(out, *, root, s0_file, provenance, roles_repo, route_b_env, configuration,
+def make_manifest(out, *, root, s0_file, provenance, roles_repo, route_b_env, configuration, sheet_runtime,
                   smoke_chain=None, measured_smoke=None, environment_found=None):
     _profile(configuration)
     checked = p.verified(read_json(s0_file), "v210-s0")
@@ -201,6 +205,8 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, route_b_env, co
     require(digest(allowed) == checked["consent_sha256"], "S0 and manifest bind the same exact consent")
     imported = preparation(checked["registration"]["preparation"]["path"])
     require(all(checked[key] == value for key, value in imported.items()), "The preparation still matches S0")
+    from . import sheet_runtime as launch_sheet
+    sheet = launch_sheet.for_manifest(sheet_runtime, checked, snapshot_root=manifest.REPO)
     require(checked["active_cards"] == instruction_start.active_cards(imported["cards"], configuration),
             "S0 pins the historical instruction cards unchanged")
     require(checked["instructions"] == instruction_start.pins(), "Instruction pins differ from the frozen fixture")
@@ -234,6 +240,7 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, route_b_env, co
               "D": manifest.solver_block("D", env_path=route_b_env, branch="N", longest=routes.S1B_CEILING,
                                          configuration=configuration)}
     data = {**imported["data"], "exclusion": _bind_exclusion(root, imported),
+        "launch_sheet_runtime": sheet, "inherited_sheet_runtime": launch_sheet.inherited(imported),
         "v210_preparation": imported["registration"], "s0_sha256": checked[p.RECORD_HASH],
         "snapshot_sha256": current_sha, "launchable_chains": [smoke_chain] if smoke_chain else ["G", "D"],
         "readiness": readiness, "test_read_estimate": {c: estimate for c in p.CHAINS},
@@ -241,8 +248,9 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, route_b_env, co
     return manifest.make(out, evidence="smoke" if smoke_chain else p.REAL_RUN_EVIDENCE[configuration],
         measured=checked["measured"], limits={key: sandbox.Limits(**value) for key, value in checked["limits"].items()},
         environment_found=environment_found, configuration=configuration, root=str(root), data=data,
-        cards=imported["cards"], contracts=imported["contracts"], runtime=imported["runtime"],
-        sheet_qualification=imported["sheet_qualification"], fixtures=imported["fixtures"], provenance=provenance_value,
+        cards=imported["cards"], contracts=imported["contracts"],
+        runtime={**imported["runtime"], "spreadsheetbench": sheet["runtime"]},
+        sheet_qualification=sheet["qualification"], fixtures=imported["fixtures"], provenance=provenance_value,
         clients={"solver": blocks, "roles": manifest.role_settings(configuration), "routes": {"D": {"B":
             routes.pin("D", "B", env_path=route_b_env, solver_block=blocks["D"], configuration=configuration)}}})
 
