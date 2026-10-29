@@ -51,29 +51,74 @@ def snapshot(out, *, source, git_head, configuration):
 
 
 def preparation(path):
-    """Copy the five-bench supplies/exclusions by value; never open pinned test files."""
+    """Copy main-v2-2 metadata by value; never open its pinned files or upstream directories."""
     path = safe_path(path)
     source = manifest.load(path, verify=False)
     require(source["configuration"] == p.MAIN_V2_2, "v2.10 inherits the main-v2-2 preparation")
     data = deepcopy(source["data"])
+    require({"exclusion", "pinned", "pools", "research", "searchqa_tail", "test_read_estimate",
+             "test_read_terms"} <= set(data), "Preparation carries the main-v2-2 data fields")
+    require(all(isinstance(data[key], dict) and set(data[key]) == set(p.CHAINS)
+                for key in ("test_read_estimate", "test_read_terms"))
+            and all(type(value) is int for value in data["test_read_estimate"].values()),
+            "Preparation carries both chains' read estimates and terms")
     require(set(data.get("pools", {})) == set(p.BENCHES), "Preparation pins all five supplies")
-    require(set(data.get("pinned", {}).get("paths", {}).get("test", {})) == set(p.BENCHES),
-            "Preparation pins all five test panels")
-    sealed = set(data["pinned"]["paths"]["test"].values()) | {data["pinned"]["paths"]["split"]}
-    require(all(entry["path"] not in sealed for entry in data["pools"].values()),
+    pinned = data["pinned"]
+    require(set(pinned) == {"paths", "sha256"}, "Preparation carries paths and hashes")
+    paths = pinned["paths"]
+    groups = {"test": {"alfworld", "searchqa", "spreadsheetbench"},
+              "layouts": {"livemath", "officeqa"}, "upstream": {"livemath", "officeqa"},
+              "train": set(p.BENCHES), "val": set(p.BENCHES)}
+    require(set(paths) == set(groups) | {"split", "alfworld_data"},
+            "Preparation pins the main-v2-2 data paths")
+    for group, benches in groups.items():
+        require(isinstance(paths[group], dict) and set(paths[group]) == benches,
+                "Preparation pins the main-v2-2 " + group + " paths")
+    require(all(type(value) is str and value for value in
+                [paths["split"], paths["alfworld_data"],
+                 *(value for group in groups for value in paths[group].values())]),
+            "Preparation data paths are nonempty strings")
+
+    def sha256(value):
+        return type(value) is str and len(value) == 64 and set(value) <= set("0123456789abcdef")
+
+    # coevo5.data.pin hashes files; upstream and alfworld_data are directories.
+    files = [paths["split"], *(value for group in ("test", "layouts", "train", "val")
+                             for value in paths[group].values())]
+    require(isinstance(pinned["sha256"], dict)
+            and all(sha256(pinned["sha256"].get(str(safe_path(value)))) for value in files),
+            "Preparation carries the pinned file hashes")
+    sealed = {safe_path(value) for value in [paths["split"],
+              *(value for group in ("test", "layouts", "upstream") for value in paths[group].values())]}
+    supplies = [*data["pools"].values(), data["searchqa_tail"]]
+    require(all(isinstance(entry, dict) and set(entry) == {"path", "sha256"}
+                and type(entry["path"]) is str and entry["path"] and sha256(entry["sha256"])
+                for entry in supplies), "Preparation pins supply paths and hashes")
+    require(all(safe_path(entry["path"]) not in sealed for entry in supplies),
             "Supplies are separate from the sealed test panels")
+    require(exclusion.SEARCHQA_RUN == "searchqa_test_exclusion"
+            and exclusion.ALFWORLD_RUN == "alfworld_test_identity_check",
+            "The inherited exclusion run names are unchanged")
+    require(set(data["exclusion"]) == {exclusion.SEARCHQA_RUN, exclusion.ALFWORLD_RUN, "test_canaries"},
+            "Preparation carries exclusion records and canaries by value")
     records = {}
-    for name, pin in data.get("exclusion", {}).items():
+    for name, pin in data["exclusion"].items():
+        require(isinstance(pin, dict) and set(pin) == {"path", "record_sha256"}
+                and type(pin["path"]) is str and pin["path"] and sha256(pin["record_sha256"])
+                and safe_path(pin["path"]) not in sealed, "Preparation pins an exclusion record")
+        # verified expands test-canaries to fivebench-execskill-v1-test-canaries.
         value = p.verified(read_json(pin["path"]), "test-canaries" if name == "test_canaries" else exclusion.RECORD_KIND)
         require(value[p.RECORD_HASH] == pin["record_sha256"], "The exclusion record differs from its pin")
         records[name] = value
-    require(set(p.EXCLUSION_RUNS) <= set(records) and "test_canaries" in records,
-            "Preparation carries exclusion records and canaries by value")
     searchqa, alfworld = records[exclusion.SEARCHQA_RUN], records[exclusion.ALFWORLD_RUN]
     require(searchqa["run"] == exclusion.SEARCHQA_RUN and searchqa["exclusion_sha256"] == digest(searchqa["dropped"])
             and alfworld["run"] == exclusion.ALFWORLD_RUN and alfworld["disjoint"] is True
             and len({value["consent_sha256"] for value in records.values()}) == 1,
             "The imported exclusions are one consented, passing preparation")
+    require(set(source["contracts"]) == set(source["runtime"]) == set(p.BENCHES)
+            and isinstance(source["fixtures"], dict)
+            and set(source["sheet_qualification"]) == {"path", "record_hash"},
+            "Preparation carries five-bench contracts, runtime, qualification and fixtures")
     for bench, contract in source["contracts"].items():
         require(contract["sha"] == hashlib.sha256(contract["text"].encode()).hexdigest(),
                 "The inherited contract pin")
@@ -135,7 +180,7 @@ def collect_s0(out, *, preparation_file, root, configuration, snapshot_root=None
 def _bind_exclusion(root, imported):
     bound = {}
     for name, value in imported["exclusion_records"].items():
-        target = root / (p.CANARIES if name == "test_canaries" else "shared/v210-import/" + name + ".json")
+        target = root / (p.CANARIES if name == "test_canaries" else exclusion.EXCLUSION_DIR + "/" + name + ".json")
         if target.exists():
             require(read_json(target) == value, "An imported exclusion record changed")
         else:

@@ -1,0 +1,220 @@
+{
+  "configuration": "main-v2-2",
+  "contracts": {
+    "alfworld": {
+      "sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "text": "Authored alfworld contract."
+    },
+    "livemath": {
+      "sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "text": "Authored livemath contract."
+    },
+    "officeqa": {
+      "sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "text": "Authored officeqa contract."
+    },
+    "searchqa": {
+      "sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "text": "Authored searchqa contract."
+    },
+    "spreadsheetbench": {
+      "sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "text": "Authored spreadsheetbench contract."
+    }
+  },
+  "data": {
+    "exclusion": {
+      "alfworld_test_identity_check": {
+        "path": "/fake-v210-main-v2-2/alfworld_test_identity_check.json",
+        "record_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "searchqa_test_exclusion": {
+        "path": "/fake-v210-main-v2-2/searchqa_test_exclusion.json",
+        "record_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "test_canaries": {
+        "path": "/fake-v210-main-v2-2/test_canaries.json",
+        "record_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    "pinned": {
+      "paths": {
+        "alfworld_data": "/fake-v210-main-v2-2/alfworld-data",
+        "layouts": {
+          "livemath": "/fake-v210-main-v2-2/livemath-unopened-layout.json",
+          "officeqa": "/fake-v210-main-v2-2/officeqa-unopened-layout.json"
+        },
+        "split": "/fake-v210-main-v2-2/unopened-split.json",
+        "test": {
+          "alfworld": "/fake-v210-main-v2-2/alfworld-unopened-test.json",
+          "searchqa": "/fake-v210-main-v2-2/searchqa-unopened-test.json",
+          "spreadsheetbench": "/fake-v210-main-v2-2/spreadsheetbench-unopened-test.json"
+        },
+        "train": {
+          "alfworld": "/fake-v210-main-v2-2/alfworld-unopened-train.json",
+          "livemath": "/fake-v210-main-v2-2/livemath-unopened-train.json",
+          "officeqa": "/fake-v210-main-v2-2/officeqa-unopened-train.json",
+          "searchqa": "/fake-v210-main-v2-2/searchqa-unopened-train.json",
+          "spreadsheetbench": "/fake-v210-main-v2-2/spreadsheetbench-unopened-train.json"
+        },
+        "upstream": {
+          "livemath": "/fake-v210-main-v2-2/livemath-unopened-upstream",
+          "officeqa": "/fake-v210-main-v2-2/officeqa-unopened-upstream"
+        },
+        "val": {
+          "alfworld": "/fake-v210-main-v2-2/alfworld-unopened-val.json",
+          "livemath": "/fake-v210-main-v2-2/livemath-unopened-val.json",
+          "officeqa": "/fake-v210-main-v2-2/officeqa-unopened-val.json",
+          "searchqa": "/fake-v210-main-v2-2/searchqa-unopened-val.json",
+          "spreadsheetbench": "/fake-v210-main-v2-2/spreadsheetbench-unopened-val.json"
+        }
+      },
+      "sha256": {
+        "/fake-v210-main-v2-2/alfworld-unopened-test.json": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "/fake-v210-main-v2-2/alfworld-unopened-train.json": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "/fake-v210-main-v2-2/alfworld-unopened-val.json": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "/fake-v210-main-v2-2/livemath-unopened-layout.json": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "/fake-v210-main-v2-2/livemath-unopened-train.json": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "/fake-v210-main-v2-2/livemath-unopened-val.json": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "/fake-v210-main-v2-2/officeqa-unopened-layout.json": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "/fake-v210-main-v2-2/officeqa-unopened-train.json": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "/fake-v210-main-v2-2/officeqa-unopened-val.json": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "/fake-v210-main-v2-2/searchqa-unopened-test.json": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "/fake-v210-main-v2-2/searchqa-unopened-train.json": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "/fake-v210-main-v2-2/searchqa-unopened-val.json": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "/fake-v210-main-v2-2/spreadsheetbench-unopened-test.json": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "/fake-v210-main-v2-2/spreadsheetbench-unopened-train.json": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "/fake-v210-main-v2-2/spreadsheetbench-unopened-val.json": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "/fake-v210-main-v2-2/unopened-split.json": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    "pools": {
+      "alfworld": {
+        "path": "/fake-v210-main-v2-2/alfworld-unopened-pool.json",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "livemath": {
+        "path": "/fake-v210-main-v2-2/livemath-unopened-pool.json",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "officeqa": {
+        "path": "/fake-v210-main-v2-2/officeqa-unopened-pool.json",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "searchqa": {
+        "path": "/fake-v210-main-v2-2/searchqa-unopened-pool.json",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "spreadsheetbench": {
+        "path": "/fake-v210-main-v2-2/spreadsheetbench-unopened-pool.json",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    "research": {
+      "archive": "/fake-v210-main-v2-2/authored-research",
+      "index_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+    },
+    "searchqa_tail": {
+      "path": "/fake-v210-main-v2-2/unopened-tail.json",
+      "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    },
+    "test_read_estimate": {
+      "D": 5,
+      "G": 5
+    },
+    "test_read_terms": {
+      "D": {
+        "alfworld": "1/1",
+        "livemath": "1/1",
+        "officeqa": "1/1",
+        "searchqa": "1/1",
+        "spreadsheetbench": "1/1"
+      },
+      "G": {
+        "alfworld": "1/1",
+        "livemath": "1/1",
+        "officeqa": "1/1",
+        "searchqa": "1/1",
+        "spreadsheetbench": "1/1"
+      }
+    }
+  },
+  "exclusion_records": {
+    "alfworld_test_identity_check": {
+      "bench": "alfworld",
+      "consent_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "counts": {
+        "overlap_games": 0,
+        "overlap_rooms": 0,
+        "supply_games": 1,
+        "test_games": 1,
+        "test_rooms": 1
+      },
+      "disjoint": true,
+      "evidence": "engineering_fixture",
+      "exclusion_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "record_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "run": "alfworld_test_identity_check",
+      "split": "valid_unseen",
+      "unit": "authored-exclusion-unit",
+      "version": "fivebench-execskill-v1-exclusion"
+    },
+    "searchqa_test_exclusion": {
+      "bench": "searchqa",
+      "consent_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "counts": {
+        "dropped_by_id": 0,
+        "dropped_by_question": 0,
+        "kept": 1,
+        "supply": 1,
+        "test_items": 1
+      },
+      "dropped": [],
+      "evidence": "engineering_fixture",
+      "exclusion_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "record_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "run": "searchqa_test_exclusion",
+      "supply_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "unit": "authored-exclusion-unit",
+      "version": "fivebench-execskill-v1-exclusion"
+    },
+    "test_canaries": {
+      "canaries": [
+        {
+          "chars": 64,
+          "sha256_16": "eeeeeeeeeeeeeeee"
+        }
+      ],
+      "consent_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "counts": {
+        "alfworld": 1,
+        "searchqa": 0
+      },
+      "evidence": "engineering_fixture",
+      "per_bench": 5,
+      "record_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "seed_tag": "authored-canary-seed",
+      "sources": {
+        "alfworld": "authored-public-game-path",
+        "searchqa": "authored-public-question"
+      },
+      "unit": "authored-exclusion-unit",
+      "version": "fivebench-execskill-v1-test-canaries"
+    }
+  },
+  "fixture_note": "Authored structure from FIX-BRIEF-v210-4; all paths, hashes and record contents are fake. Tests rebase paths and reseal records, while manifest.make supplies registered metadata and frozen cards.",
+  "fixtures": {
+    "sha256": "6666666666666666666666666666666666666666666666666666666666666666"
+  },
+  "runtime": {
+    "alfworld": {},
+    "livemath": {},
+    "officeqa": {},
+    "searchqa": {},
+    "spreadsheetbench": {}
+  },
+  "sheet_qualification": {
+    "path": "/fake-v210-main-v2-2/sheet/qualification.json",
+    "record_hash": "2222222222222222222222222222222222222222222222222222222222222222"
+  }
+}

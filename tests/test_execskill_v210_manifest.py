@@ -1,14 +1,17 @@
 """Manifest/S0 paths with the real frozen instruction cards and authored unopened data pins."""
 from copy import deepcopy
 from dataclasses import asdict
+from fractions import Fraction
 import hashlib
+import math
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from skillopt.continual_eval.core import read_json, write_json
 from skillopt.execskill import (evaluation, exclusion, instruction_start, manifest, prelaunch,
-                               profiles as p, protocol, routes, v210_import, v210_smoke as v)
+                               profiles as p, protocol, routes, step, supply, v210_import, v210_smoke as v)
 from skillopt.execskill.sandbox import client as sandbox
 from skillopt.validator_pilot.api import digest
 from tests.execskill_v293_fakes import tmp_path  # noqa: F401
@@ -16,6 +19,21 @@ from tests.test_execskill_zpc_pipeline import offline  # noqa: F401
 from tests.test_execskill_manifest import given, fake_environment, MEASURED, tree
 
 CONFIGS = (p.BASELINE_V210, p.MAIN_V3)
+PREPARATION_SHAPE = Path(__file__).parent / "fixtures/execskill/v210_main_v2_2_preparation_shape.json"
+FAKE_ROOT = "/fake-v210-main-v2-2"
+
+
+def preparation_shape(root):
+    """Rebase authored paths, including the keys of the frozen file-hash map."""
+    def rebase(value):
+        if isinstance(value, str):
+            return str(root) + value[len(FAKE_ROOT):] if value.startswith(FAKE_ROOT) else value
+        if isinstance(value, dict):
+            return {rebase(key): rebase(entry) for key, entry in value.items()}
+        if isinstance(value, list):
+            return [rebase(entry) for entry in value]
+        return value
+    return rebase(read_json(PREPARATION_SHAPE))
 
 
 def consent(root, configuration):
@@ -28,27 +46,25 @@ def consent(root, configuration):
 
 def preparation(root, monkeypatch):
     root.mkdir(parents=True, exist_ok=True)
+    shape = preparation_shape(root)
     args = given(root)
     args["cards"] = {bench: row["text"] for bench, row in instruction_start.pins().items()}
-    records = {
-        exclusion.SEARCHQA_RUN: p.record(exclusion.RECORD_KIND, "engineering_fixture", {
-            "run": exclusion.SEARCHQA_RUN, "dropped": [], "exclusion_sha256": digest([]), "consent_sha256": "a" * 64}),
-        exclusion.ALFWORLD_RUN: p.record(exclusion.RECORD_KIND, "engineering_fixture", {
-            "run": exclusion.ALFWORLD_RUN, "disjoint": True, "consent_sha256": "a" * 64}),
-        "test_canaries": p.record("test-canaries", "engineering_fixture", {
-            "consent_sha256": "a" * 64, "canaries": {}})}
-    exclusions = {}
-    for name, value in records.items():
-        path = root / (name + ".json")
+    args["data"] = shape["data"]
+    args["runtime"] = shape["runtime"]
+    args["sheet_qualification"] = shape["sheet_qualification"]
+    args["fixtures"] = shape["fixtures"]
+    records = {}
+    for name, authored in shape["exclusion_records"].items():
+        fields = {k: value for k, value in authored.items() if k not in ("version", "evidence", p.RECORD_HASH)}
+        if name == exclusion.SEARCHQA_RUN:
+            fields["exclusion_sha256"] = digest(fields["dropped"])
+            fields["supply_sha256"] = digest(["authored-tail-1"])
+        kind = authored["version"].removeprefix(protocol.VERSION + "-")
+        value = p.record(kind, authored["evidence"], fields)
+        path = args["data"]["exclusion"][name]["path"]
         write_json(path, value)
-        exclusions[name] = {"path": str(path), "record_sha256": value[p.RECORD_HASH]}
-    split = str(root / "unopened-split.json")
-    tests = {bench: str(root / (bench + "-unopened-test.json")) for bench in p.BENCHES}
-    args["data"] = {"pools": {bench: {"path": str(root / (bench + "-unopened-pool.json")),
-                                    "sha256": "b" * 64} for bench in p.BENCHES},
-        "pinned": {"paths": {"split": split, "test": tests},
-                   "sha256": {path: "c" * 64 for path in (split, *tests.values())}},
-        "exclusion": exclusions, "searchqa_tail": {"path": str(root / "unopened-tail.json"), "sha256": "d" * 64}}
+        args["data"]["exclusion"][name]["record_sha256"] = value[p.RECORD_HASH]
+        records[name] = value
     args["clients"]["solver"] = {c: manifest.solver_block(c, env_path=b["env_path"], branch=b["branch"],
         configuration=p.MAIN_V2_2) for c, b in args["clients"]["solver"].items()}
     args["clients"]["routes"] = {"D": {"B": routes.pin("D", "B", env_path=root / "route.env",
@@ -63,6 +79,7 @@ def preparation(root, monkeypatch):
 
 def setup(root, monkeypatch, configuration):
     source, old, records = preparation(root / "source", monkeypatch)
+    forbid_sealed_opens(monkeypatch, old)
     snapshot = tree(root / "snapshot")
     monkeypatch.setattr(manifest, "REPO", snapshot)
     run = root / "run"
@@ -88,6 +105,194 @@ def reseal(value):
         k: v for k, v in value.items() if k not in ("version", "evidence", p.RECORD_HASH)})
 
 
+def sealed_paths(source):
+    paths = source["data"]["pinned"]["paths"]
+    return {paths["split"], *paths["test"].values(), *paths["layouts"].values(), *paths["upstream"].values()}
+
+
+def forbid_sealed_opens(monkeypatch, source):
+    sealed = {Path(path) for path in sealed_paths(source)}
+    original = Path.open
+    def guarded(path, *args, **kwargs):
+        assert not any(path == pin or path.is_relative_to(pin) for pin in sealed), "Opened a sealed preparation input"
+        return original(path, *args, **kwargs)
+    monkeypatch.setattr(Path, "open", guarded)
+
+
+def test_preparation_accepts_the_real_main_v2_2_shape_by_value_without_sealed_reads(tmp_path, monkeypatch):
+    source, old, records = preparation(tmp_path / "source", monkeypatch)
+    assert exclusion.SEARCHQA_RUN == "searchqa_test_exclusion"
+    assert exclusion.ALFWORLD_RUN == "alfworld_test_identity_check"
+    assert records["test_canaries"]["version"] == "fivebench-execskill-v1-test-canaries"
+    paths = old["data"]["pinned"]["paths"]
+    assert set(paths["test"]) == {"alfworld", "searchqa", "spreadsheetbench"}
+    assert set(paths["layouts"]) == set(paths["upstream"]) == {"livemath", "officeqa"}
+    assert set(paths["train"]) == set(paths["val"]) == set(p.BENCHES)
+    assert set(old["data"]["pinned"]["sha256"]) == {
+        paths["split"], *paths["train"].values(), *paths["val"].values(),
+        *paths["layouts"].values(), *paths["test"].values()}
+    forbid_sealed_opens(monkeypatch, old)
+    imported = v.preparation(source)
+    assert imported["data"] == old["data"]
+    assert imported["exclusion_records"] == records
+    assert imported["registration"]["supplies_sha256"] == digest(old["data"]["pools"])
+    # Use the same in-memory source too, so value copying cannot be supplied by read_json alone.
+    monkeypatch.setattr(manifest, "load", lambda *args, **kwargs: old)
+    copied = v.preparation(source)
+    copied["data"]["searchqa_tail"]["path"] = "changed-copy"
+    copied["data"]["pinned"]["paths"]["layouts"]["officeqa"] = "changed-copy"
+    assert old["data"] == imported["data"]
+
+
+REQUIRED_PREPARATION_KEYS = (
+    [("data", key) for key in ("pinned", "pools", "exclusion", "research", "searchqa_tail",
+                               "test_read_estimate", "test_read_terms")]
+    + [("data", "pinned", key) for key in ("paths", "sha256")]
+    + [("data", "pinned", "paths", key) for key in
+       ("test", "layouts", "upstream", "split", "alfworld_data", "train", "val")]
+    + [("data", "pinned", "paths", group, bench)
+       for group, benches in (("test", ("alfworld", "searchqa", "spreadsheetbench")),
+                              ("layouts", ("livemath", "officeqa")), ("upstream", ("livemath", "officeqa")),
+                              ("train", p.BENCHES), ("val", p.BENCHES)) for bench in benches]
+    + [("data", "pools", bench) for bench in p.BENCHES]
+    + [("data", "pools", "searchqa", key) for key in ("path", "sha256")]
+    + [("data", "exclusion", name) for name in
+       ("alfworld_test_identity_check", "searchqa_test_exclusion", "test_canaries")]
+    + [("data", "exclusion", "test_canaries", key) for key in ("path", "record_sha256")]
+    + [("data", "searchqa_tail", key) for key in ("path", "sha256")]
+    + [("data", key, chain) for key in ("test_read_estimate", "test_read_terms") for chain in p.CHAINS]
+    + [(key,) for key in ("runtime", "contracts", "sheet_qualification", "fixtures")]
+    + [(key, "officeqa") for key in ("runtime", "contracts")]
+    + [("sheet_qualification", key) for key in ("path", "record_hash")]
+)
+
+
+@pytest.mark.parametrize("missing", REQUIRED_PREPARATION_KEYS, ids=lambda keys: ".".join(keys))
+def test_preparation_refuses_missing_real_shape_keys(tmp_path, monkeypatch, missing):
+    source, old, _ = preparation(tmp_path / "source", monkeypatch)
+    broken = old
+    for key in missing[:-1]:
+        broken = broken[key]
+    del broken[missing[-1]]
+    source = tmp_path / "altered-preparation.json"
+    write_json(source, reseal(old))
+    with pytest.raises((ValueError, KeyError)):
+        v.preparation(source)
+
+
+@pytest.mark.parametrize("group", [None, "test", "layouts", "upstream", "train", "val"])
+def test_preparation_refuses_extra_benches_in_exact_path_groups(tmp_path, monkeypatch, group):
+    source, old, _ = preparation(tmp_path / "source", monkeypatch)
+    paths = old["data"]["pinned"]["paths"]
+    (paths[group] if group else paths)["unexpected-bench"] = str(tmp_path / "never-open.json")
+    source = tmp_path / "altered-preparation.json"
+    write_json(source, reseal(old))
+    with pytest.raises(ValueError):
+        v.preparation(source)
+
+
+@pytest.mark.parametrize("group", ["split", "train", "val", "layouts", "test"])
+def test_preparation_refuses_missing_file_hash_pins(tmp_path, monkeypatch, group):
+    source, old, _ = preparation(tmp_path / "source", monkeypatch)
+    paths = old["data"]["pinned"]["paths"]
+    path = paths[group] if group == "split" else next(iter(paths[group].values()))
+    del old["data"]["pinned"]["sha256"][path]
+    source = tmp_path / "altered-preparation.json"
+    write_json(source, reseal(old))
+    with pytest.raises(ValueError):
+        v.preparation(source)
+
+
+SEALED_INPUTS = [("split", None)] + [(group, bench) for group, benches in (
+    ("test", ("alfworld", "searchqa", "spreadsheetbench")),
+    ("layouts", ("livemath", "officeqa")), ("upstream", ("livemath", "officeqa"))) for bench in benches]
+
+
+@pytest.mark.parametrize("group,bench", SEALED_INPUTS)
+def test_preparation_refuses_supplies_overlapping_every_sealed_input(tmp_path, monkeypatch, group, bench):
+    source, old, _ = preparation(tmp_path / "source", monkeypatch)
+    paths = old["data"]["pinned"]["paths"]
+    old["data"]["pools"]["searchqa"]["path"] = paths[group][bench] if bench else paths[group]
+    source = tmp_path / "altered-preparation.json"
+    write_json(source, reseal(old))
+    forbid_sealed_opens(monkeypatch, old)
+    with pytest.raises(ValueError, match="[Ss]uppl|sealed"):
+        v.preparation(source)
+
+
+def test_preparation_refuses_tail_overlapping_a_rendered_test_input(tmp_path, monkeypatch):
+    source, old, _ = preparation(tmp_path / "source", monkeypatch)
+    old["data"]["searchqa_tail"]["path"] = old["data"]["pinned"]["paths"]["upstream"]["officeqa"]
+    source = tmp_path / "altered-preparation.json"
+    write_json(source, reseal(old))
+    forbid_sealed_opens(monkeypatch, old)
+    with pytest.raises(ValueError, match="[Ss]uppl|sealed"):
+        v.preparation(source)
+
+
+@pytest.mark.parametrize("name", ["SEARCHQA_RUN", "ALFWORLD_RUN"])
+def test_preparation_asserts_the_historical_exclusion_run_names(tmp_path, monkeypatch, name):
+    source, _, _ = preparation(tmp_path / "source", monkeypatch)
+    monkeypatch.setattr(exclusion, name, "renamed-exclusion")
+    with pytest.raises(ValueError, match="exclusion run names"):
+        v.preparation(source)
+
+
+def test_preparation_refuses_renamed_exclusion_and_scalar_read_estimate(tmp_path, monkeypatch):
+    source, old, _ = preparation(tmp_path / "source", monkeypatch)
+    broken = deepcopy(old)
+    broken["data"]["exclusion"]["renamed"] = broken["data"]["exclusion"].pop("searchqa_test_exclusion")
+    source = tmp_path / "renamed-exclusion-preparation.json"
+    write_json(source, reseal(broken))
+    with pytest.raises(ValueError, match="exclusion"):
+        v.preparation(source)
+    old["data"]["test_read_estimate"]["D"] = "5"
+    source = tmp_path / "altered-preparation.json"
+    write_json(source, reseal(old))
+    with pytest.raises(ValueError, match="read estimates"):
+        v.preparation(source)
+
+
+@pytest.mark.parametrize("name", ["alfworld_test_identity_check", "searchqa_test_exclusion", "test_canaries"])
+def test_preparation_refuses_wrong_exclusion_or_canary_record_kind(tmp_path, monkeypatch, name):
+    source, old, records = preparation(tmp_path / "source", monkeypatch)
+    value = records[name]
+    wrong = p.record("test-read-canaries", value["evidence"], {
+        key: entry for key, entry in value.items() if key not in ("version", "evidence", p.RECORD_HASH)})
+    pin = old["data"]["exclusion"][name]
+    pin["path"] = str(tmp_path / (name + "-wrong-kind.json"))
+    write_json(pin["path"], wrong)
+    pin["record_sha256"] = wrong[p.RECORD_HASH]
+    source = tmp_path / "altered-preparation.json"
+    write_json(source, reseal(old))
+    with pytest.raises(ValueError):
+        v.preparation(source)
+
+
+def test_bound_searchqa_exclusion_is_consumed_by_the_real_tail_reader(tmp_path, monkeypatch):
+    source, old, records = preparation(tmp_path / "source", monkeypatch)
+    items = [{"task_id": "authored-tail-1", "public": {"question": "Authored training question"}}]
+    tail = p.record(supply.RECORD_KIND, "engineering_fixture", {
+        "name": "searchqa-tail", "bench": "searchqa", "items": items})
+    pin = old["data"]["searchqa_tail"]
+    write_json(pin["path"], tail)
+    pin["sha256"] = hashlib.sha256(Path(pin["path"]).read_bytes()).hexdigest()
+    source = tmp_path / "altered-preparation.json"
+    write_json(source, reseal(old))
+    forbid_sealed_opens(monkeypatch, old)
+    imported = v.preparation(source)
+    run = tmp_path / "run"
+    bound = v._bind_exclusion(run, imported)
+    for name in p.EXCLUSION_RUNS:
+        assert exclusion.persisted(run, name) == records[name]
+    data = {**imported["data"], "exclusion": bound}
+    setting = SimpleNamespace(extra={step.TAIL: manifest._searchqa_tail(data)})
+    kept_items, kept_record = step._tail(SimpleNamespace(setting=setting))
+    assert kept_items == items
+    assert kept_record["exclusion_record_sha256"] == records[exclusion.SEARCHQA_RUN][p.RECORD_HASH]
+    assert imported["data"]["searchqa_tail"] == old["data"]["searchqa_tail"]
+
+
 @pytest.mark.parametrize("configuration", CONFIGS)
 def test_s0_imports_supply_exclusion_and_instruction_pins_without_opening_panels(tmp_path, monkeypatch, configuration):
     checked, _, old, records = setup(tmp_path, monkeypatch, configuration)
@@ -96,7 +301,7 @@ def test_s0_imports_supply_exclusion_and_instruction_pins_without_opening_panels
     assert checked["active_cards"] == checked["cards"] == {b: e["text"] for b, e in instruction_start.pins().items()}
     assert checked["instruction_start"] == "historical_card_is_the_instruction"
     assert checked["blank_arm"] == {"card": "", "kind": "blank"}
-    assert checked["data"]["pools"] == old["data"]["pools"]
+    assert checked["data"] == old["data"]
     assert checked["exclusion_records"] == records
     assert checked["sealed_reads"] == 0 and checked["passed"]
     assert checked["sandbox_required"] == (configuration == p.MAIN_V3)
@@ -111,7 +316,18 @@ def test_s0_imports_supply_exclusion_and_instruction_pins_without_opening_panels
 @pytest.mark.parametrize("configuration", CONFIGS)
 def test_manifest_build_pins_cards_and_source_and_routes_both_chains(tmp_path, monkeypatch, configuration):
     checked, options, old, records = setup(tmp_path, monkeypatch, configuration)
+    forbid_sealed_opens(monkeypatch, old)
     made = v.make_manifest(tmp_path / "manifest.json", **options)
+    for key in ("pinned", "pools", "research", "searchqa_tail"):
+        assert made["data"][key] == checked["data"][key] == old["data"][key]
+    expected_terms = {bench: p.CELL_ANCHORS[bench][1] *
+        (Fraction(p.TEST_READ_CELLS[configuration][bench][0]) +
+         p.TEST_READ_CELLS[configuration][bench][1] * p.PROCEDURE_ARM_FACTOR[1]) for bench in p.BENCHES}
+    assert made["data"]["test_read_terms"] == {
+        chain: {bench: str(value) for bench, value in expected_terms.items()} for chain in p.CHAINS}
+    assert made["data"]["test_read_estimate"] == {
+        chain: math.ceil(sum(expected_terms.values())) for chain in p.CHAINS}
+    assert made["data"]["test_read_terms"] != old["data"]["test_read_terms"]
     assert made["data"]["instructions"] == checked["instructions"]
     assert made["cards"] == checked["active_cards"]
     assert made["data"]["original_cards"] == old["cards"]
@@ -121,6 +337,10 @@ def test_manifest_build_pins_cards_and_source_and_routes_both_chains(tmp_path, m
     for name, pin in made["data"]["exclusion"].items():
         assert read_json(pin["path"]) == records[name]
         assert str(options["root"]) in pin["path"]
+        if name == "test_canaries":
+            assert Path(pin["path"]) == options["root"] / p.CANARIES
+        else:
+            assert exclusion.persisted(options["root"], name) == records[name]
     assert set(made["clients"]["solver"]) == {"G", "D"}
     assert made["clients"]["solver"]["D"]["backend"] == "northgate"
     assert manifest.solver_config(made, "D", "officeqa")["route"] == "B"
