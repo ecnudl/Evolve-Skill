@@ -310,7 +310,9 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
                     with workers(packages[key], item) as worker:
                         rows[arm] = request_reuse.signature(bench, packages[key], all_views[cell_set][item], worker,
                                                            card_text=reuse.get("card_text", ""),
-                                                           runtime=reuse.get("runtime"), **keywords)
+                                                           runtime=reuse.get("runtime"), **keywords,
+                                                           **({'configuration': configuration}
+                                                              if profiles.is_v215(configuration) else {}))
         sealed = with_reuse(sealed, request_reuse.from_signatures(sealed, signatures))
     write_json(safe_path(root) / "sealed.json", sealed)
     return sealed

@@ -232,6 +232,13 @@ def prompt_sha(configuration=None):
     trains (``protocol.LEARNING``) also ``v2``: v2's engineer and examiner prompts (owner decision 2026-10-23 13:3x)
     and its analysts' (owner suggestion 2026-10-23 15:1x). A v1 configuration binds exactly the first three (Codex
     review 2026-10-23 #1)."""
+    if protocol.is_v215(configuration):
+        from . import engineer_v215
+        out = prompt_sha(protocol.ZEBRA_PC_V13)
+        out['engineer'] = _sha_text_digest(engineer_v215.system(configuration, train=False))
+        out['v2']['engineer'] = _sha_text_digest(engineer_v215.system(configuration, train=True))
+        out['v215'] = engineer_v215.prompt_pins()
+        return out
     if protocol.is_v214(configuration):
         from . import v214_smoke
         return v214_smoke.prompt_pins()
@@ -503,6 +510,9 @@ def check(manifest):
         require(isinstance(pin, dict) and len(pin.get("ids", [])) == 40
                 and len(set(pin["ids"])) == 40, "The forty practice confirmation ids are pinned")
         require(pin.get("freshness") == protocol.CONFIRM_FRESHNESS[configuration], "Confirm slice provenance")
+    if protocol.is_v215(configuration):
+        require(value['sandbox']['worker_sha256'] == sandbox.worker_sha256(configuration=configuration),
+                'The v2.15 diagnostics worker is pinned')
     if protocol.is_v23(configuration):
         require(value["sandbox"]["policy_sha256"] == policy.policy_sha256(
             version=protocol.POLICY_VERSIONS[configuration]), "The v2.3 sandbox policy is pinned")
@@ -701,7 +711,8 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
                                 if protocol.is_v214(configuration) else [*protocol.IMPORTABLE, CARD_VERSION]
                                 if protocol.is_zebra(configuration) else [*protocol.IMPORTABLE, protocol.TEXTS_IMPORT]),
         "sandbox": {"image_id": None if configuration == protocol.BASELINE_V210 else sandbox.IMAGE,
-                    "worker_sha256": sandbox.worker_sha256(),
+                    "worker_sha256": (sandbox.worker_sha256(configuration=configuration)
+                                      if protocol.is_v215(configuration) else sandbox.worker_sha256()),
                     "policy_sha256": policy.policy_sha256(version=protocol.POLICY_VERSIONS[configuration]),
                     "docker_argv_template_sha": digest({k: sandbox.argv_template(k, v) for k, v in limits.items()}),
                     "limits": {k: asdict(v) for k, v in sorted(limits.items())}, "measured": measured},
@@ -945,6 +956,8 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
         extra["drain"] = functools.partial(sandbox.drain_unit, docker=docker, **cleanup_options)
     worker_options = {**cleanup_options, **({"ready_timeout_seconds": protocol.ready_timeout_seconds(m["configuration"])}
                                            if protocol.is_v292(m["configuration"]) else {})}
+    if protocol.is_v215(m['configuration']):
+        worker_options['diagnostics_configuration'] = m['configuration']
     if m["configuration"] == protocol.MAIN_V3:
         worker_options["mixed_policy_bundle"] = "main-v3-alfworld-v11"
     if protocol.is_v29(m["configuration"]) and protocol.is_alfworld(m["configuration"]):
@@ -1172,6 +1185,10 @@ def outcome_engineer_features(configuration):
             "keep": "passed_fatal_checks_and_not_deferred_and_not_inert",
             "call_budget": "existing_engineer_budget",
         }
+    if protocol.is_v215(configuration):
+        from . import diagnostics
+        out['diagnostics'] = diagnostics.identity()
+        out['test_freshness'] = protocol.ZEBRA_PC_V14_TEST_FRESHNESS
     return out
 
 

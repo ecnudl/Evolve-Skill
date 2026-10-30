@@ -707,7 +707,8 @@ def sandbox_selftest(out, *, item_files, docker=None, worker=None, scratch="/tmp
         return _sandbox_selftest(out, item_files=item_files, docker=docker, worker=worker, scratch=scratch,
                                  clock=clock, cleanup_grace_seconds=grace, cleanup_events=cleanups,
                                  ready_timeout_seconds=protocol.ready_timeout_seconds(configuration),
-                                 start_events=starts if protocol.is_v292(configuration) else None)
+                                 start_events=starts if protocol.is_v292(configuration) else None,
+                                 **({'diagnostics_configuration': configuration} if protocol.is_v215(configuration) else {}))
     finally:
         if cleanups:
             write_json(safe_path(out) / "sandbox-cleanups.json", {"cleanups": cleanups})
@@ -716,7 +717,7 @@ def sandbox_selftest(out, *, item_files, docker=None, worker=None, scratch="/tmp
 
 
 def _sandbox_selftest(out, *, item_files, docker, worker, scratch, clock, cleanup_grace_seconds, cleanup_events,
-                      ready_timeout_seconds, start_events):
+                      ready_timeout_seconds, start_events, diagnostics_configuration=None):
     out = safe_path(out)
     require(not (out / SELFTEST).exists(), "A self-test is written once")
     docker = docker or sandbox.Docker()
@@ -727,18 +728,25 @@ def _sandbox_selftest(out, *, item_files, docker, worker, scratch, clock, cleanu
     started = clock()
     worker_options = {**cleanup_options, **({"ready_timeout_seconds": ready_timeout_seconds,
                                             "start_events": start_events} if start_events is not None else {})}
+    if diagnostics_configuration is not None:
+        worker_options['diagnostics_configuration'] = diagnostics_configuration
     pinged = (worker or sandbox.Worker)(**worker_options).start(empty, kind="cell")
     try:
         ping = pinged.ping()
     finally:
         pinged.close()
+    if diagnostics_configuration is not None:
+        require(ping.get('worker_sha256') == sandbox.worker_sha256(configuration=diagnostics_configuration),
+                'The v2.15 selftest executed its diagnostics worker')
     latency = round(clock() - started, 3)
     views = view_bytes(item_files)
     measured = {"vsz_kib": ping["vsz_kib"], "rss_kib": ping["rss_kib"], "view_bytes_p99": views["p99"],
                 "start_seconds": latency, "views": views["items"]}
     value = protocol.record("sandbox-selftest", "smoke", {
         "escape_rows": rows, "escape_probe_sha256": manifest._sha(ESCAPE_PROBE),
-        "worker_sha256": sandbox.worker_sha256(),
+        "worker_sha256": (sandbox.worker_sha256(configuration=diagnostics_configuration)
+                          if diagnostics_configuration is not None else sandbox.worker_sha256()),
+        **({'configuration': diagnostics_configuration} if diagnostics_configuration is not None else {}),
         "image": sandbox.IMAGE, "limits": {k: asdict(v) for k, v in sorted(sandbox.LIMITS.items())},
         "measured": measured, "passed": all(rows.values()),
         **({"sandbox": {key: rows for key, rows in (("cleanups", cleanup_events), ("starts", start_events)) if rows}}
@@ -1384,7 +1392,7 @@ def engineer_request_floor(configuration=protocol.PILOT):
     and the analysts' ``ANALYST_SYSTEM``, both engineer-role calls). v2.3 also pins its single-mode smoke prompt."""
     if protocol.is_v291(configuration):
         from . import v29_limits
-        return protocol.ROLE_INPUT_BYTES + v29_limits.V291_ENGINEER_SYSTEM_BYTES
+        return v29_limits.engineer_input_bytes(protocol, configuration) + v29_limits.V291_ENGINEER_SYSTEM_BYTES
     if protocol.is_v29(configuration):
         from . import engineer_v29
         bench = protocol.active_benches(configuration)[0]

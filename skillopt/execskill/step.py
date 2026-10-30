@@ -1207,7 +1207,7 @@ def selftest_verdict(cells, sets, changed, *, identical=None, request_faults=Non
                                    if identical is not None else {})}
 
 
-def _pair_signatures(st, candidate, parent, publics, views, *, note_coverage=None):
+def _pair_signatures(st, candidate, parent, publics, views, *, note_coverage=None, diagnostics_observer=None):
     """v2.3: the two exact requests and post-call identities on full public views, with zero model calls."""
     if st.bench not in request_reuse.BENCHES:
         return {}
@@ -1217,13 +1217,19 @@ def _pair_signatures(st, candidate, parent, publics, views, *, note_coverage=Non
         for arm, package in (("S'", candidate), ("S", parent)):
             with workers(package, item) as worker:
                 observe = {}
-                if note_coverage is not None:
+                if note_coverage is not None or diagnostics_observer is not None:
                     def capture(shell, text):
-                        note_coverage.setdefault(item, {})[arm] = _shown_note_fields(
-                            st.bench, package, shell.notes, view, text, configuration=configuration_of(st.setting))
+                        if note_coverage is not None:
+                            note_coverage.setdefault(item, {})[arm] = _shown_note_fields(
+                                st.bench, package, shell.notes, view, text, configuration=configuration_of(st.setting))
+                        if diagnostics_observer is not None and arm == "S'":
+                            diagnostics_observer[item] = {'records': list(shell.diagnostics),
+                                                          'no_note': not bool(text.strip())}
                     observe = {"note_observer": capture}
                 out[item][arm] = request_reuse.signature(st.bench, package, view, worker,
                                                        card_text=st.setting.cards.get(st.bench, ""), runtime=st.runtime(),
+                                                       **({'configuration': configuration_of(st.setting)}
+                                                          if protocol.is_v215(configuration_of(st.setting)) else {}),
                                                        **observe)
     return out
 
@@ -1680,7 +1686,8 @@ def _unfixed_examples(st, cut, unit, verdict, cells, made, current):
     return out
 
 
-def _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells, made, *, current=(), note_coverage=None):
+def _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells, made, *, current=(), note_coverage=None,
+              diagnostics_observations=None, diagnostics_telemetry=None):
     """v2: the engineer's view of one training round (module docstring): the totals and, per procedure the candidate
     adds, removes or narrows against the incumbent, the evaluated run-slice items it is enabled on (the candidate's
     routing; the incumbent's for a removed or narrowed one) with how many it fixed and broke and up to
@@ -1754,6 +1761,14 @@ def _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells, made,
     if protocol.is_v291(configuration_of(st.setting)):
         value["format"] = _format_feedback(cells, made, set(by_key), verdict,
                                             FEEDBACK_TAG + ":" + st.label(unit) + ":format")
+    if protocol.is_v215(configuration_of(st.setting)):
+        from . import diagnostics_feedback
+        examples = [row['task_id'] for procedure in procedures for row in procedure['examples']]
+        examples += [row['task_id'] for row in value.get('unfixed_examples', ())]
+        diagnostics_feedback.attach(value, lambda: diagnostics_feedback.training(
+            bench=st.bench, run_keys=set(by_key), verdict=verdict, routed=routed, candidate=candidate,
+            cells=cells, made=made, current=current, observed=diagnostics_observations, examples=examples),
+            sink=diagnostics_telemetry, stage='training_feedback')
     return value
 
 
@@ -1854,9 +1869,12 @@ def _train_eval(st, cut, r, incumbent, candidate, generated, *, current=None):
         differs = [key for key, _ in views if before[key].enabled != after[key].enabled]
         evaluated = list(differs)
         identical, signatures, captured = [], None, {}
+        diagnostic_observations = {} if protocol.is_v215(configuration_of(st.setting)) else None
         if IDENTICAL_REQUEST_REUSE[configuration_of(st.setting)]:
             signatures = _pair_signatures(st, trained, incumbent, publics,
                                          [(key, view) for key, view in views if key in differs],
+                                         **({'diagnostics_observer': diagnostic_observations}
+                                            if diagnostic_observations is not None else {}),
                                          **({"note_coverage": captured}
                                             if protocol.is_v25(configuration_of(st.setting))
                                             and not protocol.is_alfworld(configuration_of(st.setting)) else {}))
@@ -1886,6 +1904,7 @@ def _train_eval(st, cut, r, incumbent, candidate, generated, *, current=None):
                                    if protocol.is_v28(configuration_of(st.setting)) else {}),
                                 **({"identical": identical, "runs": runs} if signatures is not None else {}))
         feedback_args = {}
+        diagnostic_telemetry = {}
         if protocol.is_v24(configuration_of(st.setting)):
             feedback_args["current"] = _run_trajectories(st, parent_only=True) if current is None else current
         if protocol.is_v25(configuration_of(st.setting)) and not protocol.is_alfworld(configuration_of(st.setting)):
@@ -1893,10 +1912,17 @@ def _train_eval(st, cut, r, incumbent, candidate, generated, *, current=None):
                 key: {"request_sha256": signatures[key]["S'"]["request_sha256"],
                       "fields": captured[key]["S'"]} for key in identical if key in items}
         feedback = _feedback(st, cut, unit, verdict, routed, incumbent, trained, cells,
-                             _attempt_trajectories(attempt), **feedback_args)
+                             _attempt_trajectories(attempt), **feedback_args,
+                             **({'diagnostics_observations': diagnostic_observations}
+                                if diagnostic_observations is not None else {}),
+                             **({'diagnostics_telemetry': diagnostic_telemetry}
+                                if protocol.is_v215(configuration_of(st.setting)) else {}))
         out = {"learning": TRAIN, "round": r, "incumbent_sha256": incumbent.sha256,
                "candidate_sha256": trained.sha256, "routed": len(views), "differs": len(differs),
                "cells": len(found), "adopted": verdict["adopted"], "verdict": verdict, "feedback": feedback}
+        if protocol.is_v215(configuration_of(st.setting)):
+            from . import diagnostics_feedback
+            out.update(diagnostics_feedback.telemetry(diagnostic_telemetry))
         if PRUNE_NON_FIRING[configuration_of(st.setting)]:
             out.update({"proposed_sha256": candidate.sha256, "pruned": pruned})
         if signatures is not None:
@@ -2491,7 +2517,8 @@ def _freeze(st, cut, candidate, accepted):
                         procedure, excluded=candidate.excluded(procedure.id))
                 outcomes = (replay.replay_many(procedure, entries, st.services.workers, inputs_dirs=inputs,
                             **({'configuration': configuration_of(st.setting)}
-                               if protocol.is_v214(configuration_of(st.setting)) else {}))
+                               if protocol.is_v214(configuration_of(st.setting))
+                                  or protocol.is_v215(configuration_of(st.setting)) else {}))
                             if runs_here else {})
                 lengths = [len(note["text"]) for outcome in outcomes.values() for note in outcome.notes
                            if note["text"]]

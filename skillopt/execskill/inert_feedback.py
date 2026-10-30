@@ -114,7 +114,14 @@ def describe(change, ctx, report, *, effect_hooks, from_replay, from_routing, ou
     if (ctx.bench in procedure.excluded_benches or (profiles.is_v214(ctx.configuration)
             and ctx.bench not in procedure_input_benches(procedure))):
         evidence['excluded_bench'] = {'bench': ctx.bench}
-    return list(evidence), _bound(evidence)
+    causes = list(evidence)
+    evidence = _bound(evidence)
+    if profiles.is_v215(ctx.configuration):
+        from . import diagnostics_feedback
+        examples = [row['task_id'] for detail in evidence.values() for row in detail.get('examples', ())]
+        diagnostics_feedback.attach(evidence, lambda: diagnostics_feedback.from_checks(
+            ctx, procedure, report, examples=examples), sink=ctx.sheet, stage='inert_evidence')
+    return causes, evidence
 
 
 def causes_ok(value):

@@ -74,6 +74,9 @@ def identity(p, config):
             "role_calls": v291_role_calls(p, config), "engineer_system_bytes_allowance": V291_ENGINEER_SYSTEM_BYTES,
             "engineer_cap": v291_engineer_cap(p, config),
             "selftest_cells": p.CONFIG_SCHEDULE_CELLS[config][bench]["selftest"][bench][1]}
+    if p.is_v215(config):
+        out['fault_feedback']['engineer_payload_bytes_allowance'] = engineer_input_bytes(p, config)
+        out['fault_feedback']['diagnostics_bytes_allowance'] = engineer_input_bytes(p, config) - p.ROLE_INPUT_BYTES
     return out
 
 
@@ -91,9 +94,17 @@ def v291_role_calls(p, config):
     }
 
 
+def engineer_input_bytes(p, config):
+    """Preserve the complete legacy payload; only v2.15 adds a bounded envelope."""
+    if p.is_v215(config):
+        from .diagnostics import INPUT_BYTES
+        return p.ROLE_INPUT_BYTES + INPUT_BYTES
+    return p.ROLE_INPUT_BYTES
+
+
 def v291_engineer_cap(p, config):
     calls = v291_role_calls(p, config)
-    engineer = reservation(p.ROLE_INPUT_BYTES + V291_ENGINEER_SYSTEM_BYTES, p.ENGINEER_MAX_TOKENS[config])
+    engineer = reservation(engineer_input_bytes(p, config) + V291_ENGINEER_SYSTEM_BYTES, p.ENGINEER_MAX_TOKENS[config])
     ordinary = reservation(p.ROLE_INPUT_BYTES, p.ROLE_MAX_TOKENS)
     return calls["engineer"] * engineer + (calls["leakage"] + calls["describer"]) * ordinary + engineer
 

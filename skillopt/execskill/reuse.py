@@ -26,7 +26,7 @@ BENCHES = ("searchqa", "officeqa", "livemath", "spreadsheetbench", "zebralogic")
 
 
 def signature(bench, package, view, worker, *, card_text="", runtime=None, withhold=(), restore=(), placebo=None,
-              note_observer=None):
+              note_observer=None, configuration=None):
     """The exact first request hash, post-call identity and faults using an already started item worker."""
     require(bench in BENCHES, "ALFWorld has no zero-call request identity")
 
@@ -34,7 +34,8 @@ def signature(bench, package, view, worker, *, card_text="", runtime=None, withh
         raise AssertionError("Request identity never calls a model")
 
     shell = solver._Shell(bench, package, no_call, worker, withhold=withhold, restore=restore, placebo=placebo,
-                          text=None, native=None, nominal=None)
+                          text=None, native=None, nominal=None,
+                          **({'configuration': configuration} if profiles.is_v215(configuration) else {}))
     shell.started = worker is not None
     shell.route_on(view)
     text, names = shell.before(view, solver._public_text(view))

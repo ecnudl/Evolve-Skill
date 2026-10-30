@@ -83,6 +83,8 @@ TAG = re.compile(r"[a-z0-9]{1,8}-[0-9a-f]{12}")  # unit_tag: chain and the first
 NAME = re.compile(re.escape(PREFIX) + r"(?:[a-z0-9]{1,8}-[0-9a-f]{12}-)?[0-9a-f]{32}")
 DOCKER_ENV = {"PATH": "/usr/bin:/bin"}
 WORKER_FILE = Path(__file__).with_name("worker.py")
+DIAGNOSTICS_WORKER_FILE = Path(__file__).with_name('worker_v215.py')
+DIAGNOSTICS_ENVELOPE_BYTES = 16_384
 INPUT_FILE = "input.xlsx"  # the one file of the read-only /input mount (§2.5, ``solver._inputs_dir``)
 POLICY_FILE = Path(policy.__file__)
 REPLY_GRACE_SECONDS = 10  # a call's reply may arrive this long after its wall timeout before the worker counts as lost
@@ -125,9 +127,10 @@ LIMITS = {"cell": CELL_LIMITS, "episode": CELL_LIMITS, "detector": CELL_LIMITS,
 KINDS = tuple(LIMITS)
 
 
-def worker_sha256():
+def worker_sha256(configuration=None):
     """The sha256 of the pinned worker file (the manifest's ``sandbox.worker_sha256``)."""
-    return hashlib.sha256(WORKER_FILE.read_bytes()).hexdigest()
+    source = DIAGNOSTICS_WORKER_FILE if configuration == 'zebra-pc-v14' else WORKER_FILE
+    return hashlib.sha256(source.read_bytes()).hexdigest()
 
 
 def unit_tag(chain, unit):
@@ -449,7 +452,8 @@ class Worker:
 
     def __init__(self, *, docker=None, limits=None, hashseed=0, live=None, per_call=None, scratch=None, image=IMAGE,
                  tag=None, cleanup_grace_seconds=0, cleanup_events=None,
-                 ready_timeout_seconds=SANDBOX_READY_SECONDS, start_events=None, mixed_policy_bundle=None):
+                 ready_timeout_seconds=SANDBOX_READY_SECONDS, start_events=None, mixed_policy_bundle=None,
+                 diagnostics_configuration=None):
         require(hashseed in (0, 1) and (limits is None or set(limits) <= set(KINDS))
                 and (tag is None or (type(tag) is str and TAG.fullmatch(tag) is not None)), "Invalid worker settings")
         require(_cleanup_grace_valid(cleanup_grace_seconds)
@@ -457,6 +461,8 @@ class Worker:
         require(_cleanup_grace_valid(ready_timeout_seconds) and ready_timeout_seconds > 0
                 and (start_events is None or type(start_events) is list), "Invalid sandbox ready timeout or events")
         require(mixed_policy_bundle in (None, "main-v3-alfworld-v11"), "Unknown mixed-policy import bundle")
+        require(diagnostics_configuration in (None, 'zebra-pc-v14'), 'Unknown diagnostic worker configuration')
+        self.diagnostics_configuration = diagnostics_configuration
         self.docker = docker or Docker()
         self.limits = {**LIMITS, **(limits or {})}
         self.hashseed, self.live, self.per_call, self.image, self.tag = hashseed, live, per_call, image, tag
@@ -490,7 +496,34 @@ class Worker:
         self.package, self.kind, self.inputs_dir = package, kind, inputs_dir
         return self
 
-    def call(self, proc_id, fn, args, *, timeout_s):
+    def call_diagnostics(self, proc_id, fn, args, *, timeout_s, bench='zebralogic'):
+        """The v2.15 host opt-in; never used by historical configuration paths."""
+        from .. import diagnostics
+        require(self.diagnostics_configuration == diagnostics.CONFIGURATION
+                and fn == 'before_call' and bench == 'zebralogic',
+                'Diagnostics belong to the v2.15 Zebra worker and note hook')
+        self._diagnostics_spec = diagnostics.worker_spec(bench)
+        root = self._runner_dir()
+        source = Path(diagnostics.__file__)
+        target = root / 'diagnostics.py'
+        if not target.exists():
+            target.write_bytes(source.read_bytes())
+            target.chmod(0o444)
+        self._ensure()
+        self._configure_diagnostics()
+        return self.call(proc_id, fn, args, timeout_s=timeout_s, diagnostics_v215=True)
+
+    def _configure_diagnostics(self):
+        if getattr(self, '_diagnostics_container', None) == self._container.name:
+            return
+        spec = self._diagnostics_spec
+        reply = self._exchange({'op': 'diagnostics-v215', 'configuration': 'zebra-pc-v14',
+                                'bench': 'zebralogic', 'screen': spec}, REPLY_GRACE_SECONDS)
+        if reply.get('ok') is not True or reply.get('diagnostics_v215') != sha256(spec):
+            raise ConfigurationError('The diagnostic worker screen differs from its host pin')
+        self._diagnostics_container = self._container.name
+
+    def call(self, proc_id, fn, args, *, timeout_s, diagnostics_v215=False):
         """Run ``fn(*args)`` of procedure ``proc_id`` in a fresh child of the worker: {ok: True, value, value_sha256,
         cpu_ms, rss_kib} or {ok: False, fault (one of ``CALL_FAULTS``), exc_type, message, line} (P1).
         SandboxUnavailable (P4) when no container can serve the call (module docstring)."""
@@ -509,6 +542,10 @@ class Worker:
         cap = self.limits[self.kind].frame_bytes
         if len(canonical(request)) + 64 > cap:
             return _fault("over_cap", "the call's arguments exceed the frame cap of %d bytes" % cap)
+        if diagnostics_v215:
+            require(fn == 'before_call' and getattr(self, '_diagnostics_spec', None) is not None,
+                    'A diagnostic call needs the explicit v2.15 setup')
+            request['diagnostics_v215'] = True
         self._ensure()
         if proc_id in self.rejected:
             return _fault("not_loaded", "rejected inside the sandbox: %s" % self.rejected[proc_id])
@@ -518,7 +555,8 @@ class Worker:
             with self._call_slot():
                 try:
                     result = self._result(self._exchange(request, timeout_s + REPLY_GRACE_SECONDS),
-                                          proc_id, fn, args_sha256)
+                                          proc_id, fn, args_sha256,
+                                          **({'diagnostics_v215': True} if diagnostics_v215 else {}))
                 except _Lost as error:
                     lost = error
             if lost is None:
@@ -566,9 +604,10 @@ class Worker:
     def _runner_dir(self):
         if self._runner is None:
             root = Path(tempfile.mkdtemp(prefix="execskill-runner-", dir=self.scratch))
-            for source in (WORKER_FILE, POLICY_FILE):
-                (root / source.name).write_bytes(source.read_bytes())
-                (root / source.name).chmod(0o444)
+            worker = DIAGNOSTICS_WORKER_FILE if self.diagnostics_configuration else WORKER_FILE
+            for source, name in ((worker, 'worker.py'), (POLICY_FILE, POLICY_FILE.name)):
+                (root / name).write_bytes(source.read_bytes())
+                (root / name).chmod(0o444)
             root.chmod(0o755)  # the container user 65534 reads it, as for the frozen _native's directory
             self._runner = root
         return self._runner
@@ -626,7 +665,9 @@ class Worker:
             if self._start_started is not None:
                 answered = time.monotonic()
             if (ping.get("ok") is not True or ping.get("worker") != WORKER_PROTOCOL
-                    or ping.get("worker_sha256") != worker_sha256() or ping.get("hashseed") != str(self.hashseed)
+                    or ping.get("worker_sha256") != worker_sha256(
+                        **({'configuration': self.diagnostics_configuration} if self.diagnostics_configuration else {}))
+                    or ping.get("hashseed") != str(self.hashseed)
                     or ping.get("policy_sha256") != policy.policy_sha256()):
                 raise ConfigurationError("sandbox worker identity mismatch: %s" % {
                     k: ping.get(k) for k in ("worker", "worker_sha256", "hashseed", "policy_sha256")})
@@ -650,6 +691,8 @@ class Worker:
                 != sorted(e["id"] for e in entries)):
             raise _Lost("corrupt load reply")
         self.rejected = {r["id"]: r.get("reason") for r in rejected}
+        if getattr(self, '_diagnostics_spec', None) is not None:
+            self._configure_diagnostics()
         return ping
 
     def _exchange(self, request, timeout):
@@ -657,7 +700,8 @@ class Worker:
         request = {**request, "seq": self._seq}
         deadline = time.monotonic() + timeout
         self._container.send(frame(request), deadline)
-        reply = self._container.receive(deadline, self.limits[self.kind].frame_bytes)
+        reply = self._container.receive(deadline, self.limits[self.kind].frame_bytes +
+                                        (DIAGNOSTICS_ENVELOPE_BYTES if request.get('diagnostics_v215') is True else 0))
         if reply.get("seq") != self._seq:
             raise _Lost("seq mismatch")
         if reply.get("ok") is False and "error" in reply:
@@ -667,7 +711,7 @@ class Worker:
         return reply
 
     @staticmethod
-    def _result(reply, proc_id, fn, args_sha256):
+    def _result(reply, proc_id, fn, args_sha256, *, diagnostics_v215=False):
         """The call's Result after checking the echo and the value hash; _Lost when they do not hold."""
         if (reply.get("op"), reply.get("proc"), reply.get("fn"), reply.get("args_sha256")) != (
                 "call", proc_id, fn, args_sha256):
@@ -684,7 +728,11 @@ class Worker:
                 raise _Lost("value hash mismatch")
         elif reply["fault"] not in FAULTS:
             raise _Lost("unknown fault kind")
-        return {key: reply[key] for key in RESULT_KEYS[ok]}
+        out = {key: reply[key] for key in RESULT_KEYS[ok]}
+        if diagnostics_v215 and 'diagnostics' in reply:
+            from .. import diagnostics
+            out['diagnostics'] = diagnostics.safe_verified_record(reply['diagnostics'])
+        return out
 
     def _missing(self):
         """"daemon" when docker does not answer, "image" when the pinned image is gone (bounded queries), else None."""

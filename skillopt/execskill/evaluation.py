@@ -659,7 +659,7 @@ def sealed_cell(full):
         "answered": answered(full),  # §6.3's mask: whether the provider delivered any reply in this cell
         "solver_route": full.get("solver_route"),  # {"route", "model"} (cells.py); route None on chain G
         **({key: full[key] for key in ("configuration", "keyword_hits", "applies", "returned_model", "returned_models")}
-           if full.get("configuration") in ("zebra-pc-v7", "alfworld-v4", "zebra-pc-v8", "alfworld-v5", "zebra-pc-v9", "alfworld-v6", "zebra-pc-v10", "alfworld-v7", "zebra-pc-v11", "alfworld-v8", "zebra-pc-v12", "alfworld-v9", "alfworld-v10", "alfworld-v11", "zebra-pc-v13", "zebra-hp-v3r4", "main-v5") else {}),
+           if full.get("configuration") in ("zebra-pc-v7", "alfworld-v4", "zebra-pc-v8", "alfworld-v5", "zebra-pc-v9", "alfworld-v6", "zebra-pc-v10", "alfworld-v7", "zebra-pc-v11", "alfworld-v8", "zebra-pc-v12", "alfworld-v9", "alfworld-v10", "alfworld-v11", "zebra-pc-v13", "zebra-hp-v3r4", "main-v5", "zebra-pc-v14") else {}),
         "stop": None if full["stop"] is None else {"kind": full["stop"]["kind"]}}
 
 

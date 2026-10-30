@@ -26,6 +26,7 @@ ZEBRA_PC_V10 = "zebra-pc-v10"
 ZEBRA_PC_V11 = "zebra-pc-v11"
 ZEBRA_PC_V12 = "zebra-pc-v12"
 ZEBRA_PC_V13 = "zebra-pc-v13"
+ZEBRA_PC_V14 = "zebra-pc-v14"
 ZEBRA_HP_V3R4 = "zebra-hp-v3r4"
 ALFWORLD_V1 = "alfworld-v1"
 ALFWORLD_V2 = "alfworld-v2"
@@ -111,31 +112,35 @@ def is_v29(configuration):
 def is_v291(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, ZEBRA_PC_V8, ALFWORLD_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, ZEBRA_PC_V8, ALFWORLD_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v292(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v293(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v294(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v295(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+
+
+def is_v215(configuration):
+    return configuration == ZEBRA_PC_V14
 
 
 def is_v296(configuration):
@@ -181,7 +186,7 @@ INERT_REPAIRS = 1
 def is_zebra(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ZEBRA_PC_V1, ZEBRA_PC_V2, ZEBRA_PC_V3, ZEBRA_PC_V4, ZEBRA_PC_V5, ZEBRA_PC_V6, ZEBRA_PC_V7, ZEBRA_PC_V8, ZEBRA_PC_V9, ZEBRA_PC_V10, ZEBRA_PC_V11, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4)
+    return configuration in (ZEBRA_PC_V1, ZEBRA_PC_V2, ZEBRA_PC_V3, ZEBRA_PC_V4, ZEBRA_PC_V5, ZEBRA_PC_V6, ZEBRA_PC_V7, ZEBRA_PC_V8, ZEBRA_PC_V9, ZEBRA_PC_V10, ZEBRA_PC_V11, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_HP_V3R4)
 
 
 def is_alfworld(configuration):
@@ -909,7 +914,7 @@ def uses_v211(configuration, bench):
 
 
 def uses_v212(configuration, bench):
-    return machinery_configuration(configuration, bench) == ZEBRA_PC_V13
+    return is_v212(machinery_configuration(configuration, bench))
 
 
 def acceptance_rule(configuration, bench):
@@ -1019,7 +1024,7 @@ _v211_limits.extend(_sys.modules[__name__])
 
 # v2.12: a single Zebra child; never extend the five-bench/ALF-only feature families.
 def is_v212(configuration):
-    return configuration == ZEBRA_PC_V13
+    return configuration in (ZEBRA_PC_V13, ZEBRA_PC_V14)
 
 
 ZEBRA_PC_V13_ROOT = '/data/execskill-20261030-zebra-pc-v13'
@@ -1145,3 +1150,24 @@ def main_v5_identity():
                           'read_timeout': read_timeout(CHAINS['G'], ZEBRA),
                           'branch': None, 'longest': None, 'nominal_M': None,
                           'ledger_bound': ledger_bound(CHAINS['G'], ZEBRA)}}
+
+
+# v2.15 adds only an engineer diagnostics channel to the finalized Zebra v13 method.
+ZEBRA_PC_V14_ROOT = '/data/execskill-20261031-zebra-pc-v14'
+ZEBRA_PC_V14_MANIFEST = ZEBRA_PC_V14_ROOT + '-manifest.json'
+ZEBRA_PC_V14_NAMESPACES = {'G': 'G-zpc14', 'D': 'D-zpc14'}
+ZEBRA_PC_V14_TEST_FRESHNESS = 'zebra_split_v1_holdout_after_one_zebra_hp_v3r4_v213_read'
+for _name, _table in list(globals().items()):
+    if _name.isupper() and isinstance(_table, dict) and ZEBRA_PC_V13 in _table:
+        _table[ZEBRA_PC_V14] = deepcopy(_table[ZEBRA_PC_V13])
+RUN_ROOTS[ZEBRA_PC_V14] = ZEBRA_PC_V14_ROOT
+CHAIN_NAMESPACES[ZEBRA_PC_V14] = ZEBRA_PC_V14_NAMESPACES
+SUPPORTED_NAMESPACES += tuple(ZEBRA_PC_V14_NAMESPACES.values())
+REAL_RUN_EVIDENCE[ZEBRA_PC_V14] = 'zebra_pc_v14_real_run'
+ACCEPT_FRESHNESS[ZEBRA_PC_V14] = (
+    'zebra_split_v1_accept_after_zebra_pc_v9_v10_v11_v12_v13_upper_bound_probes_and_main_v5_D')
+CONFIRM_FRESHNESS[ZEBRA_PC_V14] = (
+    'zebra_split_v1_confirm_after_zebra_pc_v9_v10_v11_v12_v13_and_main_v5_D')
+_old_v215_engineer_cap = CONFIG_ROLE_CAPS[ZEBRA_PC_V14]['engineer']
+CONFIG_ROLE_CAPS[ZEBRA_PC_V14]['engineer'] = _v29_limits.v291_engineer_cap(_sys.modules[__name__], ZEBRA_PC_V14)
+CONFIG_GLM_CAP[ZEBRA_PC_V14] += CONFIG_ROLE_CAPS[ZEBRA_PC_V14]['engineer'] - _old_v215_engineer_cap

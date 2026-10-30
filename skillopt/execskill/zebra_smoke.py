@@ -115,6 +115,10 @@ def collect_s0(out, *, pool=z.POOL_PATH, split_manifest=z.SPLIT_MANIFEST_PATH, s
     tested = (smoke.sandbox_selftest(out / "sandbox", item_files=[str(fixtures)],
                   **({"configuration": configuration} if p.is_v292(configuration) else {})) if selftest is None
               else p.verified(read_json(selftest), "sandbox-selftest"))
+    if p.is_v215(configuration):
+        require(tested.get('configuration') == configuration
+                and tested.get('worker_sha256') == sandbox.worker_sha256(configuration=configuration),
+                'S0 requires the child diagnostics worker selftest')
     checked = checks or prelaunch.zero_call_checks(snapshot_root, python=sys.executable)
     measured = {key: tested["measured"][key] for key in ("vsz_kib", "rss_kib", "view_bytes_p99")}
     measured["view_bytes_p99"] = max(measured["view_bytes_p99"], max(
@@ -125,6 +129,7 @@ def collect_s0(out, *, pool=z.POOL_PATH, split_manifest=z.SPLIT_MANIFEST_PATH, s
         "slice_ids": {key: [t["task_id"] for t in value] for key, value in slices.items()},
         "slice_counts": {key: len(value) for key, value in slices.items()}, "fixtures_sha256": digest(fixture_items()),
         "card_sha256": z.CARD_SHA256, "sandbox": tested[p.RECORD_HASH], "limits": tested["limits"],
+        **({'worker_sha256': tested['worker_sha256']} if p.is_v215(configuration) else {}),
         "measured": measured, "pytest": checked, "sealed_reads": 0,
         "snapshot_root": str(safe_path(snapshot_root)),
         "snapshot_sha256": hashlib.sha256(prelaunch.sha256_list(snapshot_root).encode()).hexdigest(),
@@ -142,6 +147,9 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, elucid_env, rou
                 "zebra-pc-v5 launches chain D only")
     checked = p.verified(read_json(s0_file), "zebra-s0")
     require(checked["passed"] and checked["registration"] == z.identity(), "Passing S0 of this registration")
+    if p.is_v215(configuration):
+        require(checked.get('worker_sha256') == sandbox.worker_sha256(configuration=configuration),
+                'S0 pins the child diagnostics worker')
     provenance_value = read_json(provenance)
     current_sha = hashlib.sha256(prelaunch.sha256_list(manifest.REPO).encode()).hexdigest()
     require(checked.get("snapshot_sha256") == current_sha == provenance_value.get("sha256_list_sha256")

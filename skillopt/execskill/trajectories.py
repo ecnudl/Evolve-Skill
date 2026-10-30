@@ -40,7 +40,7 @@ from skillopt.coevo5.calls import USAGE_FIELDS
 from skillopt.coevo5.cells import exclusive
 from skillopt.continual_eval.core import read_json, require, safe_path, write_json
 
-from . import outcomes_ext, zebralogic
+from . import diagnostics, outcomes_ext, zebralogic
 from .profiles import is_v29, uses_v211
 from .profiles import SUPPORTED_BENCHES as BENCHES, LANDMARK_STEPS, NOTES_KEY, QA, RECORD_HASH, record, verified
 
@@ -127,6 +127,8 @@ def build(cell, *, evidence, arm_kind, package_sha256, calls, prediction, judge,
         "judge": judge, "token": judge["v2"]["token"], "dispatch_ts": dispatch_ts, "finish_ts": finish_ts}
     if uses_v211(configuration, cell['benchmark']):
         fields['shell']['effects'] = list(shell.get('effects', ()))
+    if diagnostics.enabled(configuration):
+        fields['shell']['diagnostics'] = list(shell.get('diagnostics', ()))
     if is_v29(configuration):
         models = list(dict.fromkeys(call["receipt"].get("returned_model") for call in calls
                                    if isinstance(call.get("receipt"), dict) and call["receipt"].get("returned_model")))

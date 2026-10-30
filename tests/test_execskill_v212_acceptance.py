@@ -198,7 +198,7 @@ def test_rule_or_benchmark_drift_is_rejected_before_any_work(bench, rule, tmp_pa
     assert not (tmp_path / 'no-write').exists()
 
 
-@pytest.mark.parametrize('configuration', [name for name in p.CONFIGURATIONS if name != CHILD and not p.is_v214(name)])
+@pytest.mark.parametrize('configuration', [name for name in p.CONFIGURATIONS if name != CHILD and not p.is_v214(name) and not p.is_v215(name)])
 def test_older_configuration_cannot_select_v212_rule(configuration):
     assert a._v212_rule(configuration, 'zebralogic', p.ACCEPT_RULES.get(configuration)) is False
     with pytest.raises(ValueError, match='only to zebra-pc-v13'):

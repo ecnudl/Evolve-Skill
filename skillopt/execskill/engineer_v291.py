@@ -67,6 +67,19 @@ def _read_once(ctx, reply, call, change):
                     repairs=list(change.repairs or ()) + row['repairs'])
 
 
+def _evidence(ctx, procedure, report):
+    from . import fault_feedback
+    result = fault_feedback.summarize(procedure, report, configuration=ctx.configuration,
+        **({'bench': ctx.bench} if p.is_v214(ctx.configuration) else {}))
+    if p.is_v215(ctx.configuration):
+        from . import diagnostics_feedback
+        example = result.get('example_call')
+        diagnostics_feedback.attach(result, lambda: diagnostics_feedback.from_checks(
+            ctx, procedure, report, only_faulted=True,
+            examples=[example['task_id']] if example else ()), sink=ctx.sheet, stage='fault_evidence')
+    return result
+
+
 def repair(ctx, change, report, taken=(), *, max_repairs=None, format_retry=True):
     """Return the best change/report, every checked repair, and its repair record.
 
@@ -76,8 +89,7 @@ def repair(ctx, change, report, taken=(), *, max_repairs=None, format_retry=True
     """
     from . import engineer as e, engineer_v28, fault_feedback
     best, best_report = change, report
-    evidence = fault_feedback.summarize(best.procedure, best_report, configuration=ctx.configuration,
-        **({'bench': ctx.bench} if p.is_v214(ctx.configuration) else {}))
+    evidence = _evidence(ctx, best.procedure, best_report)
     record = {key: evidence[key] for key in ('fired', 'faulted', 'threshold', 'triggered')}
     record.update(calls=[], kept_index=0, stop_reason='not_triggered')
     checked = []
@@ -114,8 +126,7 @@ def repair(ctx, change, report, taken=(), *, max_repairs=None, format_retry=True
             row['passed'] or row.get('informational') for row in candidate_report['checks'])
         event.update(checked=True, passed_fatal_checks=fatal_passed,
                      deferred=bool(candidate_report.get('deferred')))
-        after = (fault_feedback.summarize(candidate.procedure, candidate_report, configuration=ctx.configuration,
-                     **({'bench': ctx.bench} if p.is_v214(ctx.configuration) else {}))
+        after = (_evidence(ctx, candidate.procedure, candidate_report)
                  if candidate.procedure is not None and any(
                      row['check'] == 'C6' for row in candidate_report['checks']) else None)
         event['faulted_after'] = after['faulted'] if after is not None else None

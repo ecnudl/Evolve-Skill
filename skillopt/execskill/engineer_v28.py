@@ -410,6 +410,9 @@ def run(ctx):
     if p.is_v294(ctx.configuration):
         from . import engineer_v294, engineer_v295
         prompt = engineer_v295 if p.is_v295(ctx.configuration) else engineer_v294
+        if p.is_v215(ctx.configuration):
+            from . import engineer_v215
+            prompt = engineer_v215
         if not p.uses_v211(ctx.configuration, ctx.bench):
             fields['prompt_sha256'] = prompt.audit.text_sha256(prompt.system(p.machinery_configuration(ctx.configuration, ctx.bench), train=train))
         fields['inert_repair_calls'] = sum(len(row.get('inert_repair', {}).get('calls', [])) for row in outcomes)
@@ -418,4 +421,7 @@ def run(ctx):
     if train:
         fields.update(mode=e.TRAIN, round=ctx.round, base_sha256=ctx.base.sha256, budget=e.budget(ctx), lint=lint,
                       analysis=analysis, analyst_prompt_sha256=e.ANALYST_PROMPT_SHA256, disclosed=e._disclosed_items(ctx))
+    if p.is_v215(ctx.configuration):
+        from . import diagnostics_feedback
+        fields.update(diagnostics_feedback.telemetry(ctx.sheet))
     return package, p.record(p.ENGINEER_RECORDS[p.machinery_configuration(ctx.configuration, ctx.bench)], ctx.evidence, fields)

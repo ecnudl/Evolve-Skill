@@ -88,7 +88,7 @@ from skillopt.continual_eval.backends import (ALFWORLD_TRACE_VERSION, ANSWER_TAG
 from skillopt.continual_eval.core import require
 from skillopt.validator_pilot.api import digest
 
-from . import compute, donors, notes, profiles, router, zebralogic
+from . import compute, diagnostics, diagnostics_runtime, donors, notes, profiles, router, zebralogic
 from .code_delivery import VERSION as CODE_EXTRACTION_V23
 from . import precheck as prechecks
 from .canonical import canonical
@@ -273,6 +273,8 @@ class _Shell:
         self.shortcut = shortcut
         self.configuration = configuration
         self.effects = []
+        if diagnostics.enabled(configuration):
+            self.diagnostics = []
         self.shams = frozenset(placebo["procedures"]) if placebo else frozenset()
         self.receipts, self.calls, self.events, self.faults, self.notes = [], [], [], [], []
         self.dropped, self.route, self.started = set(), None, False
@@ -310,7 +312,12 @@ class _Shell:
     def hook(self, procedure, fn, args):
         """``(ok, value)`` of one hook call in the sandbox; a failed call is a fault of the procedure."""
         args = list(args)
-        result = self.worker.call(procedure.id, fn, args, timeout_s=SANDBOX_TIMEOUTS["hook"])
+        result = diagnostics_runtime.worker_call(self.worker, procedure.id, fn, args,
+            timeout_s=SANDBOX_TIMEOUTS["hook"], configuration=self.configuration, bench=self.bench)
+        result, diagnostic = diagnostics_runtime.capture(result, configuration=self.configuration,
+            bench=self.bench, hook=fn, procedure=procedure)
+        if diagnostic is not None:
+            self.diagnostics.append(diagnostic)
         ok = result.get("ok") is True
         self.events.append({"id": procedure.id, "fn": fn, "args_sha256": digest(args),
                             "value_sha256": result.get("value_sha256") if ok else None,
@@ -514,6 +521,8 @@ class _Shell:
                   "sandbox": self.sandbox()}
         if profiles.uses_v211(self.configuration, self.bench):
             fields['effects'] = list(self.effects)
+        if diagnostics.enabled(self.configuration):
+            fields['diagnostics'] = list(self.diagnostics)
         if any(notes.audited(p) for p in self.package.procedures):
             fields["keyword_hits"] = notes.keyword_summary([row for entry in self.notes for row in entry["dropped"]])
         if self.steps is not None:

@@ -54,7 +54,7 @@ from fractions import Fraction
 from skillopt.continual_eval.core import require
 from skillopt.validator_pilot.api import digest
 
-from . import notes, profiles
+from . import diagnostics, diagnostics_runtime, notes, profiles
 from .donors import public_text, shaped
 from .package import Package, procedure_input_benches
 from .protocol import MUTATIONS  # historical exported registration remains unchanged
@@ -290,16 +290,20 @@ class Outcome:
     def summary(self):
         return {"cell": self.cell, "applies": self.applies, "notes": len(self.notes), "faults": self.faults,
                 "values_sha256": digest(self.values),
+                **({'diagnostics': self.diagnostics} if hasattr(self, 'diagnostics') else {}),
                 **({"keyword_hits": notes.keyword_summary(self.faults)} if self.audited else {})}
 
 
 class _Run:
     """One procedure's hooks on one trajectory, with the shell's fault rule."""
 
-    def __init__(self, worker, procedure, inputs, actual=None, *, capture_faults=False):
+    def __init__(self, worker, procedure, inputs, actual=None, *, capture_faults=False, configuration=None):
         self.worker, self.procedure, self.inputs = worker, procedure, inputs
         self.actual = actual
         self.outcome = Outcome(inputs["cell"], inputs["bench"], audited=notes.audited(procedure))
+        self.configuration = configuration
+        if diagnostics.enabled(configuration):
+            self.outcome.diagnostics = []
         self.dead = False
         self.capture_faults = capture_faults
         self.arguments = {}
@@ -340,7 +344,12 @@ class _Run:
         if self.capture_faults:
             from .fault_feedback import capture_arguments
             self.arguments[(hook, step)] = capture_arguments(hook, args)
-        result = self.worker.call(self.procedure.id, hook, list(args), timeout_s=timeout)
+        result = diagnostics_runtime.worker_call(self.worker, self.procedure.id, hook, list(args),
+            timeout_s=timeout, configuration=self.configuration, bench=self.inputs['bench'])
+        result, diagnostic = diagnostics_runtime.capture(result, configuration=self.configuration,
+            bench=self.inputs['bench'], hook=hook, procedure=self.procedure)
+        if diagnostic is not None:
+            self.outcome.diagnostics.append(diagnostic)
         if self.actual is not None:
             self.actual.append({"hook": hook, "step": step, **bounded_result(result),
                                 **({"line": result.get("line"),
@@ -493,7 +502,7 @@ def replay(worker, procedure, inputs, *, mutation=None, actual=None, capture_fau
         return Outcome(inputs['cell'], inputs['bench'], applies=False)
     if mutation is not None:
         inputs = mutate(inputs, mutation)
-    run = _Run(worker, procedure, inputs, actual, capture_faults=capture_faults)
+    run = _Run(worker, procedure, inputs, actual, capture_faults=capture_faults, configuration=configuration)
     from .package import default_applies
     default = default_applies(procedure)
     ok, value = (True, True) if default else run.call("applies", [inputs["view"]])
@@ -550,6 +559,7 @@ def replay_many(procedure, entries, workers, *, hashseed=0, inputs_dirs=None, mu
             def run(entry, worker):
                 captured = None if actual is None else actual.setdefault(entry["cell"], [])
                 return replay(worker, procedure, entry, mutation=mutation,
+                              **({'configuration': configuration} if diagnostics.enabled(configuration) else {}),
                               **({"capture_faults": True} if capture_faults else {}),
                               **({"actual": captured} if captured is not None else {}))
             for entry, outcome in run_worker_pass(group, lambda entry: workers(
@@ -560,6 +570,7 @@ def replay_many(procedure, entries, workers, *, hashseed=0, inputs_dirs=None, mu
             for entry in group:
                 captured = None if actual is None else actual.setdefault(entry["cell"], [])
                 out[entry["cell"]] = replay(worker, procedure, entry, mutation=mutation,
+                                           **({'configuration': configuration} if diagnostics.enabled(configuration) else {}),
                                           **({"capture_faults": True} if capture_faults else {}),
                                           **({"actual": captured} if captured is not None else {}))
     return out
@@ -596,7 +607,7 @@ def zero_crash(procedure, entries, workers, *, inputs_dirs=None, actual=None, di
     None preserves historical reports and capture behavior. v2.8 uses seed zero in both passes and reuses one
     healthy worker per pass/input mount; every hook call retains its fresh procedure namespace."""
     entries = scoped_entries(procedure, entries, configuration=configuration)
-    scope = {'configuration': configuration} if profiles.is_v214(configuration) else {}
+    scope = {'configuration': configuration} if profiles.is_v214(configuration) or diagnostics.enabled(configuration) else {}
     diagnosing = diagnostic_cells is not None
     first_actual = actual if actual is not None else {} if diagnosing else None
     second_actual = {} if diagnosing else None
@@ -675,12 +686,16 @@ def bounded_result(result):
     return {"status": "returned", "value": text}
 
 
-def screened_note(procedure, bench, view, result):
+def screened_note(procedure, bench, view, result, *, configuration=None, diagnostics=None):
     """v2.4 C6c: the shell-visible note from one existing before_call response, without another hook call.
 
     _Run.render uses the shell's notes.screen/type/lexicon and check_bindings/render path. The final assembly is
     notes.assemble itself, so both the procedure's declared cap and the benchmark request cap apply.
     """
+    result, diagnostic = diagnostics_runtime.capture(result, configuration=configuration,
+        bench=bench, hook='before_call', procedure=procedure)
+    if diagnostic is not None and diagnostics is not None:
+        diagnostics.append(diagnostic)
     if result.get("ok") is not True:
         return ""
     fields = shaped(result.get("value"), None)
@@ -1151,7 +1166,7 @@ def run_tests(procedure, entries, outcomes, workers, *, inputs_dirs=None, config
         cells = sorted({t["trajectory"] for t in tests if t["nonvacuity"]["mutation"] == mutation})
         found = replay_many(procedure, [entries[c] for c in cells], workers, inputs_dirs=inputs_dirs,
                             mutation=mutation, **({'configuration': configuration}
-                                                  if profiles.is_v214(configuration) else {}))
+                                                  if profiles.is_v214(configuration) or diagnostics.enabled(configuration) else {}))
         mutated.update({(mutation, cell): outcome for cell, outcome in found.items()})
     fixed = False
     for test in tests:
@@ -1288,7 +1303,8 @@ def meta_counterfactual(procedure, entries, outcomes, workers, *, inputs_dirs=No
         return []
     replaced = [_texts(entry, LIVEMATH_META_OPTION, META_FILLER) for entry in present]
     found = replay_many(procedure, replaced, workers, hashseed=0, inputs_dirs=inputs_dirs,
-                        **({'configuration': configuration} if profiles.is_v214(configuration) else {}))
+                        **({'configuration': configuration}
+                           if profiles.is_v214(configuration) or diagnostics.enabled(configuration) else {}))
     out = []
     for entry in present:
         real, counter = _behaviour(outcomes[entry["cell"]]), _behaviour(found[entry["cell"]], mapped=True)

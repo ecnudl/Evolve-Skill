@@ -694,11 +694,15 @@ class Context:
         require(all(isinstance(self.references.get(i), dict) for i in self.disclosed),
                 "Disclosed items keep their table-shape references")
         evaluated = {t["cell"]: t for t in self.evaluated}
+        if protocol.is_v215(self.configuration):
+            from . import diagnostics_feedback
+            self.training = diagnostics_feedback.sanitize_training(self.training, own=own, sink=self.sheet)
         require(self.training is None or _training_ok(self.training, self.references, own, evaluated, self.bench,
                                                       v24=v24, v25=v25 and not protocol.is_alfworld(self.configuration),
                                                       v28=protocol.is_v28(self.configuration), v29=protocol.is_v29(self.configuration),
                                                       v291=protocol.is_v291(self.configuration),
                                                       v292=protocol.is_v292(self.configuration), v211=protocol.uses_v211(self.configuration, self.bench),
+                                                      v215=protocol.is_v215(self.configuration),
                                                       current={t["cell"]: t for t in self.current}),
                 "The training feedback shows this step's run-slice items with their own references only")
         output_refs = {e["task_id"] for e in (self.training or {}).get("unfixed_examples", [])} if v24 else set()
@@ -814,12 +818,17 @@ def _lint_entry(entry, *, v25=False, v26=False, v27=False, v28=False, v29=False,
 
 
 def _training_ok(training, references, own, evaluated, bench, *, v24=False, v25=False, current=None, v28=False, v29=False,
-                 v291=False, v292=False, v211=False):
+                 v291=False, v292=False, v211=False, v215=False):
     """v2 (Codex review 2026-10-23 #4): the last round's feedback exactly as ``step._feedback`` writes it; each
     example names one of this step's run-slice items (``own``) and that item's candidate-arm cell of the last training
     unit (``evaluated``: {cell: trajectory}), its texts within ``TRAIN_TEXT_CHARS``, and a reference only off ALFWorld
     and only the item's own (``Context.references``)."""
     fields = TRAINING_FIELDS | ({"unfixed_examples", "identical_items"} if v24 else set())
+    if v215 and isinstance(training, dict) and 'engineer_diagnostics' in training:
+        # Context already sanitizes the optional channel with run membership.
+        # This validator stays strict only about the original training evidence;
+        # re-validating metadata here must never turn its omission into a unit failure.
+        fields |= {'engineer_diagnostics'}
     if v291:
         fields |= {"format"}
     if v29 and "confirm" in training:
@@ -1051,9 +1060,18 @@ def payload(ctx, analyses=None):
     user.update({"round": ctx.round, "rounds": protocol.train_rounds(ctx.configuration),
                  "history": ctx.history, "training": ctx.training,
                  "lint": ctx.lint, "edits": budget(ctx), "analyses": list(analyses or [])})
+    extra = None
+    if protocol.is_v215(ctx.configuration) and user.get('training') is not None:
+        user['training'] = dict(user['training'])
+        extra = user['training'].pop('engineer_diagnostics', None)
     if protocol.TRIM_PAYLOADS[ctx.configuration]:
         user = engineer_payload.trim(user)
-    return _fit_train(user)
+    user = _fit_train(user)
+    if extra is not None:
+        from . import diagnostics_feedback
+        user['engineer_diagnostics'] = extra
+        user = diagnostics_feedback.sanitize_request(user, sink=ctx.sheet, stage='proposal_payload')
+    return user
 
 
 def _fit_train(user):
@@ -1164,6 +1182,9 @@ def budget(ctx):
 
 def _legacy_system(ctx, user):
     """The historical selector, shared by dispatch and the benchmark-aware accessor."""
+    if protocol.is_v215(ctx.configuration):
+        from . import engineer_v215
+        return engineer_v215.dispatch(ctx, user)
     if protocol.is_v214(ctx.configuration):
         from copy import copy
         selected = copy(ctx)
@@ -1263,6 +1284,9 @@ def _ask(ctx, user, purpose):
     prefix = "engineer/%s/" % ctx.label
     if ctx.spent + ctx.roles.count(prefix) >= ctx.calls_cap:
         return None, None
+    if protocol.is_v215(ctx.configuration):
+        from . import diagnostics_feedback
+        user = diagnostics_feedback.sanitize_request(user, sink=ctx.sheet, stage='engineer_request')
     if protocol.uses_v211(ctx.configuration, ctx.bench):
         from . import engineer_v211
         system = engineer_v211.dispatch(ctx, user)
@@ -1802,7 +1826,8 @@ def leak_check(change, ctx, outcomes, entries):
         return False, {"output_bans": (bans + letters)[:10]}
     if ctx.counterfactual:  # v2.1: the same behaviour with the meta option's text replaced by the filler
         differs = replay.meta_counterfactual(procedure, entries, outcomes, ctx.workers, inputs_dirs=ctx.inputs_dirs,
-            **({'configuration': ctx.configuration} if protocol.is_v214(ctx.configuration) else {}))
+            **({'configuration': ctx.configuration}
+               if protocol.is_v214(ctx.configuration) or protocol.is_v215(ctx.configuration) else {}))
         if differs:
             return False, {"output_bans": differs[:10]}
     named = [entries[t["trajectory"]] for t in procedure.replay_tests
@@ -2078,13 +2103,26 @@ def _routing_checks(procedure, ctx, *, outcomes=None, actual=None):
                     if captured:
                         detail["first_exception"] = {key: captured[0][key] for key in ("status", "exc_type", "message")}
             return faults
-        result = worker.call(procedure.id, hook, [view, None], timeout_s=SANDBOX_TIMEOUTS["hook"])
+        if protocol.is_v215(ctx.configuration):
+            from . import diagnostics_runtime
+            result = diagnostics_runtime.worker_call(worker, procedure.id, hook, [view, None],
+                timeout_s=SANDBOX_TIMEOUTS['hook'], configuration=ctx.configuration, bench=ctx.bench)
+        else:
+            result = worker.call(procedure.id, hook, [view, None], timeout_s=SANDBOX_TIMEOUTS["hook"])
         if result.get("ok") is not True:
             detail["exceptions"] += 1
             if detail["first_exception"] is None and item in entries:
                 detail["first_exception"] = replay.bounded_result(result)
             return faults + [{"kind": result.get("fault")}]
-        present = bool(replay.screened_note(procedure, ctx.bench, view, result).strip())
+        if protocol.is_v215(ctx.configuration):
+            recorded = []
+            text = replay.screened_note(procedure, ctx.bench, view, result,
+                                       configuration=ctx.configuration, diagnostics=recorded)
+            detail.setdefault('diagnostics', []).append({'task_id': item, 'records': recorded,
+                                                         'fired': True, 'no_note': not bool(text.strip())})
+            present = bool(text.strip())
+        else:
+            present = bool(replay.screened_note(procedure, ctx.bench, view, result).strip())
         detail["nonempty" if present else "empty"] += 1
         if not present:
             empty_item(item)
@@ -2197,7 +2235,8 @@ def check(change, ctx, taken=()):
     entries = _scope(ctx, single, procedure)
     actual = {} if v24 else None
     crash, outcomes = replay.zero_crash(procedure, list(entries.values()), ctx.workers, inputs_dirs=ctx.inputs_dirs,
-                                       **({'configuration': ctx.configuration} if protocol.is_v214(ctx.configuration) else {}),
+                                       **({'configuration': ctx.configuration}
+                                          if protocol.is_v214(ctx.configuration) or protocol.is_v215(ctx.configuration) else {}),
                                        **({"capture_faults": True} if protocol.is_v291(ctx.configuration) else {}),
                                        **({"actual": actual} if v24 else {}),
                                        **({"diagnostic_cells": _feedback_cells(ctx)}
@@ -2251,14 +2290,16 @@ def check(change, ctx, taken=()):
             tests.update(replay.tracker_feedback(procedure, entries, outcomes, _feedback_cells(ctx)))
         if procedure.replay_tests:
             advice = replay.run_tests(procedure, entries, outcomes, ctx.workers, inputs_dirs=ctx.inputs_dirs,
-                **({'configuration': ctx.configuration} if protocol.is_v214(ctx.configuration) else {}))
+                **({'configuration': ctx.configuration}
+                   if protocol.is_v214(ctx.configuration) or protocol.is_v215(ctx.configuration) else {}))
             report["lint"] = _lint(procedure, advice, entries,
                                    **({"outcomes": outcomes, **disclosure} if disclosure else {}),
                                    **({"reference_feedback": True} if protocol.is_v26(ctx.configuration) else {}),
                                    **({"validation_feedback": True} if protocol.is_v27(ctx.configuration) else {}))
     else:
         tests = replay.run_tests(procedure, entries, outcomes, ctx.workers, inputs_dirs=ctx.inputs_dirs,
-            **({'configuration': ctx.configuration} if protocol.is_v214(ctx.configuration) else {}))
+            **({'configuration': ctx.configuration}
+               if protocol.is_v214(ctx.configuration) or protocol.is_v215(ctx.configuration) else {}))
     if not done("C7", tests["passed"], tests):
         return report
     guard = replay.format_guard(outcomes)
