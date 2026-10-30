@@ -27,10 +27,14 @@ def pins():
 
 
 def active_cards(cards, configuration):
-    from .profiles import is_v210
+    from .profiles import is_v210, is_v214
     if not is_v210(configuration):
         return dict(cards)
     instructions = pins()
+    if is_v214(configuration):
+        from .zebralogic import BENCH, CARD_TEXT
+        instructions = {**instructions, BENCH: {'text': CARD_TEXT,
+                        'sha256': hashlib.sha256(CARD_TEXT.encode()).hexdigest()}}
     require(set(cards) <= set(instructions), 'Instruction start supports the five registered benches only')
     for bench, text in cards.items():
         entry = instructions[bench]
@@ -40,6 +44,10 @@ def active_cards(cards, configuration):
 
 
 def original_card(bench, active_text):
+    from .zebralogic import BENCH, CARD_TEXT
+    if bench == BENCH:
+        require(active_text == CARD_TEXT, 'The neutral Zebra card is unchanged')
+        return active_text
     require(active_text == pins()[bench]['text'], 'Historical solver card must equal the frozen instruction: ' + bench)
     return active_text
 

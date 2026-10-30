@@ -68,7 +68,7 @@ def interchangeable(first, second, *, bench):
 def card_sample(sealed, preferred=None):
     """The seeded C instrument sample, taking already-dispatched S items before supplemental S dispatches."""
     if profiles.is_v211(sealed.get("configuration")) or profiles.is_v212(sealed.get("configuration")):
-        zebra = profiles.is_v212(sealed.get("configuration"))
+        zebra = profiles.uses_v212(sealed.get("configuration"), sealed["bench"])
         require(sealed["bench"] == "zebralogic" if zebra else sealed["bench"] in profiles.V211_SLICES,
                 "Only Zebra has v2.12 acceptance" if zebra else "Only four learned steps have main-v4 acceptance")
         items = list(sealed["plan"]["astar"])

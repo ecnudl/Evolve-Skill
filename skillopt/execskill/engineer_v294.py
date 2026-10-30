@@ -77,7 +77,7 @@ def repair(ctx, change, report, taken=()):
                'change': dict(change.entry, source=change.source),
                'evidence': report.get('inert_evidence', {}),
                'instruction': inert_repair_instruction(ctx.configuration, causes)}
-    if p.is_v211(ctx.configuration):
+    if p.uses_v211(ctx.configuration, ctx.bench):
         from . import engineer_v211
         request.update(causes=sorted(set(causes)),
                        instruction=engineer_v211.inert_repair_instruction(ctx.bench, causes))

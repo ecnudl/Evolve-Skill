@@ -12,6 +12,7 @@ from . import protocol as legacy
 from .policy import POLICY_VERSION_V24, POLICY_VERSION_V25, POLICY_VERSION_V28, POLICY_VERSION_V29, MAX_SOURCE_BYTES_V28, MAX_SOURCE_BYTES_V29
 
 MAIN_V4 = "main-v4"
+MAIN_V5 = "main-v5"
 ZEBRA_PC_V1 = "zebra-pc-v1"
 ZEBRA_PC_V2 = "zebra-pc-v2"
 ZEBRA_PC_V3 = "zebra-pc-v3"
@@ -110,31 +111,31 @@ def is_v29(configuration):
 def is_v291(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, ZEBRA_PC_V8, ALFWORLD_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, ZEBRA_PC_V8, ALFWORLD_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v292(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v293(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v294(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v295(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v296(configuration):
@@ -151,12 +152,12 @@ def is_v297(configuration):
 
 def alfworld_format_rule(configuration, bench=None):
     """The format rule for this run; the historical admissible-share rule stays frozen."""
-    return "alfworld-readable-action-v2-9-6" if is_v296(configuration) or (configuration == MAIN_V4 and bench == "alfworld") else "alfworld-admissible-9-10"
+    return "alfworld-readable-action-v2-9-6" if is_v296(configuration) or (configuration in (MAIN_V4, MAIN_V5) and bench == "alfworld") else "alfworld-admissible-9-10"
 
 
 def train_rounds(configuration, bench=None):
     """The historical six-round limit, extended only for the Zebra v12 search."""
-    return 0 if configuration == ZEBRA_HP_V3R4 or (configuration == MAIN_V4 and bench == "alfworld") else 10 if configuration == ZEBRA_PC_V12 else TRAIN_ROUNDS
+    return 0 if configuration == ZEBRA_HP_V3R4 or (configuration in (MAIN_V4, MAIN_V5) and bench == "alfworld") else 10 if configuration == ZEBRA_PC_V12 else TRAIN_ROUNDS
 
 
 def cleanup_grace_seconds(configuration):
@@ -463,6 +464,8 @@ def configuration_of(setting):
 def active_benches(configuration):
     configuration = configuration or PILOT
     require(supports_configuration(configuration), "Unknown run configuration")
+    if is_v214(configuration):
+        return CONFIGURATIONS[configuration]["order"]
     # Historical clients/cards/read rosters were all five, even in two-step pilots.
     return (ZEBRA,) if is_zebra(configuration) else ("alfworld",) if is_alfworld(configuration) else BENCHES
 
@@ -502,6 +505,8 @@ def stage_arms_max(configuration):
 
 def read_arms_of(configuration):
     require(supports_configuration(configuration), "Unknown run configuration")
+    if is_v214(configuration):
+        return ("F", "C", "B", STAGES)
     if is_zebra_fc(configuration):
         return ("F", "C")
     if is_v210(configuration):
@@ -510,6 +515,8 @@ def read_arms_of(configuration):
 
 
 def estimate_arms(configuration):
+    if is_v214(configuration):
+        return 1 + stage_arms_max(configuration)
     if is_zebra_fc(configuration):
         return 1
     if is_v210(configuration):
@@ -543,6 +550,13 @@ def ledger_bound(model, bench, *, branch=None, longest=None):
 
 
 def fired_share(bench, pilot=PILOT):
+    if is_v214(pilot):
+        require(bench in active_benches(pilot), "Only the registered mixed panel")
+        home = CONFIGURATIONS[pilot]["order"]
+        if bench in home:
+            return FIRED_SHARES["home"]
+        related = any(bench in pair and set(pair) & set(home) for pair in similar_pairs(pilot))
+        return FIRED_SHARES["similar" if related else "other"]
     if is_alfworld(pilot):
         require(bench == "alfworld", "Only the registered ALFWorld panel")
         return FIRED_SHARES["home"]
@@ -553,6 +567,19 @@ def fired_share(bench, pilot=PILOT):
 
 
 def read_estimate_terms(per_cell, ratio, pilot=PILOT):
+    if is_v214(pilot):
+        require(isinstance(per_cell, dict) and set(per_cell) == set(read_benches(pilot)),
+                'Five-bench main-v5 per-cell measurement required')
+        terms = {}
+        for bench in read_benches(pilot):
+            entry = per_cell[bench]
+            card = legacy._exact(entry['card'], 'card cell')
+            proc = (card * PROCEDURE_ARM_FACTOR[1]
+                    if entry.get('procedure_assumed') is True or entry.get('procedure') is None
+                    else legacy._exact(entry['procedure'], 'procedure cell'))
+            stages = stage_arms_max(pilot) * fired_share(bench, pilot)
+            terms[bench] = legacy._exact(ratio, 'ratio') * read_items(pilot, bench) * (2 * card + (1 + stages) * proc)
+        return terms
     if is_v210(pilot):
         require(isinstance(per_cell, dict) and set(per_cell) == set(BENCHES), 'Five-bench per-cell measurement required')
         terms = {}
@@ -797,11 +824,13 @@ MAIN_V3_NAMESPACES = {'G': 'G-v3', 'D': 'D-v3'}
 
 
 def is_v210(configuration):
-    return configuration in (BASELINE_V210, MAIN_V3, MAIN_V4)
+    return configuration in (BASELINE_V210, MAIN_V3, MAIN_V4, MAIN_V5)
 
 
 def read_items(configuration, bench):
     """Number of test items; TEST_READ_CELLS instead counts card/procedure work."""
+    if is_v214(configuration):
+        return MAIN_V5_TEST_ITEMS[bench]
     return TEST_READ_CELLS[MAIN_V2_3 if is_v210(configuration) else configuration][bench][0]
 
 
@@ -866,6 +895,39 @@ PLACEBO_ARMS = {name: not is_v210(name) for name in CONFIGURATIONS}
 TEST_WITHHOLDING = {name: not is_v210(name) for name in CONFIGURATIONS}
 
 
+def is_v214(configuration):
+    return configuration == MAIN_V5
+
+
+def machinery_configuration(configuration, bench):
+    """Select an inherited method without changing the run or record identity."""
+    return (ZEBRA_PC_V13 if bench == ZEBRA else MAIN_V4) if is_v214(configuration) else configuration
+
+
+def uses_v211(configuration, bench):
+    return machinery_configuration(configuration, bench) == MAIN_V4
+
+
+def uses_v212(configuration, bench):
+    return machinery_configuration(configuration, bench) == ZEBRA_PC_V13
+
+
+def acceptance_rule(configuration, bench):
+    return deepcopy(ACCEPT_RULES[machinery_configuration(configuration, bench)])
+
+
+def accept_freshness(configuration, bench):
+    return ACCEPT_FRESHNESS[machinery_configuration(configuration, bench)]
+
+
+def confirm_freshness(configuration, bench):
+    return CONFIRM_FRESHNESS[machinery_configuration(configuration, bench)]
+
+
+def similar_pairs(configuration=PILOT):
+    return SIMILAR_PAIRS_BY_CONFIGURATION.get(configuration, SIMILAR_PAIRS)
+
+
 # v2.11 is copied only after every historical table has been fully constructed.
 MAIN_V4_ROOT = '/data/execskill-20261029-main-v4'
 MAIN_V4_MANIFEST = MAIN_V4_ROOT + '-manifest.json'
@@ -873,7 +935,7 @@ MAIN_V4_NAMESPACES = {'G': 'G-v4', 'D': 'D-v4'}
 
 
 def is_v211(configuration):
-    return configuration == MAIN_V4
+    return configuration in (MAIN_V4, MAIN_V5)
 
 
 def uses_readable_alf_format(configuration, bench):
@@ -885,8 +947,8 @@ def uses_episode_audit(configuration, bench):
 
 
 def uses_pooled_j1(configuration, bench):
-    return (is_v297(configuration) or (is_v211(configuration) and bench in BENCHES[:-1])
-            or (is_v212(configuration) and bench == ZEBRA))
+    return (is_v297(configuration) or (uses_v211(configuration, bench) and bench in BENCHES[:-1])
+            or (uses_v212(configuration, bench) and bench == ZEBRA))
 
 
 for _name, _table in list(globals().items()):
@@ -915,20 +977,20 @@ V211_SLICES = {
 
 
 def slice_spec(configuration, bench):
-    return deepcopy(V211_SLICES[bench] if is_v211(configuration) else SLICES[bench])
+    return deepcopy(V211_SLICES[bench] if uses_v211(configuration, bench) else SLICES[bench])
 
 
 def confirm_spec(configuration, bench, round):
     require(type(round) is int and 1 <= round <= train_rounds(configuration, bench), 'Registered confirm round')
-    if is_v211(configuration):
+    if uses_v211(configuration, bench):
         require(bench in V211_SLICES, 'Only learned benchmarks have confirmation')
         return {'items': 40 if bench == 'searchqa' else 4, 'runs': 1, 'round': round,
-                'selection_check': 'preregistered', 'freshness': CONFIRM_FRESHNESS[configuration]}
-    return {'items': 40, 'runs': 1, 'round': round, 'freshness': CONFIRM_FRESHNESS[configuration]}
+                'selection_check': 'preregistered', 'freshness': confirm_freshness(configuration, bench)}
+    return {'items': 40, 'runs': 1, 'round': round, 'freshness': confirm_freshness(configuration, bench)}
 
 
 def audit_spec(configuration, bench):
-    if is_v211(configuration) and bench in V211_SLICES:
+    if uses_v211(configuration, bench) and bench in V211_SLICES:
         sheet = bench == 'spreadsheetbench'
         return {'base_items': 8 if sheet else 12, 'extra_items': 4,
                 'batch_items': 2 if sheet else 4, 'max_batches': 6 if sheet else 4,
@@ -942,12 +1004,12 @@ def audit_spec(configuration, bench):
 
 def engineer_prompt(configuration, bench, mode='single', purpose='propose'):
     require(mode in ('single', 'train'), 'Registered engineer mode')
-    if is_v211(configuration):
+    if uses_v211(configuration, bench):
         from . import engineer_v211
         return engineer_v211.system(bench, train=mode == 'train', purpose=purpose)
     from types import SimpleNamespace
     from . import engineer
-    context = SimpleNamespace(configuration=configuration, bench=bench, mode=mode)
+    context = SimpleNamespace(configuration=machinery_configuration(configuration, bench), bench=bench, mode=mode)
     return engineer._legacy_system(context, {'request': purpose})
 
 
@@ -1009,3 +1071,77 @@ CONFIG_GLM_CAP[ZEBRA_HP_V3R4] = 0
 CONFIGURATIONS[ZEBRA_HP_V3R4]['redo_reserve'] = 0
 # Reserve the complete read cap plus only the existing first-call subcap.
 CONFIGURATIONS[ZEBRA_HP_V3R4]['solver_cap'] = CONFIGURATIONS[ZEBRA_HP_V3R4]['test_read_cap'] + FIRST_CALL_CAP
+
+
+# v2.14 composes the finalized main-v4 and zebra-pc-v13 registrations by value.
+MAIN_V5_ROOT = '/data/execskill-20261031-main-v5'
+MAIN_V5_MANIFEST = MAIN_V5_ROOT + '-manifest.json'
+MAIN_V5_NAMESPACES = {'G': 'G-v5', 'D': 'D-v5'}
+MAIN_V5_ORDER = ('searchqa', 'officeqa', ZEBRA, 'spreadsheetbench', 'alfworld')
+MAIN_V5_TEST_ITEMS = {'searchqa': 400, 'officeqa': 172, ZEBRA: 200,
+                      'spreadsheetbench': 279, 'alfworld': 134}
+# Owner decision main_v5_similarity: Zebra and ALFWorld have no related benchmark.
+SIMILAR_PAIRS_BY_CONFIGURATION = {MAIN_V5: (('searchqa', 'officeqa'),
+                                           ('officeqa', 'spreadsheetbench'))}
+for _name, _table in list(globals().items()):
+    if _name.isupper() and isinstance(_table, dict) and MAIN_V4 in _table:
+        _table[MAIN_V5] = deepcopy(_table[MAIN_V4])
+CONFIGURATIONS[MAIN_V5]['order'] = MAIN_V5_ORDER
+RUN_ROOTS[MAIN_V5] = MAIN_V5_ROOT
+CHAIN_NAMESPACES[MAIN_V5] = MAIN_V5_NAMESPACES
+SUPPORTED_NAMESPACES += tuple(MAIN_V5_NAMESPACES.values())
+REAL_RUN_EVIDENCE[MAIN_V5] = 'main_v5_real_run'
+STAGE_READ[MAIN_V5] = True
+PLACEBO_ARMS[MAIN_V5] = TEST_WITHHOLDING[MAIN_V5] = False
+for _name in ('CONFIG_STEP_CAPS', 'CONFIG_SCHEDULE_CELLS'):
+    globals()[_name][MAIN_V5] = {
+        bench: deepcopy(globals()[_name][machinery_configuration(MAIN_V5, bench)][bench])
+        for bench in MAIN_V5_ORDER[:-1]}
+# The single-benchmark Zebra parent has no earlier generated sets. Main-v5's
+# third step inherits main-v4's step-3 predecessor cells: OfficeQA's two arms,
+# 40 items and two self-test passes. SearchQA generates no G_self set.
+_main_v5_zebra_selftest = CONFIG_SCHEDULE_CELLS[MAIN_V5][ZEBRA]['selftest']
+_main_v4_step3_selftest = CONFIG_SCHEDULE_CELLS[MAIN_V4]['livemath']['selftest']
+for _bench in MAIN_V5_ORDER[:MAIN_V5_ORDER.index(ZEBRA)]:
+    if _bench in _main_v4_step3_selftest:
+        _main_v5_zebra_selftest[_bench] = deepcopy(_main_v4_step3_selftest[_bench])
+CONFIG_STEP_CAPS[MAIN_V5][ZEBRA]['selftest'] = legacy._round_up(MAIN_CAP_FACTOR * (
+    sum(CELL_ANCHORS[b][1] * (card + PROCEDURE_ARM_FACTOR[1] * proc)
+        for b, (card, proc) in _main_v5_zebra_selftest.items())
+    + MAIN_RESERVATIONS * READ_RESERVATION), 100_000)
+# Zebra has no generated G_self set, so the removed LiveMath predecessor contributes
+# no SpreadsheetBench self-test cells. Preserve the parent's step cap as headroom.
+CONFIG_SCHEDULE_CELLS[MAIN_V5]['spreadsheetbench']['selftest'].pop('livemath')
+TEST_READ_CELLS[MAIN_V5] = {b: (2 * n, 5 * n) for b, n in MAIN_V5_TEST_ITEMS.items()}
+_main_v5_read_tokens = sum(CELL_ANCHORS[b][1] * (c + PROCEDURE_ARM_FACTOR[1] * q)
+                           for b, (c, q) in TEST_READ_CELLS[MAIN_V5].items())
+CONFIGURATIONS[MAIN_V5]['test_read_cap'] = legacy._round_up(MAIN_CAP_FACTOR * (
+    _main_v5_read_tokens + len(MAIN_V5_ORDER) * MAIN_RESERVATIONS * READ_RESERVATION), MILLION)
+CONFIGURATIONS[MAIN_V5]['solver_cap'] = legacy._round_up(
+    sum(sum(row.values()) for row in CONFIG_STEP_CAPS[MAIN_V5].values())
+    + CONFIGURATIONS[MAIN_V5]['test_read_cap'] + CONFIGURATIONS[MAIN_V5]['redo_reserve'], 5 * MILLION)
+# Preserve parent aggregate headroom while replacing only the LiveMath method step.
+CONFIG_GLM_CAP[MAIN_V5] = (CONFIG_GLM_CAP[MAIN_V4] - sum(_v211_limits.role_caps('livemath').values())
+                         + CONFIG_GLM_CAP[ZEBRA_PC_V13])
+
+
+def main_v5_identity():
+    """Preregistered mixed method, worst read and existing G-Zebra route pins."""
+    return {'configuration': MAIN_V5, 'order': MAIN_V5_ORDER,
+            'machinery': {b: machinery_configuration(MAIN_V5, b) for b in MAIN_V5_ORDER},
+            'similarity': {'name': 'main_v5_similarity', 'pairs': similar_pairs(MAIN_V5)},
+            'stage_timing': 'main_v5_stage_timing_chain_end_after_both_chains',
+            'freshness': {b: {'accept': accept_freshness(MAIN_V5, b),
+                              'confirm': confirm_freshness(MAIN_V5, b)} for b in MAIN_V5_ORDER},
+            'acceptance_rules': {b: acceptance_rule(MAIN_V5, b) for b in MAIN_V5_ORDER[:-1]},
+            'read_items': MAIN_V5_TEST_ITEMS, 'read_cells': TEST_READ_CELLS[MAIN_V5],
+            'read_arms': read_arms_of(MAIN_V5), 'stage_arms_max': stage_arms_max(MAIN_V5),
+            'fired_shares': {b: fired_share(b, MAIN_V5) for b in MAIN_V5_ORDER},
+            'read_formula': 'ratio * sum(n_b * (2*card_b + (1+4*f_b)*procedure_b))',
+            'read_logical_cells_per_chain': 8295, 'read_base_cells_per_chain': 3555,
+            'zebra_blank_shared_cells_per_chain': 200, 'scope_caps': CONFIG_STEP_CAPS[MAIN_V5],
+            'caps': {**CONFIGURATIONS[MAIN_V5], 'method': CONFIG_GLM_CAP[MAIN_V5]},
+            'glm_zebra': {'model': CHAINS['G'], 'max_tokens': solver_tokens(CHAINS['G'], ZEBRA),
+                          'read_timeout': read_timeout(CHAINS['G'], ZEBRA),
+                          'branch': None, 'longest': None, 'nominal_M': None,
+                          'ledger_bound': ledger_bound(CHAINS['G'], ZEBRA)}}

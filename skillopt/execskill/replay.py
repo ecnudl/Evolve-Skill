@@ -54,9 +54,9 @@ from fractions import Fraction
 from skillopt.continual_eval.core import require
 from skillopt.validator_pilot.api import digest
 
-from . import notes
+from . import notes, profiles
 from .donors import public_text, shaped
-from .package import Package
+from .package import Package, procedure_input_benches
 from .protocol import MUTATIONS  # historical exported registration remains unchanged
 from .profiles import (SUPPORTED_BENCHES, BENCHES, LIVEMATH_META_OPTION, MAX_FRAGMENTS, MAX_NOTE_CHARS, MAX_PROPERTY_TEXT, MAX_TESTS,
                        META_FILLER, MUTATIONS as SUPPORTED_MUTATIONS, NOT_RECOMMENDED_PREFIX, NOTES_KEY, PROPERTY_KINDS, SANDBOX_TIMEOUTS,
@@ -478,9 +478,19 @@ class _Run:
                         entry.update(state=value, after=True)
 
 
-def replay(worker, procedure, inputs, *, mutation=None, actual=None, capture_faults=False):
+def scoped_entries(procedure, entries, *, configuration=None):
+    """main-v5 alone enforces intrinsic procedure scope on mixed stored inputs."""
+    if not profiles.is_v214(configuration):
+        return list(entries)
+    allowed = procedure_input_benches(procedure)
+    return [entry for entry in entries if entry['bench'] in allowed]
+
+
+def replay(worker, procedure, inputs, *, mutation=None, actual=None, capture_faults=False, configuration=None):
     """The ``Outcome`` of ``procedure`` on one trajectory's ``inputs`` (``inputs_of``) through a started worker holding
     it: its predicate on the routing view, then -- where it applies -- its hooks as the shell calls them."""
+    if not scoped_entries(procedure, [inputs], configuration=configuration):
+        return Outcome(inputs['cell'], inputs['bench'], applies=False)
     if mutation is not None:
         inputs = mutate(inputs, mutation)
     run = _Run(worker, procedure, inputs, actual, capture_faults=capture_faults)
@@ -525,14 +535,14 @@ def run_worker_pass(items, open_worker, run, *, faults_of=lambda result: result.
 
 
 def replay_many(procedure, entries, workers, *, hashseed=0, inputs_dirs=None, mutation=None, actual=None,
-                capture_faults=False):
+                capture_faults=False, configuration=None):
     """{cell: Outcome} of ``procedure`` on ``entries`` (``inputs_of`` values), in their order within each worker group:
     one worker per bench kind and input directory, opened by ``workers(package, kind=, hashseed=, inputs_dir=)`` (a
     context manager yielding a started worker, e.g. ``sandbox.client.with_worker`` with its options bound).
     ``inputs_dirs``: {cell: the SpreadsheetBench item's public input directory}. v2.8 pins the seed to zero,
     reuses one healthy worker per pass/mount and reopens after worker-loss or another sticky worker fault."""
     groups = defaultdict(list)
-    for entry in entries:
+    for entry in scoped_entries(procedure, entries, configuration=configuration):
         groups[(SANDBOX_KINDS.get(entry["bench"], "cell"), (inputs_dirs or {}).get(entry["cell"]))].append(entry)
     out, package = {}, solo(procedure)
     for (kind, directory), group in groups.items():
@@ -578,20 +588,24 @@ MISMATCH_EXPLANATION_V28 = (
 
 
 def zero_crash(procedure, entries, workers, *, inputs_dirs=None, actual=None, diagnostic_cells=None,
-               capture_faults=False):
+               capture_faults=False, configuration=None):
     """C6: ``(report, outcomes of the first worker)``. Every in-scope trajectory runs in a fresh worker with
     PYTHONHASHSEED 0 in the given order and in one with PYTHONHASHSEED 1 in the reverse order; the check passes when
     there is at least one trajectory, no crash-type fault and every hook value hash is identical. v2.6's optional
     ``diagnostic_cells`` captures bounded results from these same two passes and permits one shown mismatch example;
     None preserves historical reports and capture behavior. v2.8 uses seed zero in both passes and reuses one
     healthy worker per pass/input mount; every hook call retains its fresh procedure namespace."""
+    entries = scoped_entries(procedure, entries, configuration=configuration)
+    scope = {'configuration': configuration} if profiles.is_v214(configuration) else {}
     diagnosing = diagnostic_cells is not None
     first_actual = actual if actual is not None else {} if diagnosing else None
     second_actual = {} if diagnosing else None
     first = replay_many(procedure, entries, workers, hashseed=0, inputs_dirs=inputs_dirs,
+                        **scope,
                         **({"capture_faults": True} if capture_faults else {}),
                         **({"actual": first_actual} if first_actual is not None else {}))
     second = replay_many(procedure, entries[::-1], workers, hashseed=1, inputs_dirs=inputs_dirs,
+                         **scope,
                          **({"capture_faults": True} if capture_faults else {}),
                          **({"actual": second_actual} if diagnosing else {}))
     crashes = crash_faults(first) + crash_faults(second)
@@ -611,6 +625,9 @@ def zero_crash(procedure, entries, workers, *, inputs_dirs=None, actual=None, di
             by_cell = {entry["cell"]: entry for entry in entries}
             for item in report["items"]:
                 item["task_id"] = by_cell[item["cell"]]["item"]
+        if profiles.is_v214(configuration):
+            for item in report['items']:
+                item['bench'] = first[item['cell']].bench
     return report, first
 
 
@@ -1114,9 +1131,13 @@ def tracker_feedback(procedure, entries, outcomes, shown_cells):
     return {"tracker_disagreement_counts": counts, "tracker_disagreements": examples}
 
 
-def run_tests(procedure, entries, outcomes, workers, *, inputs_dirs=None):
+def run_tests(procedure, entries, outcomes, workers, *, inputs_dirs=None, configuration=None):
     """C7: the report of ``procedure``'s replay tests on ``entries`` ({cell: inputs}, the in-scope trajectories) with
     ``outcomes`` (``zero_crash``'s first-worker outcomes); mutated inputs replay in a fresh worker."""
+    if profiles.is_v214(configuration):
+        entries = {entry['cell']: entry for entry in scoped_entries(
+            procedure, entries.values(), configuration=configuration)}
+        outcomes = {cell: outcome for cell, outcome in outcomes.items() if cell in entries}
     problems, results = [], []
     tests = list(procedure.replay_tests)
     if not tests or len(tests) > MAX_TESTS:
@@ -1129,7 +1150,8 @@ def run_tests(procedure, entries, outcomes, workers, *, inputs_dirs=None):
     for mutation in sorted({t["nonvacuity"]["mutation"] for t in tests} - {None}):
         cells = sorted({t["trajectory"] for t in tests if t["nonvacuity"]["mutation"] == mutation})
         found = replay_many(procedure, [entries[c] for c in cells], workers, inputs_dirs=inputs_dirs,
-                            mutation=mutation)
+                            mutation=mutation, **({'configuration': configuration}
+                                                  if profiles.is_v214(configuration) else {}))
         mutated.update({(mutation, cell): outcome for cell, outcome in found.items()})
     fixed = False
     for test in tests:
@@ -1252,7 +1274,7 @@ def _behaviour(outcome, mapped=False):
             "faults": [[f["hook"], f["step"], f["kind"]] for f in outcome.faults]}
 
 
-def meta_counterfactual(procedure, entries, outcomes, workers, *, inputs_dirs=None):
+def meta_counterfactual(procedure, entries, outcomes, workers, *, inputs_dirs=None, configuration=None):
     """C4's meta-option counterfactual (module docstring; v2.1 ``protocol.META_COUNTERFACTUAL``):
     [{cell, kind: "meta_counterfactual", aspects}] of the in-scope LiveMath trajectories of ``entries`` ({cell:
     inputs}) whose view holds the meta option (``LIVEMATH_META_OPTION``) on which ``procedure``, replayed in a fresh
@@ -1261,10 +1283,12 @@ def meta_counterfactual(procedure, entries, outcomes, workers, *, inputs_dirs=No
     in its order. Zero model calls."""
     present = [entry for cell, entry in entries.items() if entry["bench"] == "livemath" and cell in outcomes
                and _holds([entry["view"], entry["request_view"]], LIVEMATH_META_OPTION)]
+    present = scoped_entries(procedure, present, configuration=configuration)
     if not present:
         return []
     replaced = [_texts(entry, LIVEMATH_META_OPTION, META_FILLER) for entry in present]
-    found = replay_many(procedure, replaced, workers, hashseed=0, inputs_dirs=inputs_dirs)
+    found = replay_many(procedure, replaced, workers, hashseed=0, inputs_dirs=inputs_dirs,
+                        **({'configuration': configuration} if profiles.is_v214(configuration) else {}))
     out = []
     for entry in present:
         real, counter = _behaviour(outcomes[entry["cell"]]), _behaviour(found[entry["cell"]], mapped=True)

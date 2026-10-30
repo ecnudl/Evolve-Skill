@@ -41,7 +41,7 @@ from skillopt.coevo5.cells import exclusive
 from skillopt.continual_eval.core import read_json, require, safe_path, write_json
 
 from . import outcomes_ext, zebralogic
-from .profiles import is_v29
+from .profiles import is_v29, uses_v211
 from .profiles import SUPPORTED_BENCHES as BENCHES, LANDMARK_STEPS, NOTES_KEY, QA, RECORD_HASH, record, verified
 
 TRAJECTORIES = "trajectories"
@@ -125,7 +125,7 @@ def build(cell, *, evidence, arm_kind, package_sha256, calls, prediction, judge,
                   "fallback": shell.get("fallback")},
         "alfworld_steps": _steps(calls, prediction, shell) if cell["benchmark"] == "alfworld" else None,
         "judge": judge, "token": judge["v2"]["token"], "dispatch_ts": dispatch_ts, "finish_ts": finish_ts}
-    if configuration == 'main-v4':
+    if uses_v211(configuration, cell['benchmark']):
         fields['shell']['effects'] = list(shell.get('effects', ()))
     if is_v29(configuration):
         models = list(dict.fromkeys(call["receipt"].get("returned_model") for call in calls

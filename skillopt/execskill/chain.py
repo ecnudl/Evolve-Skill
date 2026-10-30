@@ -378,6 +378,8 @@ def read_estimate_record(smoke_root, configuration=None):
                   "se6": stage[RECORD_HASH]},
         "waiver": waived,  # registrar addendum 2026-10-23 05:3x: None, or {"sha256", "rows"} of the owner's waiver
         "pilot": projected, "formula": (
+            "ceil(ratio x sum_b n_b x (2 x card_b + (1 + 4 x f_b) x proc_b)); main-v5 F/C/B plus four stage packages"
+            if p.is_v214(projected) else
             "ceil(ratio x sum_b n_b x (card_b + proc_b)); v2.12 registered F/C arms"
             if p.is_zebra_fc(projected) else
             "ceil(ratio x sum_b n_b x (2 x card_b + %d x proc_b)); v2.10 registered C/B and F arms"
@@ -387,12 +389,16 @@ def read_estimate_record(smoke_root, configuration=None):
         "inputs": {"ratio": se6["ratio"], "per_cell": per_cell,
                    "n": {bench: p.read_items(projected, bench) if p.is_v210(projected)
                          else TEST_READ_CELLS[projected][bench][0] for bench in roster},
-                   "fired": {bench: "1" if p.is_v210(projected) else str(fired_share(bench, projected))
+                   "fired": {bench: str(fired_share(bench, projected)) if p.is_v214(projected)
+                             else "1" if p.is_v210(projected) else str(fired_share(bench, projected))
                              for bench in roster},
                    "arms": estimate_arms(projected),  # 4; with main-v2's stage arms 8
                    "procedure_factor": str(PROCEDURE_ARM_FACTOR[1]),
                    **({"card_arms": 2, "procedure_arms": estimate_arms(projected)}
-                      if p.is_v210(projected) else {})},
+                      if p.is_v210(projected) else {}),
+                   **({"stage_packages": p.stage_arms_max(projected), "base_procedure_arms": 1,
+                       "stage_sharing_discount": False, "zebra_blank_sharing_discount": False}
+                      if p.is_v214(projected) else {})},
         "value": value, "test_read_estimate": {chain: value for chain in sorted(CHAINS)},
         "terms": {bench: "%d/%d" % (term.numerator, term.denominator) for bench, term in terms.items()}})
 
@@ -486,6 +492,11 @@ def evaluate(setting, chain, package, *, launch=launch_child):
     unit root}; raises the first ``Pause`` once every child has ended."""
     roster = read_benches(configuration_of(setting))
     roots = {b: unit_root(setting, chain, b) for b in roster}
+    if p.is_v214(configuration_of(setting)):
+        from . import evaluation
+        # Both chains wait for the one shared qualification and its artifact cleanup before any read child starts.
+        with heavy(setting, "spreadsheetbench"):
+            evaluation.prepare_test_qualification(setting, chain)
 
     def one(bench):
         root = roots[bench]

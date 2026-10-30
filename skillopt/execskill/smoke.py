@@ -1349,6 +1349,9 @@ def max_role_calls(configuration=protocol.PILOT, bench=None):
     first checks and one after each fix call, all calls but one proposal being fix calls --, the same describer calls,
     and the examiner's v1 calls plus ``TOPUP_ROUNDS`` top-up writes of ``GENERATOR_CALLS`` after each of its
     ``BAND_ROUNDS`` builds."""
+    if protocol.is_v214(configuration):
+        selected = bench or 'spreadsheetbench'
+        return max_role_calls(protocol.machinery_configuration(configuration, selected), selected)
     if protocol.is_v211(configuration):
         from . import v211_limits
         return v211_limits.role_calls(bench or 'spreadsheetbench')
@@ -1656,7 +1659,7 @@ def glm_projection(measured, pilot=protocol.PILOT):
     ``role_calls_measured``; a role S3 did not measure is priced at the dearest measured role call and the widest
     measured request (``assumed``). Returns {scope: {"settled", "reservation", "needed", "cap", "fits"} (+ "roles",
     "assumed")}; a scope fits when needed <= cap."""
-    if protocol.is_v211(pilot):
+    if protocol.is_v211(pilot) and not protocol.is_v214(pilot):
         from . import v211_limits
         return v211_limits.method_projection(measured)
     if pilot == protocol.BASELINE_V210:
@@ -1678,6 +1681,8 @@ def glm_projection(measured, pilot=protocol.PILOT):
         for k, bench in enumerate(plan["order"], 1):
             if bench not in protocol.CONFIG_STEP_CAPS[pilot]:
                 continue
+            if protocol.is_v214(pilot):
+                calls = max_role_calls(pilot, bench)
             charged = {}
             for role in roles:
                 scope = (budgets.audit_scopes(chain, role[-1].upper(), bench, k) if role.startswith("audit_")

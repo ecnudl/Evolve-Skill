@@ -128,7 +128,9 @@ def role_scope_caps(pilot=PILOT, bench=None):
     examiner 5M, examiner research 9.2M, registrar 17:0x)."""
     require(pilot in PILOTS, "Unknown run configuration")
     from . import profiles
-    if profiles.is_v211(pilot):
+    if profiles.is_v214(pilot) and bench == profiles.ZEBRA:
+        caps = CONFIG_ROLE_CAPS[profiles.ZEBRA_PC_V13]
+    elif profiles.is_v211(pilot):
         from . import v211_limits
         caps = v211_limits.role_caps(bench or 'spreadsheetbench')
     else:

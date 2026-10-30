@@ -76,6 +76,12 @@ def procedure_benches(procedure):
     return SUPPORTED_BENCHES if procedure.origin == ZEBRA else BENCHES
 
 
+def procedure_input_benches(procedure, *, excluded=()):
+    """Intrinsic runtime scope, narrowed by both procedure and package exclusions."""
+    blocked = set(procedure.excluded_benches) | set(excluded)
+    return tuple(bench for bench in procedure_benches(procedure) if bench not in blocked)
+
+
 def _is_procedure_id(value):
     return type(value) is str and (LEARNED_ID.fullmatch(value) or FIXTURE_ID.fullmatch(value)) is not None
 

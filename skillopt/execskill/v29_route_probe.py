@@ -28,7 +28,7 @@ def measure(setting, chain="D", *, bench=None):
     config = p.configuration_of(setting)
     require(p.is_v29(config) and chain == "D", "The v2.9 northgate S1 probe")
     child = p.is_v211(config)
-    require(not child or bench in p.BENCHES, 'main-v4 probe requires an explicit benchmark')
+    require(not child or bench in p.active_benches(config), 'main-v4 probe requires an explicit benchmark')
     bench = bench if child else p.active_benches(config)[0]
     suffix = ('-' + bench) if child else ''
     name = "D/lean-smoke/S1-northgate-length" + suffix
@@ -101,9 +101,10 @@ def measure_all(setting):
         require(previous['run'] == setting.run and previous['code_sha256'] == code_sha,
                 'Route probes belong to this run and source snapshot')
         return previous
-    benches = {bench: measure(setting, bench=bench) for bench in p.BENCHES}
+    config = p.configuration_of(setting)
+    benches = {bench: measure(setting, bench=bench) for bench in p.active_benches(config)}
     value = p.record('v211-route-probes', setting.evidence, {
-        'configuration': p.MAIN_V4, 'chain': 'D', 'run': setting.run,
+        'configuration': config, 'chain': 'D', 'run': setting.run,
         'code_sha256': code_sha, 'benches': benches, 'calls': 15,
         'passed': all(row['passed'] and row['first_response_confirmed'] for row in benches.values()),
         'scope': 'separate D readiness; not a chain-G smoke stage'})

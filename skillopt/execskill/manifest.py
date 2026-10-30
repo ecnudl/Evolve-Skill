@@ -232,6 +232,9 @@ def prompt_sha(configuration=None):
     trains (``protocol.LEARNING``) also ``v2``: v2's engineer and examiner prompts (owner decision 2026-10-23 13:3x)
     and its analysts' (owner suggestion 2026-10-23 15:1x). A v1 configuration binds exactly the first three (Codex
     review 2026-10-23 #1)."""
+    if protocol.is_v214(configuration):
+        from . import v214_smoke
+        return v214_smoke.prompt_pins()
     if protocol.is_v213(configuration):
         return prompt_sha(protocol.ZEBRA_PC_V13)  # Inherited pins; import never invokes learning prompts.
     if protocol.is_v211(configuration):
@@ -335,6 +338,16 @@ def _plain(value):
 
 def registered(configuration=None):
     """The registered seeds, sizes and thresholds the manifest binds (values of ``protocol``)."""
+    if protocol.is_v214(configuration):
+        from . import acceptance
+        found = registered(protocol.MAIN_V4)
+        learned = protocol.active_benches(configuration)[:-1]
+        found['sizes']['slices'] = {b: _plain(protocol.slice_spec(configuration, b)) for b in learned}
+        found['sizes']['min_astar'] = {b: acceptance.minimum_astar(protocol.acceptance_rule(configuration, b),
+            protocol.slice_spec(configuration, b)['accept'][0], protocol.slice_spec(configuration, b)['blocks'])
+            for b in learned}
+        found['sizes']['v214'] = _plain(protocol.main_v5_identity())
+        return found
     if protocol.is_v211(configuration):
         from . import acceptance, v211_limits
         found = registered(protocol.MAIN_V3)
@@ -478,6 +491,9 @@ def check(manifest):
         require(value["data"].get(v213_import.PIN_KEY) == v213_import.pins(),
                 "The fixed v3r4 import pins differ")
         require("confirm" not in value["data"], "The fixed import has no confirmation slice")
+    elif protocol.is_v214(configuration):
+        from . import v214_smoke
+        v214_smoke.check_manifest(value)
     elif protocol.is_v211(configuration):
         _check_v211(value)
     elif protocol.is_v29(configuration):
@@ -529,7 +545,7 @@ def _check_v210(value):
     require(value["cards"] == instruction_start.active_cards(originals, configuration),
             "Active cards equal the historical frozen instructions byte-for-byte")
     require(value["prompt_sha"] == prompt_sha(configuration), "The v2.10 prompt pins")
-    if configuration in (protocol.MAIN_V3, protocol.MAIN_V4):
+    if configuration in (protocol.MAIN_V3, protocol.MAIN_V4) or protocol.is_v214(configuration):
         from . import v210_import
         require(data.get("alfworld_v11_import") == v210_import.pins(),
                 "The imported ALFWorld package differs from the fixture")
@@ -626,7 +642,7 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
         data = {**given["data"], "instructions": instruction_start.pins(), "original_cards": original,
                 "instruction_start": instruction_start.START, "blank_arm": instruction_start.blank_definition(),
                 "card_sha256": {bench: _sha_text_digest(text) for bench, text in original.items()}}
-        if configuration in (protocol.MAIN_V3, protocol.MAIN_V4):
+        if configuration in (protocol.MAIN_V3, protocol.MAIN_V4) or protocol.is_v214(configuration):
             from . import v210_import
             require(data.get("alfworld_v11_import", v210_import.pins()) == v210_import.pins(),
                     "The imported ALFWorld package differs from the fixture")
@@ -645,6 +661,8 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
                      **given["runtime"]["spreadsheetbench"],
                      "code_extraction_version": protocol.CODE_EXTRACTION[configuration],
                      "multiple_python_blocks": protocol.MULTIPLE_PYTHON_BLOCKS[configuration]}}}
+    if protocol.is_v214(configuration):
+        from .zebralogic import CARD_VERSION
     if protocol.is_zebra(configuration):
         from .zebralogic import CARD_VERSION
         given = {**given, "clients": {**given["clients"], "roles": role_settings(configuration)},
@@ -679,7 +697,8 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
         "prompt_sha": prompt_sha(configuration),
         "placebo_corpus_sha": protocol.PLACEBO_CORPUS_SHA256, "configuration": configuration,
         "caps": budgets.caps(configuration),
-        "importable_versions": ([*protocol.IMPORTABLE, CARD_VERSION]
+        "importable_versions": ([*protocol.IMPORTABLE, protocol.TEXTS_IMPORT, CARD_VERSION]
+                                if protocol.is_v214(configuration) else [*protocol.IMPORTABLE, CARD_VERSION]
                                 if protocol.is_zebra(configuration) else [*protocol.IMPORTABLE, protocol.TEXTS_IMPORT]),
         "sandbox": {"image_id": None if configuration == protocol.BASELINE_V210 else sandbox.IMAGE,
                     "worker_sha256": sandbox.worker_sha256(),
@@ -915,6 +934,8 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
                      allocations=deepcopy(m['data']['allocations']),
                      v211_prompt_pins=deepcopy(m['data']['v211_prompt_pins']),
                      freshness_amendment=deepcopy(m['data']['freshness_amendment']))
+    if protocol.is_v214(m['configuration']):
+        extra['confirm'] = deepcopy(m['data']['confirm'])
     if protocol.is_v213(m['configuration']):
         from . import v213_import
         extra[v213_import.PIN_KEY] = deepcopy(m['data'][v213_import.PIN_KEY])
@@ -964,6 +985,10 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
             require(actual['slices'] == pinned['slices'] and actual['source_items_sha256'] == pinned['source_items_sha256']
                     and actual['tail_items_sha256'] == pinned['tail_items_sha256'],
                     'Loaded pools match the child S0 allocation and source hashes')
+        if protocol.is_v214(m['configuration']):
+            from . import confirm
+            require(m['data']['confirm'] == confirm.identity(protocol.ZEBRA_PC_V13, setting.pools['zebralogic']),
+                    'The loaded Zebra practice pool matches its inherited confirmation identity')
     elif protocol.is_v29(m["configuration"]) and not protocol.is_v213(m["configuration"]):
         from . import confirm
         bench = protocol.active_benches(m["configuration"])[0]

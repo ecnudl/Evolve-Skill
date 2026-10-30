@@ -376,13 +376,13 @@ def run(ctx):
                          **({"reason": "unparseable"} if replies and replies[-1] == "unparseable" else {}),
                          **audit_fields, **fault_fields})
     package, kept = e._combined_train(ctx, survivors) if train else e._combined(ctx.parent, survivors, ctx.step)
-    if p.is_v211(ctx.configuration):
+    if p.uses_v211(ctx.configuration, ctx.bench):
         from . import engineer_v211
     fields = {"bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
               "prompt_sha256": (engineer_v211.text_sha(engineer_v211.system(ctx.bench, train=train))
-                                if p.is_v211(ctx.configuration) else
-                                engineer_v29.audit.text_sha256(engineer_v29.system(ctx.configuration, train=train))
-                                if p.is_v29(ctx.configuration) else digest(system(ctx.configuration, train=train))), "proposals": proposals, "changes": outcomes,
+                                if p.uses_v211(ctx.configuration, ctx.bench) else
+                                engineer_v29.audit.text_sha256(engineer_v29.system(p.machinery_configuration(ctx.configuration, ctx.bench), train=train))
+                                if p.is_v29(ctx.configuration) else digest(system(p.machinery_configuration(ctx.configuration, ctx.bench), train=train))), "proposals": proposals, "changes": outcomes,
               "kept": [c.n for c in kept], "dropped": [c.n for c in survivors if c not in kept],
               "candidate_sha256": package.sha256 if package else None,
               "procedures": [proc.to_json() for proc in package.procedures] if package else [],
@@ -398,24 +398,24 @@ def run(ctx):
                           for key in ("input", "output", "charged")} for judge in ("G", "D")})
     if p.is_v291(ctx.configuration):
         from . import engineer_v291
-        if not p.is_v211(ctx.configuration):
-            fields['prompt_sha256'] = engineer_v291.audit.text_sha256(engineer_v291.system(ctx.configuration, train=train))
+        if not p.uses_v211(ctx.configuration, ctx.bench):
+            fields['prompt_sha256'] = engineer_v291.audit.text_sha256(engineer_v291.system(p.machinery_configuration(ctx.configuration, ctx.bench), train=train))
         fields['fault_repair_calls'] = sum(len(row.get('fault_repair', {}).get('calls', [])) for row in outcomes)
     if p.is_v292(ctx.configuration) and not p.is_v293(ctx.configuration):
         from . import engineer_v292
-        fields['prompt_sha256'] = engineer_v292.audit.text_sha256(engineer_v292.system(ctx.configuration, train=train))
+        fields['prompt_sha256'] = engineer_v292.audit.text_sha256(engineer_v292.system(p.machinery_configuration(ctx.configuration, ctx.bench), train=train))
     if p.is_v293(ctx.configuration) and not p.is_v294(ctx.configuration):
         from . import engineer_v293
-        fields['prompt_sha256'] = engineer_v293.audit.text_sha256(engineer_v293.system(ctx.configuration, train=train))
+        fields['prompt_sha256'] = engineer_v293.audit.text_sha256(engineer_v293.system(p.machinery_configuration(ctx.configuration, ctx.bench), train=train))
     if p.is_v294(ctx.configuration):
         from . import engineer_v294, engineer_v295
         prompt = engineer_v295 if p.is_v295(ctx.configuration) else engineer_v294
-        if not p.is_v211(ctx.configuration):
-            fields['prompt_sha256'] = prompt.audit.text_sha256(prompt.system(ctx.configuration, train=train))
+        if not p.uses_v211(ctx.configuration, ctx.bench):
+            fields['prompt_sha256'] = prompt.audit.text_sha256(prompt.system(p.machinery_configuration(ctx.configuration, ctx.bench), train=train))
         fields['inert_repair_calls'] = sum(len(row.get('inert_repair', {}).get('calls', [])) for row in outcomes)
-    if p.is_v211(ctx.configuration):
+    if p.uses_v211(ctx.configuration, ctx.bench):
         fields['prompt_requests'] = ctx.sheet.get('v211_requests', [])
     if train:
         fields.update(mode=e.TRAIN, round=ctx.round, base_sha256=ctx.base.sha256, budget=e.budget(ctx), lint=lint,
                       analysis=analysis, analyst_prompt_sha256=e.ANALYST_PROMPT_SHA256, disclosed=e._disclosed_items(ctx))
-    return package, p.record(p.ENGINEER_RECORDS[ctx.configuration], ctx.evidence, fields)
+    return package, p.record(p.ENGINEER_RECORDS[p.machinery_configuration(ctx.configuration, ctx.bench)], ctx.evidence, fields)

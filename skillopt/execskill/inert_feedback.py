@@ -8,7 +8,8 @@ from __future__ import annotations
 import ast
 import copy
 
-from . import fault_feedback as faults
+from . import fault_feedback as faults, profiles
+from .package import procedure_input_benches
 
 CAUSES = ('no_effect_hook', 'never_fires', 'empty_notes', 'crashed', 'excluded_bench')
 FUNCTIONS = 32
@@ -29,10 +30,13 @@ def _counts(detail):
     return {key: value for key, value in detail.items() if type(value) is int}
 
 
-def _examples(ctx, tasks):
+def _examples(ctx, tasks, *, procedure=None):
     from . import engineer
     # Membership is validated by the same run-entry selector used for C6c.
     entries = {entry['item']: entry for entry in engineer._run_entries(ctx)}
+    if profiles.is_v214(getattr(ctx, 'configuration', None)) and procedure is not None:
+        allowed = procedure_input_benches(procedure)
+        entries = {item: entry for item, entry in entries.items() if entry['bench'] in allowed}
     views = dict(ctx.routing_items)
     result = []
     for task in sorted(set(tasks).intersection(entries)):
@@ -40,7 +44,7 @@ def _examples(ctx, tasks):
             continue  # Never invent a shortened task ID.
         entry = entries[task]
         view = views.get(task, entry.get('request_view') or entry.get('view'))
-        if getattr(ctx, 'configuration', None) == 'main-v4' and ctx.bench == 'spreadsheetbench':
+        if profiles.uses_v211(getattr(ctx, 'configuration', None), ctx.bench) and ctx.bench == 'spreadsheetbench':
             view = copy.deepcopy(view)
             if entry.get('report') is not None:
                 view['run_report'] = {k: entry['report'].get(k) for k in ('status', 'exc_type', 'message', 'answer_cells')}
@@ -92,21 +96,23 @@ def describe(change, ctx, report, *, effect_hooks, from_replay, from_routing, ou
         evidence['no_effect_hook'] = detail
     if from_routing:
         tasks = [row['task_id'] for row in routing.get('captures', ()) if row.get('applies') is False]
-        evidence['never_fires'] = {'counts': _counts(routing), 'examples': _examples(ctx, tasks)}
+        evidence['never_fires'] = {'counts': _counts(routing), 'examples': _examples(ctx, tasks, procedure=procedure)}
     if (notes.get('status') != 'not_applicable' and notes.get('fired', 0) > 0
             and notes.get('nonempty', 0) == 0):
-        examples = _examples(ctx, notes.get('empty_task_ids', ()))
+        examples = _examples(ctx, notes.get('empty_task_ids', ()), procedure=procedure)
         evidence['empty_notes'] = {'counts': _counts(notes),
                                    'task_ids': [row['task_id'] for row in examples], 'examples': examples}
     # A routing rejection is not a crashed replay. Require an applicable replay
     # before using the existing all-applicable-replays-crashed condition.
     if from_replay and any(outcome.applies for outcome in outcomes.values()):
         summary = faults.summarize(procedure, report, limit=3, example=False,
-                                   configuration=ctx.configuration)
+                                   configuration=ctx.configuration,
+                                   **({'bench': ctx.bench} if profiles.is_v214(ctx.configuration) else {}))
         evidence['crashed'] = {'signatures': summary['signatures']}
         if summary.get('truncated'):
             evidence['crashed']['truncated'] = True
-    if ctx.bench in procedure.excluded_benches:
+    if (ctx.bench in procedure.excluded_benches or (profiles.is_v214(ctx.configuration)
+            and ctx.bench not in procedure_input_benches(procedure))):
         evidence['excluded_bench'] = {'bench': ctx.bench}
     return list(evidence), _bound(evidence)
 

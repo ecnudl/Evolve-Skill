@@ -55,7 +55,7 @@ def test_all_32_historical_profile_tables_and_fixtures_are_unchanged():
 
 def test_main_v4_predicate_matrix_and_identity():
     name = p.MAIN_V4
-    assert {n for n in p.CONFIGURATIONS if not p.is_v212(n) and not p.is_v213(n)} - set(SNAPSHOT['configurations']) == {name}
+    assert {n for n in p.CONFIGURATIONS if not p.is_v212(n) and not p.is_v213(n) and not p.is_v214(n)} - set(SNAPSHOT['configurations']) == {name}
     assert all(fn(name) for fn in (p.is_v23, p.is_v24, p.is_v25, p.is_v26, p.is_v27,
         p.is_v28, p.is_v29, p.is_v291, p.is_v292, p.is_v293, p.is_v294, p.is_v295, p.is_v210, p.is_v211))
     assert not any(fn(name) for fn in (p.is_v296, p.is_v297, p.is_zebra, p.is_alfworld, p.is_alfworld_v2))

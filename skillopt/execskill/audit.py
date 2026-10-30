@@ -85,7 +85,7 @@ def episode_disclosure(configuration, bench='alfworld'):
 
 
 def system_prompt(part, *, configuration=None, final=False, bench='alfworld'):
-    if profiles.is_v211(configuration) and bench != 'alfworld':
+    if profiles.uses_v211(configuration, bench) and bench != 'alfworld':
         from . import engineer_v211
         return engineer_v211.audit_system(part, final=final)
     text = A_SYSTEM if part == 'A' else B_SYSTEM + ('\n' + CONTRADICTIONS if final else '')
@@ -205,7 +205,7 @@ def _cell_episode_history(cell, index):
 
 def public_view(bench, view, *, configuration=None, episode_history=None):
     """Build, rather than redact, an audit disclosure from hook-visible fields only."""
-    if profiles.is_v211(configuration) and bench != 'alfworld':
+    if profiles.uses_v211(configuration, bench) and bench != 'alfworld':
         from . import v211_audit
         return v211_audit.public_view(bench, view)
     if bench == 'zebralogic':
@@ -221,11 +221,19 @@ def public_view(bench, view, *, configuration=None, episode_history=None):
 
 
 def situations_from_replays(procedure, entries, outcomes, *, configuration=None, trajectories=None):
-    if profiles.is_v211(configuration) and entries and entries[0]['bench'] != 'alfworld':
+    mixed = profiles.is_v214(configuration)
+    if mixed:
+        entries = replay.scoped_entries(procedure, entries, configuration=configuration)
+    if not mixed and entries and profiles.uses_v211(configuration, entries[0]['bench']) and entries[0]['bench'] != 'alfworld':
         from . import v211_audit
         return v211_audit.situations_from_replays(procedure, entries, outcomes, trajectories=trajectories)
     result = []
     for entry in entries:
+        if mixed and profiles.uses_v211(configuration, entry['bench']) and entry['bench'] != 'alfworld':
+            from . import v211_audit
+            result.extend(v211_audit.situations_from_replays(
+                procedure, [entry], outcomes, trajectories=trajectories))
+            continue
         disclose = episode_disclosure(configuration, entry['bench'])
         if disclose:
             require(trajectories is not None and entry['cell'] in trajectories,
@@ -262,7 +270,7 @@ def situation_key(situation):
 
 def sample_situations(situations, *, bench, configuration, step, round, change_id, source_sha256, exclude=(), final=False,
                       final_package_sha256=None, final_procedures=None):
-    if profiles.is_v211(configuration) and bench != 'alfworld':
+    if profiles.uses_v211(configuration, bench) and bench != 'alfworld':
         from . import v211_audit
         return v211_audit.sample_situations(situations, bench=bench, configuration=configuration, step=step,
             round=round, change_id=change_id, source_sha256=source_sha256, exclude=exclude, final=final,
@@ -335,7 +343,7 @@ def c6_counts(entries, outcomes):
 
 def template_prompt(procedure, bench, extracted, *, configuration=None):
     cards, hooks = TASK_CARDS, HOOK_SEMANTICS
-    if profiles.is_v211(configuration) and bench != 'alfworld':
+    if profiles.uses_v211(configuration, bench) and bench != 'alfworld':
         from . import engineer_v211
         cards, hooks = engineer_v211.TASK_CARDS, engineer_v211.HOOKS
     lines = ['Benchmark %s: %s; When the program runs: %s;' % (bench, cards[bench], hooks[bench]),
@@ -351,7 +359,7 @@ def template_prompt(procedure, bench, extracted, *, configuration=None):
 
 def situation_prompt(procedures, bench, batch, counts, *, final=False, configuration=None):
     cards = TASK_CARDS
-    if profiles.is_v211(configuration) and bench != 'alfworld':
+    if profiles.uses_v211(configuration, bench) and bench != 'alfworld':
         from . import engineer_v211
         cards = engineer_v211.TASK_CARDS
     lines = ['Benchmark %s: %s' % (bench, cards[bench])]
@@ -361,7 +369,7 @@ def situation_prompt(procedures, bench, batch, counts, *, final=False, configura
         lines += ['Situation %s (item %s, step %s)' % (situation['s'], situation['item'], situation['step']),
                   '--- What the helper saw ---', json.dumps(situation['view'], ensure_ascii=False, sort_keys=True),
                   '--- Notes it produced ---']
-        if profiles.is_v211(configuration):
+        if profiles.uses_v211(configuration, bench):
             lines += ['Hook %s; phase %s; public-view hash %s; truncation %s' %
                       (situation.get('hook'), situation.get('phase'), situation.get('public_view_sha256'),
                        json.dumps(situation.get('truncation', {}), ensure_ascii=False, sort_keys=True))]
@@ -766,7 +774,7 @@ def agreement(by_judge, available):
 
 def run_audit(procedures, situations, judges, *, bench, configuration, step, round=0, change_id='', counts=None,
               final=False, cache=None, exclude=(), context_procedures=None, final_package_sha256=None):
-    if profiles.is_v211(configuration) and bench != 'alfworld':
+    if profiles.uses_v211(configuration, bench) and bench != 'alfworld':
         from . import v211_audit
         return v211_audit.run_audit(tuple(procedures), situations, judges, bench=bench, configuration=configuration,
             step=step, round=round, change_id=change_id, counts=counts, final=final, cache=cache,
@@ -855,6 +863,9 @@ def audit1(ctx, change, report):
     trajectories = engineer._verified_run_cells(ctx)
     own = set(trajectories)
     entries = [e for e in entries if e['cell'] in own]
+    if profiles.is_v214(ctx.configuration):
+        entries = replay.scoped_entries(change.procedure, entries, configuration=ctx.configuration)
+        own = {entry['cell'] for entry in entries}
     outcomes = {cell: outcome for cell, outcome in outcomes.items() if cell in own}
     situations = situations_from_replays(change.procedure, entries, outcomes, configuration=ctx.configuration,
                                         trajectories=trajectories)
@@ -941,10 +952,20 @@ def situations_from_cells(cells, package, *, configuration=None):
     audit evidence. Each ALF hook is invoked at most once per procedure per step.
     """
     from .protocol import NOTES_KEY
+    if profiles.is_v214(configuration):
+        from .package import procedure_input_benches
+        scopes = {procedure.id: procedure_input_benches(procedure,
+                  excluded=package.excluded(procedure.id) if hasattr(package, 'excluded') else ())
+                  for procedure in package.procedures}
+        # Frozen v2.11 extraction assumes its caller has enforced runtime eligibility.
+        cells = [dict(cell, shell=dict(cell.get('shell') or {}, notes=[note
+                 for note in (cell.get('shell') or {}).get('notes', ())
+                 if cell['bench'] in scopes.get(note.get('id'), ())])) for cell in cells]
     if profiles.is_v211(configuration):
         from . import v211_audit
-        learned = [cell for cell in cells if cell['bench'] != 'alfworld']
-        alf = [cell for cell in cells if cell['bench'] == 'alfworld']
+        learned = [cell for cell in cells if cell['bench'] != 'alfworld'
+                   and profiles.uses_v211(configuration, cell['bench'])]
+        alf = [cell for cell in cells if cell not in learned]
         if learned:
             return v211_audit.situations_from_cells(learned, package) + situations_from_cells(alf, package, configuration=configuration)
     result = []

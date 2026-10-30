@@ -210,6 +210,9 @@ def consent(shared, configuration=None):
             "No recorded owner consent to the multi-arm test read")
     if profiles.is_zebra_fc(configuration):
         require(value["sheet_test_qualification"] is False, "Zebra read consent does not qualify sheet test data")
+    if profiles.is_v214(configuration):
+        require(value["sheet_test_qualification"] is True,
+                "main-v5 read consent includes SpreadsheetBench test qualification")
     return value
 
 
@@ -337,6 +340,9 @@ def test_tasks(shared, pinned, bench, unit, *, run, runtime, native, workers, ev
     allowed = consent(shared, configuration)
     if bench == "zebralogic" and panel is data.test_panel:
         from .zebralogic import test_panel as panel
+        if profiles.is_v214(configuration):
+            require(isinstance(pinned, dict) and bench in pinned, "main-v5 pins its sealed Zebra panel separately")
+            pinned = pinned[bench]
     tasks, report = panel(pinned, bench, access=data.TestAccess(unit))
     entry = {"run": run, "benchmark": bench, "panel_hash": report["panel_hash"],
              "tasks": sorted(t["task_id"] for t in tasks), "excluded_without_pages": report["excluded_without_pages"],
@@ -352,6 +358,37 @@ def test_tasks(shared, pinned, bench, unit, *, run, runtime, native, workers, ev
         raise Pause("no_qualified_test_items", "spreadsheetbench", unit)
     keep = set(found["qualified"])
     return [t for t in tasks if t["task_id"] in keep]
+
+
+def prepare_test_qualification(setting, chain, *, panel=data.test_panel, pinned=None):
+    """main-v5's root-wide prerequisite, before any test unit starts (zero solver calls).
+
+    Both chains enter the same locked, idempotent qualification and wait for its cleanup. The normal sheet unit
+    subsequently verifies that same pointer; it cannot create a competing qualification. Direct unit launches use
+    this prerequisite too. Only sanitized qualification records survive the containment boundary.
+    """
+    configuration = configuration_of(setting)
+    require(profiles.is_v214(configuration), "The qualification prerequisite belongs to main-v5")
+    consent(setting.shared, configuration)
+    base = safe_path(setting.shared) / "test"
+    pointer = base / (SHEET_QUALIFICATION + ".json")
+    if pointer.exists():
+        link = verified(read_json(pointer), "test-qualification-pointer")
+        found = qualify.load(base / SHEET_QUALIFICATION / link["attempt"] / "qualification.json")
+        require(qualify.record_digest(found) == link["qualification_sha256"] and found["side"] == "test",
+                "The shared test qualification prerequisite changed")
+        if not found["qualified"]:
+            raise Pause("no_qualified_test_items", "spreadsheetbench", SHEET_QUALIFICATION)
+        return
+    from .slots import NATIVE
+    manifest = setting.extra.get("manifest")
+    if pinned is None and manifest is not None:
+        manifest = manifest if isinstance(manifest, dict) else read_json(safe_path(manifest))
+        pinned = manifest.get("data", {}).get("pinned")
+    with contained(setting.shared):
+        test_tasks(setting.shared, pinned, "spreadsheetbench", "%s/test/qualification" % chain,
+                   run=setting.run, runtime=setting.runtime["spreadsheetbench"], native=setting.slots[NATIVE],
+                   workers=setting.workers, evidence=setting.evidence, panel=panel, configuration=configuration)
 
 
 # ------------------------------------------------------------------------------------------------- the plan
@@ -622,7 +659,7 @@ def sealed_cell(full):
         "answered": answered(full),  # §6.3's mask: whether the provider delivered any reply in this cell
         "solver_route": full.get("solver_route"),  # {"route", "model"} (cells.py); route None on chain G
         **({key: full[key] for key in ("configuration", "keyword_hits", "applies", "returned_model", "returned_models")}
-           if full.get("configuration") in ("zebra-pc-v7", "alfworld-v4", "zebra-pc-v8", "alfworld-v5", "zebra-pc-v9", "alfworld-v6", "zebra-pc-v10", "alfworld-v7", "zebra-pc-v11", "alfworld-v8", "zebra-pc-v12", "alfworld-v9", "alfworld-v10", "alfworld-v11", "zebra-pc-v13", "zebra-hp-v3r4") else {}),
+           if full.get("configuration") in ("zebra-pc-v7", "alfworld-v4", "zebra-pc-v8", "alfworld-v5", "zebra-pc-v9", "alfworld-v6", "zebra-pc-v10", "alfworld-v7", "zebra-pc-v11", "alfworld-v8", "zebra-pc-v12", "alfworld-v9", "alfworld-v10", "alfworld-v11", "zebra-pc-v13", "zebra-hp-v3r4", "main-v5") else {}),
         "stop": None if full["stop"] is None else {"kind": full["stop"]["kind"]}}
 
 
@@ -724,7 +761,14 @@ def training_duplicates(texts, training):
     return out
 
 
-def _training_side(pools, order=ORDER):
+def read_canary_sources(configuration=None):
+    """The three panels not opened by S0; the main-v5 roster contains no LiveMath."""
+    if profiles.is_v214(configuration):
+        return {"officeqa": "question", "zebralogic": "question", "spreadsheetbench": "instruction"}
+    return READ_CANARY_SOURCES
+
+
+def _training_side(pools, order=ORDER, *, configuration=None):
     """The training side the test read's canaries avoid (registrar decision PR-C31-3 (1a)): ``pools`` is the manifest's
     ``data.pools`` ({bench: {"path", "sha256"}}, naming the benches of ``order``, the run configuration's order --
     registrar 17:0x; the pilot's ``ORDER`` by default); for each bench of
@@ -735,14 +779,18 @@ def _training_side(pools, order=ORDER):
         isinstance(entry, dict) and {"path", "sha256"} <= set(entry) for entry in pools.values()),
         "The test read's canaries need the manifest's data.pools pins")
     texts, pins = {}, {}
-    for bench, field in sorted(READ_CANARY_SOURCES.items()):
+    for bench, field in sorted(read_canary_sources(configuration).items()):
         entry = pools.get(bench)
         texts[bench], pins[bench] = [], None
         if entry is None:
             continue
         raw = safe_path(entry["path"]).read_bytes()
         require(hashlib.sha256(raw).hexdigest() == entry["sha256"], "The %s pool file differs from its pin" % bench)
-        items = json.loads(raw.decode("utf-8"))
+        if profiles.is_v214(configuration) and bench == profiles.ZEBRA:
+            from .zebralogic import load_pool
+            items = load_pool(entry["path"], expected_sha256=entry["sha256"])
+        else:
+            items = json.loads(raw.decode("utf-8"))
         require(isinstance(items, list) and items and all(
             isinstance(item, dict) and isinstance(item.get("public"), dict)
             and type(item["public"].get(field)) is str for item in items),
@@ -785,17 +833,18 @@ def _canary_records(root, *, read, configuration=None):
                 and isolated.get("extends") is None, "The trusted ALFWorld run needs isolated ALFWorld canaries")
         return _checked(isolated, configuration=configuration), None
     require((root / CANARIES).is_file(), "No registered test canaries in the run root")
-    first = _checked(verified(read_json(root / CANARIES), "test-canaries"))
+    sources = read_canary_sources(configuration)
+    first = _checked(verified(read_json(root / CANARIES), "test-canaries"), configuration=configuration)
     second = None
     if (root / READ_CANARIES).exists():
-        second = _checked(verified(read_json(root / READ_CANARIES), "test-read-canaries"))
-        require(second.get("extends") == first[RECORD_HASH] and set(second["counts"]) == set(READ_CANARY_SOURCES)
+        second = _checked(verified(read_json(root / READ_CANARIES), "test-read-canaries"), configuration=configuration)
+        require(second.get("extends") == first[RECORD_HASH] and set(second["counts"]) == set(sources)
                 and not set(second["counts"]) & set(first["counts"]),
                 "The test read's canaries extend this run root's S0 canaries with the other benches")
         skipped, pools = second.get("skipped"), second.get("training_pools")
-        require(isinstance(skipped, dict) and set(skipped) == set(READ_CANARY_SOURCES)
+        require(isinstance(skipped, dict) and set(skipped) == set(sources)
                 and all(type(n) is int and n >= 0 for n in skipped.values()) and isinstance(pools, dict)
-                and set(pools) == set(READ_CANARY_SOURCES)
+                and set(pools) == set(sources)
                 and all(p is None or SHA256.fullmatch(str(p)) for p in pools.values()),
                 "The test read's canaries skip the texts of the training side (registrar decision PR-C31-3)")
         if configuration == profiles.BASELINE_V210:
@@ -851,16 +900,26 @@ def make_read_canaries(root, pinned, *, pools, run, evidence, panel=data.test_pa
     with exclusive(root / "shared" / "test-read-canaries.lock", wait=True):
         if not path.exists():
             baseline = configuration == profiles.BASELINE_V210
-            training, pins = ({}, {bench: None for bench in READ_CANARY_SOURCES}) if baseline else _training_side(pools, order)
+            sources = read_canary_sources(configuration)
+            training, pins = (({}, {bench: None for bench in sources}) if baseline else
+                              _training_side(pools, order, configuration=configuration))
             access, texts, panels = data.TestAccess(READ_CANARY_UNIT), {}, {}
-            for bench, field in sorted(READ_CANARY_SOURCES.items()):
-                tasks, report = panel(pinned, bench, access=access)
+            for bench, field in sorted(sources.items()):
+                chosen_panel = panel
+                chosen_pin = pinned
+                if bench == "zebralogic" and panel is data.test_panel:
+                    from .zebralogic import test_panel as chosen_panel
+                    if profiles.is_v214(configuration):
+                        require(isinstance(pinned, dict) and bench in pinned,
+                                "main-v5 pins its sealed Zebra panel separately")
+                        chosen_pin = pinned[bench]
+                tasks, report = chosen_panel(chosen_pin, bench, access=access)
                 texts[bench], panels[bench] = [task["public"][field] for task in tasks], report["panel_hash"]
             skip = training_duplicates(texts, training)
             found, counts = select_canaries(texts, skip=skip)
             write_json(path, record("test-read-canaries", evidence, {
                 "canaries": found, "counts": counts, "per_bench": CANARIES_PER_BENCH, "seed_tag": CANARY_TAG,
-                "sources": {bench: "the public " + READ_CANARY_SOURCES[bench] for bench in counts},
+                "sources": {bench: "the public " + sources[bench] for bench in counts},
                 "skipped": {bench: len(skip[bench]) for bench in counts}, "training_pools": pins,
                 **({"training_side": {"skipped": True, "reason": "baseline_has_no_training", "pool_reads": 0}}
                    if baseline else {}),
@@ -943,22 +1002,29 @@ class _Windows:
         return tuple(sorted(found))
 
 
-def canary_scan(attempt_dir, canaries):
+def canary_scan(attempt_dir, canaries, *, configuration=None, vanished=None):
     """``(files scanned, hits)``: every file under ``attempt_dir`` searched for every canary -- each window of a
     canary's length hashed and compared with its prefix (``_Windows``). A hit is {"path", "canary"} (its index), never
     text."""
     root = safe_path(attempt_dir)
     windows, files, hits = _Windows(canaries), 0, []
     for path in sorted(p for p in root.rglob("*") if p.is_file()):
-        files += 1
         found = set()
-        for text in _texts(path):
-            found.update(windows.find(text))
+        try:
+            for text in _texts(path):
+                found.update(windows.find(text))
+        except FileNotFoundError:
+            if not profiles.is_v214(configuration) or path.exists():
+                raise
+            if vanished is not None:
+                vanished.append({"path": str(path.relative_to(root))})
+            continue
+        files += 1
         hits += [{"path": str(path.relative_to(root)), "canary": index} for index in sorted(found)]
     return files, hits
 
 
-def unit_scan(unit_root, shared, canaries):
+def unit_scan(unit_root, shared, canaries, *, configuration=None, vanished=None):
     """``(files scanned, hits)`` over every artifact of a test-read unit (§8.1; isolation review 10): the unit root
     (every attempt), the diagnostics and child logs (``shared/host_only/diagnostics``) and the test side's shared files
     (``shared/test``). A hit is {"where": "unit"|"diagnostics"|"shared_test", "path", "canary"}, never text."""
@@ -967,9 +1033,13 @@ def unit_scan(unit_root, shared, canaries):
     for where, root in (("unit", safe_path(unit_root)), ("diagnostics", shared / "host_only" / "diagnostics"),
                         ("shared_test", shared / "test")):
         if root.exists():
-            found, found_hits = canary_scan(root, canaries)
+            missing = []
+            found, found_hits = (canary_scan(root, canaries, configuration=configuration, vanished=missing)
+                                 if profiles.is_v214(configuration) else canary_scan(root, canaries))
             files += found
             hits += [{"where": where, **hit} for hit in found_hits]
+            if vanished is not None:
+                vanished.extend({"where": where, **entry} for entry in missing)
     return files, hits
 
 
@@ -1033,7 +1103,7 @@ def scan_workers(cpus=None):
     return max(1, min(ROOT_SCAN_WORKERS, cpus - ROOT_SCAN_SPARE_CPUS))
 
 
-def _root_files(root):
+def _root_files(root, *, configuration=None, vanished=None):
     """The regular files under ``root`` in the scan's one order (folders and names sorted, top down), each as (path
     relative to ``root``, size); a link anywhere in the root is refused (a linked file or folder would go unread)."""
     found = []
@@ -1045,7 +1115,15 @@ def _root_files(root):
         for name in sorted(names):
             path = here / name
             if path.is_file():
-                found.append((path.relative_to(root), path.stat().st_size))
+                try:
+                    size = path.stat().st_size
+                except FileNotFoundError:
+                    if not profiles.is_v214(configuration) or path.exists():
+                        raise
+                    if vanished is not None:
+                        vanished.append({"path": str(path.relative_to(root))})
+                    continue
+                found.append((path.relative_to(root), size))
     return found
 
 
@@ -1060,14 +1138,24 @@ def _found(path, windows):
 _SCAN = {}  # a scan process's matcher (``_scan_process``)
 
 
-def _scan_process(canaries):
+def _scan_process(canaries, configuration=None):
     """A scan process's initializer: its own ``_Windows``, whose repeated-text cache lasts as long as the process."""
     _SCAN["windows"] = _Windows(canaries)
+    _SCAN["configuration"] = configuration
+
+
+def _found_or_vanished(path, windows, configuration):
+    try:
+        return _found(path, windows)
+    except FileNotFoundError:
+        if not profiles.is_v214(configuration) or path.exists():
+            raise
+        return None
 
 
 def _scan_share(root, paths):
     """One share of the files, in a scan process: ``_found`` of each, in the order given."""
-    return [_found(root / path, _SCAN["windows"]) for path in paths]
+    return [_found_or_vanished(root / path, _SCAN["windows"], _SCAN.get("configuration")) for path in paths]
 
 
 def _shares(sizes, count):
@@ -1082,7 +1170,7 @@ def _shares(sizes, count):
     return shares + ([(start, len(sizes))] if start < len(sizes) else [])
 
 
-def root_scan(root, canaries, *, workers=1):
+def root_scan(root, canaries, *, workers=1, configuration=None, vanished=None):
     """``(files scanned, hits)`` over the whole run root (registrar decision C3-1 (b); §8.1, Codex F16): every regular
     file under ``root`` -- both chains' step and read units with every attempt (cell records, trajectories, artifacts
     and the generated sets of the generate units), the packages and markers, the research store (``shared/research``),
@@ -1094,20 +1182,23 @@ def root_scan(root, canaries, *, workers=1):
     process gives, whatever the number of processes (a root of less than ``ROOT_SCAN_POOL_BYTES`` is scanned here). A
     hit is {"where", "path", "canary"} (``_where``; the canary's index), never text."""
     root = safe_path(root)
-    files = _root_files(root)
+    files = (_root_files(root, configuration=configuration, vanished=vanished)
+             if profiles.is_v214(configuration) else _root_files(root))
     paths, sizes = [str(relative) for relative, _ in files], [size for _, size in files]
     if workers > 1 and canaries and len(paths) > 1 and sum(sizes) >= ROOT_SCAN_POOL_BYTES:
         runs = [paths[start:end] for start, end in _shares(sizes, workers * ROOT_SCAN_SHARES)]
         with ProcessPoolExecutor(max_workers=workers, mp_context=multiprocessing.get_context("spawn"),
-                                 initializer=_scan_process, initargs=(canaries,)) as pool:
+                                 initializer=_scan_process, initargs=(canaries, configuration)) as pool:
             found = [indices for share in pool.map(_scan_share, itertools.repeat(root), runs) for indices in share]
     else:
         windows = _Windows(canaries)
-        found = [_found(root / path, windows) for path in paths]
+        found = [_found_or_vanished(root / path, windows, configuration) for path in paths]
     require(len(found) == len(paths), "Every file of the run root is scanned once")
+    if vanished is not None:
+        vanished.extend({"path": path} for path, indices in zip(paths, found) if indices is None)
     hits = [{"where": _where(relative), "path": path, "canary": index}
-            for (relative, _), path, indices in zip(files, paths, found) for index in indices]
-    return len(files), hits
+            for (relative, _), path, indices in zip(files, paths, found) for index in (indices or ())]
+    return sum(indices is not None for indices in found), hits
 
 
 # --------------------------------------------------------------------------------------------- the read unit
@@ -1265,9 +1356,12 @@ def _leftovers(unit_root, evidence):
     return cleaned
 
 
-def _scanned(unit_root, shared, canaries):
-    files, hits = unit_scan(unit_root, shared, canaries)
-    return {"artifacts_scanned": files, "hits": hits}
+def _scanned(unit_root, shared, canaries, *, configuration=None):
+    missing = []
+    files, hits = (unit_scan(unit_root, shared, canaries, configuration=configuration, vanished=missing)
+                   if profiles.is_v214(configuration) else unit_scan(unit_root, shared, canaries))
+    return {"artifacts_scanned": files, "hits": hits,
+            **({"vanished": len(missing), "vanished_paths": missing} if profiles.is_v214(configuration) else {})}
 
 
 def _linked(context, linked, sources, plan, staged, final, packages, *, store):
@@ -1307,9 +1401,12 @@ def _stage_arms(stages, final):
 def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, context, workers, route_workers, canaries,
               panel, reset, stages=None, run_configuration=None):
     require(not (unit_root / "unit.json").exists(), "This unit is complete")
+    main_v5 = profiles.is_v214(run_configuration)
     child = profiles.is_v210(run_configuration)
     reduced = child or profiles.is_zebra_fc(run_configuration)
     expected = read_arms_of(run_configuration) if reduced else ARMS
+    if main_v5:
+        expected = tuple(arm for arm in expected if arm != profiles.STAGES)
     require(set(arms) == set(expected), "The read's arms must match the configuration exactly")
     if reduced:
         require(context.configuration == run_configuration,
@@ -1323,6 +1420,12 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
         require(not arms["B"].package.procedures, "B runs no procedure")
     require(not card.for_bench(bench), "The card arm runs no procedure")
     rows, packages = _stage_arms(stages, final) if stages is not None else (None, {})
+    if main_v5:
+        require(rows is not None and len(rows) == len(profiles.CONFIGURATIONS[run_configuration]["order"]) + 1
+                and rows[-1] == ("F" if final.procedures else "C")
+                and all(label == "%s%d" % (STAGE_ARM, rows.index(label))
+                        and 1 <= rows.index(label) < len(rows) - 1 for label in packages),
+                "main-v5 reads every frozen step, including its final row")
     if stages is not None:  # Codex stage review #4: the stage arms are read only under their exact consent
         require(run_configuration in CONFIGURATIONS and STAGE_READ[run_configuration],
                 "A stage read belongs to a stage-read configuration")
@@ -1333,6 +1436,8 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
                 "packages": ({label: arm.package.sha256 for label, arm in arms.items()} if child else
                              {"F": final.sha256, "C": card.sha256,
                               **{label: p.sha256 for label, p in sorted(packages.items())}})}
+    if main_v5:
+        identity["packages"].update({label: p.sha256 for label, p in sorted(packages.items())})
     if child:
         from .instruction_start import START, blank_definition
         identity.update(instruction_start=START, blank_arm=blank_definition())
@@ -1340,11 +1445,12 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
     require(attempt == _next_attempt(unit_root) and not attempt.exists(),
             "A unit attempt runs in the next attempt directory; after a pause, only with the owner's recorded decision")
     cleaned = _leftovers(unit_root, evidence)
-    before = _scanned(unit_root, shared, canaries)
+    scan_options = {"configuration": run_configuration} if main_v5 else {}
+    before = _scanned(unit_root, shared, canaries, **scan_options)
     attempt.mkdir()
     if before["hits"]:
         _paused(attempt, evidence, "canary_hit", "%d canary hits before the attempt" % len(before["hits"]),
-                hits=before["hits"], cleaned=cleaned)
+                hits=before["hits"], cleaned=cleaned, **({"scan": before} if main_v5 else {}))
         raise Pause("canary_hit", "%d hits" % len(before["hits"]), unit)
     store = EvaluationStore(attempt, evidence=evidence)
     try:
@@ -1355,7 +1461,8 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
                 reset = alfworld_reset(context.runtime["alfworld"], context.episodes)
         tasks = test_tasks(shared, pinned, bench, unit, run=run, runtime=context.runtime[bench],
                            native=context.native, workers=workers, evidence=evidence, panel=panel,
-                           **({"configuration": run_configuration} if profiles.is_zebra_fc(run_configuration) else {}))
+                           **({"configuration": run_configuration}
+                              if profiles.is_zebra_fc(run_configuration) or main_v5 else {}))
         plan = test_plan(tasks, final, bench=bench, unit=unit, runtime=context.runtime[bench], workers=route_workers,
                          reset=reset, **({"run_configuration": run_configuration} if reduced else {}))
         staged = stage_plan(plan, final, packages, bench=bench, runtime=context.runtime[bench],
@@ -1364,7 +1471,7 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
         rooms = {i: task_folder(by_id[i]["public"]["game_file"])[0] for i in by_id} if bench == "alfworld" else {}
         blocks = _blocks(sorted(by_id), bench, unit)
         zero = set(plan["zero"])
-        jobs, shares, linked = [], [], []
+        jobs, shares, linked, blank_shares = [], [], [], []
         for item in sorted(by_id):
             for run_index in range(TEST_RUNS):
                 labels = list(expected) if reduced else ["C"] + ([] if item in zero else ["F", "P_F", "T_F"])
@@ -1383,6 +1490,9 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
                             jobs.append(job)
                         else:
                             linked.append((job, source))
+                    elif main_v5 and bench == profiles.ZEBRA and label == "B":
+                        # The Zebra shell never sends the instruction card: B's request is exactly C's.
+                        blank_shares.append((cell, by_id[item], _arm(arms, label, cell, by_id[item])))
                     else:
                         (shares if item in zero and label in (("F",) if reduced else ("F", "P_F", "T_F")) else jobs).append(
                             (cell, by_id[item], _arm(arms, label, cell, by_id[item])))
@@ -1395,6 +1505,11 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
         for cell, task, arm in shares:
             share_cell(context, cell, task, arm, sources[("C", cell["task_id"], cell["run"])],
                        plan["routes"][cell["task_id"]].to_json(), store=store)
+        for cell, task, arm in blank_shares:
+            route = router.route(arm.package, bench,
+                                 solver.routing_view(bench, task["public"], runtime=context.runtime[bench]), None)
+            share_cell(context, cell, task, arm, sources[("C", cell["task_id"], cell["run"])],
+                       route.to_json(), store=store)
         fallback = _linked(context, linked, sources, plan, staged, final, packages, store=store)
         if fallback:  # the source cell did not run with the planned procedures: the stage cell runs, after the blocks
             fallback = [fallback[i] for i in _order(list(range(len(fallback))), round_tag(unit) + ":test:fallback")]
@@ -1402,7 +1517,8 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
         deleted = _closed(store, evidence)
     except Pause as pause:
         _closed(store, evidence)
-        _paused(attempt, evidence, pause.kind, pause.reason, scan=_scanned(unit_root, shared, canaries))
+        _paused(attempt, evidence, pause.kind, pause.reason, scan=_scanned(unit_root, shared, canaries, **scan_options),
+                **({"before_scan": before} if main_v5 else {}))
         raise
     except Exception as error:  # a configuration check above, or an unexpected error (like a crash): the unit pauses
         _diagnose()
@@ -1410,27 +1526,38 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
         kind_ = "configuration" if isinstance(error, ValueError) else "exception"
         reason = (type(error).__name__ + (":" + str(error)[:200] if _own(error) else "")) if kind_ == "configuration" \
             else type(error).__name__
-        _paused(attempt, evidence, kind_, reason, stack=_stack(error), scan=_scanned(unit_root, shared, canaries))
+        _paused(attempt, evidence, kind_, reason, stack=_stack(error),
+                scan=_scanned(unit_root, shared, canaries, **scan_options),
+                **({"before_scan": before} if main_v5 else {}))
         raise Pause(kind_, reason, unit) from None
     sealed = [verified(read_json(p), "evaluation-cell") for p in sorted((attempt / "cells").glob("*.json"))]
     counts = _counts(sealed)
-    files, hits = unit_scan(unit_root, shared, canaries)
+    after = _scanned(unit_root, shared, canaries, **scan_options)
+    files, hits = after["artifacts_scanned"], after["hits"]
     if hits:
-        _paused(attempt, evidence, "canary_hit", "%d canary hits in %d files" % (len(hits), files), hits=hits)
+        _paused(attempt, evidence, "canary_hit", "%d canary hits in %d files" % (len(hits), files), hits=hits,
+                **({"scan": after, "before_scan": before} if main_v5 else {}))
         raise Pause("canary_hit", "%d hits" % len(hits), unit)
     if counts["infrastructure"] > INFRA_UNKNOWN_MAX * counts["cells"]:
         _paused(attempt, evidence, "infrastructure_incomplete", "%d of %d cells" % (counts["infrastructure"],
                                                                                    counts["cells"]),
-                scan={"artifacts_scanned": files, "hits": []})
+                scan=after if main_v5 else {"artifacts_scanned": files, "hits": []},
+                **({"before_scan": before} if main_v5 else {}))
         raise Pause("infrastructure_incomplete", "%d of %d cells" % (counts["infrastructure"], counts["cells"]), unit)
     scan = record("canary-scan", evidence, {"artifacts_scanned": files, "hits": 0, "canaries": len(canaries),
-                                            "canaries_sha256": digest(canaries), "cleaned_attempts": cleaned})
+                                            "canaries_sha256": digest(canaries), "cleaned_attempts": cleaned,
+        **({"vanished": before["vanished"] + after["vanished"],
+            "vanished_paths": [{"phase": phase, **entry} for phase, part in (("before", before), ("after", after))
+                               for entry in part["vanished_paths"]]} if main_v5 else {})})
     write_json(attempt / "canary_scan.json", scan)
     return record("evaluation", evidence, {
         **identity, "status": "complete", "attempt": attempt.name, "counts": counts, "plan_sha256": plan["sha256"],
         "structural_zero": len(zero), "twins": sum(len(v) for v in plan["twins"].values()),
         "rooms": len(set(rooms.values())) if rooms else None, "cells": sorted(c["cell"]["id"] for c in sealed),
         "transient_deleted_sha256": deleted["manifest_sha256"], "canary_scan_sha256": scan["record_sha256"],
+        **({"blank_sharing": {"source": "C", "cells": len(blank_shares), "dispatches": 0,
+                              "reason": "Zebra shell omits the card sentence"}}
+           if main_v5 and bench == profiles.ZEBRA else {}),
         **({"stages": {"rows": rows, "plan_sha256": staged["sha256"] if staged else None,
                        "derived": staged["derived"] if staged else {},
                        "sources": {label: dict(sorted(Counter("sent" if source is None else source for source in
@@ -1521,13 +1648,24 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
     setting = setting_of(manifest, chain, docker=docker, transport=transport)
     configuration = configuration_of(setting)
     require(bench in read_benches(configuration), "A read unit belongs to its configuration read roster")
-    if bench == "zebralogic" and panel is data.test_panel:
+    if bench == "zebralogic" and panel is data.test_panel and not profiles.is_v214(configuration):
         from .zebralogic import test_panel as panel
     consent(setting.shared, configuration)  # a stage read's consent names its stage arms
     if profiles.is_v210(configuration):
         from .chain import confirmation
         confirmation(setting.root, setting.run, chain, route="B" if chain == "D" else None,
                      configuration=configuration)
+    if profiles.is_v214(configuration):
+        from .chain import heavy
+        try:
+            pointer = safe_path(setting.shared) / "test" / (SHEET_QUALIFICATION + ".json")
+            if pointer.exists():
+                prepare_test_qualification(setting, chain, panel=panel, pinned=manifest["data"].get("pinned"))
+            else:
+                with heavy(setting, "spreadsheetbench"):
+                    prepare_test_qualification(setting, chain, panel=panel, pinned=manifest["data"].get("pinned"))
+        except Pause as pause:
+            return EXIT_AWAITING if pause.kind == "awaiting_owner_decision" else EXIT_PAUSED
     unit_root = read_root(setting, chain, bench)
     require(safe_path(found["unit_root"]) == unit_root, "The read unit's registered directory")
     attempt = _next_attempt(unit_root)
@@ -1802,13 +1940,16 @@ def _root_scanned(root, chain_root, chain, *, evidence, configuration=None):
         first, second = _canary_records(root, read=True, configuration=configuration)
         canaries = first["canaries"] + (second["canaries"] if second is not None else [])
         benches = _benches(first, second)
-        files, hits = root_scan(root, canaries, workers=scan_workers())
+        missing = []
+        scan_options = {"configuration": configuration, "vanished": missing} if profiles.is_v214(configuration) else {}
+        files, hits = root_scan(root, canaries, workers=scan_workers(), **scan_options)
         value = record("root-canary-scan", evidence, {
             "chain": chain, "files_scanned": files, "hits": len(hits), "files_hit": len({h["path"] for h in hits}),
             "hits_sha256": digest(hits), "canaries": len(canaries), "canaries_sha256": digest(canaries),
             "by_where": dict(sorted(Counter(h["where"] for h in hits).items())),
             "by_bench": dict(sorted(Counter(benches[h["canary"]] for h in hits).items())),
-            "shown": hits[:ROOT_SCAN_SHOWN]})
+            "shown": hits[:ROOT_SCAN_SHOWN],
+            **({"vanished": len(missing), "vanished_paths": missing} if profiles.is_v214(configuration) else {})})
         write_json(attempt / "scan.json", value)
         if hits and not _same_hits(value, released):
             covered = "" if release is None else "; the owner's release in %s does not cover them" % release["attempt"]
@@ -1830,6 +1971,9 @@ def unseal(root, chain_root, chain, unit_roots, *, run, evidence, clock=_now, co
     writes the chain's marker, which names that scan and the release."""
     chain_root = safe_path(chain_root)
     require(_ended(chain_root), "Test scores stay sealed until the chain is complete or terminated")
+    if profiles.is_v214(configuration):
+        require(all(_ended(safe_path(root) / name) for name in CHAINS),
+                "main-v5 test scores stay sealed until both chains have ended")
     require(all(_ended(safe_path(root) / name) for name in CHAINS if (safe_path(root) / name).exists()),
             "Test scores stay sealed until every chain of the run root is complete or terminated")
     continuation(root)

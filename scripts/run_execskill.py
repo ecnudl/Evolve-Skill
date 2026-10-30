@@ -937,6 +937,35 @@ def v211_smoke_summary(args):
     _print({'passed': value['passed'], 'record_sha256': value[protocol.RECORD_HASH]})
 
 
+def v214_command(args):
+    """Dedicated main-v5 commands leave all older CLI contracts unchanged."""
+    from skillopt.execskill import v214_smoke
+    action = args.command.removeprefix('v214-')
+    if action == 'snapshot':
+        value = v214_smoke.snapshot(args.out, source=args.source, git_head=args.git_head)
+    elif action in ('selftest', 's0'):
+        options = dict(preparation_file=args.preparation, zebra_pool=args.zebra_pool,
+                       zebra_split_manifest=args.zebra_split_manifest)
+        if action == 's0':
+            options.update(root=args.root, snapshot_root=args.snapshot, selftest=args.selftest,
+                           sheet_runtime=args.sheet_runtime)
+        value = getattr(v214_smoke, 'collect_s0' if action == 's0' else 'selftest')(args.out, **options)
+    elif action == 'manifest':
+        value = v214_smoke.make_manifest(args.out, root=args.root, s0_file=args.s0,
+            provenance=args.provenance, roles_repo=args.roles_repo, route_b_env=args.route_b_env,
+            sheet_runtime=args.sheet_runtime, smoke_chain=args.smoke_chain, measured_smoke=args.measured_smoke)
+    elif action == 'structural-smoke':
+        value = v214_smoke.structural_smoke(args.manifest, out=args.out)
+    elif action == 'smoke-run':
+        value = v214_smoke.run_stage(args.manifest, args.chain, args.stage)
+    else:
+        value = v214_smoke.summarize(args.manifest, args.chain)
+    passed = value.get('passed', value.get('result', {}).get('passed', True))
+    _print({'configuration': 'main-v5', 'command': args.command, 'passed': passed,
+            'record_sha256': value.get(protocol.RECORD_HASH), 'sealed_reads': 0})
+    return 0 if passed else 3
+
+
 def parser():
     top = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = top.add_subparsers(dest="command", required=True)
@@ -1195,6 +1224,33 @@ def parser():
             command.add_argument('--manifest', required=True)
         if name == 'smoke-run':
             command.add_argument('--stage', choices=('S0', 'S2', 'S3', 'SE6', 'SX'), required=True)
+    for name in ('snapshot', 'selftest', 's0', 'manifest', 'structural-smoke', 'smoke-run', 'smoke-summary'):
+        command = sub.add_parser('v214-' + name)
+        if name not in ('smoke-run', 'smoke-summary'):
+            command.add_argument('--out', required=True)
+        if name == 'snapshot':
+            command.add_argument('--source', default=str(PROJECT_ROOT))
+            command.add_argument('--git-head', required=True)
+        elif name in ('selftest', 's0'):
+            command.add_argument('--preparation', required=True, help='Passing frozen main-v4 S0, not a result file')
+            command.add_argument('--zebra-pool', required=True)
+            command.add_argument('--zebra-split-manifest', required=True)
+            if name == 's0':
+                for flag in ('root', 'selftest', 'sheet-runtime'):
+                    command.add_argument('--' + flag, required=True)
+                command.add_argument('--snapshot', default=str(PROJECT_ROOT))
+        elif name == 'manifest':
+            for flag in ('root', 's0', 'provenance', 'roles-repo', 'route-b-env', 'sheet-runtime'):
+                command.add_argument('--' + flag, required=True)
+            command.add_argument('--smoke-chain', choices=('G', 'D'))
+            command.add_argument('--measured-smoke', action='append', default=[],
+                                 help='One measured result JSON per chain; repeat for G and D')
+        else:
+            command.add_argument('--manifest', required=True)
+            if name in ('smoke-run', 'smoke-summary'):
+                command.add_argument('--chain', required=True, choices=('G', 'D'))
+            if name == 'smoke-run':
+                command.add_argument('--stage', required=True, choices=('S0', 'S1', 'S2', 'S3', 'SE6', 'SX'))
     fixtures.add_arguments(sub)
     return top
 
@@ -1202,7 +1258,9 @@ def parser():
 BENCH_OPTIONS = {"alfworld": ("data_root", "pool_games"),
                  "searchqa": ("fresh_manifest", "dataset", "revision", "exclude", "cache_sha256")}
 
-HANDLERS = {"alf-confirm-views": alf_confirm_views,
+HANDLERS = {**{'v214-' + name: v214_command for name in
+                ('snapshot', 'selftest', 's0', 'manifest', 'structural-smoke', 'smoke-run', 'smoke-summary')},
+            "alf-confirm-views": alf_confirm_views,
             'v211-snapshot': v211_snapshot, 'v211-selftest': v211_selftest, 'v211-s0': v211_s0, 'v211-manifest': v211_manifest,
             'v211-structural-smoke': v211_structural_smoke, 'v211-route-probes': v211_route_probes,
             'v211-smoke-run': v211_smoke_run, 'v211-smoke-summary': v211_smoke_summary,

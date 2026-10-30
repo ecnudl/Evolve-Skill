@@ -59,7 +59,7 @@ from fractions import Fraction
 
 from skillopt.continual_eval.core import read_json, require, safe_path, write_json
 
-from . import evaluation, stats_ext
+from . import evaluation, profiles, stats_ext
 from .package import empty, load
 from .profiles import (ALPHA, BENCHES, SUPPORTED_BENCHES, ZEBRA, ZEBRA_PC_V1, is_zebra, is_alfworld, read_benches, CANNOT_ACT_FIRED, CHAINS, NI_MARGIN, NI_MIN_FIRED, RECORD_HASH, SIMILAR_PAIRS,
                        STAGE_ARM, TIME_WINDOW_SECONDS, record, verified)
@@ -213,51 +213,52 @@ def _contrast(cells, first, second, items, **options):
     return estimate(differences(cells, first, second, items), design=_design(cells, items), **options)
 
 
-def enable_rate(cells, procedure=None):
+def enable_rate(cells, procedure=None, *, arm="F"):
     """The share of the bench's items on which F enables ``procedure`` (any procedure when None)."""
-    rows = [v for (arm, _, _), v in cells.items() if arm == "F"]
+    rows = [v for (label, _, _), v in cells.items() if label == arm]
     require(rows, "The bench has F cells")
     hit = [bool(v["enabled"]) if procedure is None else procedure in v["enabled"] for v in rows]
     return sum(hit) / len(hit)
 
 
 # ----------------------------------------------------------------------------------------------- Q1, Q2, Q3
-def q1_home(units, learned):
+def q1_home(units, learned, *, arm="F"):
     """Q1: F − C on each learned bench, one-sided paired t, Holm over |L|."""
     require(learned and set(learned) <= set(units), "Q1 reads the learned benches")
     out = {}
     for bench in learned:
         cells = units[bench]
         _clustered(bench, cells)
-        out[bench] = _contrast(cells, "F", "C", _items(cells, "F", "C"), bootstrap=True, sensitivity=True)
+        out[bench] = _contrast(cells, arm, "C", _items(cells, arm, "C"), bootstrap=True, sensitivity=True)
     adjusted = stats_ext.holm([out[b]["p_t"] for b in learned])
     for bench, p in zip(learned, adjusted):
         out[bench].update(p_holm=p, established=p <= ALPHA)
     return out
 
 
-def similar(learned):
+def similar(learned, configuration=None):
     """The benches similar to a learned one (``SIMILAR_PAIRS``), outside L."""
-    found = {b for pair in SIMILAR_PAIRS for a, b in (pair, pair[::-1]) if a in learned}
+    found = {b for pair in profiles.similar_pairs(configuration) for a, b in (pair, pair[::-1]) if a in learned}
     return sorted(found - set(learned), key=SUPPORTED_BENCHES.index)
 
 
-def dissimilar(learned):
-    if set(learned) == {"zebralogic"}:
+def dissimilar(learned, configuration=None):
+    if set(learned) == {"zebralogic"} and not profiles.is_v214(configuration):
         return []
-    return [b for b in BENCHES if b not in learned and b not in similar(learned)]
+    roster = read_benches(configuration) if profiles.is_v214(configuration) else BENCHES
+    return [b for b in roster if b not in learned and b not in similar(learned, configuration)]
 
 
-def q2_similar(units, learned, procedures):
+def q2_similar(units, learned, procedures, *, arm="F", configuration=None):
     """Q2: description only on the similar benches -- F − C, the enable rate and each procedure's τ."""
     out = {}
-    for bench in similar(learned):
+    for bench in similar(learned, configuration):
         if bench not in units:
             continue
         cells = units[bench]
         _clustered(bench, cells)
-        out[bench] = {"reading": "descriptive", **_contrast(cells, "F", "C", _items(cells, "F", "C"), bootstrap=True),
-                      "enable_rate": enable_rate(cells), "tau": {p: tau(cells, p) for p in procedures}}
+        out[bench] = {"reading": "descriptive", **_contrast(cells, arm, "C", _items(cells, arm, "C"), bootstrap=True),
+                      "enable_rate": enable_rate(cells, arm=arm), "tau": {p: tau(cells, p) for p in procedures}}
     return out
 
 
@@ -273,29 +274,50 @@ def _pooled(parts):
     return {"mean": mean, "se": se, "df": df, "lower95_one_sided": mean - _t_quantile(ALPHA, df) * se}
 
 
-def q3_noninferiority(units, learned):
+def q3_noninferiority(units, learned, *, arm="F", configuration=None):
     """Q3: the dissimilar benches' pooled F − C against −5 points under the complete-case and the adverse readings."""
-    benches = [b for b in dissimilar(learned) if b in units]
+    benches = [b for b in dissimilar(learned, configuration) if b in units]
     require(benches, "Q3 needs a dissimilar bench in the read")
-    fired = [v for b in benches for (arm, _, _), v in units[b].items() if arm == "F"]
+    fired = [v for b in benches for (label, _, _), v in units[b].items() if label == arm]
     rate = sum(bool(v["enabled"]) for v in fired) / len(fired)
+    extra = ({"per_bench": {b: _bench_noninferiority(b, units[b], arm) for b in benches},
+              "margin": -float(NI_MARGIN)} if profiles.is_v214(configuration) else {})
     if rate < NI_MIN_FIRED:
-        return {"benches": benches, "enable_rate": rate, "reading": "cannot_act_by_construction"}
+        return {"benches": benches, "enable_rate": rate, "reading": "cannot_act_by_construction", **extra}
     readings = {}
     for name in ("adverse", "complete_case"):
         parts = []
         for bench in benches:
             cells = units[bench]
             _clustered(bench, cells)
-            items = _items(cells, "F", "C")
+            items = _items(cells, arm, "C")
             if name == "complete_case":
-                items = _known(cells, items, "F", "C")
-            parts.append(_contrast(cells, "F", "C", items))
+                items = _known(cells, items, arm, "C")
+            parts.append(_contrast(cells, arm, "C", items))
         readings[name] = _pooled(parts)
     holds = all(r["lower95_one_sided"] > -float(NI_MARGIN) for r in readings.values())
     return {"benches": benches, "enable_rate": rate, "margin": -float(NI_MARGIN), **readings,
             "shared_unanswered": {b: len(unanswered(units[b])) for b in benches},
-            "reading": "noninferiority_established" if holds else "noninferiority_not_established"}
+            "reading": "noninferiority_established" if holds else "noninferiority_not_established", **extra}
+
+
+def _bench_noninferiority(bench, cells, arm):
+    """The registered adverse/complete-case NI test for one unrelated bench of a main-v5 row."""
+    _clustered(bench, cells)
+    rate = enable_rate(cells, arm=arm)
+    out = {"enable_rate": rate, "margin": -float(NI_MARGIN)}
+    if rate < NI_MIN_FIRED:
+        items = _items(cells, arm, "C")
+        values = differences(cells, arm, "C", items)
+        return {**out, "n": len(items), "mean": float(sum(values) / len(values)) if values else None,
+                "reading": "cannot_act_by_construction"}
+    for name in ("adverse", "complete_case"):
+        items = _items(cells, arm, "C")
+        if name == "complete_case":
+            items = _known(cells, items, arm, "C")
+        out[name] = _contrast(cells, arm, "C", items)
+    holds = all(out[name]["lower95_one_sided"] > -float(NI_MARGIN) for name in ("adverse", "complete_case"))
+    return {**out, "reading": "noninferiority_established" if holds else "noninferiority_not_established"}
 
 
 # ------------------------------------------------------------------------------------------- code vs text
@@ -527,7 +549,7 @@ def _accuracy(cells, arm, items, on):
     return float(sum(values) / len(values)) if values else None
 
 
-def stage_table(units, rows):
+def stage_table(units, rows, *, configuration=None):
     """v2 stage reads (owner decision 2026-10-23 16:0x): {bench: [row k: {"k", "arm", "n", "accuracy": {"L", "H"},
     "minus_card", "minus_previous"}]} -- ``rows`` the arm of each row (row 0 C; ``evaluation.stage_rows``), the items
     those arms all have cells on with the §6.3 mask removed, the paired contrasts on each arm's §6.3 side (a run on
@@ -543,12 +565,42 @@ def stage_table(units, rows):
         for k, arm in enumerate(rows):
             entry = {"k": k, "arm": arm, "n": len(items),
                      "accuracy": {on: _accuracy(cells, arm, items, on) for on in ("L", "H")}}
+            if profiles.is_v214(configuration) and arm == "C":
+                entry["minus_card"] = {"mean": 0.0, "reading": "no program accepted at this step"}
             if arm != "C" and len(items) >= 2:
                 entry["minus_card"] = _contrast(cells, arm, "C", items, bootstrap=True)
             if k and rows[k - 1] != arm and len(items) >= 2:
                 entry["minus_previous"] = _contrast(cells, arm, rows[k - 1], items, bootstrap=True)
             entries.append(entry)
         out[bench] = entries
+    return out
+
+
+def stage_questions(units, rows, *, configuration):
+    """The owner's three questions on every frozen package, relative to C and the step's home benchmark."""
+    order = profiles.CONFIGURATIONS[configuration]["order"]
+    require(profiles.is_v214(configuration) and len(rows) == len(order) + 1 and rows[0] == "C"
+            and set(units) == set(read_benches(configuration)),
+            "main-v5 reports every step on every benchmark")
+    out = []
+    for k, home in enumerate(order, 1):
+        arm = rows[k]
+        related = [b for b in similar([home], configuration) if b in units]
+        unrelated = [b for b in dissimilar([home], configuration) if b in units]
+        entry = {"k": k, "arm": arm, "home_bench": home,
+                 "related_benches": related, "unrelated_benches": unrelated,
+                 "reuses_row": rows.index(arm) if arm in rows[:k] else None}
+        if arm == "C":
+            zero = {"mean": 0.0, "reading": "no program accepted at this step"}
+            entry.update(q1_home={home: dict(zero)}, q2_similar={b: dict(zero) for b in related},
+                         q3_noninferiority={**zero, "benches": unrelated, "margin": -float(NI_MARGIN),
+                                           "per_bench": {b: {**zero, "margin": -float(NI_MARGIN)}
+                                                         for b in unrelated}})
+        else:
+            entry.update(q1_home=q1_home(units, [home], arm=arm),
+                         q2_similar=q2_similar(units, [home], {}, arm=arm, configuration=configuration),
+                         q3_noninferiority=q3_noninferiority(units, [home], arm=arm, configuration=configuration))
+        out.append(entry)
     return out
 
 
@@ -559,6 +611,9 @@ def readout(units, *, learned, procedures, label, evidence, stages=None, configu
     None, only where F learned nothing and the stage arms carry the read)."""
     from . import profiles
     if profiles.is_v210(configuration) or profiles.is_zebra_fc(configuration):
+        main_v5 = profiles.is_v214(configuration)
+        if main_v5:
+            require(stages is not None, "main-v5 readout includes the frozen stage rows")
         contrasts = {}
         baseline = configuration == profiles.BASELINE_V210
         zebra = profiles.is_zebra_fc(configuration)
@@ -568,12 +623,13 @@ def readout(units, *, learned, procedures, label, evidence, stages=None, configu
         imported = [ZEBRA] if hand_picked else [] if baseline or zebra else ["alfworld"]
         # Imported programs are not newly learned here, and their home bench is
         # not an unexposed transfer target. Its F-C remains measured below.
-        exposed = [bench for bench in (SUPPORTED_BENCHES if zebra else BENCHES)
+        exposed = [bench for bench in (read_benches(configuration) if main_v5 else SUPPORTED_BENCHES if zebra else BENCHES)
                    if bench in set(learned) | set(imported)]
         pairs = (("F", "C"),) if zebra else (("C", "B"),) if baseline else (("F", "C"), ("C", "B"), ("F", "B"))
         for bench in sorted(units, key=SUPPORTED_BENCHES.index):
             cells = units[bench]
-            require({arm for arm, _, _ in cells} == set(profiles.read_arms_of(configuration)),
+            expected = ({"F", "C", "B", *stages} if main_v5 else set(profiles.read_arms_of(configuration)))
+            require({arm for arm, _, _ in cells} == expected,
                     "v2.10 readout arms must match the configuration")
             _clustered(bench, cells)
             contrasts[bench] = {first + "-" + second: _contrast(
@@ -585,14 +641,16 @@ def readout(units, *, learned, procedures, label, evidence, stages=None, configu
             "learned": list(learned), "imported": imported,
             "contrasts": contrasts, "contrasts_reading": "descriptive",
             **({"reading": "descriptive"} if baseline else {
-                "similar": similar(exposed), "dissimilar": dissimilar(exposed),
+                "similar": similar(exposed, configuration), "dissimilar": dissimilar(exposed, configuration),
                 "q1_home": q1_home(units, learned) if learned else None,
-                "q2_similar": q2_similar(units, exposed, procedures),
-                "q3_noninferiority": q3_noninferiority(units, exposed)
-                    if any(bench in units for bench in dissimilar(exposed)) else None}),
+                "q2_similar": q2_similar(units, exposed, procedures, configuration=configuration),
+                "q3_noninferiority": q3_noninferiority(units, exposed, configuration=configuration)
+                    if any(bench in units for bench in dissimilar(exposed, configuration)) else None}),
             "shared_unanswered": {bench: len(unanswered(cells)) for bench, cells in units.items()},
             "arms": {bench: arm_table(cells) for bench, cells in units.items()},
-            "placebo": {"removed": True}, "code_vs_text": {"removed": True}, "twins": {"removed": True}})
+            "placebo": {"removed": True}, "code_vs_text": {"removed": True}, "twins": {"removed": True},
+            **({"stages": stage_table(units, stages, configuration=configuration),
+                "stage_questions": stage_questions(units, stages, configuration=configuration)} if main_v5 else {})})
     return record("readout", evidence, {
         "evidence_kind": "pipeline_control" if set(units) == {ZEBRA} else EVIDENCE_KIND,
         "read_label": label, "learned": list(learned),
@@ -638,7 +696,8 @@ def report(manifest, *, out):
         roster = read_benches(manifest["configuration"])
         learned = [b for b in roster if b in procedures.values()
                    and not profiles.is_v213(manifest["configuration"])
-                   and not (manifest["configuration"] in (profiles.MAIN_V3, profiles.MAIN_V4) and b == "alfworld")]
+                   and not (manifest["configuration"] in (profiles.MAIN_V3, profiles.MAIN_V4, profiles.MAIN_V5)
+                            and b == "alfworld")]
         units = [chain_root / "test" / b for b in roster if (chain_root / "test" / b / "unit.json").exists()]
         opened = evaluation.unseal(root, chain_root, chain, units, run=run, evidence=evidence,
                                    **({"configuration": manifest["configuration"]}

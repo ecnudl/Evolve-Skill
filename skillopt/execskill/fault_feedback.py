@@ -211,15 +211,29 @@ def shape_fields_ok(row, *, v292=False):
             and (not expected or all(type(row.get(key)) is str for key in expected)))
 
 
-def summarize(procedure, report, *, limit=SIGNATURES, example=True, configuration=None):
+def summarize(procedure, report, *, limit=SIGNATURES, example=True, configuration=None, bench=None):
     """Count complete attempts; signatures are stable and count distinct items."""
     from . import profiles as p
     v292 = configuration is not None and p.is_v292(configuration)
-    child = p.is_v211(configuration)
-    eligible = {row['task_id'] for row in _detail(report, 'C6b').get('captures', ())
+    mixed = p.is_v214(configuration)
+    items = _detail(report, 'C6').get('items', ())
+    captures = _detail(report, 'C6b').get('captures', ())
+    if mixed:
+        from .package import procedure_input_benches
+        allowed = procedure_input_benches(procedure)
+        items = [row for row in items if row.get('bench', bench) in allowed]
+        captures = [row for row in captures if row.get('bench', bench) in allowed]
+    child = p.uses_v211(configuration, bench if mixed else getattr(procedure, "origin", None))
+    eligible = {row['task_id'] for row in captures
                 if row.get('example_eligible')} if child else None
+    if mixed:
+        # Earlier bench replays may belong to a different parent protocol than the current validation step.
+        eligible = {row.get('task_id', row.get('item', row.get('cell'))) for row in items
+                    if not p.uses_v211(configuration, row.get('bench', bench))}
+        eligible.update(row['task_id'] for row in captures
+                        if not p.uses_v211(configuration, row.get('bench', bench)) or row.get('example_eligible'))
     fired, observed = set(), []
-    for item in _detail(report, "C6").get("items", ()):
+    for item in items:
         task = item.get("task_id", item.get("item", item.get("cell")))
         for phase in ("first", "second"):
             outcome = item.get(phase) or {}
@@ -227,7 +241,7 @@ def summarize(procedure, report, *, limit=SIGNATURES, example=True, configuratio
                 fired.add(task)
             observed.extend((task, fault) for fault in outcome.get("faults", ())
                             if fault.get("procedure", procedure.id) == procedure.id)
-    for item in _detail(report, "C6b").get("captures", ()):
+    for item in captures:
         task = item["task_id"]
         if item.get("applies") is True or item.get("applies") == "default_true":
             fired.add(task)

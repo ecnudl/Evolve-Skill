@@ -147,7 +147,7 @@ def test_j7_probe_and_acceptance_twins_stay_scheduled(tmp_path):
     assert found['guards']['J7_meta']['ok']
 
 
-@pytest.mark.parametrize('configuration', [name for name in p.CONFIGURATIONS if name != p.MAIN_V4])
+@pytest.mark.parametrize('configuration', [name for name in p.CONFIGURATIONS if name != p.MAIN_V4 and not p.is_v214(name)])
 def test_historical_configurations_cannot_select_the_new_rule(configuration):
     assert a._v211_rule(configuration, 'officeqa', p.ACCEPT_RULES[configuration]) is False
     with pytest.raises(ValueError, match='only to main-v4'):

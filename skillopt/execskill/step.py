@@ -515,7 +515,7 @@ def _cut(st, held):
     acceptance (150) slices from the registered room groups of the fresh-supply pool (§3.1 O6: 16 and 40 rooms of the
     seeded room order, <= 5 games per room; ``supply.alfworld_pool``), each game with its view (``_alfworld_views``)."""
     bench, pool = st.bench, st.setting.pools[st.bench]
-    if protocol.is_v211(configuration_of(st.setting)):
+    if protocol.uses_v211(configuration_of(st.setting), getattr(st, "bench", None)):
         from . import v211_allocation
         kwargs = dict(zip(('tail', 'kept'), _tail(st))) if bench == 'searchqa' else {}
         registered = st.setting.extra.get('v211_allocation', {}).get(bench)
@@ -534,7 +534,7 @@ def _cut(st, held):
         require(not set(held) & {item["task_id"] for items in cut.values() for item in items},
                 "ZebraLogic's registered slices contain already held or consumed items")
         if protocol.is_v29(configuration_of(st.setting)):
-            cut["confirm"], _ = practice_confirm.slice_items(configuration_of(st.setting), pool,
+            cut["confirm"], _ = practice_confirm.slice_items(protocol.machinery_configuration(configuration_of(st.setting), bench), pool,
                 excluded=[item["task_id"] for name in ("run", "accept") for item in cut[name]])
         return cut
     sizes = supply.registered_sizes(st.bench)
@@ -546,7 +546,7 @@ def _cut(st, held):
     if bench == "alfworld":
         cut = supply.slices(bench, pool, {name: sizes[name] for name in ("run", "accept")}, held)
         if protocol.is_v29(configuration_of(st.setting)):
-            cut["confirm"], _ = practice_confirm.slice_items(configuration_of(st.setting), pool,
+            cut["confirm"], _ = practice_confirm.slice_items(protocol.machinery_configuration(configuration_of(st.setting), bench), pool,
                 excluded=[item["task_id"] for name in ("run", "accept") for item in cut[name]])
         _alfworld_views(st, cut)
         return cut
@@ -573,7 +573,7 @@ def _slices(st):
         require(len(items) == run + sizes["accept"], "The smoke step runs on its %d smoke items"
                 % (run + sizes["accept"]))
         cut = {"run": items[:run], "accept": items[run:]}
-        if protocol.is_v211(configuration_of(st.setting)):
+        if protocol.uses_v211(configuration_of(st.setting), getattr(st, "bench", None)):
             confirms = st.setting.extra.get("v211_smoke_confirms", {})
             require(set(confirms) == {"confirm-r%d" % r for r in range(1, 7)}
                     and all(len(rows) == 2 for rows in confirms.values()),
@@ -590,12 +590,12 @@ def _slices(st):
     write_json(path, record("step-slices", st.evidence, {
         "chain": st.chain, "k": st.k, "bench": st.bench,
         "slices": {name: [item["task_id"] for item in items] for name, items in sorted(cut.items())},
-        **({"confirm": practice_confirm.identity(configuration_of(st.setting), st.setting.pools[st.bench])}
-           if protocol.is_v29(configuration_of(st.setting)) and not protocol.is_v211(configuration_of(st.setting))
+        **({"confirm": practice_confirm.identity(protocol.machinery_configuration(configuration_of(st.setting), st.bench), st.setting.pools[st.bench])}
+           if protocol.is_v29(configuration_of(st.setting)) and not protocol.uses_v211(configuration_of(st.setting), getattr(st, "bench", None))
            and st.smoke is None else {}),
         **({'v211_allocation': st.setting.extra.get('v211_allocation', {}).get(st.bench),
             'freshness': protocol.CONFIRM_FRESHNESS[configuration_of(st.setting)],
-            'selection_check': 'preregistered'} if protocol.is_v211(configuration_of(st.setting)) else {})}))
+            'selection_check': 'preregistered'} if protocol.uses_v211(configuration_of(st.setting), getattr(st, "bench", None)) else {})}))
     return _slices(st)
 
 
@@ -1114,7 +1114,7 @@ def _engineer(st, cut, unit, previous):
                                    previous=previous, spent=spent, configuration=configuration_of(st.setting),
                                    **({"audit_judges": units.audit_judges(st.setting, st.chain, st.bench, st.k)}
                                       if protocol.is_v29(configuration_of(st.setting)) else {}))
-            if protocol.is_v211(configuration_of(st.setting)):
+            if protocol.uses_v211(configuration_of(st.setting), getattr(st, "bench", None)):
                 ctx.sheet['v211_prompt_pins'] = st.setting.extra['v211_prompt_pins']
             candidate, sealed = engineer.run(ctx)
         if candidate is not None:
@@ -1393,7 +1393,7 @@ def _engineer_train(st, cut, r, incumbent, *, done, fed, history, training, lint
                                    counterfactual=META_COUNTERFACTUAL[configuration_of(st.setting)], **routing,
                                    **({"audit_judges": units.audit_judges(st.setting, st.chain, st.bench, st.k)}
                                       if protocol.is_v29(configuration_of(st.setting)) else {}))
-            if protocol.is_v211(configuration_of(st.setting)):
+            if protocol.uses_v211(configuration_of(st.setting), getattr(st, "bench", None)):
                 ctx.sheet['v211_prompt_pins'] = st.setting.extra['v211_prompt_pins']
             candidate, sealed = engineer.run_train(ctx)
         if candidate is not None:
@@ -1523,7 +1523,7 @@ def _attempt_trajectories(attempt):
 def _notes_text(trajectory, *, configuration=None):
     """The procedure notes the solver saw: the first request's (QA, SpreadsheetBench), every step's distinct ones
     (ALFWorld)."""
-    if protocol.is_v211(configuration or trajectory.get('configuration')) and trajectory['bench'] != 'alfworld':
+    if protocol.uses_v211(configuration or trajectory.get('configuration'), trajectory.get('bench')) and trajectory['bench'] != 'alfworld':
         from .v211_effects import delivered
         chunks = []
         for call in trajectory.get('calls', ()):
@@ -1559,7 +1559,7 @@ def _shown_note_fields(bench, package, stored, view, delivered, *, configuration
     Shell note records precede assembly, so a rendered note can still be omitted by either cap. Reconstruct that
     deterministic assembly in stored package order and require its text to match the request before counting it.
     """
-    if protocol.is_v211(configuration):
+    if protocol.uses_v211(configuration, bench):
         from . import v211_effects
         return v211_effects.shown_fields(bench, package, stored, view, delivered)
     require(bench == "zebralogic", "v2.5 note coverage is registered only for ZebraLogic")
@@ -1598,7 +1598,7 @@ def _notes_coverage(st, pid, enabled, candidate, cells, made, current, identical
     zero-call signature shell. This handles changed procedure IDs without crediting an unrelated incumbent note.
     The transient capture contains field names only and never enters a record or engineer prompt.
     """
-    if st.bench != 'zebralogic' and protocol.is_v211(configuration_of(st.setting)):
+    if st.bench != 'zebralogic' and protocol.uses_v211(configuration_of(st.setting), getattr(st, "bench", None)):
         from . import v211_effects
         return v211_effects.coverage(st, pid, enabled, candidate, cells, made, current, identical, captured)
     out = {"items": len(enabled), "with_notes": 0, "fields": {name: 0 for name in notes.FIELD_ORDER}, "faults": 0}
@@ -1984,7 +1984,7 @@ def _confirm_eval(st, cut, r, incumbent, candidate, *, exercise=False):
     ``exercise=True``; its measured verdict is explicitly unused for adoption.
     """
     require(protocol.is_v29(configuration_of(st.setting)), "Confirmation requires v2.9")
-    child = protocol.is_v211(configuration_of(st.setting))
+    child = protocol.uses_v211(configuration_of(st.setting), getattr(st, "bench", None))
     selected = list(cut[('confirm-r%d' % r) if child and (not exercise or ('confirm-r%d' % r) in cut) else 'confirm'])
     required = protocol.confirm_spec(configuration_of(st.setting), st.bench, r)['items'] if child else practice_confirm.ITEMS
     require(len(selected) == (2 if exercise else required),
@@ -2054,7 +2054,7 @@ def _confirm_eval(st, cut, r, incumbent, candidate, *, exercise=False):
         return {"confirm": result, "round": r, "incumbent_sha256": incumbent.sha256,
                 "candidate_sha256": candidate.sha256, "slice_ids": ids,
                 "freshness": (protocol.CONFIRM_FRESHNESS[configuration_of(st.setting)] if child
-                              else practice_confirm.FRESHNESS[configuration_of(st.setting)]),
+                              else practice_confirm.FRESHNESS[protocol.machinery_configuration(configuration_of(st.setting), st.bench)]),
                 **({'selection_check': 'preregistered', 'cross_round_cache': False} if child else {}),
                 "routed": {key: {"incumbent": list(before[key].enabled), "candidate": list(after[key].enabled)}
                            for key, _ in views}, "identical": identical, "request_signatures": signatures,
@@ -2162,7 +2162,7 @@ def _train(st, cut, generated):
                 candidate = _package(st, evaluated["candidate_sha256"])
             if protocol.is_v29(configuration_of(st.setting)) and evaluated["adopted"]:
                 evaluated = _confirmed_training(evaluated, _confirm_eval(st, cut, r, incumbent, candidate,
-                    **({"exercise": True} if protocol.is_v211(configuration_of(st.setting)) and st.smoke is not None else {})))
+                    **({"exercise": True} if protocol.uses_v211(configuration_of(st.setting), getattr(st, "bench", None)) and st.smoke is not None else {})))
             done.append(("train-r%d" % r, evaluated["adopted"]))
             fed, training = "train-r%d" % r, evaluated["feedback"]
             if evaluated["cells"]:
@@ -2271,7 +2271,7 @@ def _audit_summary(st, rounds_done, final=None):
             "tokens": {judge: {name: sum(r.get("tokens", {}).get(judge, {}).get(name, 0) for r in records)
                                for name in ("input", "output", "charged")} for judge in ("G", "D")}}
 
-    if protocol.is_v211(configuration_of(st.setting)):
+    if protocol.uses_v211(configuration_of(st.setting), getattr(st, "bench", None)):
         summary['coverage_by_bench'] = {st.bench: [record['coverage_by_bench'][st.bench]
             for record in records if st.bench in record.get('coverage_by_bench', {})]}
     return summary
@@ -2407,9 +2407,11 @@ def _accept(st, cut, candidate, generated):
                 views=views, blocks=_blocks(st, accept), workers=workers, trajectories=donors_,
                 rooms={i["task_id"]: i["room"] for i in accept} if st.bench == "alfworld" else None,
                 generate=generate, dup=admitted and st.k > 1, probe=[item["task_id"] for item in probe],
-                freshness=ACCEPT_FRESHNESS.get(configuration_of(st.setting), FRESHNESS),
+                freshness=(protocol.accept_freshness(configuration_of(st.setting), st.bench)
+                           if protocol.is_v214(configuration_of(st.setting))
+                           else ACCEPT_FRESHNESS.get(configuration_of(st.setting), FRESHNESS)),
                 mde=MDE_POINTS[st.bench],  # A9-3: the registered MDE in decision.json
-                rule=ACCEPT_RULES[configuration_of(st.setting)], reuse=reuse,
+                rule=protocol.acceptance_rule(configuration_of(st.setting), st.bench), reuse=reuse,
                 **({"configuration": configuration_of(st.setting)}
                    if protocol.is_v28(configuration_of(st.setting)) or protocol.is_v210(configuration_of(st.setting))
                    else {}))
@@ -2483,7 +2485,13 @@ def _freeze(st, cut, candidate, accepted):
         with _inputs_dirs(st, stored, cut) as inputs:
             for procedure in [p for p in candidate.procedures if p.id in _changed_ids(st.parent, candidate)]:
                 runs_here = st.bench not in candidate.excluded(procedure.id)
-                outcomes = (replay.replay_many(procedure, entries, st.services.workers, inputs_dirs=inputs)
+                if protocol.is_v214(configuration_of(st.setting)):
+                    from .package import procedure_input_benches
+                    runs_here = st.bench in procedure_input_benches(
+                        procedure, excluded=candidate.excluded(procedure.id))
+                outcomes = (replay.replay_many(procedure, entries, st.services.workers, inputs_dirs=inputs,
+                            **({'configuration': configuration_of(st.setting)}
+                               if protocol.is_v214(configuration_of(st.setting)) else {}))
                             if runs_here else {})
                 lengths = [len(note["text"]) for outcome in outcomes.values() for note in outcome.notes
                            if note["text"]]
@@ -2511,12 +2519,12 @@ def run_step(setting, chain, bench, k, parent, *, services, chain_root=None, smo
         package, value = v213_import.import_step(setting, chain_root or Path(setting.root) / chain,
                                                 chain, k, bench, parent)
         return StepRecord(package, value)
-    if configuration_of(setting) in (protocol.MAIN_V3, protocol.MAIN_V4) and bench == "alfworld":
+    if configuration_of(setting) in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5) and bench == "alfworld":
         from . import v210_import
         package, value = v210_import.import_step(setting, chain_root or Path(setting.root) / chain,
                                                  chain, k, bench, parent)
         return StepRecord(package, value)
-    if configuration_of(setting) in (protocol.MAIN_V3, protocol.MAIN_V4):
+    if configuration_of(setting) in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5):
         from .v210_import import check_learning_capacity
         check_learning_capacity(parent)
     if smoke is None:
@@ -2629,7 +2637,7 @@ def run_unit_spec(manifest, *, spec):
     setting = manifests.setting_of(manifest, chain)
     budgets.own_ledger(setting, chain).declare({**budgets.chain_caps(chain, configuration),
                                                 **budgets.first_call_caps(chain)})
-    services = (None if protocol.is_v213(configuration) or (configuration in (protocol.MAIN_V3, protocol.MAIN_V4) and bench == "alfworld") else
+    services = (None if protocol.is_v213(configuration) or (configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5) and bench == "alfworld") else
                 manifests.services_of(manifest, chain, setting=setting))
     chain_root = safe_path(setting.root) / chain
     try:

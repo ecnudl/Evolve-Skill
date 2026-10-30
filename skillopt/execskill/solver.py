@@ -88,7 +88,7 @@ from skillopt.continual_eval.backends import (ALFWORLD_TRACE_VERSION, ANSWER_TAG
 from skillopt.continual_eval.core import require
 from skillopt.validator_pilot.api import digest
 
-from . import compute, donors, notes, router, zebralogic
+from . import compute, donors, notes, profiles, router, zebralogic
 from .code_delivery import VERSION as CODE_EXTRACTION_V23
 from . import precheck as prechecks
 from .canonical import canonical
@@ -512,7 +512,7 @@ class _Shell:
                   "arm": {"withheld": sorted(self.withhold), "restored": sorted(self.restore),
                           "placebo": sorted(self.shams), "text": sorted(self.text)},
                   "sandbox": self.sandbox()}
-        if self.configuration == 'main-v4':
+        if profiles.uses_v211(self.configuration, self.bench):
             fields['effects'] = list(self.effects)
         if any(notes.audited(p) for p in self.package.procedures):
             fields["keyword_hits"] = notes.keyword_summary([row for entry in self.notes for row in entry["dropped"]])
@@ -568,7 +568,7 @@ class _Shell:
                 requests.append(procedure)
             entries.append((procedure.id + "/sheet_feedback", text, procedure.max_note_chars))
         text, _ = self.assemble(entries)
-        if self.configuration == 'main-v4':
+        if profiles.uses_v211(self.configuration, self.bench):
             self.effects.extend({'procedure': p.id, 'hook': 'sheet_feedback',
                 'kind': 'request_repair', 'permitted': not (notes.outcome_judged(p) and p.id in self.dropped),
                 'source_sha256': hashlib.sha256(p.source.encode()).hexdigest()} for p in requests)

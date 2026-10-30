@@ -138,7 +138,7 @@ def _v297_rule(configuration, bench, rule):
     """Bind the pooled protocol to its child identity, never to an old record."""
     child = profiles.is_v297(configuration)
     if child:
-        require(bench == "alfworld" and rule == profiles.ACCEPT_RULES[configuration],
+        require(bench == "alfworld" and rule == profiles.acceptance_rule(configuration, bench),
                 "ALFWorld v2.9.7 acceptance seals its exact pooled rule")
     else:
         require(not isinstance(rule, dict) or rule.get("name") != POOLED_RULE_NAME,
@@ -152,9 +152,9 @@ V212_POOLED_RULE_NAME = "practical-v2-12-pooled"
 
 def _v211_rule(configuration, bench, rule):
     """The four learned steps seal the distinct main-v4 rule, never relabel a parent."""
-    child = profiles.is_v211(configuration)
+    child = profiles.uses_v211(configuration, bench)
     if child:
-        require(bench in profiles.V211_SLICES and rule == profiles.ACCEPT_RULES[configuration],
+        require(bench in profiles.V211_SLICES and rule == profiles.acceptance_rule(configuration, bench),
                 "main-v4 acceptance seals its exact four-bench pooled rule")
     else:
         require(not isinstance(rule, dict) or rule.get("name") != V211_POOLED_RULE_NAME,
@@ -164,9 +164,9 @@ def _v211_rule(configuration, bench, rule):
 
 def _v212_rule(configuration, bench, rule):
     """The Zebra child seals its own pooled rule without relabelling historical rounds."""
-    child = profiles.is_v212(configuration)
+    child = profiles.uses_v212(configuration, bench)
     if child:
-        require(bench == "zebralogic" and rule == profiles.ACCEPT_RULES[configuration],
+        require(bench == "zebralogic" and rule == profiles.acceptance_rule(configuration, bench),
                 "zebra-pc-v13 acceptance seals its exact Zebra pooled rule")
     else:
         require(not isinstance(rule, dict) or rule.get("name") != V212_POOLED_RULE_NAME,
@@ -192,7 +192,7 @@ def _v211_reuse(sealed, plan):
     """Independent C is mandatory, including otherwise zero-dispatch request classes."""
     if _full_independent_card(sealed.get("configuration")):
         require(plan == request_reuse.from_signatures(sealed, plan.get("signatures", {})),
-                ("zebra-pc-v13" if profiles.is_v212(sealed.get("configuration")) else "main-v4")
+                ("zebra-pc-v13" if profiles.uses_v212(sealed.get("configuration"), sealed["bench"]) else "main-v4")
                 + " reuse must preserve full independent C on every A* item")
 
 
@@ -286,7 +286,7 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
     if profiles.is_v28(configuration) or no_placebo:
         fields["configuration"] = configuration
     if bench == "zebralogic":
-        fields["j6_registered"] = profiles.is_v212(configuration)
+        fields["j6_registered"] = profiles.uses_v212(configuration, bench)
     if reuse is not None:
         fields["seeds"] = {"request_reuse": SEED}
     fields["seals"] = {
@@ -372,9 +372,9 @@ def schedule(sealed, *, logical=False):
     sealed = verified(sealed, "acceptance-sealed")
     plan = sealed["plan"]
     if _full_independent_card(sealed.get("configuration")):
-        (_v212_rule if profiles.is_v212(sealed["configuration"]) else _v211_rule)(
+        (_v212_rule if profiles.uses_v212(sealed["configuration"], sealed["bench"]) else _v211_rule)(
             sealed["configuration"], sealed["bench"], sealed.get("rule"))
-        if profiles.is_v212(sealed["configuration"]):
+        if profiles.uses_v212(sealed["configuration"], sealed["bench"]):
             require(sealed.get("j6_registered") is True, "zebra-pc-v13 requires the C-S duplicate test")
         if sealed.get("reuse") is not None:
             _v211_reuse(sealed, sealed["reuse"])

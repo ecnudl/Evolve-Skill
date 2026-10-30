@@ -41,7 +41,7 @@ def test_every_preexisting_profile_keeps_its_exact_registration_prompt_caps_unit
 
 def test_every_historical_profile_table_is_byte_identical():
     assert len(SNAPSHOT['configurations']) == 33
-    assert {n for n in p.CONFIGURATIONS if not p.is_v213(n)} - set(SNAPSHOT['configurations']) == {p.ZEBRA_PC_V13}
+    assert {n for n in p.CONFIGURATIONS if not p.is_v213(n) and not p.is_v214(n)} - set(SNAPSHOT['configurations']) == {p.ZEBRA_PC_V13}
     for name, tables in SNAPSHOT['profile_tables'].items():
         found = manifest._plain({key: getattr(p, key)[name] for key in tables})
         assert json.dumps(found, sort_keys=True).encode() == json.dumps(tables, sort_keys=True).encode()

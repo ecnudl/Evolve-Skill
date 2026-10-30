@@ -525,6 +525,7 @@ def share_cell(context, cell, task, arm, source, route, *, store):
     fields = {
         "cell": cell, **{name: cell[name] for name in ROUND_KEYS if name in cell},
         "package_sha256": arm.package.sha256, "arm_kind": arm.kind, "enabled": [],
+        **({"card": ""} if profiles.is_v214(context.configuration) and arm.kind == "blank" else {}),
         "withheld": sorted(arm.withhold), "restored": sorted(arm.restore),
         "attempts": [], "remedies": {}, "spent": [], "sends": [], "refused": False, "logical_calls": [],
         "deciding_receipt": source["deciding_receipt"], "worst_delivery": source["worst_delivery"],
