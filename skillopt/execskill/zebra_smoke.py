@@ -63,6 +63,10 @@ def snapshot(out, *, source, git_head, configuration=p.ZEBRA_PC_V1):
     source, out = safe_path(source), safe_path(out)
     require(not out.exists() and not out.is_relative_to(source), "A snapshot is a new directory outside the checkout")
     paths = prelaunch._files(source)
+    if p.is_v212(configuration):
+        # The current S0 suite includes instruction-start profile regressions.
+        # Copy their one public fixture, as v210/v211 snapshots already do.
+        paths.append(source / "docs/handoff/v29-20261026/v210-instructions-coevo5-v1.json")
     forbidden = (".env", "sealed-holdout", "private-api", "api-cache")
     require(all(not path.is_symlink() and not any(term in path.name.lower() for term in forbidden)
                 for path in paths), "Snapshot source contains a private file or link")
@@ -171,7 +175,8 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, elucid_env, rou
         if chain not in estimates:
             # A preparation anchor, never labelled measured; the unmeasured chain cannot launch.
             anchor = 5_300 if chain == "G" else 3_400
-            estimates[chain] = math.ceil(anchor * (200 + 1_000 * float(p.PROCEDURE_ARM_FACTOR[1])))
+            cards, procedures = p.TEST_READ_CELLS[configuration][z.BENCH] if p.is_v212(configuration) else (200, 1_000)
+            estimates[chain] = math.ceil(anchor * (cards + procedures * float(p.PROCEDURE_ARM_FACTOR[1])))
             terms[chain] = {z.BENCH: str(estimates[chain])}
     blocks = {"G": manifest.solver_block("G", env_path=roles_repo, configuration=configuration),
               "D": manifest.solver_block("D", env_path=route_b_env if p.is_v29(configuration) else elucid_env,
@@ -306,10 +311,11 @@ def projection(s2, chain, configuration=p.ZEBRA_PC_V1, *, s3=None):
         require(isinstance(s3, dict) and s3.get("role_measurements"), "S-E6 needs S3 measured role calls")
         roles = {name: row for name, row in smoke.glm_projection(s3["role_measurements"], configuration).items()
                  if name.startswith(chain + ":")}
+    cards, procedures = p.TEST_READ_CELLS[configuration][z.BENCH] if p.is_v212(configuration) else (200, 1_000)
     return {"passed": all(v["passed"] for v in scopes.values())
             and (roles is None or all(row["fits"] for row in roles.values())), "configuration": configuration,
             "chain": chain, "per_cell": {z.BENCH: {"card": card, "procedure": proc, "procedure_assumed": True}},
-            "ratio": ratio, "scopes": scopes, "read_estimate": math.ceil(ratio * (200 * card + 1_000 * proc)),
+            "ratio": ratio, "scopes": scopes, "read_estimate": math.ceil(ratio * (cards * card + procedures * proc)),
             **({"roles": roles} if roles is not None else {}),
             "other_chain": ("not_launchable_in_this_configuration" if p.is_v27(configuration)
                             else "not_projected; requires its own smoke")}

@@ -378,6 +378,8 @@ def read_estimate_record(smoke_root, configuration=None):
                   "se6": stage[RECORD_HASH]},
         "waiver": waived,  # registrar addendum 2026-10-23 05:3x: None, or {"sha256", "rows"} of the owner's waiver
         "pilot": projected, "formula": (
+            "ceil(ratio x sum_b n_b x (card_b + proc_b)); v2.12 registered F/C arms"
+            if p.is_v212(projected) else
             "ceil(ratio x sum_b n_b x (2 x card_b + %d x proc_b)); v2.10 registered C/B and F arms"
             % estimate_arms(projected) if p.is_v210(projected) else
             "ceil(ratio x sum_b n_b x (card_b + %d x f_b x proc_b)); registrar addendum "
@@ -561,6 +563,8 @@ def run(setting, chain, *, learn, launch=launch_child):
     configuration = configuration_of(setting)
     order = order_of(setting)
     read_definition = {}
+    if p.is_v212(configuration):
+        read_definition = {"arms": list(p.read_arms_of(configuration))}
     if p.is_v210(configuration):
         from .instruction_start import START, blank_definition
         read_definition = {"arms": list(p.read_arms_of(configuration)),

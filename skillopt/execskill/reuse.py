@@ -67,12 +67,14 @@ def interchangeable(first, second, *, bench):
 
 def card_sample(sealed, preferred=None):
     """The seeded C instrument sample, taking already-dispatched S items before supplemental S dispatches."""
-    if profiles.is_v211(sealed.get("configuration")):
-        require(sealed["bench"] in profiles.V211_SLICES, "Only four learned steps have main-v4 acceptance")
+    if profiles.is_v211(sealed.get("configuration")) or profiles.is_v212(sealed.get("configuration")):
+        zebra = profiles.is_v212(sealed.get("configuration"))
+        require(sealed["bench"] == "zebralogic" if zebra else sealed["bench"] in profiles.V211_SLICES,
+                "Only Zebra has v2.12 acceptance" if zebra else "Only four learned steps have main-v4 acceptance")
         items = list(sealed["plan"]["astar"])
         preferred = set(preferred or [])
         return {"items": items, "runs": sealed["runs"], "seed": sealed.get("seeds", {}).get("request_reuse", SEED),
-                "tag": round_tag(sealed["unit"]) + ":full-independent-C-v211",
+                "tag": round_tag(sealed["unit"]) + (":full-independent-C-v212" if zebra else ":full-independent-C-v211"),
                 "preferred_items": [item for item in items if item in preferred],
                 "supplemental_items": [item for item in items if item not in preferred],
                 "coverage": "full_independent_astar"}
@@ -94,7 +96,8 @@ def card_sample(sealed, preferred=None):
 def _item_arms(sealed, signatures):
     """Every scheduled arm, including ones whose replay identity is missing, in the representative priority order."""
     items = {name: {item: list(arms) for item, arms in entries.items()} for name, entries in signatures.items()}
-    core = ["S", "S'", "C"] + ([] if profiles.is_v210(sealed.get("configuration")) else ["P_y"])
+    no_placebo = profiles.is_v210(sealed.get("configuration")) or profiles.is_v212(sealed.get("configuration"))
+    core = ["S", "S'", "C"] + ([] if no_placebo else ["P_y"])
     main = core + (["P_i"] if sealed["placebo_i"] is not None else [])
     main += ["S_dup"] if sealed["dup"] else []
     for item in sealed["plan"]["astar"] + sealed["plan"].get("twin_only", []):

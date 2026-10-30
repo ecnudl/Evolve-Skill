@@ -147,6 +147,7 @@ def _v297_rule(configuration, bench, rule):
 
 
 V211_POOLED_RULE_NAME = "practical-v2-11-pooled"
+V212_POOLED_RULE_NAME = "practical-v2-12-pooled"
 
 
 def _v211_rule(configuration, bench, rule):
@@ -161,16 +162,38 @@ def _v211_rule(configuration, bench, rule):
     return child
 
 
+def _v212_rule(configuration, bench, rule):
+    """The Zebra child seals its own pooled rule without relabelling historical rounds."""
+    child = profiles.is_v212(configuration)
+    if child:
+        require(bench == "zebralogic" and rule == profiles.ACCEPT_RULES[configuration],
+                "zebra-pc-v13 acceptance seals its exact Zebra pooled rule")
+    else:
+        require(not isinstance(rule, dict) or rule.get("name") != V212_POOLED_RULE_NAME,
+                "The v2.12 pooled acceptance rule belongs only to zebra-pc-v13")
+    return child
+
+
 def _pooled_rule(configuration, bench, rule):
     historical = _v297_rule(configuration, bench, rule)
-    return _v211_rule(configuration, bench, rule) or historical
+    main = _v211_rule(configuration, bench, rule)
+    return _v212_rule(configuration, bench, rule) or main or historical
+
+
+def _no_placebo(configuration):
+    return profiles.is_v210(configuration) or profiles.is_v212(configuration)
+
+
+def _full_independent_card(configuration):
+    return profiles.is_v211(configuration) or profiles.is_v212(configuration)
 
 
 def _v211_reuse(sealed, plan):
     """Independent C is mandatory, including otherwise zero-dispatch request classes."""
-    if profiles.is_v211(sealed.get("configuration")):
+    if _full_independent_card(sealed.get("configuration")):
         require(plan == request_reuse.from_signatures(sealed, plan.get("signatures", {})),
-                "main-v4 reuse must preserve full independent C on every A* item")
+                ("zebra-pc-v13" if profiles.is_v212(sealed.get("configuration")) else "main-v4")
+                + " reuse must preserve full independent C on every A* item")
 
 
 # ---------------------------------------------------------------------------------------------------- arms
@@ -229,7 +252,7 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
         require(generate is None and not dup and not probe,
                 "zebra-pc-v1 has no generator, duplicate instrument or LiveMath probe")
     evidence = candidate.evidence
-    no_placebo = profiles.is_v210(configuration)
+    no_placebo = _no_placebo(configuration)
     corpus = None if no_placebo else donors.donor_corpus(candidate, parent, trajectories, workers)
     minimum = None if rule is None else minimum_astar(rule, len(views), len(set(blocks.values())),
                                                       alfworld=bench == "alfworld")
@@ -263,7 +286,7 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
     if profiles.is_v28(configuration) or no_placebo:
         fields["configuration"] = configuration
     if bench == "zebralogic":
-        fields["j6_registered"] = False
+        fields["j6_registered"] = profiles.is_v212(configuration)
     if reuse is not None:
         fields["seeds"] = {"request_reuse": SEED}
     fields["seals"] = {
@@ -309,7 +332,7 @@ def round_packages(candidate, parent, *, step, twins, configuration=None):
     package per restoration twin (``twins``: the plan's {item: [twin]}). ``prepare`` seals their hashes; the dispatch
     driver rebuilds them with the sealed ``step`` and ``plan["twins"]`` (integration B3)."""
     found = {"candidate": candidate, "parent": parent, "card": empty(step=step, evidence=candidate.evidence)}
-    if not profiles.is_v210(configuration):
+    if not _no_placebo(configuration):
         found["placebo"] = placebo.placebo_package(candidate, parent)[0]
     for item_twins in twins.values():
         for twin in item_twins:
@@ -348,13 +371,16 @@ def schedule(sealed, *, logical=False):
     block (Codex review 2026-10-22 #12). Nothing when the round does not run."""
     sealed = verified(sealed, "acceptance-sealed")
     plan = sealed["plan"]
-    if profiles.is_v211(sealed.get("configuration")):
-        _v211_rule(sealed["configuration"], sealed["bench"], sealed.get("rule"))
+    if _full_independent_card(sealed.get("configuration")):
+        (_v212_rule if profiles.is_v212(sealed["configuration"]) else _v211_rule)(
+            sealed["configuration"], sealed["bench"], sealed.get("rule"))
+        if profiles.is_v212(sealed["configuration"]):
+            require(sealed.get("j6_registered") is True, "zebra-pc-v13 requires the C-S duplicate test")
         if sealed.get("reuse") is not None:
             _v211_reuse(sealed, sealed["reuse"])
     if plan["decision"] == SMALL:
         return {}
-    no_placebo = profiles.is_v210(sealed.get("configuration"))
+    no_placebo = _no_placebo(sealed.get("configuration"))
     arms = [CANDIDATE, PARENT, CARD] + ([] if no_placebo else [PLACEBO_Y])
     arms += [PLACEBO_I] if sealed["placebo_i"] is not None and not no_placebo else []
     arms += [DUP] if sealed["dup"] else []
@@ -993,8 +1019,8 @@ def _header(sealed):
                            "dispatched_by_arm": {arm: sum(job["arm"] == arm for job in jobs) for arm in names}}
     return {**({"rule": sealed["rule"]["name"]} if sealed.get("rule") else {}),  # v2.2
             **({"configuration": sealed["configuration"]} if profiles.is_v28(sealed.get("configuration"))
-               or profiles.is_v210(sealed.get("configuration")) else {}),
-            **({"guards": {"J2": {"removed": True}}} if profiles.is_v210(sealed.get("configuration")) else {}),
+               or _no_placebo(sealed.get("configuration")) else {}),
+            **({"guards": {"J2": {"removed": True}}} if _no_placebo(sealed.get("configuration")) else {}),
             **({"reuse": {"plan_sha256": seals["reuse_sha256"], "card_sample": sealed["reuse"]["card_sample"],
                            "timing": "physical_dispatch_schedule", "infrastructure": "dispatched_representatives",
                            "identical_all": {name: len(items) for name, items in sealed["reuse"]["identical_all"].items()},
@@ -1018,7 +1044,7 @@ def decide(cells, sealed):
     (module docstring; plan §2.6)."""
     sealed = verified(sealed, "acceptance-sealed")
     pooled_rule = _pooled_rule(sealed.get("configuration"), sealed["bench"], sealed.get("rule"))
-    no_placebo = profiles.is_v210(sealed.get("configuration"))
+    no_placebo = _no_placebo(sealed.get("configuration"))
     pooled = pooled_rule and sealed["card_is_parent"]
     plan = sealed["plan"]
     if plan["decision"] == SMALL:
@@ -1078,7 +1104,7 @@ def decide(cells, sealed):
             contrasts[name]["decides"] = False
     if sample is not None:
         for name in ("S'-C", "S-C"):
-            full = profiles.is_v211(sealed.get("configuration"))
+            full = _full_independent_card(sealed.get("configuration"))
             contrasts[name].update({"sample": "full_independent_C" if full else "sealed_C_instrument",
                                     "sample_items": card_items, "sample_size": len(card_items),
                                     **({} if full else {"whole_batch": None})})
@@ -1240,7 +1266,7 @@ def _duplicate(cells_table, sealed, items, design):
         d = differences(cells_table, first, second, members)
         p = _two_sided(stats_ext.paired_t(d, **(_design(sealed, members) if sample is not None else design)))
         tested.append({"pair": "%s-%s" % (first, second), "p_two_sided": p, "ok": p >= DUP_ALPHA,
-                       **({"sample": "full_independent_C" if profiles.is_v211(sealed.get("configuration")) else "sealed_C_instrument",
+                       **({"sample": "full_independent_C" if _full_independent_card(sealed.get("configuration")) else "sealed_C_instrument",
                            "sample_items": members, "sample_size": len(members),
                            "runs": sample["runs"]} if sample is not None else {})})
     return {"pairs": tested, "ok": all(t["ok"] for t in tested)}

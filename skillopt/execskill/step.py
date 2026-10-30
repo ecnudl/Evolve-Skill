@@ -2375,17 +2375,18 @@ def _accept(st, cut, candidate, generated):
         if probe:
             registry.register(st.namespace, st.bench, probe, unit=name, purpose="accept_probe",
                               run_root=str(st.setting.root), attempt=n)
-        donors_ = [] if protocol.is_v210(configuration_of(st.setting)) else _run_trajectories(st, parent_only=True)
+        no_placebo = not protocol.PLACEBO_ARMS[configuration_of(st.setting)]
+        donors_ = [] if no_placebo else _run_trajectories(st, parent_only=True)
         acc = _g_acc(st, generated, attempt)
         publics = {item["task_id"]: item["public"] for item in accept + probe}
-        if not protocol.is_v210(configuration_of(st.setting)):
+        if not no_placebo:
             publics.update({rounds.key(st.bench, item["task_id"]): item["public"] for item in cut["run"]})  # donors
         if IDENTICAL_REQUEST_REUSE[configuration_of(st.setting)]:
             publics.update({g["id"]: g["public"] for g in acc or []})
         workers = _item_workers(st, publics)
         if (root / "sealed.json").exists():
             sealed = verified(read_json(root / "sealed.json"), "acceptance-sealed")
-            if not protocol.is_v210(configuration_of(st.setting)):
+            if not no_placebo:
                 donors.verify(sealed["corpus"], donors_)
         else:
             views = {item["task_id"]: solver.routing_view(st.bench, item["public"], runtime=st.runtime())
@@ -2414,7 +2415,7 @@ def _accept(st, cut, candidate, generated):
                    else {}))
         packages = acceptance.round_packages(candidate, st.parent, step=sealed["step"], twins=sealed["plan"]["twins"],
                     **({"configuration": configuration_of(st.setting)}
-                       if protocol.is_v210(configuration_of(st.setting)) else {}))
+                       if no_placebo else {}))
         tasks = _round_tasks(records, probe, acc)  # §6.4 J7: the probe items options-only
         earlier = acceptance.earlier_blocks(sealed, root, attempt) if n > 1 else None  # §9.3, owner decision #15
         context = units.cell_context(st.setting, attempt, first)

@@ -25,6 +25,7 @@ FRESHNESS = {
     "zebra-pc-v11": "zebra_split_v1_confirm_after_zebra_pc_v9_v10_not_launched",
     "alfworld-v8": "alfworld_split_v1_confirm_spare_rooms_after_alfworld_v7",
     "zebra-pc-v12": "zebra_split_v1_confirm_after_zebra_pc_v9_v11",
+    "zebra-pc-v13": "zebra_split_v1_confirm_after_zebra_pc_v9_v12",
     "alfworld-v9": "alfworld_split_v1_confirm_spare_rooms_after_alfworld_v7_v8_not_launched",
     "alfworld-v10": "alfworld_split_v1_confirm_spare_rooms_after_alfworld_v7_v9_stopped",
     "alfworld-v11": "alfworld_split_v1_confirm_spare_rooms_after_alfworld_v10",

@@ -200,7 +200,7 @@ def consent(shared, configuration=None):
     require(path.exists(), "No recorded owner consent to evaluate on the test sets")
     value = read_json(path)
     allowed = [read_arms_of(configuration)] if configuration is not None else sorted(
-        {read_arms_of(name) for name in CONFIGURATIONS})
+        {read_arms_of(name) for name in CONFIGURATIONS if not profiles.is_v212(name)})
     arms = value.get("multi_arm_arms") if isinstance(value, dict) else None
     require(isinstance(value, dict) and set(value) == CONSENT_FIELDS and value["by"] == "owner"
             and value["test_evaluation"] is True and type(value["sheet_test_qualification"]) is bool
@@ -208,6 +208,8 @@ def consent(shared, configuration=None):
             and any(len(arms) == len(found) and set(arms) == set(found) for found in allowed)
             and isinstance(value["date"], str) and isinstance(value["note"], str) and value["note"].strip(),
             "No recorded owner consent to the multi-arm test read")
+    if profiles.is_v212(configuration):
+        require(value["sheet_test_qualification"] is False, "Zebra read consent does not qualify sheet test data")
     return value
 
 
@@ -328,10 +330,11 @@ def _delete_entries(base, names):
     return {"files": len(files), "manifest_sha256": digest(files)}
 
 
-def test_tasks(shared, pinned, bench, unit, *, run, runtime, native, workers, evidence, panel=data.test_panel):
+def test_tasks(shared, pinned, bench, unit, *, run, runtime, native, workers, evidence, panel=data.test_panel,
+               configuration=None):
     """The tasks a bench is read on (the evaluation unit only; evaluation.py:227-247). ``panel``: the frozen
     ``data.test_panel`` (a unit test passes a synthetic one)."""
-    allowed = consent(shared)
+    allowed = consent(shared, configuration)
     if bench == "zebralogic" and panel is data.test_panel:
         from .zebralogic import test_panel as panel
     tasks, report = panel(pinned, bench, access=data.TestAccess(unit))
@@ -619,7 +622,7 @@ def sealed_cell(full):
         "answered": answered(full),  # §6.3's mask: whether the provider delivered any reply in this cell
         "solver_route": full.get("solver_route"),  # {"route", "model"} (cells.py); route None on chain G
         **({key: full[key] for key in ("configuration", "keyword_hits", "applies", "returned_model", "returned_models")}
-           if full.get("configuration") in ("zebra-pc-v7", "alfworld-v4", "zebra-pc-v8", "alfworld-v5", "zebra-pc-v9", "alfworld-v6", "zebra-pc-v10", "alfworld-v7", "zebra-pc-v11", "alfworld-v8", "zebra-pc-v12", "alfworld-v9", "alfworld-v10", "alfworld-v11") else {}),
+           if full.get("configuration") in ("zebra-pc-v7", "alfworld-v4", "zebra-pc-v8", "alfworld-v5", "zebra-pc-v9", "alfworld-v6", "zebra-pc-v10", "alfworld-v7", "zebra-pc-v11", "alfworld-v8", "zebra-pc-v12", "alfworld-v9", "alfworld-v10", "alfworld-v11", "zebra-pc-v13") else {}),
         "stop": None if full["stop"] is None else {"kind": full["stop"]["kind"]}}
 
 
@@ -1305,10 +1308,13 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
               panel, reset, stages=None, run_configuration=None):
     require(not (unit_root / "unit.json").exists(), "This unit is complete")
     child = profiles.is_v210(run_configuration)
-    expected = read_arms_of(run_configuration) if child else ARMS
+    reduced = child or profiles.is_v212(run_configuration)
+    expected = read_arms_of(run_configuration) if reduced else ARMS
     require(set(arms) == set(expected), "The read's arms must match the configuration exactly")
-    if child:
-        require(context.configuration == run_configuration, "The read context belongs to its v2.10 configuration")
+    if reduced:
+        require(context.configuration == run_configuration,
+                "The read context belongs to its v2.10 configuration" if child else
+                "The read context belongs to its zebra-pc-v13 configuration")
         consent(shared, run_configuration)
     final, card = arms.get("F", arms["C"]).package, arms["C"].package
     require(child or final.sha256 != card.sha256, "F = C: nothing was accepted, the read is not made (§8.1)")
@@ -1347,9 +1353,10 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
             if reset is None:
                 reset = alfworld_reset(context.runtime["alfworld"], context.episodes)
         tasks = test_tasks(shared, pinned, bench, unit, run=run, runtime=context.runtime[bench],
-                           native=context.native, workers=workers, evidence=evidence, panel=panel)
+                           native=context.native, workers=workers, evidence=evidence, panel=panel,
+                           **({"configuration": run_configuration} if profiles.is_v212(run_configuration) else {}))
         plan = test_plan(tasks, final, bench=bench, unit=unit, runtime=context.runtime[bench], workers=route_workers,
-                         reset=reset, **({"run_configuration": run_configuration} if child else {}))
+                         reset=reset, **({"run_configuration": run_configuration} if reduced else {}))
         staged = stage_plan(plan, final, packages, bench=bench, runtime=context.runtime[bench],
                             workers=route_workers) if packages else None
         by_id = {t["task_id"]: {"public": t["public"], "private": t["private"]} for t in plan["tasks"]}
@@ -1359,9 +1366,9 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
         jobs, shares, linked = [], [], []
         for item in sorted(by_id):
             for run_index in range(TEST_RUNS):
-                labels = list(expected) if child else ["C"] + ([] if item in zero else ["F", "P_F", "T_F"])
+                labels = list(expected) if reduced else ["C"] + ([] if item in zero else ["F", "P_F", "T_F"])
                 labels += [TWIN + p for p in plan["twins"].get(item, [])]
-                for label in labels + (["F", "P_F", "T_F"] if item in zero and not child else []) + sorted(
+                for label in labels + (["F", "P_F", "T_F"] if item in zero and not reduced else []) + sorted(
                         packages, key=lambda found: int(found[len(STAGE_ARM):])):
                     cell = {"id": cell_id(unit, label, item, run_index), "unit": unit, "arm": label,
                             "benchmark": bench, "task_id": item, "run": run_index, "block": blocks[item],
@@ -1376,7 +1383,7 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
                         else:
                             linked.append((job, source))
                     else:
-                        (shares if item in zero and label in (("F",) if child else ("F", "P_F", "T_F")) else jobs).append(
+                        (shares if item in zero and label in (("F",) if reduced else ("F", "P_F", "T_F")) else jobs).append(
                             (cell, by_id[item], _arm(arms, label, cell, by_id[item])))
         sources = {}
         for block in sorted(set(blocks.values())):
@@ -1551,6 +1558,8 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
         arms = {"C": Arm("card", card), "B": Arm("blank", card)}
         if configuration != profiles.BASELINE_V210:
             arms = {"F": Arm("candidate", final), **arms}
+    elif profiles.is_v212(configuration):
+        arms = {"F": Arm("candidate", final), "C": Arm("card", card)}
     else:
         arms = {"F": Arm("candidate", final), "C": Arm("card", card),
                 "P_F": placebo_arm(final, donor_corpora(chain_root), bench=bench, unit=unit, runtime=runtime,

@@ -43,7 +43,7 @@ EVIDENCE = ("engineering_fixture", "smoke", "pilot_real_run", "historical_replay
             "alfworld_v2_real_run", "zebra_pc_v6_real_run", "alfworld_v3_real_run", "zebra_pc_v7_real_run", "alfworld_v4_real_run",
             "zebra_pc_v8_real_run", "alfworld_v5_real_run", "zebra_pc_v9_real_run", "alfworld_v6_real_run",
             "zebra_pc_v10_real_run", "alfworld_v7_real_run", "zebra_pc_v11_real_run", "alfworld_v8_real_run", "zebra_pc_v12_real_run", "alfworld_v9_real_run", "alfworld_v10_real_run", "alfworld_v11_real_run",
-            "baseline_v210_real_run", "main_v3_real_run", "main_v4_real_run")
+            "baseline_v210_real_run", "main_v3_real_run", "main_v4_real_run", "zebra_pc_v13_real_run")
 IMPORTABLE = ("fivebench-coevolution-v3-sheet-qualification",)  # §1, owner #7, Codex F15: the one v3 record kind read
 TEXTS_IMPORT = "fivebench-coevolution-v3-texts-import"  # §2.2: the v3 task cards, imported by value (plan §6)
 

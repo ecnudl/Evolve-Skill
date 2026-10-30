@@ -151,3 +151,42 @@ def extend_v295_profiles(p):
     old_redo = plan["redo_reserve"]
     plan["redo_reserve"] = max(old_redo, cap)
     plan["solver_cap"] += cap - previous + plan["redo_reserve"] - old_redo
+
+
+def extend_v212_profiles(p):
+    """Reprice the v12 child at six rounds, independent S/C and F/C-only read.
+
+    Use v12's delta accounting (including its inherited solver headroom),
+    but recompute shrinking terms instead of its expansion-only maxima.
+    """
+    config, bench = p.ZEBRA_PC_V13, p.ZEBRA
+    roles = p.CONFIG_ROLE_CAPS[config]
+    before_roles = sum(roles.values())
+    roles['engineer'] = v291_engineer_cap(p, config)
+    for role in JUDGE_ROLES:
+        roles[role] = (judge_calls(p, bench, config) + 1) * reservation(p.ROLE_INPUT_BYTES, JUDGE_MAX_TOKENS)
+    p.CONFIG_GLM_CAP[config] += sum(roles.values()) - before_roles
+    schedule = p.CONFIG_SCHEDULE_CELLS[config][bench]
+    n, runs = p.SLICES[bench]['run']
+    schedule['selftest'] = {bench: (0, p.train_rounds(config) * 2 * n * runs)}
+    schedule['confirm'] = {bench: (0, p.train_rounds(config) * 2 * CONFIRM_ITEMS)}
+    card, proc = schedule['accept'][bench]
+    n, runs = p.SLICES[bench]['accept']
+    schedule['accept'][bench] = (card, proc - n * runs)  # remove P_y; retain both acceptance twins
+    caps = p.CONFIG_STEP_CAPS[config][bench]
+    previous_steps = sum(caps.values())
+
+    def cap(cells, rounding):
+        return p.legacy._round_up(p.MAIN_CAP_FACTOR * (
+            sum(p.CELL_ANCHORS[b][1] * (c + p.PROCEDURE_ARM_FACTOR[1] * q)
+                for b, (c, q) in cells.items())
+            + p.MAIN_RESERVATIONS * p.READ_RESERVATION), rounding)
+
+    for kind in ('selftest', 'confirm', 'accept'):
+        caps[kind] = cap(schedule[kind], 100_000)
+    plan = p.CONFIGURATIONS[config]
+    before_read, before_redo = plan['test_read_cap'], plan['redo_reserve']
+    plan['test_read_cap'] = cap(p.TEST_READ_CELLS[config], p.MILLION)
+    plan['redo_reserve'] = max(caps.values())  # Zebra acceptance is one block.
+    plan['solver_cap'] += (sum(caps.values()) - previous_steps
+                           + plan['test_read_cap'] - before_read + plan['redo_reserve'] - before_redo)

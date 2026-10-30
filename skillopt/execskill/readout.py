@@ -558,14 +558,16 @@ def readout(units, *, learned, procedures, label, evidence, stages=None, configu
     unseal's read label (Codex F17); ``stages``: a stage read's rows (``stage_table``; F's readings are left out,
     None, only where F learned nothing and the stage arms carry the read)."""
     from . import profiles
-    if profiles.is_v210(configuration):
+    if profiles.is_v210(configuration) or profiles.is_v212(configuration):
         contrasts = {}
         baseline = configuration == profiles.BASELINE_V210
-        imported = [] if baseline else ["alfworld"]
+        zebra = profiles.is_v212(configuration)
+        imported = [] if baseline or zebra else ["alfworld"]
         # Imported programs are not newly learned here, and their home bench is
         # not an unexposed transfer target. Its F-C remains measured below.
-        exposed = [bench for bench in BENCHES if bench in set(learned) | set(imported)]
-        pairs = (("C", "B"),) if baseline else (("F", "C"), ("C", "B"), ("F", "B"))
+        exposed = [bench for bench in (SUPPORTED_BENCHES if zebra else BENCHES)
+                   if bench in set(learned) | set(imported)]
+        pairs = (("F", "C"),) if zebra else (("C", "B"),) if baseline else (("F", "C"), ("C", "B"), ("F", "B"))
         for bench in sorted(units, key=SUPPORTED_BENCHES.index):
             cells = units[bench]
             require({arm for arm, _, _ in cells} == set(profiles.read_arms_of(configuration)),
@@ -575,7 +577,7 @@ def readout(units, *, learned, procedures, label, evidence, stages=None, configu
                 cells, first, second, _items(cells, first, second), bootstrap=True, sensitivity=True)
                 for first, second in pairs}
         return record("readout", evidence, {
-            "configuration": configuration, "evidence_kind": EVIDENCE_KIND, "read_label": label,
+            "configuration": configuration, "evidence_kind": "pipeline_control" if zebra else EVIDENCE_KIND, "read_label": label,
             "learned": list(learned), "imported": imported,
             "contrasts": contrasts, "contrasts_reading": "descriptive",
             **({"reading": "descriptive"} if baseline else {
@@ -642,7 +644,8 @@ def report(manifest, *, out):
                 "Every read unit of a stage read names the same rows")
         value = readout(opened["units"], learned=learned, procedures=procedures, label=opened["label"],
                         evidence=evidence, stages=list(rows.pop()) if rows else None,
-                        **({"configuration": manifest["configuration"]} if profiles.is_v210(manifest["configuration"]) else {}))
+                        **({"configuration": manifest["configuration"]}
+                           if profiles.is_v210(manifest["configuration"]) or profiles.is_v212(manifest["configuration"]) else {}))
         written[chain], found[chain] = value, value[RECORD_HASH]
     out.mkdir(parents=True)
     for chain, value in written.items():
