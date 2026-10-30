@@ -200,7 +200,7 @@ def consent(shared, configuration=None):
     require(path.exists(), "No recorded owner consent to evaluate on the test sets")
     value = read_json(path)
     allowed = [read_arms_of(configuration)] if configuration is not None else sorted(
-        {read_arms_of(name) for name in CONFIGURATIONS if not profiles.is_v212(name)})
+        {read_arms_of(name) for name in CONFIGURATIONS if not profiles.is_zebra_fc(name)})
     arms = value.get("multi_arm_arms") if isinstance(value, dict) else None
     require(isinstance(value, dict) and set(value) == CONSENT_FIELDS and value["by"] == "owner"
             and value["test_evaluation"] is True and type(value["sheet_test_qualification"]) is bool
@@ -208,7 +208,7 @@ def consent(shared, configuration=None):
             and any(len(arms) == len(found) and set(arms) == set(found) for found in allowed)
             and isinstance(value["date"], str) and isinstance(value["note"], str) and value["note"].strip(),
             "No recorded owner consent to the multi-arm test read")
-    if profiles.is_v212(configuration):
+    if profiles.is_zebra_fc(configuration):
         require(value["sheet_test_qualification"] is False, "Zebra read consent does not qualify sheet test data")
     return value
 
@@ -622,7 +622,7 @@ def sealed_cell(full):
         "answered": answered(full),  # §6.3's mask: whether the provider delivered any reply in this cell
         "solver_route": full.get("solver_route"),  # {"route", "model"} (cells.py); route None on chain G
         **({key: full[key] for key in ("configuration", "keyword_hits", "applies", "returned_model", "returned_models")}
-           if full.get("configuration") in ("zebra-pc-v7", "alfworld-v4", "zebra-pc-v8", "alfworld-v5", "zebra-pc-v9", "alfworld-v6", "zebra-pc-v10", "alfworld-v7", "zebra-pc-v11", "alfworld-v8", "zebra-pc-v12", "alfworld-v9", "alfworld-v10", "alfworld-v11", "zebra-pc-v13") else {}),
+           if full.get("configuration") in ("zebra-pc-v7", "alfworld-v4", "zebra-pc-v8", "alfworld-v5", "zebra-pc-v9", "alfworld-v6", "zebra-pc-v10", "alfworld-v7", "zebra-pc-v11", "alfworld-v8", "zebra-pc-v12", "alfworld-v9", "alfworld-v10", "alfworld-v11", "zebra-pc-v13", "zebra-hp-v3r4") else {}),
         "stop": None if full["stop"] is None else {"kind": full["stop"]["kind"]}}
 
 
@@ -1308,12 +1308,13 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
               panel, reset, stages=None, run_configuration=None):
     require(not (unit_root / "unit.json").exists(), "This unit is complete")
     child = profiles.is_v210(run_configuration)
-    reduced = child or profiles.is_v212(run_configuration)
+    reduced = child or profiles.is_zebra_fc(run_configuration)
     expected = read_arms_of(run_configuration) if reduced else ARMS
     require(set(arms) == set(expected), "The read's arms must match the configuration exactly")
     if reduced:
         require(context.configuration == run_configuration,
                 "The read context belongs to its v2.10 configuration" if child else
+                "The read context belongs to its zebra-hp-v3r4 configuration" if profiles.is_v213(run_configuration) else
                 "The read context belongs to its zebra-pc-v13 configuration")
         consent(shared, run_configuration)
     final, card = arms.get("F", arms["C"]).package, arms["C"].package
@@ -1354,7 +1355,7 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
                 reset = alfworld_reset(context.runtime["alfworld"], context.episodes)
         tasks = test_tasks(shared, pinned, bench, unit, run=run, runtime=context.runtime[bench],
                            native=context.native, workers=workers, evidence=evidence, panel=panel,
-                           **({"configuration": run_configuration} if profiles.is_v212(run_configuration) else {}))
+                           **({"configuration": run_configuration} if profiles.is_zebra_fc(run_configuration) else {}))
         plan = test_plan(tasks, final, bench=bench, unit=unit, runtime=context.runtime[bench], workers=route_workers,
                          reset=reset, **({"run_configuration": run_configuration} if reduced else {}))
         staged = stage_plan(plan, final, packages, bench=bench, runtime=context.runtime[bench],
@@ -1558,7 +1559,7 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
         arms = {"C": Arm("card", card), "B": Arm("blank", card)}
         if configuration != profiles.BASELINE_V210:
             arms = {"F": Arm("candidate", final), **arms}
-    elif profiles.is_v212(configuration):
+    elif profiles.is_zebra_fc(configuration):
         arms = {"F": Arm("candidate", final), "C": Arm("card", card)}
     else:
         arms = {"F": Arm("candidate", final), "C": Arm("card", card),

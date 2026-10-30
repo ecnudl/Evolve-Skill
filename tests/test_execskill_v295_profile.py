@@ -56,7 +56,7 @@ def test_child_clones_every_parent_table_with_only_registered_identity_changes(c
 
 
 def test_exact_child_roster_roots_and_freshness_labels():
-    assert {name for name in p.CONFIGURATIONS if p.is_v295(name) and not p.is_v296(name) and not p.is_v211(name) and not p.is_v212(name)} == {p.ZEBRA_PC_V12, p.ALFWORLD_V9}
+    assert {name for name in p.CONFIGURATIONS if p.is_v295(name) and not p.is_v296(name) and not p.is_v211(name) and not p.is_v212(name) and not p.is_v213(name)} == {p.ZEBRA_PC_V12, p.ALFWORLD_V9}
     assert p.ZEBRA_PC_V12_MANIFEST == p.ZEBRA_PC_V12_ROOT + '-manifest.json'
     assert p.ALFWORLD_V9_MANIFEST == p.ALFWORLD_V9_ROOT + '-manifest.json'
     assert p.ACCEPT_FRESHNESS[p.ZEBRA_PC_V12] == 'zebra_split_v1_slices_accept_after_zebra_pc_v9_v11'
@@ -295,7 +295,7 @@ def test_zebra_ten_round_caps_recompute_each_round_dependent_reservation():
 
 
 def test_all_other_configuration_round_limits_keep_six_and_old_patience_values():
-    for config in p.CONFIGURATIONS:
+    for config in (name for name in p.CONFIGURATIONS if not p.is_v213(name)):
         assert p.train_rounds(config) == (10 if config == p.ZEBRA_PC_V12 else 6)
         expected = 8 if config == p.ZEBRA_PC_V12 else 4 if p.is_v291(config) else p.TRAIN_PATIENCE
         assert p.train_patience(config) == expected

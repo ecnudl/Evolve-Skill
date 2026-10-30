@@ -204,7 +204,7 @@ UNITS_V29 = ("run", "diagnose", "generate",
 
 def training_units(configuration=None):
     """Configuration-bound training unit names; legacy tuples remain frozen."""
-    if configuration == protocol.BASELINE_V210:
+    if configuration == protocol.BASELINE_V210 or protocol.is_v213(configuration):
         return ()
     if protocol.is_v295(configuration):
         return ("run", "diagnose", "generate",
@@ -2506,6 +2506,11 @@ def run_step(setting, chain, bench, k, parent, *, services, chain_root=None, smo
     require(smoke is None or protocol.is_v211(configuration_of(setting)) or not protocol.is_v27(configuration_of(setting)),
             "The v2.7 benchmark profiles require their dedicated smoke stages")
     require(configuration_of(setting) != protocol.BASELINE_V210, "The baseline-v210 configuration has no learning steps")
+    if protocol.is_v213(configuration_of(setting)):
+        from . import v213_import
+        package, value = v213_import.import_step(setting, chain_root or Path(setting.root) / chain,
+                                                chain, k, bench, parent)
+        return StepRecord(package, value)
     if configuration_of(setting) in (protocol.MAIN_V3, protocol.MAIN_V4) and bench == "alfworld":
         from . import v210_import
         package, value = v210_import.import_step(setting, chain_root or Path(setting.root) / chain,
@@ -2624,7 +2629,7 @@ def run_unit_spec(manifest, *, spec):
     setting = manifests.setting_of(manifest, chain)
     budgets.own_ledger(setting, chain).declare({**budgets.chain_caps(chain, configuration),
                                                 **budgets.first_call_caps(chain)})
-    services = (None if configuration in (protocol.MAIN_V3, protocol.MAIN_V4) and bench == "alfworld" else
+    services = (None if protocol.is_v213(configuration) or (configuration in (protocol.MAIN_V3, protocol.MAIN_V4) and bench == "alfworld") else
                 manifests.services_of(manifest, chain, setting=setting))
     chain_root = safe_path(setting.root) / chain
     try:

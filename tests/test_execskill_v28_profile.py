@@ -5,7 +5,6 @@ import hashlib
 import json
 from types import SimpleNamespace
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 import pytest
 
@@ -17,14 +16,7 @@ from tests.test_execskill_v24_profile import padded_source
 from tests.test_execskill_zpc_orchestration import made
 from tests.test_execskill_zpc_profile import procedure
 
-@pytest.fixture
-def tmp_path():
-    # Pool readers reject any path component containing "test"; keep this
-    # authored neutral-path fixture inside the requested working directory.
-    root = Path(__file__).resolve().parents[1] / '.v28-fixtures'
-    root.mkdir(exist_ok=True)
-    with TemporaryDirectory(prefix='identity-', dir=root) as directory:
-        yield Path(directory)
+from tests.execskill_v293_fakes import tmp_path  # noqa: F401; neutral OS scratch, including plain pytest.
 
 
 NEW = ((p.ZEBRA_PC_V6, p.ZEBRA_PC_V5, 'zpc6', 'zebralogic'),

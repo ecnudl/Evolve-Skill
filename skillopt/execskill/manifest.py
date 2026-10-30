@@ -232,6 +232,8 @@ def prompt_sha(configuration=None):
     trains (``protocol.LEARNING``) also ``v2``: v2's engineer and examiner prompts (owner decision 2026-10-23 13:3x)
     and its analysts' (owner suggestion 2026-10-23 15:1x). A v1 configuration binds exactly the first three (Codex
     review 2026-10-23 #1)."""
+    if protocol.is_v213(configuration):
+        return prompt_sha(protocol.ZEBRA_PC_V13)  # Inherited pins; import never invokes learning prompts.
     if protocol.is_v211(configuration):
         from . import engineer_v211
         out = prompt_sha(protocol.MAIN_V3)
@@ -470,7 +472,13 @@ def check(manifest):
     check_clients(value["clients"], configuration=configuration)
     if protocol.is_v210(configuration):
         _check_v210(value)
-    if protocol.is_v211(configuration):
+    if protocol.is_v213(configuration):
+        from . import v213_import
+        require(value["prompt_sha"] == prompt_sha(configuration), "The v2.13 prompt pins")
+        require(value["data"].get(v213_import.PIN_KEY) == v213_import.pins(),
+                "The fixed v3r4 import pins differ")
+        require("confirm" not in value["data"], "The fixed import has no confirmation slice")
+    elif protocol.is_v211(configuration):
         _check_v211(value)
     elif protocol.is_v29(configuration):
         from . import confirm
@@ -648,7 +656,14 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
                      alfworld_format.bind(given["runtime"]["alfworld"], configuration)}}
         given = {**given, "clients": {**given["clients"], "roles": role_settings(configuration)},
                  "data": {**given["data"], "alfworld_features": alfworld_features(configuration)}}
-    if protocol.is_v211(configuration):
+    if protocol.is_v213(configuration):
+        from . import v213_import
+        pinned = v213_import.pins()
+        require(given["data"].get(v213_import.PIN_KEY, pinned) == pinned,
+                "The fixed v3r4 import pins differ")
+        require("confirm" not in given["data"], "The fixed import has no confirmation slice")
+        given = {**given, "data": {**given["data"], v213_import.PIN_KEY: pinned}}
+    elif protocol.is_v211(configuration):
         from . import alfworld_format
         given = {**given, 'runtime': {**given['runtime'], 'alfworld':
             alfworld_format.bind(given['runtime']['alfworld'], configuration)}}
@@ -900,6 +915,9 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
                      allocations=deepcopy(m['data']['allocations']),
                      v211_prompt_pins=deepcopy(m['data']['v211_prompt_pins']),
                      freshness_amendment=deepcopy(m['data']['freshness_amendment']))
+    if protocol.is_v213(m['configuration']):
+        from . import v213_import
+        extra[v213_import.PIN_KEY] = deepcopy(m['data'][v213_import.PIN_KEY])
     cleanup_options = ({"cleanup_grace_seconds": protocol.cleanup_grace_seconds(m["configuration"])}
                        if protocol.is_v292(m["configuration"]) else {})
     if cleanup_options:
@@ -946,7 +964,7 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
             require(actual['slices'] == pinned['slices'] and actual['source_items_sha256'] == pinned['source_items_sha256']
                     and actual['tail_items_sha256'] == pinned['tail_items_sha256'],
                     'Loaded pools match the child S0 allocation and source hashes')
-    elif protocol.is_v29(m["configuration"]):
+    elif protocol.is_v29(m["configuration"]) and not protocol.is_v213(m["configuration"]):
         from . import confirm
         bench = protocol.active_benches(m["configuration"])[0]
         require(m["data"]["confirm"] == confirm.identity(m["configuration"], setting.pools[bench]),
@@ -1094,6 +1112,10 @@ def alfworld_features(configuration=protocol.ALFWORLD_V1):
 def outcome_engineer_features(configuration):
     """V2.8 execution and admission contract, pinned only for new configurations."""
     require(protocol.is_v28(configuration), "A v2.8 configuration")
+    if protocol.is_v213(configuration):
+        return {"learning": "import", "source_bytes": policy.source_limit(protocol.POLICY_VERSIONS[configuration]),
+                "single_call_budget": 0, "train_call_budget": 0, "train_rounds": 0, "train_patience": 0,
+                "audit": "not_run_fixed_post_hoc_import"}
     out = {
         "source_bytes": policy.source_limit(protocol.POLICY_VERSIONS[configuration]),
         "single_call_budget": protocol.ENGINEER_CALL_BUDGETS[configuration],

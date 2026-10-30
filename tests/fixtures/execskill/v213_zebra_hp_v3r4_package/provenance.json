@@ -1,0 +1,64 @@
+{
+  "configuration": "zebra-hp-v3r4",
+  "evidence_kind": "post_hoc_selected_upper_bound",
+  "hash_explanation": {
+    "historical_wrapper_limit": "The supplied reference files import zebra_upper_bound_packages.py but do not include it or the historical package records. Exact original id/step/lineage fields are unavailable; no exact field-by-field historical hash reconstruction is claimed.",
+    "known_changes": "Known changes from the documented real probe are v2.9 policy/procedure-v2-9 schema instead of v2.5, and engineering_fixture evidence instead of smoke. This reconstruction also explicitly chooses stable procedure id and package step/parent metadata; their exact historical values are unavailable. Program bytes are identical. Import rebinds evidence and chain-step/parent metadata again, as v210_import does."
+  },
+  "inputs": {
+    "v3r4-c6.py": {
+      "bytes": 10955,
+      "sha256": "c9d5fc91962a79d83b0ce9882d55545798a7a4a58e856e195e6d39c0f05fcc85"
+    },
+    "v3r4-c6.reply.txt": {
+      "bytes": 1894,
+      "sha256": "782bf1fc4ba350670b539791ef77a6024ad8c1e23d294feac2ac17eba22e2431"
+    }
+  },
+  "origin": {
+    "adopted_by_method": false,
+    "configuration": "zebra-pc-v3",
+    "date": "2026-10-25",
+    "round": 4
+  },
+  "probe": {
+    "code_tree": "v2.7",
+    "package_sha256": "f93c90fbeb348f645b48601db2fbe78cfe2e92de63b69e49fa88b3de0d1ce5ba",
+    "policy_version": "fivebench-execskill-v2-5-policy",
+    "root": "/data/execskill-20261026-zebra-ub",
+    "root_accessed": false,
+    "route": "elucid"
+  },
+  "reconstruction": {
+    "accepted_at": null,
+    "description_chars_after": 600,
+    "description_chars_before": 648,
+    "description_operation": "description[:600]",
+    "empty_parent_sha256": "405fe690ccff6cb6da29837c8224e6323b96e4209ae425fc2644bbd4ba7eb1ba",
+    "evidence": "engineering_fixture",
+    "kind": "new",
+    "lineage": {
+      "engineer_call": null,
+      "parent": null,
+      "revises": null
+    },
+    "package_sha256": "404415581c92ea6fe9caa03c22d41e5b5e5617ce66bec7a3356555f378bbf0b8",
+    "parent_step": "zebra-hp-v3r4/s0",
+    "policy_version": "fivebench-execskill-v2-9-policy",
+    "procedure_id": "p-zebralogic-1-1",
+    "procedure_record_version": "fivebench-execskill-v1-procedure-v2-9",
+    "procedure_sha256": "b0f98638e477c95c8c25f14c79597b2933cdec8327a5bc03ee0ccb0a364122b1",
+    "replay_tests_dropped": 4,
+    "source_edited": false,
+    "step": "zebra-hp-v3r4/import",
+    "v29_llm_audit": "not_run"
+  },
+  "validation": {
+    "model_calls": 0,
+    "package": "passed",
+    "policy": "passed",
+    "policy_version": "fivebench-execskill-v2-9-policy",
+    "program_executed": false,
+    "sealed_reads": 0
+  }
+}

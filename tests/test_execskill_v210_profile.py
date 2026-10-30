@@ -49,7 +49,7 @@ def test_historical_fixtures_are_not_rewritten_in_a_standalone_snapshot():
     (p.BASELINE_V210, {'G': 'G-base210', 'D': 'D-base210'}, 'baseline_v210_real_run', ('C', 'B')),
     (p.MAIN_V3, {'G': 'G-v3', 'D': 'D-v3'}, 'main_v3_real_run', ('F', 'C', 'B'))])
 def test_two_new_identities_are_only_v23_feature_family(name, namespaces, evidence, arms, tmp_path):
-    assert {name for name in p.CONFIGURATIONS if not p.is_v211(name) and not p.is_v212(name)} - set(SNAPSHOT['configurations']) == {p.BASELINE_V210, p.MAIN_V3}
+    assert {name for name in p.CONFIGURATIONS if not p.is_v211(name) and not p.is_v212(name) and not p.is_v213(name)} - set(SNAPSHOT['configurations']) == {p.BASELINE_V210, p.MAIN_V3}
     assert p.is_v23(name) and p.is_v210(name)
     assert not any(fn(name) for fn in (p.is_v24, p.is_v25, p.is_v26, p.is_v27, p.is_v28,
         p.is_v29, p.is_v291, p.is_v292, p.is_v293, p.is_v294, p.is_v295, p.is_v296, p.is_v297))

@@ -1,0 +1,12 @@
+{
+  "parent_sha256": null,
+  "procedures": [],
+  "order": [],
+  "retired": [],
+  "narrowed": {},
+  "step": "zebra-hp-v3r4/s0",
+  "describer": {},
+  "version": "fivebench-execskill-v1-package",
+  "evidence": "engineering_fixture",
+  "record_sha256": "405fe690ccff6cb6da29837c8224e6323b96e4209ae425fc2644bbd4ba7eb1ba"
+}

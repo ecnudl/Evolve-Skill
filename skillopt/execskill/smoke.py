@@ -1352,6 +1352,8 @@ def max_role_calls(configuration=protocol.PILOT, bench=None):
     if protocol.is_v211(configuration):
         from . import v211_limits
         return v211_limits.role_calls(bench or 'spreadsheetbench')
+    if protocol.is_v213(configuration):
+        return {role: 0 for role in (*MAX_ROLE_CALLS, "audit_g", "audit_d")}
     if configuration == protocol.BASELINE_V210:
         return {role: 0 for role in MAX_ROLE_CALLS}
     if protocol.LEARNING[configuration] != "train":

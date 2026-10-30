@@ -379,7 +379,7 @@ def read_estimate_record(smoke_root, configuration=None):
         "waiver": waived,  # registrar addendum 2026-10-23 05:3x: None, or {"sha256", "rows"} of the owner's waiver
         "pilot": projected, "formula": (
             "ceil(ratio x sum_b n_b x (card_b + proc_b)); v2.12 registered F/C arms"
-            if p.is_v212(projected) else
+            if p.is_zebra_fc(projected) else
             "ceil(ratio x sum_b n_b x (2 x card_b + %d x proc_b)); v2.10 registered C/B and F arms"
             % estimate_arms(projected) if p.is_v210(projected) else
             "ceil(ratio x sum_b n_b x (card_b + %d x f_b x proc_b)); registrar addendum "
@@ -457,7 +457,7 @@ def read_budget(setting, chain):
     return {"estimate": estimate, "units": units, "part": part, "factor": None if factor is None else float(factor),
             "cap_check": check, "used": used, "need": need,
             **({"cost_check": "not_applicable_no_learning_run", "factor": 1.0}
-               if configuration_of(setting) == p.BASELINE_V210 else {})}
+               if configuration_of(setting) == p.BASELINE_V210 or p.is_v213(configuration_of(setting)) else {})}
 
 
 def read_consent(setting, chain):
@@ -563,8 +563,10 @@ def run(setting, chain, *, learn, launch=launch_child):
     configuration = configuration_of(setting)
     order = order_of(setting)
     read_definition = {}
-    if p.is_v212(configuration):
+    if p.is_zebra_fc(configuration):
         read_definition = {"arms": list(p.read_arms_of(configuration))}
+        if p.is_v213(configuration):
+            read_definition.update(learning="import", evidence_kind="post_hoc_selected_upper_bound")
     if p.is_v210(configuration):
         from .instruction_start import START, blank_definition
         read_definition = {"arms": list(p.read_arms_of(configuration)),
@@ -654,7 +656,7 @@ def run_manifest(manifest, *, chain, path, docker=None, transport=None):
 
     require(manifest["evidence"] != "smoke", "A smoke manifest runs through its registered smoke command")
     setting = manifests.setting_of(manifest, chain, path=path, docker=docker, transport=transport)
-    services = (None if manifest["configuration"] == p.BASELINE_V210 else
+    services = (None if manifest["configuration"] == p.BASELINE_V210 or p.is_v213(manifest["configuration"]) else
                 manifests.services_of(manifest, chain, setting=setting, transport=transport))
     return run(setting, chain, learn=functools.partial(step.learn, services=services))
 

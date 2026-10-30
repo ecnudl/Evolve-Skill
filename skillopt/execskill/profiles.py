@@ -25,6 +25,7 @@ ZEBRA_PC_V10 = "zebra-pc-v10"
 ZEBRA_PC_V11 = "zebra-pc-v11"
 ZEBRA_PC_V12 = "zebra-pc-v12"
 ZEBRA_PC_V13 = "zebra-pc-v13"
+ZEBRA_HP_V3R4 = "zebra-hp-v3r4"
 ALFWORLD_V1 = "alfworld-v1"
 ALFWORLD_V2 = "alfworld-v2"
 ALFWORLD_V3 = "alfworld-v3"
@@ -109,31 +110,31 @@ def is_v29(configuration):
 def is_v291(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, ZEBRA_PC_V8, ALFWORLD_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, ZEBRA_PC_V8, ALFWORLD_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v292(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v293(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v294(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v295(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, ZEBRA_PC_V12, ZEBRA_PC_V13, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v296(configuration):
@@ -155,7 +156,7 @@ def alfworld_format_rule(configuration, bench=None):
 
 def train_rounds(configuration, bench=None):
     """The historical six-round limit, extended only for the Zebra v12 search."""
-    return 0 if configuration == MAIN_V4 and bench == "alfworld" else 10 if configuration == ZEBRA_PC_V12 else TRAIN_ROUNDS
+    return 0 if configuration == ZEBRA_HP_V3R4 or (configuration == MAIN_V4 and bench == "alfworld") else 10 if configuration == ZEBRA_PC_V12 else TRAIN_ROUNDS
 
 
 def cleanup_grace_seconds(configuration):
@@ -169,7 +170,7 @@ def ready_timeout_seconds(configuration):
 
 
 def train_patience(configuration, bench=None):
-    return 8 if configuration == ZEBRA_PC_V12 else 4 if is_v291(configuration) else TRAIN_PATIENCE
+    return 0 if configuration == ZEBRA_HP_V3R4 else 8 if configuration == ZEBRA_PC_V12 else 4 if is_v291(configuration) else TRAIN_PATIENCE
 
 
 FAULT_REPAIRS = 2
@@ -179,7 +180,7 @@ INERT_REPAIRS = 1
 def is_zebra(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ZEBRA_PC_V1, ZEBRA_PC_V2, ZEBRA_PC_V3, ZEBRA_PC_V4, ZEBRA_PC_V5, ZEBRA_PC_V6, ZEBRA_PC_V7, ZEBRA_PC_V8, ZEBRA_PC_V9, ZEBRA_PC_V10, ZEBRA_PC_V11, ZEBRA_PC_V12, ZEBRA_PC_V13)
+    return configuration in (ZEBRA_PC_V1, ZEBRA_PC_V2, ZEBRA_PC_V3, ZEBRA_PC_V4, ZEBRA_PC_V5, ZEBRA_PC_V6, ZEBRA_PC_V7, ZEBRA_PC_V8, ZEBRA_PC_V9, ZEBRA_PC_V10, ZEBRA_PC_V11, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_HP_V3R4)
 
 
 def is_alfworld(configuration):
@@ -501,7 +502,7 @@ def stage_arms_max(configuration):
 
 def read_arms_of(configuration):
     require(supports_configuration(configuration), "Unknown run configuration")
-    if is_v212(configuration):
+    if is_zebra_fc(configuration):
         return ("F", "C")
     if is_v210(configuration):
         return ("C", "B") if configuration == BASELINE_V210 else ("F", "C", "B")
@@ -509,7 +510,7 @@ def read_arms_of(configuration):
 
 
 def estimate_arms(configuration):
-    if is_v212(configuration):
+    if is_zebra_fc(configuration):
         return 1
     if is_v210(configuration):
         return 0 if configuration == BASELINE_V210 else 1
@@ -975,3 +976,36 @@ ACCEPT_RULES[ZEBRA_PC_V13]['name'] = 'practical-v2-12-pooled'
 PLACEBO_ARMS[ZEBRA_PC_V13] = TEST_WITHHOLDING[ZEBRA_PC_V13] = False
 TEST_READ_CELLS[ZEBRA_PC_V13] = {ZEBRA: (200, 200)}
 _v29_limits.extend_v212_profiles(_sys.modules[__name__])
+
+
+# v2.13 is a fixed, post-hoc-selected import with no learning work.
+def is_v213(configuration):
+    return configuration == ZEBRA_HP_V3R4
+
+
+def is_zebra_fc(configuration):
+    return is_v212(configuration) or is_v213(configuration)
+
+
+ZEBRA_HP_V3R4_ROOT = '/data/execskill-20261030-zebra-hp-v3r4'
+ZEBRA_HP_V3R4_MANIFEST = ZEBRA_HP_V3R4_ROOT + '-manifest.json'
+ZEBRA_HP_V3R4_NAMESPACES = {'G': 'G-zhp', 'D': 'D-zhp'}
+for _name, _table in list(globals().items()):
+    if _name.isupper() and isinstance(_table, dict) and ZEBRA_PC_V13 in _table:
+        _table[ZEBRA_HP_V3R4] = deepcopy(_table[ZEBRA_PC_V13])
+RUN_ROOTS[ZEBRA_HP_V3R4] = ZEBRA_HP_V3R4_ROOT
+CHAIN_NAMESPACES[ZEBRA_HP_V3R4] = ZEBRA_HP_V3R4_NAMESPACES
+SUPPORTED_NAMESPACES += tuple(ZEBRA_HP_V3R4_NAMESPACES.values())
+REAL_RUN_EVIDENCE[ZEBRA_HP_V3R4] = 'zebra_hp_v3r4_test_read'
+LEARNING[ZEBRA_HP_V3R4] = 'import'
+ACCEPT_RULES[ZEBRA_HP_V3R4] = None
+ACCEPT_FRESHNESS[ZEBRA_HP_V3R4] = 'not_applicable_fixed_post_hoc_v3r4_import'
+CONFIRM_FRESHNESS[ZEBRA_HP_V3R4] = 'not_applicable_fixed_post_hoc_v3r4_import'
+ENGINEER_CALL_BUDGETS[ZEBRA_HP_V3R4] = TRAIN_ENGINEER_CALL_BUDGETS[ZEBRA_HP_V3R4] = 0
+CONFIG_STEP_CAPS[ZEBRA_HP_V3R4] = {}
+CONFIG_SCHEDULE_CELLS[ZEBRA_HP_V3R4] = {}
+CONFIG_ROLE_CAPS[ZEBRA_HP_V3R4] = {role: 0 for role in CONFIG_ROLE_CAPS[ZEBRA_PC_V13]}
+CONFIG_GLM_CAP[ZEBRA_HP_V3R4] = 0
+CONFIGURATIONS[ZEBRA_HP_V3R4]['redo_reserve'] = 0
+# Reserve the complete read cap plus only the existing first-call subcap.
+CONFIGURATIONS[ZEBRA_HP_V3R4]['solver_cap'] = CONFIGURATIONS[ZEBRA_HP_V3R4]['test_read_cap'] + FIRST_CALL_CAP

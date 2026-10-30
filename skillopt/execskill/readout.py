@@ -558,11 +558,14 @@ def readout(units, *, learned, procedures, label, evidence, stages=None, configu
     unseal's read label (Codex F17); ``stages``: a stage read's rows (``stage_table``; F's readings are left out,
     None, only where F learned nothing and the stage arms carry the read)."""
     from . import profiles
-    if profiles.is_v210(configuration) or profiles.is_v212(configuration):
+    if profiles.is_v210(configuration) or profiles.is_zebra_fc(configuration):
         contrasts = {}
         baseline = configuration == profiles.BASELINE_V210
-        zebra = profiles.is_v212(configuration)
-        imported = [] if baseline or zebra else ["alfworld"]
+        zebra = profiles.is_zebra_fc(configuration)
+        hand_picked = profiles.is_v213(configuration)
+        if hand_picked:
+            require(not learned, "A post-hoc import has no newly learned benchmarks")
+        imported = [ZEBRA] if hand_picked else [] if baseline or zebra else ["alfworld"]
         # Imported programs are not newly learned here, and their home bench is
         # not an unexposed transfer target. Its F-C remains measured below.
         exposed = [bench for bench in (SUPPORTED_BENCHES if zebra else BENCHES)
@@ -577,7 +580,8 @@ def readout(units, *, learned, procedures, label, evidence, stages=None, configu
                 cells, first, second, _items(cells, first, second), bootstrap=True, sensitivity=True)
                 for first, second in pairs}
         return record("readout", evidence, {
-            "configuration": configuration, "evidence_kind": "pipeline_control" if zebra else EVIDENCE_KIND, "read_label": label,
+            "configuration": configuration, "evidence_kind": ("post_hoc_selected_upper_bound" if hand_picked else
+                             "pipeline_control" if zebra else EVIDENCE_KIND), "read_label": label,
             "learned": list(learned), "imported": imported,
             "contrasts": contrasts, "contrasts_reading": "descriptive",
             **({"reading": "descriptive"} if baseline else {
@@ -633,6 +637,7 @@ def report(manifest, *, out):
         procedures = {p.id: p.origin for p in final.procedures}
         roster = read_benches(manifest["configuration"])
         learned = [b for b in roster if b in procedures.values()
+                   and not profiles.is_v213(manifest["configuration"])
                    and not (manifest["configuration"] in (profiles.MAIN_V3, profiles.MAIN_V4) and b == "alfworld")]
         units = [chain_root / "test" / b for b in roster if (chain_root / "test" / b / "unit.json").exists()]
         opened = evaluation.unseal(root, chain_root, chain, units, run=run, evidence=evidence,
@@ -645,7 +650,7 @@ def report(manifest, *, out):
         value = readout(opened["units"], learned=learned, procedures=procedures, label=opened["label"],
                         evidence=evidence, stages=list(rows.pop()) if rows else None,
                         **({"configuration": manifest["configuration"]}
-                           if profiles.is_v210(manifest["configuration"]) or profiles.is_v212(manifest["configuration"]) else {}))
+                           if profiles.is_v210(manifest["configuration"]) or profiles.is_zebra_fc(manifest["configuration"]) else {}))
         written[chain], found[chain] = value, value[RECORD_HASH]
     out.mkdir(parents=True)
     for chain, value in written.items():

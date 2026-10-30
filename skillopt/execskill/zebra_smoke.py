@@ -26,6 +26,12 @@ from .registry import Registry
 from .sandbox import client as sandbox
 
 STAGES = ("S1", "S2", "S3", "SE6")
+
+
+def stages_of(configuration):
+    return ("S1", "S2", "SE6") if p.is_v213(configuration) else STAGES
+
+
 S0_FILE = "zebra-s0.json"
 RUNTIME = {"prompt_layout": "contract-first-v2"}
 AUTHORED_SOURCE = '''def applies(view):
@@ -63,7 +69,7 @@ def snapshot(out, *, source, git_head, configuration=p.ZEBRA_PC_V1):
     source, out = safe_path(source), safe_path(out)
     require(not out.exists() and not out.is_relative_to(source), "A snapshot is a new directory outside the checkout")
     paths = prelaunch._files(source)
-    if p.is_v212(configuration):
+    if p.is_v212(configuration) or p.is_v213(configuration):
         # The current S0 suite includes instruction-start profile regressions.
         # Copy their one public fixture, as v210/v211 snapshots already do.
         paths.append(source / "docs/handoff/v29-20261026/v210-instructions-coevo5-v1.json")
@@ -166,6 +172,18 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, elucid_env, rou
                 and smoked["evidence"] == "smoke" and smoked["data"]["s0_sha256"] == checked[p.RECORD_HASH]
                 and smoked["code"] == manifest.pin_code() and chain in smoked["data"]["launchable_chains"],
                 "The measured smoke used this code, registration, S0 and chain")
+        if p.is_v213(configuration):
+            require(result.get("stages") == list(stages_of(configuration)) and result.get("sealed_reads") == 0,
+                    "The imported Zebra read requires measured S1/S2/SE6 only")
+            stages = {stage: _checked_stage(safe_path(result_path).parent / (stage + ".json"),
+                                           smoked, chain, stage)["result"]
+                      for stage in stages_of(configuration)}
+            require(all(stage.get("passed") is True for stage in stages.values())
+                    and stages["S1"].get("solver_probe") == result["solver_probe"],
+                    "Every imported-read smoke stage must pass with the same solver probe")
+            projected = projection(stages["S2"], chain, configuration)
+            require(projected == stages["SE6"] and projected["read_estimate"] == result["read_estimate"],
+                    "The imported-read manifest requires its measured F/C projection")
         estimates[chain] = result["read_estimate"]
         terms[chain] = {z.BENCH: str(result["read_estimate"])}
         smoke_pins[chain] = {"path": str(safe_path(result_path)), "record_sha256": result[p.RECORD_HASH]}
@@ -175,7 +193,8 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, elucid_env, rou
         if chain not in estimates:
             # A preparation anchor, never labelled measured; the unmeasured chain cannot launch.
             anchor = 5_300 if chain == "G" else 3_400
-            cards, procedures = p.TEST_READ_CELLS[configuration][z.BENCH] if p.is_v212(configuration) else (200, 1_000)
+            cards, procedures = (p.TEST_READ_CELLS[configuration][z.BENCH]
+                                 if p.is_v212(configuration) or p.is_v213(configuration) else (200, 1_000))
             estimates[chain] = math.ceil(anchor * (cards + procedures * float(p.PROCEDURE_ARM_FACTOR[1])))
             terms[chain] = {z.BENCH: str(estimates[chain])}
     blocks = {"G": manifest.solver_block("G", env_path=roles_repo, configuration=configuration),
@@ -201,7 +220,7 @@ def _s1(setting, chain):
     configuration = p.configuration_of(setting)
     first = chains.first_call(setting, chain)
     roles = {}
-    for role in ("engineer", "examiner", "describer", "leakage"):
+    for role in (() if p.is_v213(configuration) else ("engineer", "examiner", "describer", "leakage")):
         name = "%s/zebra-smoke/S1/%s" % (chain, role)
         def work(attempt, role=role, name=name):
             endpoint = units.role_endpoint(setting, chain, role, z.BENCH, 1)
@@ -234,7 +253,15 @@ def _s2(setting, chain):
     base = safe_path(setting.root) / chain / "lean-smoke" / "S2"
     local = units.for_unit(setting, chain, z.BENCH, name) if p.is_v292(configuration) else setting
     def work(attempt):
-        endpoint = units.solver_endpoint(setting, chain, z.BENCH, 1, "run", attempt)
+        if p.is_v213(configuration):
+            # This isolated smoke has no learning scopes. S2 measures practice
+            # card cells on its solver total, never on the real read ledger.
+            endpoint = budgets.endpoint(setting, (budgets.ROOT, chain + ":solver"),
+                client=setting.clients(p.CHAINS[chain], z.BENCH),
+                max_tokens_bound=p.ledger_bound(p.CHAINS[chain], z.BENCH,
+                                               branch=setting.branch, longest=setting.longest))
+        else:
+            endpoint = units.solver_endpoint(setting, chain, z.BENCH, 1, "run", attempt)
         context = units.cell_context(local, attempt, endpoint)
         arm = Arm("card", empty(step=name, evidence=setting.evidence))
         jobs = []
@@ -261,6 +288,9 @@ def _s2(setting, chain):
 
 def _scope_cells(chain, configuration=p.ZEBRA_PC_V1):
     """The Zebra schedule prices every redo kind, including all six paired training rounds."""
+    if p.is_v213(configuration):
+        return {chain + ":test": [p.TEST_READ_CELLS[configuration]],
+                chain + ":solver": [p.TEST_READ_CELLS[configuration]]}
     scopes = smoke._scope_cells(chain, configuration)
     redo, totals = [], {}
     for k, bench in enumerate(p.PILOTS[configuration]["order"], 1):
@@ -287,7 +317,7 @@ def projection(s2, chain, configuration=p.ZEBRA_PC_V1, *, s3=None):
     require(card > 0 and s2["items"] == 10, "S-E6 needs ten measured cells")
     ratio = s2["settled_tokens"] / s2["measurements"]["actual"]
     proc = card * float(p.PROCEDURE_ARM_FACTOR[1])
-    if p.is_v29(configuration):
+    if p.is_v29(configuration) and not p.is_v213(configuration):
         require(s3 is not None and s3.get("confirm_measurements"), "S-E6 requires S3 confirmation measurements")
         measured_confirm = s3["confirm_measurements"]
         require(measured_confirm["cells"] > 0, "S3 confirmation ran fixture cells")
@@ -307,11 +337,12 @@ def projection(s2, chain, configuration=p.ZEBRA_PC_V1, *, s3=None):
         need = math.ceil(estimate * ratio + reserve)
         scopes[scope] = {"projected": need, "cap": caps[scope], "passed": need <= caps[scope]}
     roles = None
-    if p.is_v28(configuration):
+    if p.is_v28(configuration) and not p.is_v213(configuration):
         require(isinstance(s3, dict) and s3.get("role_measurements"), "S-E6 needs S3 measured role calls")
         roles = {name: row for name, row in smoke.glm_projection(s3["role_measurements"], configuration).items()
                  if name.startswith(chain + ":")}
-    cards, procedures = p.TEST_READ_CELLS[configuration][z.BENCH] if p.is_v212(configuration) else (200, 1_000)
+    cards, procedures = (p.TEST_READ_CELLS[configuration][z.BENCH]
+                         if p.is_v212(configuration) or p.is_v213(configuration) else (200, 1_000))
     return {"passed": all(v["passed"] for v in scopes.values())
             and (roles is None or all(row["fits"] for row in roles.values())), "configuration": configuration,
             "chain": chain, "per_cell": {z.BENCH: {"card": card, "procedure": proc, "procedure_assumed": True}},
@@ -477,7 +508,8 @@ def _s3(setting, services, chain="D"):
 
 def run_stage(manifest_path, chain, stage, *, docker=None, transport=None, configuration=p.ZEBRA_PC_V1):
     """S1 first calls; S2 ten card cells; S3 one fixture training round; SE6 measured projection."""
-    require(stage in STAGES and chain in p.CHAINS, "A lean smoke stage and chain")
+    stages = stages_of(configuration)
+    require(stage in stages and chain in p.CHAINS, "A lean smoke stage and chain")
     if p.is_v27(configuration):
         require(p.is_zebra(configuration), "A registered ZebraLogic configuration")
         require(chain in p.launchable_chains(configuration), "zebra-pc-v5 launches chain D only")
@@ -491,7 +523,7 @@ def run_stage(manifest_path, chain, stage, *, docker=None, transport=None, confi
         if path.exists():
             return _checked_stage(path, m, chain, stage)
         previous = {}
-        for prior in STAGES[:STAGES.index(stage)]:
+        for prior in stages[:stages.index(stage)]:
             previous[prior] = _checked_stage(root / (prior + ".json"), m, chain, prior)["result"]
             require(previous[prior]["passed"], "Every preceding smoke stage must pass")
         if p.is_v29(configuration) and stage != "S1":
@@ -508,14 +540,14 @@ def run_stage(manifest_path, chain, stage, *, docker=None, transport=None, confi
                      smoke_roles.zebra_training(setting, services, chain, fixture_items()))
         else:
             value = projection(previous["S2"], chain, configuration,
-                               **({"s3": previous["S3"]} if p.is_v28(configuration) else {}))
+                               **({"s3": previous["S3"]} if p.is_v28(configuration) and not p.is_v213(configuration) else {}))
         written = p.record("zebra-smoke-stage", "smoke", {"configuration": configuration, "chain": chain,
                             "manifest": m[p.RECORD_HASH], "stage": stage, "result": value})
         write_json(path, written)
         if stage == "SE6":
             write_json(root / "result.json", p.record("zebra-smoke-result", "smoke", {
                 "configuration": configuration, "chain": chain, "manifest": m[p.RECORD_HASH],
-                "stages": list(STAGES), "passed": value["passed"], "read_estimate": value["read_estimate"],
+                "stages": list(stages), "passed": value["passed"], "read_estimate": value["read_estimate"],
                 "s0": m["data"]["s0_sha256"], "manifest_path": str(safe_path(manifest_path)),
                 "snapshot_sha256": m["data"]["snapshot_sha256"], "sealed_reads": 0,
                 **({"solver_probe": previous["S1"]["solver_probe"]} if p.is_v29(configuration) else {})}))

@@ -9,6 +9,8 @@ ABSTAIN_RULE = (
 
 
 def system(configuration, *, train):
+    if p.is_v213(configuration):
+        return system(p.ZEBRA_PC_V13, train=train)
     if p.is_v296(configuration):
         return system(p.ALFWORLD_V9, train=train)
     parent = {'zebra-pc-v12': 'zebra-pc-v11', 'zebra-pc-v13': 'zebra-pc-v11', 'alfworld-v9': 'alfworld-v8'}[configuration]
