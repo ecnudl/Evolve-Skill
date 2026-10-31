@@ -24,9 +24,13 @@ def s1(setting, chain):
     if chain == 'D':
         from . import v29_route_probe
         probe = v29_route_probe.measure(setting, bench=z.BENCH)
+    selected = (getattr(setting, 'extra', None) or {}).get('configuration', v.CONFIGURATION)
+    configuration = p.IMPLANT_V5 if p.is_implant_v5(selected) else v.CONFIGURATION
+    if p.is_implant_v5(configuration):
+        probe = v.implant_solver_probe(first, chain, probe)
     return {'passed': first['passed'] is True and (probe is None or probe['passed'] is True),
             'solver_confirmation': first[p.RECORD_HASH], 'solver_probe': probe,
-            'solver_bounds': v.solver_bounds(chain, probe), 'sealed_reads': 0}
+            'solver_bounds': v.solver_bounds(chain, probe, **v._options(configuration)), 'sealed_reads': 0}
 
 
 def fixture_pools(setting, chain):
@@ -47,8 +51,10 @@ def fixture_pools(setting, chain):
 
 
 def s2(setting, chain):
+    selected = (getattr(setting, 'extra', None) or {}).get('configuration', v.CONFIGURATION)
+    configuration = p.IMPLANT_V5 if p.is_implant_v5(selected) else v.CONFIGURATION
     pools, results = fixture_pools(setting, chain), {}
-    for bench in p.active_benches(v.CONFIGURATION):
+    for bench in p.active_benches(configuration):
         name = chain + '/v214-smoke/S2/' + bench
         local = units.for_unit(setting, chain, bench, name)
         def work(attempt, bench=bench, local=local, name=name):
@@ -79,7 +85,7 @@ def s2(setting, chain):
                 'parsed': parsed, 'first_response_confirmed': True, 'sealed_reads': 0,
                 'source_kind': 'authored_fixture' if bench in ('officeqa', 'spreadsheetbench') else 'reserved_smoke'}
         results[bench] = units.run_unit(safe_path(setting.root) / name, run=setting.run, identity={'unit': name},
-            work=work, evidence=setting.evidence, configuration=v.CONFIGURATION,
+            work=work, evidence=setting.evidence, configuration=configuration,
             drain=units.drainer(setting, chain, name))['result']
     return {'passed': all(row['passed'] for row in results.values()), 'chain': chain,
             'benches': results, 'cells': sum(row['cells'] for row in results.values()), 'sealed_reads': 0}
@@ -139,14 +145,15 @@ def s3(setting, chain):
         drain=units.drainer(setting, chain, name))['result']
 
 
-def projection(s2, chain, *, s3, bounds):
+def projection(s2, chain, *, s3=None, bounds, configuration=v.CONFIGURATION):
     """Price every worst-case read cell from this chain's measured card usage."""
-    require(chain in p.CHAINS and set(s2.get('benches', {})) == set(p.active_benches(v.CONFIGURATION)),
+    require(chain in p.CHAINS and set(s2.get('benches', {})) == set(p.active_benches(configuration)),
             'SE6 needs measurements for all five benchmarks on this chain')
-    require(s3.get('passed') is True and s3.get('engineer_calls') == 1 and s3.get('tokens', 0) > 0,
-            'SE6 requires the one measured engineer call')
+    if not p.is_implant_v5(configuration):
+        require(s3.get('passed') is True and s3.get('engineer_calls') == 1 and s3.get('tokens', 0) > 0,
+                'SE6 requires the one measured engineer call')
     require(bounds == v.solver_bounds(chain, {'passed': True, 'route': 'B', 'longest': bounds.get('longest')}
-                                      if chain == 'D' else None), 'Registered S1 solver bounds')
+                                      if chain == 'D' else None, **v._options(configuration)), 'Registered S1 solver bounds')
     per_cell, sizes, actual, charged = {}, {}, 0, 0
     for bench, row in s2['benches'].items():
         measured = row['measurements']
@@ -164,17 +171,18 @@ def projection(s2, chain, *, s3, bounds):
     ratio = Fraction(charged, actual)
     numerical = {b: {**row, 'card': Fraction(row['card']), 'procedure': Fraction(row['procedure'])}
                  for b, row in per_cell.items()}
-    terms = p.read_estimate_terms(numerical, ratio, v.CONFIGURATION)
+    terms = p.read_estimate_terms(numerical, ratio, configuration)
     estimate = math.ceil(sum(terms.values()))
     reserved = max(reservation(sizes[b], bounds['ledger_bound'][b]) for b in sizes)
-    caps = budgets.chain_caps(chain, v.CONFIGURATION)
+    caps = budgets.chain_caps(chain, configuration)
     scope_rows = {}
-    for scope, alternatives in smoke._scope_cells(chain, v.CONFIGURATION).items():
+    for scope, alternatives in smoke._scope_cells(chain, configuration).items():
         cost = max((sum(numerical[b]['card'] * card + numerical[b]['procedure'] * proc
                         for b, (card, proc) in cells.items()) for cells in alternatives), default=0)
         need = math.ceil(cost * ratio + reserved)
-        # The test scope uses the registered FIRED_SHARES maximum, identical to read_budget.
-        if scope == chain + ':test':
+        # The implant test scope also funds one read retry. Other test scopes
+        # use the registered FIRED_SHARES maximum, identical to read_budget.
+        if scope == chain + ':test' and not p.is_implant_v5(configuration):
             need = estimate + reserved
         scope_rows[scope] = {'projected': need, 'cap': caps[scope], 'passed': need <= caps[scope]}
     read_need = max(estimate + reserved, math.ceil(estimate * p.TEST_START_FACTOR))
@@ -183,20 +191,24 @@ def projection(s2, chain, *, s3, bounds):
                    for scope in (chain + ':test', chain + ':solver')}
     return {'passed': all(row['passed'] for row in scope_rows.values())
             and all(row['passed'] for row in read_scopes.values()),
-        'configuration': v.CONFIGURATION, 'chain': chain, 'per_cell': per_cell, 'ratio': str(ratio),
+        'configuration': configuration, 'chain': chain, 'per_cell': per_cell, 'ratio': str(ratio),
         'read_terms': {b: str(n) for b, n in terms.items()}, 'read_estimate': estimate,
         'read_reservation': reserved, 'read_start_factor': str(p.TEST_START_FACTOR),
-        'later_G_cost_factor': 'runtime read_budget rechecks max(1, measured training factor)',
+        'later_G_cost_factor': ('not_applicable_no_learning_run' if p.is_implant_v5(configuration)
+                                else 'runtime read_budget rechecks max(1, measured training factor)'),
         'read_scopes': read_scopes, 'solver_scopes': scope_rows,
         'stage_packages': 4, 'solver_bounds': deepcopy(bounds), 'sealed_reads': 0,
-        'method_cost': {'engineer_tokens_per_call': s3['tokens'], 'other_roles': 'unmeasured; assumed',
-                        'one_engineer_call_only': True},
-        'maximum_schedule': manifest_identity()}
+        'method_cost': ({'model_calls': 0, 'all_role_caps': 0, 'learning': 'none'}
+                        if p.is_implant_v5(configuration) else
+                        {'engineer_tokens_per_call': s3['tokens'], 'other_roles': 'unmeasured; assumed',
+                         'one_engineer_call_only': True}),
+        **({'solver_probe': deepcopy(s2['solver_probe'])} if p.is_implant_v5(configuration) else {}),
+        'maximum_schedule': manifest_identity(**v._options(configuration))}
 
 
-def manifest_identity():
+def manifest_identity(configuration=v.CONFIGURATION):
     from .manifest import _plain
-    return _plain(p.main_v5_identity())
+    return _plain(v._identity(configuration))
 
 
 def sx(root):

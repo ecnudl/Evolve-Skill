@@ -24,7 +24,7 @@ def test_all_35_preexisting_configuration_identities_are_byte_identical(name, mo
 def test_preedit_capture_and_every_historical_profile_table_are_unchanged():
     assert hashlib.sha256(CAPTURE.read_bytes()).hexdigest() == 'd22578c2e11da3890227863064d744e05876d0a7fd71f1a90baf97231d8e328b'
     assert len(SNAPSHOT['configurations']) == 35
-    assert {n for n in p.CONFIGURATIONS if not p.is_v215(n)} - set(SNAPSHOT['configurations']) == {CHILD}
+    assert {n for n in p.CONFIGURATIONS if not p.is_v215(n) and not p.is_v217(n) and not p.is_implant_v5(n)} - set(SNAPSHOT['configurations']) == {CHILD}
     for name, tables in SNAPSHOT['profile_tables'].items():
         found = manifest._plain({key: getattr(p, key)[name] for key in tables})
         assert json.dumps(found, sort_keys=True).encode() == json.dumps(tables, sort_keys=True).encode()

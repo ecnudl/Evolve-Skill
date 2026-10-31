@@ -13,6 +13,7 @@ from .policy import POLICY_VERSION_V24, POLICY_VERSION_V25, POLICY_VERSION_V28, 
 
 MAIN_V4 = "main-v4"
 MAIN_V5 = "main-v5"
+IMPLANT_V5 = "implant-v5"
 ZEBRA_PC_V1 = "zebra-pc-v1"
 ZEBRA_PC_V2 = "zebra-pc-v2"
 ZEBRA_PC_V3 = "zebra-pc-v3"
@@ -29,6 +30,7 @@ ZEBRA_PC_V13 = "zebra-pc-v13"
 ZEBRA_PC_V14 = "zebra-pc-v14"
 ZEBRA_PC_V15 = "zebra-pc-v15"
 ZEBRA_HP_V3R4 = "zebra-hp-v3r4"
+ZEBRA_HP_G3R2 = "zebra-hp-g3r2"
 ALFWORLD_V1 = "alfworld-v1"
 ALFWORLD_V2 = "alfworld-v2"
 ALFWORLD_V3 = "alfworld-v3"
@@ -113,31 +115,31 @@ def is_v29(configuration):
 def is_v291(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, ZEBRA_PC_V8, ALFWORLD_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, IMPLANT_V5, ZEBRA_PC_V8, ALFWORLD_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v292(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, IMPLANT_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v293(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, IMPLANT_V5, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v294(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, IMPLANT_V5, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v295(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, IMPLANT_V5, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v215(configuration):
@@ -162,12 +164,12 @@ def is_v297(configuration):
 
 def alfworld_format_rule(configuration, bench=None):
     """The format rule for this run; the historical admissible-share rule stays frozen."""
-    return "alfworld-readable-action-v2-9-6" if is_v296(configuration) or (configuration in (MAIN_V4, MAIN_V5) and bench == "alfworld") else "alfworld-admissible-9-10"
+    return "alfworld-readable-action-v2-9-6" if is_v296(configuration) or (configuration in (MAIN_V4, MAIN_V5, IMPLANT_V5) and bench == "alfworld") else "alfworld-admissible-9-10"
 
 
 def train_rounds(configuration, bench=None):
     """The historical six-round limit, extended only for the Zebra v12 search."""
-    return 0 if configuration == ZEBRA_HP_V3R4 or (configuration in (MAIN_V4, MAIN_V5) and bench == "alfworld") else 10 if configuration == ZEBRA_PC_V12 else TRAIN_ROUNDS
+    return 0 if configuration in (ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, IMPLANT_V5) or (configuration in (MAIN_V4, MAIN_V5, IMPLANT_V5) and bench == "alfworld") else 10 if configuration == ZEBRA_PC_V12 else TRAIN_ROUNDS
 
 
 def cleanup_grace_seconds(configuration):
@@ -181,7 +183,7 @@ def ready_timeout_seconds(configuration):
 
 
 def train_patience(configuration, bench=None):
-    return 0 if configuration == ZEBRA_HP_V3R4 else 8 if configuration == ZEBRA_PC_V12 else 4 if is_v291(configuration) else TRAIN_PATIENCE
+    return 0 if configuration in (ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, IMPLANT_V5) else 8 if configuration == ZEBRA_PC_V12 else 4 if is_v291(configuration) else TRAIN_PATIENCE
 
 
 FAULT_REPAIRS = 2
@@ -193,7 +195,7 @@ V216_AUDIT_FIXES = 2
 def is_zebra(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (ZEBRA_PC_V1, ZEBRA_PC_V2, ZEBRA_PC_V3, ZEBRA_PC_V4, ZEBRA_PC_V5, ZEBRA_PC_V6, ZEBRA_PC_V7, ZEBRA_PC_V8, ZEBRA_PC_V9, ZEBRA_PC_V10, ZEBRA_PC_V11, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4)
+    return configuration in (ZEBRA_PC_V1, ZEBRA_PC_V2, ZEBRA_PC_V3, ZEBRA_PC_V4, ZEBRA_PC_V5, ZEBRA_PC_V6, ZEBRA_PC_V7, ZEBRA_PC_V8, ZEBRA_PC_V9, ZEBRA_PC_V10, ZEBRA_PC_V11, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2)
 
 
 def is_alfworld(configuration):
@@ -456,7 +458,7 @@ V28_HASHSEED = 0
 
 def launchable_chains(configuration):
     require(configuration in CONFIGURATIONS, "Unknown run configuration")
-    return tuple(CHAINS) if is_v211(configuration) else (("D",) if is_alfworld(configuration) or is_v27(configuration) else tuple(CHAINS))
+    return ("G",) if is_v217(configuration) else tuple(CHAINS) if is_v211(configuration) else (("D",) if is_alfworld(configuration) or is_v27(configuration) else tuple(CHAINS))
 
 
 def supports_configuration(name):
@@ -836,7 +838,7 @@ MAIN_V3_NAMESPACES = {'G': 'G-v3', 'D': 'D-v3'}
 
 
 def is_v210(configuration):
-    return configuration in (BASELINE_V210, MAIN_V3, MAIN_V4, MAIN_V5)
+    return configuration in (BASELINE_V210, MAIN_V3, MAIN_V4, MAIN_V5, IMPLANT_V5)
 
 
 def read_items(configuration, bench):
@@ -908,7 +910,11 @@ TEST_WITHHOLDING = {name: not is_v210(name) for name in CONFIGURATIONS}
 
 
 def is_v214(configuration):
-    return configuration == MAIN_V5
+    return configuration in (MAIN_V5, IMPLANT_V5)
+
+
+def is_implant_v5(configuration):
+    return configuration == IMPLANT_V5
 
 
 def machinery_configuration(configuration, bench):
@@ -947,7 +953,7 @@ MAIN_V4_NAMESPACES = {'G': 'G-v4', 'D': 'D-v4'}
 
 
 def is_v211(configuration):
-    return configuration in (MAIN_V4, MAIN_V5)
+    return configuration in (MAIN_V4, MAIN_V5, IMPLANT_V5)
 
 
 def uses_readable_alf_format(configuration, bench):
@@ -1054,7 +1060,11 @@ _v29_limits.extend_v212_profiles(_sys.modules[__name__])
 
 # v2.13 is a fixed, post-hoc-selected import with no learning work.
 def is_v213(configuration):
-    return configuration == ZEBRA_HP_V3R4
+    return configuration in (ZEBRA_HP_V3R4, ZEBRA_HP_G3R2)
+
+
+def is_v217(configuration):
+    return configuration == ZEBRA_HP_G3R2
 
 
 def is_zebra_fc(configuration):
@@ -1198,3 +1208,66 @@ _extra_v216_repairs = MAX_CHANGES * (V216_INERT_REPAIRS - INERT_REPAIRS + V216_A
 ENGINEER_CALL_BUDGETS[ZEBRA_PC_V15] += _extra_v216_repairs
 TRAIN_ENGINEER_CALL_BUDGETS[ZEBRA_PC_V15] += _extra_v216_repairs
 _v29_limits.extend_v216_profiles(_sys.modules[__name__])
+
+
+# v2.17 imports exactly main-v5 G/round-2's strict solver, with no learning.
+ZEBRA_HP_G3R2_ROOT = '/data/execskill-20261031-zebra-hp-g3r2'
+ZEBRA_HP_G3R2_MANIFEST = ZEBRA_HP_G3R2_ROOT + '-manifest.json'
+ZEBRA_HP_G3R2_NAMESPACES = {'G': 'G-zhpg3r2', 'D': 'D-zhpg3r2'}
+for _name, _table in list(globals().items()):
+    if _name.isupper() and isinstance(_table, dict) and ZEBRA_HP_V3R4 in _table:
+        _table[ZEBRA_HP_G3R2] = deepcopy(_table[ZEBRA_HP_V3R4])
+RUN_ROOTS[ZEBRA_HP_G3R2] = ZEBRA_HP_G3R2_ROOT
+CHAIN_NAMESPACES[ZEBRA_HP_G3R2] = ZEBRA_HP_G3R2_NAMESPACES
+SUPPORTED_NAMESPACES += tuple(ZEBRA_HP_G3R2_NAMESPACES.values())
+REAL_RUN_EVIDENCE[ZEBRA_HP_G3R2] = 'zebra_hp_g3r2_test_read'
+ACCEPT_FRESHNESS[ZEBRA_HP_G3R2] = 'not_applicable_fixed_post_hoc_g3r2_import'
+CONFIRM_FRESHNESS[ZEBRA_HP_G3R2] = 'not_applicable_fixed_post_hoc_g3r2_import'
+ZEBRA_HP_G3R2_READ_BOUND = ledger_bound(CHAINS['G'], ZEBRA) * 200 * 2
+# Exact integer ceiling: the inherited start gate requires 1.3 times the read
+# estimate in both scopes. No learning, redo or rounded-up spare capacity.
+ZEBRA_HP_G3R2_READ_CAP = -(-(ZEBRA_HP_G3R2_READ_BOUND * TEST_START_FACTOR.numerator)
+                          // TEST_START_FACTOR.denominator)
+CONFIGURATIONS[ZEBRA_HP_G3R2]['test_read_cap'] = ZEBRA_HP_G3R2_READ_CAP
+CONFIGURATIONS[ZEBRA_HP_G3R2]['solver_cap'] = ZEBRA_HP_G3R2_READ_CAP + FIRST_CALL_CAP
+
+
+# v2.17 addendum: main-v5 read and machinery, with only fixed implant steps.
+IMPLANT_V5_ROOT = '/data/execskill-20261101-implant-v5'
+IMPLANT_V5_MANIFEST = IMPLANT_V5_ROOT + '-manifest.json'
+IMPLANT_V5_NAMESPACES = {'G': 'G-imp5', 'D': 'D-imp5'}
+for _name, _table in list(globals().items()):
+    if _name.isupper() and isinstance(_table, dict) and MAIN_V5 in _table:
+        _table[IMPLANT_V5] = deepcopy(_table[MAIN_V5])
+RUN_ROOTS[IMPLANT_V5] = IMPLANT_V5_ROOT
+CHAIN_NAMESPACES[IMPLANT_V5] = IMPLANT_V5_NAMESPACES
+SUPPORTED_NAMESPACES += tuple(IMPLANT_V5_NAMESPACES.values())
+REAL_RUN_EVIDENCE[IMPLANT_V5] = 'implant_v5_test_read'
+LEARNING[IMPLANT_V5] = 'none'
+ENGINEER_CALL_BUDGETS[IMPLANT_V5] = TRAIN_ENGINEER_CALL_BUDGETS[IMPLANT_V5] = 0
+CONFIG_STEP_CAPS[IMPLANT_V5] = {}
+CONFIG_SCHEDULE_CELLS[IMPLANT_V5] = {}
+CONFIG_ROLE_CAPS[IMPLANT_V5] = {role: 0 for role in CONFIG_ROLE_CAPS[MAIN_V5]}
+CONFIG_GLM_CAP[IMPLANT_V5] = 0
+# Keep the registered full main-v5 read bound, including all worst-case stage
+# arms, and fund one read retry in the test scope that every attempt charges.
+IMPLANT_READ_UNIT_CAPS = {
+    bench: legacy._round_up(MAIN_CAP_FACTOR * (CELL_ANCHORS[bench][1]
+        * (cards + PROCEDURE_ARM_FACTOR[1] * procedures)
+        + MAIN_RESERVATIONS * READ_RESERVATION), MILLION)
+    for bench, (cards, procedures) in TEST_READ_CELLS[MAIN_V5].items()}
+CONFIGURATIONS[IMPLANT_V5]['test_read_cap'] += max(IMPLANT_READ_UNIT_CAPS.values())
+CONFIGURATIONS[IMPLANT_V5]['redo_reserve'] = 0
+CONFIGURATIONS[IMPLANT_V5]['solver_cap'] = (CONFIGURATIONS[IMPLANT_V5]['test_read_cap']
+    + FIRST_CALL_CAP)
+
+
+def implant_v5_identity():
+    """The unchanged mixed read, with explicit skip/import steps and zero learning."""
+    found = deepcopy(main_v5_identity())
+    found.update(configuration=IMPLANT_V5, learning='none', learned=[],
+        imported=[ZEBRA, 'alfworld'], evidence_kind='post_hoc_selected_upper_bound',
+        stage_rows=['C', 'C', 'C', 'S3', 'S3', 'F'],
+        scope_caps={}, caps={**CONFIGURATIONS[IMPLANT_V5], 'method': 0},
+        redo_unit_caps=deepcopy(IMPLANT_READ_UNIT_CAPS))
+    return found

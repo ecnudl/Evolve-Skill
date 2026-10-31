@@ -1,0 +1,125 @@
+{
+  "origin": {
+    "configuration": "main-v5",
+    "source_root": "/data/execskill-20261031-main-v5",
+    "root_accessed": false,
+    "chain": "G",
+    "step": 3,
+    "bench": "zebralogic",
+    "unit": "G/s3-zebralogic/engineer-r2",
+    "round": 2,
+    "candidate_package_sha256": "4223c1c09e5813b835e92c02b3aebcc940df58d369a91faf6e7725c9cc097673",
+    "parent_package_sha256": "db55b5a2baa7e542d25b3ea2e8ddbceebb1ca4812029ecb93691df42f21c174f",
+    "procedure_id": "p-zebralogic-3-3",
+    "procedure_record_sha256": "54f577f83a44251e64c895f5867068d2e489cfcf9ae6980db625e68729a92352",
+    "engineer_call_sha256": "646ed3ea5a518faed38450ab2889680c761b25724ba3478c3f179acf694813fa",
+    "source_sha256": "f50b4548bc5520e64d68eefa503ab228d81eafe2f0c0ef78973fe8f62149cfe7",
+    "adopted_by_method": false,
+    "selection": "post_hoc_from_training_and_confirmation_records_before_holdout_read"
+  },
+  "evidence_kind": "post_hoc_selected_upper_bound",
+  "historical_checks": {
+    "source": "BRIEF-v217-zebra-hp-g3r2.md; supplied owner training-side facts",
+    "static_check": "first attempt C2 failed; one fix then passed",
+    "fault_repair_triggered": false,
+    "fault_items": 1,
+    "fired_items": 60,
+    "v29_llm_audit": {
+      "phase": 1,
+      "decision": "pass",
+      "sampled_situations": 12,
+      "eligible_situations": 16,
+      "confirmed_findings": 0
+    },
+    "practice_r2": {
+      "note_items": 16,
+      "items": 57,
+      "with_note_candidate_correct": 16,
+      "with_note_parent_correct": 14,
+      "fixed": 2,
+      "broken": 0
+    },
+    "confirmation_r2": {
+      "note_items": 11,
+      "items": 38,
+      "with_note_candidate_correct": 11,
+      "with_note_parent_correct": 9,
+      "fixed": 2,
+      "broken": 0
+    },
+    "whole_candidate_confirmation": {
+      "fixed": 4,
+      "broken": 8,
+      "decision": "failed",
+      "all_breaks_from_helper": true
+    }
+  },
+  "reconstruction": {
+    "policy_version": "fivebench-execskill-v2-9-policy",
+    "configuration": "zebra-hp-g3r2",
+    "empty_parent_record_sha256": "dfa658e134f346f305b82513fe79c2643630002dc9c0767a5f57dfcfe14cab67",
+    "package_record_sha256": "3a624e69b8d371eec2ac427ca439e03baedb9028a99b95f0a972fe734e796eb2",
+    "procedure_record_sha256": "dff6e5fa52bc0c6fcd3822ea33cad15c9baf7b0fb3e5b6a43ca983cd78c6191f",
+    "new_procedures": [
+      "p-zebralogic-3-3"
+    ],
+    "excluded_procedures": [
+      "p-zebralogic-3-4",
+      "p-zebralogic-3-6"
+    ],
+    "program_bytes": 6872,
+    "program_bytes_changed": false,
+    "procedure_metadata_preserved_except": [
+      "evidence"
+    ],
+    "new_llm_audit": "not_run; historical main-v5 audit recorded above"
+  },
+  "hash_explanation": {
+    "procedure_changed_fields": [
+      "evidence",
+      "record_sha256"
+    ],
+    "procedure_evidence": {
+      "from": "main_v5_real_run",
+      "to": "engineering_fixture"
+    },
+    "procedure_unchanged": "All other stored fields, including id, source, description, hooks, caps, replay_tests, policy_version, accepted_at and lineage.engineer_call.",
+    "parent_changed_fields": [
+      "step",
+      "evidence",
+      "record_sha256"
+    ],
+    "parent_step": {
+      "from": "G/s0",
+      "to": "zebra-hp-g3r2/s0"
+    },
+    "package_changed_fields": [
+      "step",
+      "evidence",
+      "parent_sha256",
+      "procedures",
+      "order",
+      "record_sha256"
+    ],
+    "package_step": {
+      "from": "G/s3-zebralogic",
+      "to": "zebra-hp-g3r2/import"
+    },
+    "package_procedures": "Only p-zebralogic-3-3 remains; its evidence changes its referenced record hash. The p-zebralogic-3-4 helper is omitted.",
+    "runtime_rebinding": "Import changes procedure evidence to the run evidence and stamps runtime import/final package step and parent hashes; source and other stored procedure metadata remain identical."
+  },
+  "validation": {
+    "package_validation": "passed",
+    "main_v5_zebra_policy": "passed",
+    "program_executed": false,
+    "network_calls": 0,
+    "model_calls": 0,
+    "docker_calls": 0,
+    "sealed_reads": 0
+  },
+  "input_file_sha256": {
+    "g3r2-p-zebralogic-3-3.py": "f50b4548bc5520e64d68eefa503ab228d81eafe2f0c0ef78973fe8f62149cfe7",
+    "g3r2-p-zebralogic-3-3.procedure.json": "4fec5a6ac8b7129015195e9fd37d943c1d5dcb4d71db908442508e31e5ac7c49",
+    "g3r2-candidate-4223c1c0.package.json": "d026abea2b64dc638f9c1180a1953ec03ec66e22c0befedc3ee053debb349ff7"
+  }
+}

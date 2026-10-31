@@ -1,0 +1,16 @@
+{
+  "parent_sha256": "dfa658e134f346f305b82513fe79c2643630002dc9c0767a5f57dfcfe14cab67",
+  "procedures": [
+    "dff6e5fa52bc0c6fcd3822ea33cad15c9baf7b0fb3e5b6a43ca983cd78c6191f"
+  ],
+  "order": [
+    "p-zebralogic-3-3"
+  ],
+  "retired": [],
+  "narrowed": {},
+  "step": "zebra-hp-g3r2/import",
+  "describer": {},
+  "version": "fivebench-execskill-v1-package",
+  "evidence": "engineering_fixture",
+  "record_sha256": "3a624e69b8d371eec2ac427ca439e03baedb9028a99b95f0a972fe734e796eb2"
+}

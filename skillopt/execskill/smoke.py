@@ -1357,6 +1357,8 @@ def max_role_calls(configuration=protocol.PILOT, bench=None):
     first checks and one after each fix call, all calls but one proposal being fix calls --, the same describer calls,
     and the examiner's v1 calls plus ``TOPUP_ROUNDS`` top-up writes of ``GENERATOR_CALLS`` after each of its
     ``BAND_ROUNDS`` builds."""
+    if protocol.is_implant_v5(configuration):
+        return {role: 0 for role in (*MAX_ROLE_CALLS, "audit_g", "audit_d")}
     if protocol.is_v214(configuration):
         selected = bench or 'spreadsheetbench'
         return max_role_calls(protocol.machinery_configuration(configuration, selected), selected)
@@ -1500,6 +1502,12 @@ def _scope_cells(chain, pilot=protocol.PILOT):
     of a step kind, one acceptance block (``SLICES`` blocks) or the whole kind; the test read; the redo reserve, the
     largest single acceptance block of the configuration's steps; the chain's solver total, every step kind, the test
     read and that block. A scope with several alternatives (the redo reserve, the solver total) takes the dearest."""
+    if protocol.is_implant_v5(pilot):
+        read = protocol.TEST_READ_CELLS[pilot]
+        redos = [{bench: cells} for bench, cells in read.items()]
+        total = [{b: (c + redo.get(b, (0, 0))[0], q + redo.get(b, (0, 0))[1])
+                  for b, (c, q) in read.items()} for redo in redos]
+        return {chain + ':test': total, chain + ':solver': total}
     plan, schedule, out = protocol.PILOTS[pilot], protocol.CONFIG_SCHEDULE_CELLS[pilot], {}
     blocks, totals = [], {}
     for k, bench in enumerate(plan["order"], 1):

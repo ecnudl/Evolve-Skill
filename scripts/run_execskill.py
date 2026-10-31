@@ -941,27 +941,31 @@ def v214_command(args):
     """Dedicated main-v5 commands leave all older CLI contracts unchanged."""
     from skillopt.execskill import v214_smoke
     action = args.command.removeprefix('v214-')
+    configuration = getattr(args, 'configuration', protocol.MAIN_V5)
+    selected = {} if configuration == protocol.MAIN_V5 else {'configuration': configuration}
     if action == 'snapshot':
-        value = v214_smoke.snapshot(args.out, source=args.source, git_head=args.git_head)
+        value = v214_smoke.snapshot(args.out, source=args.source, git_head=args.git_head, **selected)
     elif action in ('selftest', 's0'):
         options = dict(preparation_file=args.preparation, zebra_pool=args.zebra_pool,
-                       zebra_split_manifest=args.zebra_split_manifest)
+                       zebra_split_manifest=args.zebra_split_manifest, **selected)
         if action == 's0':
             options.update(root=args.root, snapshot_root=args.snapshot, selftest=args.selftest,
                            sheet_runtime=args.sheet_runtime)
+            if configuration != protocol.MAIN_V5 and getattr(args, 'consent', None) is not None:
+                options['consent_file'] = args.consent
         value = getattr(v214_smoke, 'collect_s0' if action == 's0' else 'selftest')(args.out, **options)
     elif action == 'manifest':
         value = v214_smoke.make_manifest(args.out, root=args.root, s0_file=args.s0,
             provenance=args.provenance, roles_repo=args.roles_repo, route_b_env=args.route_b_env,
-            sheet_runtime=args.sheet_runtime, smoke_chain=args.smoke_chain, measured_smoke=args.measured_smoke)
+            sheet_runtime=args.sheet_runtime, smoke_chain=args.smoke_chain, measured_smoke=args.measured_smoke, **selected)
     elif action == 'structural-smoke':
-        value = v214_smoke.structural_smoke(args.manifest, out=args.out)
+        value = v214_smoke.structural_smoke(args.manifest, out=args.out, **selected)
     elif action == 'smoke-run':
-        value = v214_smoke.run_stage(args.manifest, args.chain, args.stage)
+        value = v214_smoke.run_stage(args.manifest, args.chain, args.stage, **selected)
     else:
-        value = v214_smoke.summarize(args.manifest, args.chain)
+        value = v214_smoke.summarize(args.manifest, args.chain, **selected)
     passed = value.get('passed', value.get('result', {}).get('passed', True))
-    _print({'configuration': 'main-v5', 'command': args.command, 'passed': passed,
+    _print({'configuration': configuration, 'command': args.command, 'passed': passed,
             'record_sha256': value.get(protocol.RECORD_HASH), 'sealed_reads': 0})
     return 0 if passed else 3
 
@@ -1104,14 +1108,14 @@ def parser():
     sub.add_parser("monitor").add_argument("--root", required=True)
     command = sub.add_parser("zpc-snapshot")
     command.add_argument("--configuration", choices=(protocol.ZEBRA_PC_V1, protocol.ZEBRA_PC_V2,
-                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6, protocol.ZEBRA_PC_V7, protocol.ZEBRA_PC_V8, protocol.ZEBRA_PC_V9, protocol.ZEBRA_PC_V10, protocol.ZEBRA_PC_V11, protocol.ZEBRA_PC_V12, protocol.ZEBRA_PC_V13, protocol.ZEBRA_PC_V14, protocol.ZEBRA_PC_V15, protocol.ZEBRA_HP_V3R4),
+                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6, protocol.ZEBRA_PC_V7, protocol.ZEBRA_PC_V8, protocol.ZEBRA_PC_V9, protocol.ZEBRA_PC_V10, protocol.ZEBRA_PC_V11, protocol.ZEBRA_PC_V12, protocol.ZEBRA_PC_V13, protocol.ZEBRA_PC_V14, protocol.ZEBRA_PC_V15, protocol.ZEBRA_HP_V3R4, protocol.ZEBRA_HP_G3R2),
                          default=protocol.ZEBRA_PC_V1)
     command.add_argument("--source", default=str(PROJECT_ROOT))
     command.add_argument("--out", required=True)
     command.add_argument("--git-head", required=True)
     command = sub.add_parser("zpc-s0")
     command.add_argument("--configuration", choices=(protocol.ZEBRA_PC_V1, protocol.ZEBRA_PC_V2,
-                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6, protocol.ZEBRA_PC_V7, protocol.ZEBRA_PC_V8, protocol.ZEBRA_PC_V9, protocol.ZEBRA_PC_V10, protocol.ZEBRA_PC_V11, protocol.ZEBRA_PC_V12, protocol.ZEBRA_PC_V13, protocol.ZEBRA_PC_V14, protocol.ZEBRA_PC_V15, protocol.ZEBRA_HP_V3R4),
+                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6, protocol.ZEBRA_PC_V7, protocol.ZEBRA_PC_V8, protocol.ZEBRA_PC_V9, protocol.ZEBRA_PC_V10, protocol.ZEBRA_PC_V11, protocol.ZEBRA_PC_V12, protocol.ZEBRA_PC_V13, protocol.ZEBRA_PC_V14, protocol.ZEBRA_PC_V15, protocol.ZEBRA_HP_V3R4, protocol.ZEBRA_HP_G3R2),
                          default=protocol.ZEBRA_PC_V1)
     command.add_argument("--out", required=True)
     command.add_argument("--snapshot", default=str(PROJECT_ROOT))
@@ -1120,7 +1124,7 @@ def parser():
     command.add_argument("--selftest")
     command = sub.add_parser("zpc-manifest")
     command.add_argument("--configuration", choices=(protocol.ZEBRA_PC_V1, protocol.ZEBRA_PC_V2,
-                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6, protocol.ZEBRA_PC_V7, protocol.ZEBRA_PC_V8, protocol.ZEBRA_PC_V9, protocol.ZEBRA_PC_V10, protocol.ZEBRA_PC_V11, protocol.ZEBRA_PC_V12, protocol.ZEBRA_PC_V13, protocol.ZEBRA_PC_V14, protocol.ZEBRA_PC_V15, protocol.ZEBRA_HP_V3R4),
+                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6, protocol.ZEBRA_PC_V7, protocol.ZEBRA_PC_V8, protocol.ZEBRA_PC_V9, protocol.ZEBRA_PC_V10, protocol.ZEBRA_PC_V11, protocol.ZEBRA_PC_V12, protocol.ZEBRA_PC_V13, protocol.ZEBRA_PC_V14, protocol.ZEBRA_PC_V15, protocol.ZEBRA_HP_V3R4, protocol.ZEBRA_HP_G3R2),
                          default=protocol.ZEBRA_PC_V1)
     command.add_argument("--out", required=True)
     command.add_argument("--root", required=True)
@@ -1133,7 +1137,7 @@ def parser():
     command.add_argument("--smoke-result", action="append", default=[])
     command = sub.add_parser("zpc-smoke")
     command.add_argument("--configuration", choices=(protocol.ZEBRA_PC_V1, protocol.ZEBRA_PC_V2,
-                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6, protocol.ZEBRA_PC_V7, protocol.ZEBRA_PC_V8, protocol.ZEBRA_PC_V9, protocol.ZEBRA_PC_V10, protocol.ZEBRA_PC_V11, protocol.ZEBRA_PC_V12, protocol.ZEBRA_PC_V13, protocol.ZEBRA_PC_V14, protocol.ZEBRA_PC_V15, protocol.ZEBRA_HP_V3R4),
+                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6, protocol.ZEBRA_PC_V7, protocol.ZEBRA_PC_V8, protocol.ZEBRA_PC_V9, protocol.ZEBRA_PC_V10, protocol.ZEBRA_PC_V11, protocol.ZEBRA_PC_V12, protocol.ZEBRA_PC_V13, protocol.ZEBRA_PC_V14, protocol.ZEBRA_PC_V15, protocol.ZEBRA_HP_V3R4, protocol.ZEBRA_HP_G3R2),
                          default=protocol.ZEBRA_PC_V1)
     command.add_argument("--manifest", required=True)
     command.add_argument("--chain", choices=("G", "D"), required=True)
@@ -1226,6 +1230,8 @@ def parser():
             command.add_argument('--stage', choices=('S0', 'S2', 'S3', 'SE6', 'SX'), required=True)
     for name in ('snapshot', 'selftest', 's0', 'manifest', 'structural-smoke', 'smoke-run', 'smoke-summary'):
         command = sub.add_parser('v214-' + name)
+        command.add_argument('--configuration', choices=(protocol.MAIN_V5, protocol.IMPLANT_V5),
+                             default=protocol.MAIN_V5)
         if name not in ('smoke-run', 'smoke-summary'):
             command.add_argument('--out', required=True)
         if name == 'snapshot':
@@ -1239,6 +1245,7 @@ def parser():
                 for flag in ('root', 'selftest', 'sheet-runtime'):
                     command.add_argument('--' + flag, required=True)
                 command.add_argument('--snapshot', default=str(PROJECT_ROOT))
+                command.add_argument('--consent', help='implant-v5 owner consent copied into the root before launch')
         elif name == 'manifest':
             for flag in ('root', 's0', 'provenance', 'roles-repo', 'route-b-env', 'sheet-runtime'):
                 command.add_argument('--' + flag, required=True)

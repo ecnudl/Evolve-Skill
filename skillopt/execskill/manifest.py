@@ -358,7 +358,8 @@ def registered(configuration=None):
         found['sizes']['min_astar'] = {b: acceptance.minimum_astar(protocol.acceptance_rule(configuration, b),
             protocol.slice_spec(configuration, b)['accept'][0], protocol.slice_spec(configuration, b)['blocks'])
             for b in learned}
-        found['sizes']['v214'] = _plain(protocol.main_v5_identity())
+        found['sizes']['v214'] = _plain(protocol.implant_v5_identity() if protocol.is_implant_v5(configuration)
+                                       else protocol.main_v5_identity())
         return found
     if protocol.is_v211(configuration):
         from . import acceptance, v211_limits
@@ -495,14 +496,22 @@ def check(manifest):
     require(value["evidence"] not in real or value["evidence"] == protocol.REAL_RUN_EVIDENCE[configuration],
             "A real run's evidence label is its configuration's: %s" % protocol.REAL_RUN_EVIDENCE[configuration])
     check_clients(value["clients"], configuration=configuration)
+    if protocol.is_implant_v5(configuration):
+        from . import v217_implant
+        require(value['data'].get(v217_implant.PIN_KEY) == v217_implant.pins(),
+                'The implanted Zebra programs differ from their immutable pins')
     if protocol.is_v210(configuration):
         _check_v210(value)
     if protocol.is_v213(configuration):
-        from . import v213_import
+        from . import v213_import, v217_import
+        v213_import = v217_import if protocol.is_v217(configuration) else v213_import
         require(value["prompt_sha"] == prompt_sha(configuration), "The v2.13 prompt pins")
         require(value["data"].get(v213_import.PIN_KEY) == v213_import.pins(),
                 "The fixed v3r4 import pins differ")
         require("confirm" not in value["data"], "The fixed import has no confirmation slice")
+        if protocol.is_v217(configuration):
+            from . import zebra_smoke
+            zebra_smoke.check_g3r2_manifest(value)
     elif protocol.is_v214(configuration):
         from . import v214_smoke
         v214_smoke.check_manifest(value)
@@ -667,6 +676,12 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
         given = {**given, "cards": instruction_start.active_cards(original, configuration), "data": data}
         if environment_found is None and configuration == protocol.BASELINE_V210:
             environment_found = baseline_environment()
+    if protocol.is_implant_v5(configuration):
+        from . import v217_implant
+        pinned = v217_implant.pins()
+        require(given['data'].get(v217_implant.PIN_KEY, pinned) == pinned,
+                'The implanted Zebra programs differ from their immutable pins')
+        given = {**given, 'data': {**given['data'], v217_implant.PIN_KEY: pinned}}
     limits = dict(sandbox.LIMITS if limits is None else limits)
     require(set(limits) == set(sandbox.KINDS) and all(isinstance(v, sandbox.Limits) for v in limits.values()),
             "Registered limits for every sandbox kind")
@@ -690,7 +705,8 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
         given = {**given, "clients": {**given["clients"], "roles": role_settings(configuration)},
                  "data": {**given["data"], "alfworld_features": alfworld_features(configuration)}}
     if protocol.is_v213(configuration):
-        from . import v213_import
+        from . import v213_import, v217_import
+        v213_import = v217_import if protocol.is_v217(configuration) else v213_import
         pinned = v213_import.pins()
         require(given["data"].get(v213_import.PIN_KEY, pinned) == pinned,
                 "The fixed v3r4 import pins differ")
@@ -952,8 +968,12 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
                      freshness_amendment=deepcopy(m['data']['freshness_amendment']))
     if protocol.is_v214(m['configuration']):
         extra['confirm'] = deepcopy(m['data']['confirm'])
+    if protocol.is_implant_v5(m['configuration']):
+        from . import v217_implant
+        extra[v217_implant.PIN_KEY] = deepcopy(m['data'][v217_implant.PIN_KEY])
     if protocol.is_v213(m['configuration']):
-        from . import v213_import
+        from . import v213_import, v217_import
+        v213_import = v217_import if protocol.is_v217(m['configuration']) else v213_import
         extra[v213_import.PIN_KEY] = deepcopy(m['data'][v213_import.PIN_KEY])
     cleanup_options = ({"cleanup_grace_seconds": protocol.cleanup_grace_seconds(m["configuration"])}
                        if protocol.is_v292(m["configuration"]) else {})
@@ -1099,7 +1119,9 @@ def _check_zebra(value):
     require(value["data"].get("zebra_pc_features") == zebra_features(value["configuration"]), "The ZebraLogic feature family is pinned by value")
     require(value["data"].get("zebra_pc") == zebralogic.identity(), "The ZebraLogic registration is pinned by value")
     if protocol.is_v27(value["configuration"]):
-        require(value["data"].get("launchable_chains") == ["D"], "zebra-pc-v5 launches chain D only")
+        require(value["data"].get("launchable_chains") == list(protocol.launchable_chains(value["configuration"])),
+                "The Zebra configuration launches only its registered chain"
+                if protocol.is_v217(value["configuration"]) else "zebra-pc-v5 launches chain D only")
     if value["evidence"] in (SMOKE_EVIDENCE, protocol.REAL_RUN_EVIDENCE[value["configuration"]]):
         require(value["data"]["pools"]["zebralogic"]["sha256"] == zebralogic.POOL_SHA256, "The registered pool hash")
     require(value["cards"] == {"zebralogic": zebralogic.CARD_TEXT}, "The registered grid card is pinned by value")

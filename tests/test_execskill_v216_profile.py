@@ -27,7 +27,7 @@ def test_all_37_preexisting_identities_keep_exact_prompts_caps_records_and_regis
 def test_capture_and_every_older_profile_table_are_unchanged():
     assert hashlib.sha256(CAPTURE.read_bytes()).hexdigest() == '4d75edd1f0843f57b92dd248e5917724b64d9eccb363a50c1049f0f51e5ce538'
     assert len(SNAPSHOT['configurations']) == 37
-    assert set(p.CONFIGURATIONS) - set(SNAPSHOT['configurations']) == {CHILD}
+    assert {n for n in p.CONFIGURATIONS if not p.is_v217(n) and not p.is_implant_v5(n)} - set(SNAPSHOT['configurations']) == {CHILD}
     for name, tables in SNAPSHOT['profile_tables'].items():
         found = manifest._plain({key: getattr(p, key)[name] for key in tables})
         assert json.dumps(found, sort_keys=True).encode() == json.dumps(tables, sort_keys=True).encode()

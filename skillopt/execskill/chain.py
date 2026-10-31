@@ -448,7 +448,7 @@ def read_budget(setting, chain):
                 "estimate (data.test_read_terms; registrar addendum 15:3x, ticket P2C-2)")
         part = math.ceil(sum((Fraction(terms[bench]) for bench in units), Fraction(0)))
     factor, check, used = None, None, part
-    if chain == "G" and configuration_of(setting) != p.BASELINE_V210:
+    if chain == "G" and configuration_of(setting) != p.BASELINE_V210 and not p.is_v217(configuration_of(setting)) and not p.is_implant_v5(configuration_of(setting)):
         path, found = latest_cap_check(setting)
         factor = Fraction(found["per_cell"]) / found["anchor_high"]
         used = math.ceil(part * max(Fraction(1), factor))
@@ -463,7 +463,7 @@ def read_budget(setting, chain):
     return {"estimate": estimate, "units": units, "part": part, "factor": None if factor is None else float(factor),
             "cap_check": check, "used": used, "need": need,
             **({"cost_check": "not_applicable_no_learning_run", "factor": 1.0}
-               if configuration_of(setting) == p.BASELINE_V210 or p.is_v213(configuration_of(setting)) else {})}
+               if configuration_of(setting) == p.BASELINE_V210 or p.is_v213(configuration_of(setting)) or p.is_implant_v5(configuration_of(setting)) else {})}
 
 
 def read_consent(setting, chain):
@@ -567,7 +567,9 @@ def run(setting, chain, *, learn, launch=launch_child):
     if is_alfworld(configuration_of(setting)):
         require(chain == "D", configuration_of(setting) + " launches chain D only")
     if is_zebra(configuration_of(setting)) and is_v27(configuration_of(setting)):
-        require(chain == "D", "zebra-pc-v5 launches chain D only")
+        require(chain in p.launchable_chains(configuration_of(setting)),
+                configuration_of(setting) + " launches only its registered chain"
+                if p.is_v217(configuration_of(setting)) else "zebra-pc-v5 launches chain D only")
     root = chain_root(setting, chain)
     root.mkdir(parents=True, exist_ok=True)
     identity = {"run": setting.run, "chain": chain}
@@ -597,6 +599,8 @@ def run(setting, chain, *, learn, launch=launch_child):
         start = empty(step="%s/s0" % chain, evidence=setting.evidence)
         package, steps, passed = start, [], []
         try:
+            if p.is_implant_v5(configuration):
+                read_consent(setting, chain)  # fixed imports reach the read immediately
             # registrar addendum 14:10, row 7: one confirmed reply before the first unit (a relaunch checks its pins)
             first_call(setting, chain, before=functools.partial(_verified, setting, root, identity, verify)
                        if started else (lambda: None))
@@ -667,7 +671,7 @@ def run_manifest(manifest, *, chain, path, docker=None, transport=None):
 
     require(manifest["evidence"] != "smoke", "A smoke manifest runs through its registered smoke command")
     setting = manifests.setting_of(manifest, chain, path=path, docker=docker, transport=transport)
-    services = (None if manifest["configuration"] == p.BASELINE_V210 or p.is_v213(manifest["configuration"]) else
+    services = (None if manifest["configuration"] == p.BASELINE_V210 or p.is_v213(manifest["configuration"]) or p.is_implant_v5(manifest["configuration"]) else
                 manifests.services_of(manifest, chain, setting=setting, transport=transport))
     return run(setting, chain, learn=functools.partial(step.learn, services=services))
 

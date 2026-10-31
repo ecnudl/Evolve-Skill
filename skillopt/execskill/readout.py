@@ -617,10 +617,11 @@ def readout(units, *, learned, procedures, label, evidence, stages=None, configu
         contrasts = {}
         baseline = configuration == profiles.BASELINE_V210
         zebra = profiles.is_zebra_fc(configuration)
-        hand_picked = profiles.is_v213(configuration)
+        implanted = profiles.is_implant_v5(configuration)
+        hand_picked = profiles.is_v213(configuration) or implanted
         if hand_picked:
             require(not learned, "A post-hoc import has no newly learned benchmarks")
-        imported = [ZEBRA] if hand_picked else [] if baseline or zebra else ["alfworld"]
+        imported = [ZEBRA, "alfworld"] if implanted else [ZEBRA] if hand_picked else [] if baseline or zebra else ["alfworld"]
         # Imported programs are not newly learned here, and their home bench is
         # not an unexposed transfer target. Its F-C remains measured below.
         exposed = [bench for bench in (read_benches(configuration) if main_v5 else SUPPORTED_BENCHES if zebra else BENCHES)
@@ -696,6 +697,7 @@ def report(manifest, *, out):
         roster = read_benches(manifest["configuration"])
         learned = [b for b in roster if b in procedures.values()
                    and not profiles.is_v213(manifest["configuration"])
+                   and not profiles.is_implant_v5(manifest["configuration"])
                    and not (manifest["configuration"] in (profiles.MAIN_V3, profiles.MAIN_V4, profiles.MAIN_V5)
                             and b == "alfworld")]
         units = [chain_root / "test" / b for b in roster if (chain_root / "test" / b / "unit.json").exists()]

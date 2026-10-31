@@ -210,6 +210,12 @@ def consent(shared, configuration=None):
             "No recorded owner consent to the multi-arm test read")
     if profiles.is_zebra_fc(configuration):
         require(value["sheet_test_qualification"] is False, "Zebra read consent does not qualify sheet test data")
+    if profiles.is_v217(configuration):
+        require(arms == ["F", "C"] and value["date"].strip(),
+                "The fixed g3r2 consent names F/C in order and a nonempty date")
+    if profiles.is_implant_v5(configuration):
+        require(arms == ["F", "C", "B", "stages"] and value["date"].strip(),
+                "The implant-v5 consent names F/C/B/stages in order and a nonempty date")
     if profiles.is_v214(configuration):
         require(value["sheet_test_qualification"] is True,
                 "main-v5 read consent includes SpreadsheetBench test qualification")
@@ -659,7 +665,7 @@ def sealed_cell(full):
         "answered": answered(full),  # §6.3's mask: whether the provider delivered any reply in this cell
         "solver_route": full.get("solver_route"),  # {"route", "model"} (cells.py); route None on chain G
         **({key: full[key] for key in ("configuration", "keyword_hits", "applies", "returned_model", "returned_models")}
-           if full.get("configuration") in ("zebra-pc-v7", "alfworld-v4", "zebra-pc-v8", "alfworld-v5", "zebra-pc-v9", "alfworld-v6", "zebra-pc-v10", "alfworld-v7", "zebra-pc-v11", "alfworld-v8", "zebra-pc-v12", "alfworld-v9", "alfworld-v10", "alfworld-v11", "zebra-pc-v13", "zebra-hp-v3r4", "main-v5", "zebra-pc-v14", "zebra-pc-v15") else {}),
+           if full.get("configuration") in ("zebra-pc-v7", "alfworld-v4", "zebra-pc-v8", "alfworld-v5", "zebra-pc-v9", "alfworld-v6", "zebra-pc-v10", "alfworld-v7", "zebra-pc-v11", "alfworld-v8", "zebra-pc-v12", "alfworld-v9", "alfworld-v10", "alfworld-v11", "zebra-pc-v13", "zebra-hp-v3r4", "main-v5", "zebra-pc-v14", "zebra-pc-v15", "zebra-hp-g3r2", "implant-v5") else {}),
         "stop": None if full["stop"] is None else {"kind": full["stop"]["kind"]}}
 
 
@@ -1401,6 +1407,9 @@ def _stage_arms(stages, final):
 def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, context, workers, route_workers, canaries,
               panel, reset, stages=None, run_configuration=None):
     require(not (unit_root / "unit.json").exists(), "This unit is complete")
+    if profiles.is_v217(run_configuration):
+        require(chain == "G" and bench == profiles.ZEBRA,
+                "The fixed g3r2 read is chain G ZebraLogic only")
     main_v5 = profiles.is_v214(run_configuration)
     child = profiles.is_v210(run_configuration)
     reduced = child or profiles.is_zebra_fc(run_configuration)
@@ -1420,6 +1429,10 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
         require(not arms["B"].package.procedures, "B runs no procedure")
     require(not card.for_bench(bench), "The card arm runs no procedure")
     rows, packages = _stage_arms(stages, final) if stages is not None else (None, {})
+    if profiles.is_implant_v5(run_configuration):
+        from . import v217_implant
+        require(final.procedures, "F = C: the implanted read requires its fixed programs")
+        v217_implant.check_read_packages(chain, final, stages)
     if main_v5:
         require(rows is not None and len(rows) == len(profiles.CONFIGURATIONS[run_configuration]["order"]) + 1
                 and rows[-1] == ("F" if final.procedures else "C")
@@ -1655,6 +1668,16 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
         from .chain import confirmation
         confirmation(setting.root, setting.run, chain, route="B" if chain == "D" else None,
                      configuration=configuration)
+    implanted_stages = None
+    if profiles.is_implant_v5(configuration):
+        from . import v217_implant
+        implant_root = safe_path(setting.root) / chain
+        implant_start = empty(step="%s/s0" % chain, evidence=setting.evidence)
+        implant_final = (implant_start if found["package_sha256"] == implant_start.sha256 else
+            load(implant_root / "packages" / (found["package_sha256"] + ".json")))
+        implanted_stages = stage_rows(implant_root, chain, order_of(setting), implant_final, implant_start)
+        v217_implant.check_stage_rows(implant_root, chain, order_of(setting), implant_final,
+                                     implant_start, implanted_stages)
     if profiles.is_v214(configuration):
         from .chain import heavy
         try:
@@ -1679,7 +1702,8 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
     final = start if (STAGE_READ[configuration] or profiles.is_v210(configuration)) and found["package_sha256"] == start.sha256 else load(
         chain_root / "packages" / (found["package_sha256"] + ".json"))
     require(final.sha256 == found["package_sha256"], "The final package of the chain")
-    stages = stage_rows(chain_root, chain, order_of(setting), final, start) if STAGE_READ[configuration] else None
+    stages = (implanted_stages if profiles.is_implant_v5(configuration) else
+              stage_rows(chain_root, chain, order_of(setting), final, start) if STAGE_READ[configuration] else None)
     unit = "%s/test/%s" % (chain, bench)
     own = units.for_unit(setting, chain, bench, unit)
     if profiles.is_v292(configuration):

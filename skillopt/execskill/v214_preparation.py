@@ -66,7 +66,7 @@ def _allocations(source):
 
 
 def preparation(main_v4_s0_file, *, zebra_pool=z.POOL_PATH,
-                zebra_split_manifest=z.SPLIT_MANIFEST_PATH):
+                zebra_split_manifest=z.SPLIT_MANIFEST_PATH, configuration=p.MAIN_V5):
     """Return a mixed preparation; only the source S0 and practice files are read.
 
     Source identities and active mappings are copied by value. The original
@@ -107,7 +107,7 @@ def preparation(main_v4_s0_file, *, zebra_pool=z.POOL_PATH,
     data.update(zebra_pc=z.identity(), split_manifest=split, confirm=confirmed,
                 zebra_slice_ids={key: [item['task_id'] for item in rows] for key, rows in cuts.items()})
     return {
-        'registration': {'configuration': p.MAIN_V5,
+        'registration': {'configuration': configuration,
             'source_main_v4_s0': {'path': str(path), 'sha256': hashlib.sha256(raw).hexdigest(),
                                  'record_sha256': source[p.RECORD_HASH]},
             'inherited': deepcopy(source['registration']),
@@ -136,6 +136,8 @@ def verify(value):
     source = registration['source_main_v4_s0']
     require(_sha(source['path']) == source['sha256'], 'Frozen main-v4 S0 bytes changed')
     found = preparation(source['path'], zebra_pool=registration['zebra_pool']['path'],
-                        zebra_split_manifest=registration['zebra_split_manifest']['path'])
+                        zebra_split_manifest=registration['zebra_split_manifest']['path'],
+                        **({'configuration': registration['configuration']}
+                           if p.is_implant_v5(registration['configuration']) else {}))
     require(found == value, 'The mixed preparation differs from its source identities')
     return found

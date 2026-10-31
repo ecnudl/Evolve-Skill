@@ -84,7 +84,7 @@ def import_step(setting, chain_root, chain, k, bench, parent):
     the final package retains the chain's learned procedures in their existing order.
     Source procedure fields are unchanged except evidence and its resulting record hash.
     """
-    require(p.configuration_of(setting) in (p.MAIN_V3, p.MAIN_V4, p.MAIN_V5) and chain in p.CHAINS and k == 5 and bench == "alfworld",
+    require(p.configuration_of(setting) in (p.MAIN_V3, p.MAIN_V4, p.MAIN_V5, p.IMPLANT_V5) and chain in p.CHAINS and k == 5 and bench == "alfworld",
             "The registered main-v3 ALFWorld import is step 5")
     source = pins()
     require(setting.extra.get("alfworld_v11_import") == source,

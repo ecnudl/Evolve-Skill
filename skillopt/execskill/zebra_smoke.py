@@ -32,6 +32,79 @@ def stages_of(configuration):
     return ("S1", "S2", "SE6") if p.is_v213(configuration) else STAGES
 
 
+def g3r2_solver_probe(first):
+    """The G probe is its confirmed first response, with the fixed main-v5 bound."""
+    first = p.verified(first, 'first-call')
+    bound = p.ledger_bound(p.CHAINS['G'], z.BENCH)
+    require(first.get('passed') is True and first.get('identity', {}).get('chain') == 'G'
+            and first.get('model') == first.get('returned_model') == p.CHAINS['G']
+            and first.get('bench') == z.BENCH and first.get('bound') == bound
+            and first.get('max_tokens') == p.solver_tokens(p.CHAINS['G'], z.BENCH)
+            and type(first.get('charged')) is int and first['charged'] > 0
+            and isinstance(first.get('request_sha256'), str) and len(first['request_sha256']) == 64,
+            'The G import smoke requires its confirmed GLM-5.3 solver response')
+    return {'passed': True, 'chain': 'G', 'backend': 'bigmodel', 'model': p.CHAINS['G'],
+            'first_call': first, 'solver_bounds': {'branch': None, 'longest': None, 'ledger_bound': bound}}
+
+
+def check_g3r2_probe(probe):
+    require(isinstance(probe, dict) and probe == g3r2_solver_probe(probe.get('first_call')),
+            'The G import smoke requires the exact confirmed solver probe')
+    return probe
+
+
+def check_g3r2_stages(stages, probe):
+    """Bind S2 and SE6 to S1's actual response, not just an equal numeric bound."""
+    check_g3r2_probe(probe)
+    require(all(stages[name].get('passed') is True and stages[name].get('solver_probe') == probe
+                for name in ('S1', 'S2', 'SE6'))
+            and stages['S1'].get('solver_confirmation') == probe['first_call'][p.RECORD_HASH]
+            and stages['S2'].get('solver_bounds') == probe['solver_bounds'],
+            'S1, S2 and SE6 must pass on the same G solver probe')
+
+
+def check_g3r2_manifest(value):
+    """A real child manifest must retain the same measured readiness as its maker."""
+    require(p.is_v217(value['configuration']), 'The fixed G import configuration')
+    if value['evidence'] != p.REAL_RUN_EVIDENCE[value['configuration']]:
+        return value
+    data = value['data']
+    pins = data.get('smoke_results')
+    require(isinstance(pins, dict) and set(pins) == {'G'} and data.get('launchable_chains') == ['G'],
+            'The real G import manifest requires its measured G smoke')
+    pin = pins['G']
+    require(isinstance(pin, dict) and isinstance(pin.get('path'), str), 'A pinned G smoke receipt')
+    path = safe_path(pin['path'])
+    result = p.verified(read_json(path), 'zebra-smoke-result')
+    require(result[p.RECORD_HASH] == pin.get('record_sha256') and result.get('passed') is True
+            and result.get('configuration') == value['configuration'] and result.get('chain') == 'G'
+            and result.get('stages') == ['S1', 'S2', 'SE6'] and result.get('sealed_reads') == 0
+            and result.get('s0') == data.get('s0_sha256')
+            and result.get('snapshot_sha256') == data.get('snapshot_sha256'),
+            'The real G import pins passing smoke on the same S0 and snapshot')
+    smoked = manifest.load(result['manifest_path'], verify=False)
+    require(smoked[p.RECORD_HASH] == result.get('manifest') and smoked['evidence'] == 'smoke'
+            and smoked['configuration'] == value['configuration'] and smoked['code'] == value['code']
+            and smoked['data'].get('s0_sha256') == data.get('s0_sha256')
+            and smoked['data'].get('snapshot_sha256') == data.get('snapshot_sha256')
+            and smoked['data'].get('launchable_chains') == ['G']
+            and smoked['clients']['solver']['G'] == value['clients']['solver']['G'],
+            'The G smoke and real read require the same code, S0 and roles-repo solver')
+    stages = {name: _checked_stage(path.parent / (name + '.json'), smoked, 'G', name)['result']
+              for name in ('S1', 'S2', 'SE6')}
+    probe = result.get('solver_probe')
+    check_g3r2_stages(stages, probe)
+    require(probe['first_call']['identity']['run'] == smoked[p.RECORD_HASH],
+            'The G solver first response belongs to the smoke manifest')
+    projected = projection(stages['S2'], 'G', value['configuration'])
+    require(projected['passed'] is True and projected == stages['SE6']
+            and projected['read_estimate'] == result.get('read_estimate')
+            and data.get('test_read_estimate') == {'G': projected['read_estimate']}
+            and data.get('test_read_terms') == {'G': {z.BENCH: str(projected['read_estimate'])}},
+            'The real G import manifest retains its measured F/C projection')
+    return value
+
+
 S0_FILE = "zebra-s0.json"
 RUNTIME = {"prompt_layout": "contract-first-v2"}
 AUTHORED_SOURCE = '''def applies(view):
@@ -144,6 +217,7 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, elucid_env, rou
     require(p.is_zebra(configuration), "A registered ZebraLogic configuration")
     if p.is_v27(configuration):
         require(smoke_chain is None or smoke_chain in p.launchable_chains(configuration),
+                "The fixed G import launches chain G only" if p.is_v217(configuration) else
                 "zebra-pc-v5 launches chain D only")
     checked = p.verified(read_json(s0_file), "zebra-s0")
     require(checked["passed"] and checked["registration"] == z.identity(), "Passing S0 of this registration")
@@ -167,10 +241,14 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, elucid_env, rou
         require(result["passed"] and result["configuration"] == configuration, "A passed measured zebra smoke")
         chain = result["chain"]
         if p.is_v27(configuration):
-            require(chain in p.launchable_chains(configuration), "zebra-pc-v5 launches chain D only")
+            require(chain in p.launchable_chains(configuration),
+                    "The fixed G import launches chain G only" if p.is_v217(configuration) else
+                    "zebra-pc-v5 launches chain D only")
         require(chain in p.CHAINS and chain not in smoke_pins and result.get("s0") == checked[p.RECORD_HASH]
                 and result.get("snapshot_sha256") == current_sha, "The smoke result belongs to this S0 and snapshot")
-        if p.is_v29(configuration):
+        if p.is_v217(configuration):
+            check_g3r2_probe(result.get('solver_probe'))
+        elif p.is_v29(configuration):
             probe = result["solver_probe"]
             require(probe["passed"] and probe["route"] == "B" and probe["longest"] > 0,
                     "The real-run ledger bound comes from northgate S1")
@@ -189,6 +267,10 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, elucid_env, rou
             require(all(stage.get("passed") is True for stage in stages.values())
                     and stages["S1"].get("solver_probe") == result["solver_probe"],
                     "Every imported-read smoke stage must pass with the same solver probe")
+            if p.is_v217(configuration):
+                check_g3r2_stages(stages, result['solver_probe'])
+                require(result['solver_probe']['first_call']['identity']['run'] == smoked[p.RECORD_HASH],
+                        'The G solver first response belongs to the smoke manifest')
             projected = projection(stages["S2"], chain, configuration)
             require(projected == stages["SE6"] and projected["read_estimate"] == result["read_estimate"],
                     "The imported-read manifest requires its measured F/C projection")
@@ -226,6 +308,8 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, elucid_env, rou
 
 def _s1(setting, chain):
     configuration = p.configuration_of(setting)
+    if p.is_v217(configuration):
+        require(chain == 'G', 'The fixed G import launches chain G only')
     first = chains.first_call(setting, chain)
     roles = {}
     for role in (() if p.is_v213(configuration) else ("engineer", "examiner", "describer", "leakage")):
@@ -247,7 +331,9 @@ def _s1(setting, chain):
                               configuration=configuration)
         roles[role] = done["result"]
     extra = {}
-    if p.is_v29(configuration):
+    if p.is_v217(configuration):
+        extra['solver_probe'] = g3r2_solver_probe(first)
+    elif p.is_v29(configuration):
         from . import v29_route_probe
         extra["solver_probe"] = v29_route_probe.measure(setting)
     return {"passed": first["passed"] and all(row["passed"] for row in roles.values()), "roles": roles,
@@ -256,6 +342,11 @@ def _s1(setting, chain):
 
 def _s2(setting, chain):
     configuration = p.configuration_of(setting)
+    probe = None
+    if p.is_v217(configuration):
+        require(chain == 'G' and setting.branch is None and setting.longest is None,
+                'The fixed G import uses main-v5 chain G solver bounds')
+        probe = check_g3r2_probe(setting.extra.get('solver_probe'))
     tasks = z.slices(setting.pools[z.BENCH])["smoke"]
     name = "%s/zebra-smoke/S2" % chain
     base = safe_path(setting.root) / chain / "lean-smoke" / "S2"
@@ -287,7 +378,8 @@ def _s2(setting, chain):
                 "parse_rate": parsed / 10, "measurements": measured,
                 "tokens_per_cell": measured["actual"] / 10,
                 "settled_tokens": sum(s.get("charged", 0) for c in cells for s in c["sends"]),
-                **({"solver_bounds": {"branch": setting.branch, "longest": setting.longest,
+                **({'solver_probe': probe, 'solver_bounds': probe['solver_bounds']} if probe is not None else
+                   {"solver_bounds": {"branch": setting.branch, "longest": setting.longest,
                     "ledger_bound": p.ledger_bound(p.CHAINS["D"], z.BENCH, branch=setting.branch,
                                                      longest=setting.longest)}} if p.is_v29(configuration) else {})}
     return units.run_unit(base, run=setting.run, identity={"unit": name}, work=work, evidence=setting.evidence,
@@ -320,7 +412,9 @@ def projection(s2, chain, configuration=p.ZEBRA_PC_V1, *, s3=None):
     """Measured solver costs and, for v2.8, role costs at the registered call caps."""
     require(p.is_zebra(configuration), "A registered ZebraLogic configuration")
     if p.is_v27(configuration):
-        require(chain in p.launchable_chains(configuration), "zebra-pc-v5 launches chain D only")
+        require(chain in p.launchable_chains(configuration),
+                "The fixed G import launches chain G only" if p.is_v217(configuration) else
+                "zebra-pc-v5 launches chain D only")
     card = s2["tokens_per_cell"]
     require(card > 0 and s2["items"] == 10, "S-E6 needs ten measured cells")
     ratio = s2["settled_tokens"] / s2["measurements"]["actual"]
@@ -331,7 +425,11 @@ def projection(s2, chain, configuration=p.ZEBRA_PC_V1, *, s3=None):
         require(measured_confirm["cells"] > 0, "S3 confirmation ran fixture cells")
         proc = max(proc, measured_confirm["settled_tokens"] / measured_confirm["cells"] / ratio)
     size = s2["measurements"]["request_bytes"][z.BENCH]
-    if p.is_v29(configuration):
+    if p.is_v217(configuration):
+        probe = check_g3r2_probe(s2.get('solver_probe'))
+        require(s2.get('solver_bounds') == probe['solver_bounds'], 'S2 uses the S1 G solver bound')
+        reserve = reservation(size, probe['solver_bounds']['ledger_bound'])
+    elif p.is_v29(configuration):
         bound = s2["solver_bounds"]
         require(bound["branch"] == "N" and bound["ledger_bound"] == p.ledger_bound(
             p.CHAINS[chain], z.BENCH, branch="N", longest=bound["longest"]), "The measured northgate bound")
@@ -351,11 +449,21 @@ def projection(s2, chain, configuration=p.ZEBRA_PC_V1, *, s3=None):
                  if name.startswith(chain + ":")}
     cards, procedures = (p.TEST_READ_CELLS[configuration][z.BENCH]
                          if p.is_v212(configuration) or p.is_v213(configuration) else (200, 1_000))
+    read_start = None
+    if p.is_v217(configuration):
+        estimate = math.ceil(ratio * (cards * card + procedures * proc))
+        needed = math.ceil(p.TEST_START_FACTOR * estimate)
+        read_start = {'estimate': estimate, 'factor': str(p.TEST_START_FACTOR),
+                      'needed': needed, 'cap': caps[chain + ':test'],
+                      'passed': needed <= caps[chain + ':test']}
     return {"passed": all(v["passed"] for v in scopes.values())
-            and (roles is None or all(row["fits"] for row in roles.values())), "configuration": configuration,
+            and (roles is None or all(row["fits"] for row in roles.values()))
+            and (read_start is None or read_start['passed']), "configuration": configuration,
             "chain": chain, "per_cell": {z.BENCH: {"card": card, "procedure": proc, "procedure_assumed": True}},
             "ratio": ratio, "scopes": scopes, "read_estimate": math.ceil(ratio * (cards * card + procedures * proc)),
             **({"roles": roles} if roles is not None else {}),
+            **({'solver_probe': probe} if p.is_v217(configuration) else {}),
+            **({'read_start': read_start} if read_start is not None else {}),
             "other_chain": ("not_launchable_in_this_configuration" if p.is_v27(configuration)
                             else "not_projected; requires its own smoke")}
 
@@ -520,7 +628,9 @@ def run_stage(manifest_path, chain, stage, *, docker=None, transport=None, confi
     require(stage in stages and chain in p.CHAINS, "A lean smoke stage and chain")
     if p.is_v27(configuration):
         require(p.is_zebra(configuration), "A registered ZebraLogic configuration")
-        require(chain in p.launchable_chains(configuration), "zebra-pc-v5 launches chain D only")
+        require(chain in p.launchable_chains(configuration),
+                "The fixed G import launches chain G only" if p.is_v217(configuration) else
+                "zebra-pc-v5 launches chain D only")
     m = manifest.load(manifest_path, docker=docker)
     require(p.is_zebra(configuration) and m["configuration"] == configuration and m["evidence"] == "smoke", "An isolated zebra smoke manifest")
     setting = manifest.setting_of(m, chain, path=manifest_path, docker=docker, transport=transport)
@@ -534,7 +644,10 @@ def run_stage(manifest_path, chain, stage, *, docker=None, transport=None, confi
         for prior in stages[:stages.index(stage)]:
             previous[prior] = _checked_stage(root / (prior + ".json"), m, chain, prior)["result"]
             require(previous[prior]["passed"], "Every preceding smoke stage must pass")
-        if p.is_v29(configuration) and stage != "S1":
+        if p.is_v217(configuration) and stage != 'S1':
+            probe = check_g3r2_probe(previous['S1'].get('solver_probe'))
+            setting = replace(setting, branch=None, longest=None, extra={**setting.extra, 'solver_probe': probe})
+        elif p.is_v29(configuration) and stage != "S1":
             probe = previous["S1"]["solver_probe"]
             require(probe["passed"] and probe["route"] == "B", "The measured northgate bound")
             setting = replace(setting, branch="N", longest=probe["longest"])
