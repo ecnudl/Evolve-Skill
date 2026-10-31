@@ -323,15 +323,24 @@ def run(ctx):
                 repaired = {'fired': 0, 'faulted': 0, 'threshold': 1, 'triggered': False,
                             'calls': [], 'kept_index': 0, 'stop_reason': 'failed_checks', 'eligible': False}
             fault_fields['fault_repair'] = repaired
-        if p.is_v294(ctx.configuration) and final.kind in e.CODED:
+        cycle_fields = None
+        if p.is_v216(ctx.configuration) and final.kind in e.CODED:
+            from . import engineer_v216
+            final, current, survived, cycle_fields = engineer_v216.repair_cycle(
+                ctx, final, current, taken, attempts=attempts)
+            fault_fields['inert_repair'] = cycle_fields.pop('inert_repair')
+            fault_fields['repair_cycle'] = cycle_fields.pop('repair_cycle')
+            inert, deferred = bool(current.get('inert')), bool(current.get('deferred'))
+        elif p.is_v294(ctx.configuration) and final.kind in e.CODED:
             from . import engineer_v294
             final, current, checked, repaired = engineer_v294.repair(ctx, final, current, taken)
             attempts.extend(checked)
             survived = current['passed']
             inert, deferred = bool(current.get('inert')), bool(current.get('deferred'))
             fault_fields['inert_repair'] = repaired
-        audit_fields = {}
-        if p.is_v29(ctx.configuration) and survived and not inert and not deferred and final.kind in e.CODED:
+        audit_fields = cycle_fields or {}
+        if (not p.is_v216(ctx.configuration) and p.is_v29(ctx.configuration)
+                and survived and not inert and not deferred and final.kind in e.CODED):
             from . import audit
             audit_procedure_id = final.procedure.id
             audited = audit.audit1(ctx, final, current)

@@ -1104,14 +1104,14 @@ def parser():
     sub.add_parser("monitor").add_argument("--root", required=True)
     command = sub.add_parser("zpc-snapshot")
     command.add_argument("--configuration", choices=(protocol.ZEBRA_PC_V1, protocol.ZEBRA_PC_V2,
-                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6, protocol.ZEBRA_PC_V7, protocol.ZEBRA_PC_V8, protocol.ZEBRA_PC_V9, protocol.ZEBRA_PC_V10, protocol.ZEBRA_PC_V11, protocol.ZEBRA_PC_V12, protocol.ZEBRA_PC_V13, protocol.ZEBRA_PC_V14, protocol.ZEBRA_HP_V3R4),
+                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6, protocol.ZEBRA_PC_V7, protocol.ZEBRA_PC_V8, protocol.ZEBRA_PC_V9, protocol.ZEBRA_PC_V10, protocol.ZEBRA_PC_V11, protocol.ZEBRA_PC_V12, protocol.ZEBRA_PC_V13, protocol.ZEBRA_PC_V14, protocol.ZEBRA_PC_V15, protocol.ZEBRA_HP_V3R4),
                          default=protocol.ZEBRA_PC_V1)
     command.add_argument("--source", default=str(PROJECT_ROOT))
     command.add_argument("--out", required=True)
     command.add_argument("--git-head", required=True)
     command = sub.add_parser("zpc-s0")
     command.add_argument("--configuration", choices=(protocol.ZEBRA_PC_V1, protocol.ZEBRA_PC_V2,
-                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6, protocol.ZEBRA_PC_V7, protocol.ZEBRA_PC_V8, protocol.ZEBRA_PC_V9, protocol.ZEBRA_PC_V10, protocol.ZEBRA_PC_V11, protocol.ZEBRA_PC_V12, protocol.ZEBRA_PC_V13, protocol.ZEBRA_PC_V14, protocol.ZEBRA_HP_V3R4),
+                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6, protocol.ZEBRA_PC_V7, protocol.ZEBRA_PC_V8, protocol.ZEBRA_PC_V9, protocol.ZEBRA_PC_V10, protocol.ZEBRA_PC_V11, protocol.ZEBRA_PC_V12, protocol.ZEBRA_PC_V13, protocol.ZEBRA_PC_V14, protocol.ZEBRA_PC_V15, protocol.ZEBRA_HP_V3R4),
                          default=protocol.ZEBRA_PC_V1)
     command.add_argument("--out", required=True)
     command.add_argument("--snapshot", default=str(PROJECT_ROOT))
@@ -1120,7 +1120,7 @@ def parser():
     command.add_argument("--selftest")
     command = sub.add_parser("zpc-manifest")
     command.add_argument("--configuration", choices=(protocol.ZEBRA_PC_V1, protocol.ZEBRA_PC_V2,
-                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6, protocol.ZEBRA_PC_V7, protocol.ZEBRA_PC_V8, protocol.ZEBRA_PC_V9, protocol.ZEBRA_PC_V10, protocol.ZEBRA_PC_V11, protocol.ZEBRA_PC_V12, protocol.ZEBRA_PC_V13, protocol.ZEBRA_PC_V14, protocol.ZEBRA_HP_V3R4),
+                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6, protocol.ZEBRA_PC_V7, protocol.ZEBRA_PC_V8, protocol.ZEBRA_PC_V9, protocol.ZEBRA_PC_V10, protocol.ZEBRA_PC_V11, protocol.ZEBRA_PC_V12, protocol.ZEBRA_PC_V13, protocol.ZEBRA_PC_V14, protocol.ZEBRA_PC_V15, protocol.ZEBRA_HP_V3R4),
                          default=protocol.ZEBRA_PC_V1)
     command.add_argument("--out", required=True)
     command.add_argument("--root", required=True)
@@ -1133,7 +1133,7 @@ def parser():
     command.add_argument("--smoke-result", action="append", default=[])
     command = sub.add_parser("zpc-smoke")
     command.add_argument("--configuration", choices=(protocol.ZEBRA_PC_V1, protocol.ZEBRA_PC_V2,
-                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6, protocol.ZEBRA_PC_V7, protocol.ZEBRA_PC_V8, protocol.ZEBRA_PC_V9, protocol.ZEBRA_PC_V10, protocol.ZEBRA_PC_V11, protocol.ZEBRA_PC_V12, protocol.ZEBRA_PC_V13, protocol.ZEBRA_PC_V14, protocol.ZEBRA_HP_V3R4),
+                                                    protocol.ZEBRA_PC_V3, protocol.ZEBRA_PC_V4, protocol.ZEBRA_PC_V5, protocol.ZEBRA_PC_V6, protocol.ZEBRA_PC_V7, protocol.ZEBRA_PC_V8, protocol.ZEBRA_PC_V9, protocol.ZEBRA_PC_V10, protocol.ZEBRA_PC_V11, protocol.ZEBRA_PC_V12, protocol.ZEBRA_PC_V13, protocol.ZEBRA_PC_V14, protocol.ZEBRA_PC_V15, protocol.ZEBRA_HP_V3R4),
                          default=protocol.ZEBRA_PC_V1)
     command.add_argument("--manifest", required=True)
     command.add_argument("--chain", choices=("G", "D"), required=True)

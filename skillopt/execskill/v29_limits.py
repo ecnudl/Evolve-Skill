@@ -25,7 +25,8 @@ def prompts_per_audit(bench):
 def judge_calls(p, bench, configuration=None):
     # Every proposed change can be checked before and after its one audit fix;
     # every final procedure can receive an independent audit 2.
-    audits = p.train_rounds(configuration) * p.MAX_CHANGES * AUDIT1_PASSES + p.MAX_PROCEDURES
+    passes = p.V216_AUDIT_FIXES + 1 if p.is_v216(configuration) else AUDIT1_PASSES
+    audits = p.train_rounds(configuration) * p.MAX_CHANGES * passes + p.MAX_PROCEDURES
     return audits * prompts_per_audit(bench) * (1 + FORMAT_RETRIES)
 
 
@@ -62,7 +63,8 @@ def extend_profiles(p):
 def identity(p, config):
     bench = p.CONFIGURATIONS[config]["order"][0]
     out = {"judge_max_tokens": JUDGE_MAX_TOKENS, "format_retries": FORMAT_RETRIES,
-            "audit1_passes": AUDIT1_PASSES, "templates": TEMPLATE_LIMIT,
+            "audit1_passes": p.V216_AUDIT_FIXES + 1 if p.is_v216(config) else AUDIT1_PASSES,
+            "templates": TEMPLATE_LIMIT,
             "prompts_per_audit": prompts_per_audit(bench), "calls_per_judge": judge_calls(p, bench, config),
             "confirm_items": CONFIRM_ITEMS, "confirm_cells": p.train_rounds(config) * 2 * CONFIRM_ITEMS,
             "request_bytes_allowance": p.ROLE_INPUT_BYTES,
@@ -87,9 +89,11 @@ V291_ENGINEER_SYSTEM_BYTES = 16_000
 
 def v291_role_calls(p, config):
     """Configured rounds at the full per-round budgets, without request reuse."""
+    extra_checks = (p.V216_INERT_REPAIRS - p.INERT_REPAIRS + p.V216_AUDIT_FIXES - 1
+                    if p.is_v216(config) else 0)
     return {
         "engineer": p.train_rounds(config) * (p.TRAIN_ENGINEER_CALL_BUDGETS[config] + p.TRAIN_ANALYST_CALLS),
-        "leakage": p.train_rounds(config) * p.MAX_CHANGES * (1 + p.TRAIN_FIXES + p.FAULT_REPAIRS + 1),
+        "leakage": p.train_rounds(config) * p.MAX_CHANGES * (1 + p.TRAIN_FIXES + p.FAULT_REPAIRS + 1 + extra_checks),
         "describer": min(p.MAX_PROCEDURES, p.train_rounds(config) * p.MAX_CHANGES),
     }
 
@@ -201,3 +205,20 @@ def extend_v212_profiles(p):
     plan['redo_reserve'] = max(caps.values())  # Zebra acceptance is one block.
     plan['solver_cap'] += (sum(caps.values()) - previous_steps
                            + plan['test_read_cap'] - before_read + plan['redo_reserve'] - before_redo)
+
+
+def extend_v216_profiles(p):
+    """Price exactly the extra repair requests, checks and paired audit1 pass.
+
+    Reuse the finalized parent's first-call reserves and solver schedule. The
+    new engineer slots include two inert repairs and one audit fix per change;
+    each checked reply can require one leakage adjudication. Existing format
+    retries remain inside the configured total request budget.
+    """
+    config, bench = p.ZEBRA_PC_V15, p.ZEBRA
+    roles = p.CONFIG_ROLE_CAPS[config]
+    before_roles = sum(roles.values())
+    roles['engineer'] = v291_engineer_cap(p, config)
+    for role in JUDGE_ROLES:
+        roles[role] = (judge_calls(p, bench, config) + 1) * reservation(p.ROLE_INPUT_BYTES, JUDGE_MAX_TOKENS)
+    p.CONFIG_GLM_CAP[config] += sum(roles.values()) - before_roles

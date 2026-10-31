@@ -18,7 +18,7 @@ SCREENED_MARKER = '[diagnostic withheld by public-text screen]'
 
 
 def enabled(configuration):
-    return configuration == CONFIGURATION
+    return configuration in (CONFIGURATION, 'zebra-pc-v15')
 
 
 def sha256(value):

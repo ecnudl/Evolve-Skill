@@ -129,7 +129,7 @@ KINDS = tuple(LIMITS)
 
 def worker_sha256(configuration=None):
     """The sha256 of the pinned worker file (the manifest's ``sandbox.worker_sha256``)."""
-    source = DIAGNOSTICS_WORKER_FILE if configuration == 'zebra-pc-v14' else WORKER_FILE
+    source = DIAGNOSTICS_WORKER_FILE if configuration in ('zebra-pc-v14', 'zebra-pc-v15') else WORKER_FILE
     return hashlib.sha256(source.read_bytes()).hexdigest()
 
 
@@ -461,7 +461,7 @@ class Worker:
         require(_cleanup_grace_valid(ready_timeout_seconds) and ready_timeout_seconds > 0
                 and (start_events is None or type(start_events) is list), "Invalid sandbox ready timeout or events")
         require(mixed_policy_bundle in (None, "main-v3-alfworld-v11"), "Unknown mixed-policy import bundle")
-        require(diagnostics_configuration in (None, 'zebra-pc-v14'), 'Unknown diagnostic worker configuration')
+        require(diagnostics_configuration in (None, 'zebra-pc-v14', 'zebra-pc-v15'), 'Unknown diagnostic worker configuration')
         self.diagnostics_configuration = diagnostics_configuration
         self.docker = docker or Docker()
         self.limits = {**LIMITS, **(limits or {})}
@@ -499,7 +499,7 @@ class Worker:
     def call_diagnostics(self, proc_id, fn, args, *, timeout_s, bench='zebralogic'):
         """The v2.15 host opt-in; never used by historical configuration paths."""
         from .. import diagnostics
-        require(self.diagnostics_configuration == diagnostics.CONFIGURATION
+        require(diagnostics.enabled(self.diagnostics_configuration)
                 and fn == 'before_call' and bench == 'zebralogic',
                 'Diagnostics belong to the v2.15 Zebra worker and note hook')
         self._diagnostics_spec = diagnostics.worker_spec(bench)
@@ -517,6 +517,7 @@ class Worker:
         if getattr(self, '_diagnostics_container', None) == self._container.name:
             return
         spec = self._diagnostics_spec
+        # v15 inherits the frozen v14 worker and its canonical wire-protocol identity.
         reply = self._exchange({'op': 'diagnostics-v215', 'configuration': 'zebra-pc-v14',
                                 'bench': 'zebralogic', 'screen': spec}, REPLY_GRACE_SECONDS)
         if reply.get('ok') is not True or reply.get('diagnostics_v215') != sha256(spec):

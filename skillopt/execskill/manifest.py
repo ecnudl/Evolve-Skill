@@ -232,6 +232,11 @@ def prompt_sha(configuration=None):
     trains (``protocol.LEARNING``) also ``v2``: v2's engineer and examiner prompts (owner decision 2026-10-23 13:3x)
     and its analysts' (owner suggestion 2026-10-23 15:1x). A v1 configuration binds exactly the first three (Codex
     review 2026-10-23 #1)."""
+    if protocol.is_v216(configuration):
+        from . import engineer_v216
+        out = prompt_sha(protocol.ZEBRA_PC_V14)
+        out['v216'] = engineer_v216.prompt_pins()
+        return out
     if protocol.is_v215(configuration):
         from . import engineer_v215
         out = prompt_sha(protocol.ZEBRA_PC_V13)
@@ -1189,6 +1194,19 @@ def outcome_engineer_features(configuration):
         from . import diagnostics
         out['diagnostics'] = diagnostics.identity()
         out['test_freshness'] = protocol.ZEBRA_PC_V14_TEST_FRESHNESS
+    if protocol.is_v216(configuration):
+        out['test_freshness'] = protocol.ZEBRA_PC_V15_TEST_FRESHNESS
+        out['inert_repair'].update(
+            calls_per_change=protocol.V216_INERT_REPAIRS,
+            keep='passed_fatal_checks_and_not_deferred_including_still_inert',
+            call_budget='v216_engineer_budget')
+        out['repair_cycle'] = {
+            'inert_repairs': protocol.V216_INERT_REPAIRS,
+            'audit_fixes': protocol.V216_AUDIT_FIXES,
+            'audits': protocol.V216_AUDIT_FIXES + 1,
+            'replay_evidence': 'current_attempt;rejected_reply_restores_previous',
+            'survival': 'passed_fatal_checks_and_not_inert_and_not_deferred_and_last_audit_not_confirmed',
+        }
     return out
 
 

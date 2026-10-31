@@ -134,7 +134,7 @@ def test_training_trajectory_keeps_channel_but_old_engineer_whitelist_omits_it(t
     assert 'diagnostics' not in trajectories.whitelisted(stored)['shell']
 
 
-@pytest.mark.parametrize('configuration', [name for name in p.CONFIGURATIONS if name != d.CONFIGURATION])
+@pytest.mark.parametrize('configuration', [name for name in p.CONFIGURATIONS if not p.is_v215(name)])
 def test_all_36_older_configurations_keep_unknown_field_behavior_and_original_worker_hash(configuration):
     found, _, _ = run({**FIELDS, 'diagnostics': ['Clue 6 was not interpreted.']}, configuration=configuration)
     assert 'diagnostics' not in found['shell']
