@@ -26,12 +26,13 @@ S2_ITEMS = {'searchqa': 20, 'officeqa': 20, 'zebralogic': 10, 'spreadsheetbench'
 
 
 def _options(configuration):
-    require(configuration in (CONFIGURATION, p.IMPLANT_V5), 'A main-v5 or implant-v5 configuration')
+    require(configuration in (CONFIGURATION, p.IMPLANT_V5, p.MAIN_V6), 'A main-v5 or implant-v5 configuration')
     return {} if configuration == CONFIGURATION else {'configuration': configuration}
 
 
 def _identity(configuration):
-    return p.implant_v5_identity() if p.is_implant_v5(configuration) else p.main_v5_identity()
+    return (p.main_v6_identity() if p.is_v218(configuration) else
+            p.implant_v5_identity() if p.is_implant_v5(configuration) else p.main_v5_identity())
 
 
 def stages_of(configuration=CONFIGURATION):
@@ -41,7 +42,7 @@ def stages_of(configuration=CONFIGURATION):
 def prepare_consent(root, configuration, *, consent_file=None):
     """Copy the supplied owner record before this no-learning chain can launch."""
     root = safe_path(root)
-    if p.is_implant_v5(configuration) and consent_file is not None:
+    if (p.is_implant_v5(configuration) or p.is_v218(configuration)) and consent_file is not None:
         source = safe_path(consent_file)
         value = read_json(source)
         require(isinstance(value, dict) and set(value) == p.CONSENT_FIELDS
@@ -87,15 +88,16 @@ def check_implant_probe(chain, probe):
     return probe
 
 
-def prompt_pins():
+def prompt_pins(configuration=CONFIGURATION):
     """The exact inherited strings, selected by benchmark, never rewritten."""
-    old, zebra = manifest.prompt_sha(p.MAIN_V4), manifest.prompt_sha(p.ZEBRA_PC_V13)
+    zebra_configuration = p.ZEBRA_PC_V15 if p.is_v218(configuration) else p.ZEBRA_PC_V13
+    old, zebra = manifest.prompt_sha(p.MAIN_V4), manifest.prompt_sha(zebra_configuration)
     selected = ('searchqa', 'officeqa', 'spreadsheetbench')
-    return {'parents': {'main-v4': old, 'zebra-pc-v13': zebra},
+    return {'parents': {'main-v4': old, zebra_configuration: zebra},
         'engineer': {**{b: old['engineer'][b] for b in selected}, 'zebralogic': zebra['engineer']},
         'v2': {'engineer': {**{b: old['v2']['engineer'][b] for b in selected},
                             'zebralogic': zebra['v2']['engineer']}},
-        'dispatch': {b: p.machinery_configuration(CONFIGURATION, b) for b in p.active_benches(CONFIGURATION)}}
+        'dispatch': {b: p.machinery_configuration(configuration, b) for b in p.active_benches(configuration)}}
 
 
 def schedule(configuration=CONFIGURATION):
@@ -140,7 +142,8 @@ def collect_s0(out, *, preparation_file, zebra_pool, zebra_split_manifest, root,
     sheet = launch_sheet.read(sheet_runtime, snapshot_root=source)
     checked = prelaunch.zero_call_checks(source, python=sys.executable) if checks is None else checks
     # The parent fingerprint artifact is a public source fixture, never a data panel.
-    fingerprint = source / ('tests/fixtures/execskill/v217i_parents_before.json'
+    fingerprint = source / ('tests/fixtures/execskill/v218_parents_before.json' if p.is_v218(configuration) else
+                            'tests/fixtures/execskill/v217i_parents_before.json'
                             if p.is_implant_v5(configuration) else 'tests/fixtures/execskill/v214_parents_before.json')
     require(fingerprint.is_file(), 'The before-edit parent fingerprint is included in the snapshot')
     value = p.record('v214-s0', 'smoke', {'configuration': configuration, 'root': str(root),
@@ -148,7 +151,7 @@ def collect_s0(out, *, preparation_file, zebra_pool, zebra_split_manifest, root,
         'zebra_pool': str(safe_path(zebra_pool)), 'zebra_split_manifest': str(safe_path(zebra_split_manifest)),
         'launch_sheet_runtime': sheet, 'consent_sha256': digest(allowed), 'consent': allowed,
         'instructions': instruction_start.pins(), 'v211_prompt_pins': engineer_v211.pins(),
-        'prompt_pins': prompt_pins(), 'smoke_schedule': schedule(configuration), 'alfworld_v11_import': v210_import.pins(),
+        'prompt_pins': prompt_pins(configuration), 'smoke_schedule': schedule(configuration), 'alfworld_v11_import': v210_import.pins(),
         'parents_before_sha256': hashlib.sha256(fingerprint.read_bytes()).hexdigest(),
         'sandbox': tested[p.RECORD_HASH], 'limits': tested['limits'], 'measured': tested['measured'],
         'pytest': checked, 'sealed_reads': 0, 'snapshot_root': str(source), 'snapshot_sha256': _source(source),
@@ -292,7 +295,7 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, route_b_env, sh
     root = safe_path(root)
     require(smoke_chain in (None, 'G', 'D'), 'A smoke names one chain')
     require(smoke_chain is not None or str(root) == p.RUN_ROOTS[configuration], 'The registered real main-v5 root')
-    if p.is_implant_v5(configuration) and not (root / 'shared/consent.json').exists():
+    if (p.is_implant_v5(configuration) or p.is_v218(configuration)) and not (root / 'shared/consent.json').exists():
         require(digest(checked['consent']) == checked['consent_sha256'], 'S0 consent bytes are pinned')
         write_json(root / 'shared/consent.json', checked['consent'])
     allowed = evaluation.consent(root / 'shared', configuration)
@@ -305,7 +308,7 @@ def make_manifest(out, *, root, s0_file, provenance, roles_repo, route_b_env, sh
             and safe_path(checked['snapshot_root']) == manifest.REPO
             and safe_path(proven['snapshot_root']) == manifest.REPO,
             'S0 and provenance certify the current source snapshot')
-    require(checked['smoke_schedule'] == schedule(configuration) and checked['prompt_pins'] == prompt_pins(),
+    require(checked['smoke_schedule'] == schedule(configuration) and checked['prompt_pins'] == prompt_pins(configuration),
             'The smoke schedule and inherited prompts are unchanged')
     sheet = launch_sheet.for_manifest(sheet_runtime, checked, snapshot_root=manifest.REPO)
     readiness, terms = {}, {}
@@ -359,7 +362,7 @@ def check_manifest(value):
             and s0.get('sealed_reads') == 0 and s0.get('pytest', {}).get('passed') is True
             and s0[p.RECORD_HASH] == data.get('s0_sha256') and s0.get('snapshot_sha256') == data.get('snapshot_sha256')
             and s0.get('smoke_schedule') == data.get('smoke_schedule') == schedule(configuration)
-            and s0.get('prompt_pins') == value['prompt_sha'] == prompt_pins()
+            and s0.get('prompt_pins') == value['prompt_sha'] == prompt_pins(configuration)
             and data.get('v211_prompt_pins') == engineer_v211.pins(), 'A complete source-bound main-v5 S0')
     imported = s0['preparation']
     require(value['importable_versions'] == [*p.IMPORTABLE, p.TEXTS_IMPORT, z.CARD_VERSION]
@@ -399,7 +402,7 @@ def structural_smoke(manifest_path, *, out, configuration=CONFIGURATION):
         from . import v217_implant
         demo = v217_implant.structural_smoke(safe_path(out).parent / 'implant-v5-structural-stage-demo')
     else:
-        demo = v214_stages.sx(safe_path(out).parent / 'v214-structural-stage-demo')
+        demo = v214_stages.sx(safe_path(out).parent / 'v214-structural-stage-demo', **_options(configuration))
     result = p.record('v214-structural-smoke', 'engineering_fixture', {
         'configuration': configuration, 'manifest': value[p.RECORD_HASH], 'passed': demo['passed'],
         'model_calls': 0, 'sealed_reads': 0, 'measured_readiness': False, 'stage_demo': demo,
@@ -443,7 +446,7 @@ def run_stage(manifest_path, chain, stage, *, _setting=None, configuration=CONFI
             result = v214_stages.projection(previous['S2']['result'], chain,
                                              s3=previous.get('S3', {}).get('result'), bounds=bounds, **_options(configuration))
         else:
-            result = v214_stages.sx(path.parent / 'stage-demo')
+            result = v214_stages.sx(path.parent / 'stage-demo', **_options(configuration))
         if bounds is not None:
             result['solver_bounds'] = bounds
             if p.is_implant_v5(configuration):
@@ -497,13 +500,25 @@ def selftest(out, *, preparation_file, zebra_pool, zebra_split_manifest, configu
     largest = max(workbooks, key=lambda path: path.stat().st_size)
     worker = smoke.sandbox_selftest(out / 'worker-selftest', item_files=item_files, configuration=configuration)
     measured = {key: worker['measured'][key] for key in ('vsz_kib', 'rss_kib', 'view_bytes_p99')}
-    measured['native_peak_rss_kib'] = s0.native_peak(largest, sandbox.Docker())
+    zebra_worker = None
+    if p.is_v218(configuration):
+        from . import v218_lock
+        zebra_worker = smoke.sandbox_selftest(out / 'zebra-worker-selftest', item_files=item_files,
+                                              configuration=p.ZEBRA_PC_V15)
+        require(zebra_worker['passed'] is True, 'The main-v6 Zebra diagnostics worker selftest must pass')
+        measured = {key: max(value, zebra_worker['measured'][key]) for key, value in measured.items()}
+        with v218_lock.preparation(out, 'native-peak'):
+            measured['native_peak_rss_kib'] = s0.native_peak(largest, sandbox.Docker())
+    else:
+        measured['native_peak_rss_kib'] = s0.native_peak(largest, sandbox.Docker())
     require(type(measured['native_peak_rss_kib']) is int and measured['native_peak_rss_kib'] > 0,
             'Positive measured native RSS')
     value = p.record('sandbox-selftest', worker['evidence'], {
         **{key: row for key, row in worker.items() if key not in ('version', 'evidence', p.RECORD_HASH, 'measured')},
         'measured': measured, 'measurement_sources': {
-            'worker': worker[p.RECORD_HASH], 'practice_workbook_sha256': hashlib.sha256(largest.read_bytes()).hexdigest()}})
+            'worker': worker[p.RECORD_HASH], 'practice_workbook_sha256': hashlib.sha256(largest.read_bytes()).hexdigest(),
+            **({'zebra_worker': zebra_worker[p.RECORD_HASH], 'zebra_worker_configuration': p.ZEBRA_PC_V15}
+               if zebra_worker is not None else {})}})
     write_json(out / smoke.SELFTEST, value)
     return value
 

@@ -10,7 +10,7 @@ from . import diagnostics
 
 def worker_call(worker, procedure, hook, args, *, timeout_s, configuration=None, bench='zebralogic'):
     """Real workers bound before output limits; authored workers may return plain values."""
-    child = diagnostics.enabled(configuration) and hook == 'before_call'
+    child = diagnostics.enabled(configuration, bench) and hook == 'before_call'
     method = getattr(worker, 'call_diagnostics', None) if child else None
     if method is not None:
         return method(procedure, hook, args, timeout_s=timeout_s, bench=bench)
@@ -19,7 +19,7 @@ def worker_call(worker, procedure, hook, args, *, timeout_s, configuration=None,
 
 def capture(result, *, configuration=None, bench='zebralogic', hook='before_call', procedure):
     """Clean result identity and a separately sealed record; never create solver faults."""
-    if not diagnostics.enabled(configuration) or hook != 'before_call':
+    if not diagnostics.enabled(configuration, bench) or hook != 'before_call':
         return result, None
     source_sha = hashlib.sha256(procedure.source.encode()).hexdigest()
     if 'diagnostics' in result:

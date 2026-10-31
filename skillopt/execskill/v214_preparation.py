@@ -88,7 +88,7 @@ def preparation(main_v4_s0_file, *, zebra_pool=z.POOL_PATH,
     pool = z.load_pool(zebra_pool)
     split = zebra_smoke._split_pins(zebra_split_manifest)
     cuts = z.slices(pool)
-    confirmed = confirm.identity(p.ZEBRA_PC_V13, pool)
+    confirmed = confirmation_identity(configuration, pool)
     data = deepcopy(source['data'])
     data['pools'] = {bench: deepcopy(data['pools'][bench]) for bench in RETAINED}
     data['pools'][z.BENCH] = {'path': str(safe_path(zebra_pool)), 'sha256': z.POOL_SHA256}
@@ -138,6 +138,14 @@ def verify(value):
     found = preparation(source['path'], zebra_pool=registration['zebra_pool']['path'],
                         zebra_split_manifest=registration['zebra_split_manifest']['path'],
                         **({'configuration': registration['configuration']}
-                           if p.is_implant_v5(registration['configuration']) else {}))
+                           if p.is_implant_v5(registration['configuration']) or p.is_v218(registration['configuration']) else {}))
     require(found == value, 'The mixed preparation differs from its source identities')
+    return found
+
+
+def confirmation_identity(configuration, pool):
+    selected = p.ZEBRA_PC_V15 if p.is_v218(configuration) else p.ZEBRA_PC_V13
+    found = confirm.identity(selected, pool)
+    if p.is_v218(configuration):
+        found = {**found, 'freshness': p.confirm_freshness(configuration, z.BENCH)}
     return found

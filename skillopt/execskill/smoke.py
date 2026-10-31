@@ -1541,6 +1541,17 @@ def _scope_cells(chain, pilot=protocol.PILOT):
             whole[b] = (was[0] + card, was[1] + proc)
         solver_total.append(whole)
     out[chain + ":solver"] = solver_total or [totals]
+    if protocol.is_v218(pilot):
+        # Price a complete read retry independently of the learning redo.
+        # Both read attempts charge :test and the enclosing :solver scope.
+        def plus_read_unit(total, bench, cells):
+            result = dict(total)
+            card, proc = result.get(bench, (0, 0))
+            result[bench] = (card + cells[0], proc + cells[1])
+            return result
+        out[chain + ':test'] = [plus_read_unit(test, b, cells) for b, cells in test.items()]
+        out[chain + ':solver'] = [plus_read_unit(total, b, cells)
+            for total in out[chain + ':solver'] for b, cells in test.items()]
     return out
 
 

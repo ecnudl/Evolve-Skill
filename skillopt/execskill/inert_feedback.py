@@ -116,7 +116,7 @@ def describe(change, ctx, report, *, effect_hooks, from_replay, from_routing, ou
         evidence['excluded_bench'] = {'bench': ctx.bench}
     causes = list(evidence)
     evidence = _bound(evidence)
-    if profiles.is_v215(ctx.configuration):
+    if profiles.uses_v215(ctx.configuration, ctx.bench):
         from . import diagnostics_feedback
         examples = [row['task_id'] for detail in evidence.values() for row in detail.get('examples', ())]
         diagnostics_feedback.attach(evidence, lambda: diagnostics_feedback.from_checks(

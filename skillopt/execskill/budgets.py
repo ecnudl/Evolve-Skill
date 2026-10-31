@@ -131,7 +131,7 @@ def role_scope_caps(pilot=PILOT, bench=None):
     if profiles.is_implant_v5(pilot):
         caps = CONFIG_ROLE_CAPS[pilot]
     elif profiles.is_v214(pilot) and bench == profiles.ZEBRA:
-        caps = CONFIG_ROLE_CAPS[profiles.ZEBRA_PC_V13]
+        caps = CONFIG_ROLE_CAPS[profiles.machinery_configuration(pilot, bench)]
     elif profiles.is_v211(pilot):
         from . import v211_limits
         caps = v211_limits.role_caps(bench or 'spreadsheetbench')

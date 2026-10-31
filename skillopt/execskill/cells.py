@@ -49,7 +49,7 @@ import time
 from collections import Counter
 from contextlib import nullcontext
 from copy import deepcopy
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
 from skillopt.coevo5.calls import _request_hash
@@ -112,7 +112,8 @@ class Context:
     ``evidence``: the records' label; ``nominal``: {bench: M} of chain D's margin rule (§4.1; empty for chain G);
     ``solve``: the shell; ``clock``: dispatch and finish times; ``endpoints``: {bench: endpoint} of a unit whose cells
     run on several benches (module docstring; Codex finding #4) -- when given, every cell takes its bench's and a
-    bench without one is refused; empty, every cell takes ``endpoint``."""
+    bench without one is refused; empty, every cell takes ``endpoint``. ``environment(bench, unit)`` is main-v6's
+    optional context manager for the memory-heavy work of one solver/scorer cell."""
     attempt: Path
     endpoint: object
     runtime: dict
@@ -126,6 +127,7 @@ class Context:
     clock: object = time.time
     endpoints: dict = field(default_factory=dict)
     configuration: str | None = None
+    environment: object = None
 
     def __post_init__(self):
         self.attempt = safe_path(self.attempt)
@@ -382,11 +384,15 @@ def _audited_fields(context, runs, recorders, route):
             "returned_models": models, "returned_model": models[-1] if models else None}
 
 
-def _shared_audited_fields(context, source, route):
+def _shared_audited_fields(context, source, route, request_reuse=None):
     if not is_v29(context.configuration):
         return {}
+    keyword_hits = source.get("keyword_hits", {"count": 0, "sentences": []})
+    if profiles.is_v218(context.configuration) and request_reuse is not None:
+        # Silent procedures can change audit hits without changing the shared request.
+        keyword_hits = request_reuse['planning_metadata']['keyword_hits']
     return {"configuration": context.configuration,
-            "keyword_hits": deepcopy(source.get("keyword_hits", {"count": 0, "sentences": []})),
+            "keyword_hits": deepcopy(keyword_hits),
             "applies": {pid: row["applies"] for pid, row in route.get("per_procedure", {}).items()},
             "returned_models": list(source.get("returned_models", [])), "returned_model": source.get("returned_model")}
 
@@ -397,6 +403,9 @@ def run_cell(context, cell, task, arm, *, store):
     round has them, "shortcut" on a shortcut-probe cell); ``task``: {"public", "private"}; ``arm``: the cell's
     ``Arm``; ``store``: ``TrainingStore`` or the test read's adapter. Returns the stored record; raises ``Pause`` after
     storing it when the run must stop."""
+    if profiles.is_v218(context.configuration) and context.environment is not None:
+        with context.environment(cell['benchmark'], cell['unit']):
+            return run_cell(replace(context, environment=None), cell, task, arm, store=store)
     _check_cell(cell)
     require(isinstance(arm, Arm), "A cell runs one Arm")
     store.claim(cell["id"])
@@ -501,7 +510,7 @@ def run_cell(context, cell, task, arm, *, store):
     return stored
 
 
-def share_cell(context, cell, task, arm, source, route, *, store):
+def share_cell(context, cell, task, arm, source, route, *, store, request_reuse=None):
     """Structural-zero sharing in the test read (§8.1): an arm whose package enables no procedure on the item (its
     sealed ``route`` there, ``router.route``: zero model calls) is the card arm on it, so its cell is the C cell
     ``source`` -- the same item and run, run in this unit -- linked by ``shared_with``. Nothing runs and nothing is
@@ -514,7 +523,13 @@ def share_cell(context, cell, task, arm, source, route, *, store):
     require(all(source["cell"][name] == cell[name] for name in ("unit", "benchmark", "task_id", "run")),
             "Share a cell of the same unit, item and run")
     bench = cell["benchmark"]
-    require(route["package_sha256"] == arm.package.sha256 and route["bench"] == bench and not route["enabled"],
+    if request_reuse is not None:
+        from . import v218_read
+        v218_read.checked_match(context.configuration, bench, source, request_reuse)
+        require(source['cell']['arm'] == 'C' and request_reuse['identity']['enabled'] == list(route['enabled']),
+                'An identical-to-C read shares C and retains its own planned route')
+    require(route["package_sha256"] == arm.package.sha256 and route["bench"] == bench
+            and (request_reuse is not None or not route["enabled"]),
             "Only an arm whose package enables nothing on the item shares the card cell")
     require(route["routing_view_sha256"] == digest(solver.routing_view(bench, task["public"],
                                                                        runtime=context.runtime[bench])),
@@ -524,7 +539,8 @@ def share_cell(context, cell, task, arm, source, route, *, store):
     faults = [{**fault, "step": "route"} for fault in route["faults"]]
     fields = {
         "cell": cell, **{name: cell[name] for name in ROUND_KEYS if name in cell},
-        "package_sha256": arm.package.sha256, "arm_kind": arm.kind, "enabled": [],
+        "package_sha256": arm.package.sha256, "arm_kind": arm.kind,
+        "enabled": list(route['enabled']) if request_reuse is not None else [],
         **({"card": ""} if profiles.is_v214(context.configuration) and arm.kind == "blank" else {}),
         "withheld": sorted(arm.withhold), "restored": sorted(arm.restore),
         "attempts": [], "remedies": {}, "spent": [], "sends": [], "refused": False, "logical_calls": [],
@@ -533,11 +549,11 @@ def share_cell(context, cell, task, arm, source, route, *, store):
         "final": source["final"], "official": source["official"], "judge": source["judge"],
         "shared_with": source["cell"]["id"], "sandbox": _sandbox([]), "dispatch_ts": now, "finish_ts": now,
         "solver_route": source.get("solver_route"), "stop": None}
-    fields.update(_shared_audited_fields(context, source, route))
+    fields.update(_shared_audited_fields(context, source, route, request_reuse))
     return store.save(record("cell", context.evidence, fields), None)
 
 
-def share_same(context, cell, task, arm, source, route, source_route, source_package, *, store):
+def share_same(context, cell, task, arm, source, route, source_route, source_package, *, store, request_reuse=None):
     """v2 stage reads (``protocol.STAGE_READ``; ``evaluation.stage_plan``): a stage arm whose package enables on the
     item exactly the procedures -- the same ids, in the same order, byte-identical (``Procedure.sha256``) -- that the
     cell ``source`` of another plain package arm of the unit ran with (F's, or an earlier stage arm's) sends the same
@@ -548,7 +564,8 @@ def share_same(context, cell, task, arm, source, route, source_route, source_pac
     runs and nothing is sent; the route's predicate faults are the cell's. Returns the stored record."""
     _check_cell(cell)
     require(isinstance(arm, Arm) and isinstance(source_package, Package), "A cell runs one Arm of a package")
-    require(arm.kind == "candidate" and not (arm.withhold or arm.restore) and arm.placebo is None and arm.text is None,
+    require((arm.kind == "candidate" or (request_reuse is not None and arm.kind == 'blank'))
+            and not (arm.withhold or arm.restore) and arm.placebo is None and arm.text is None,
             "Only a plain package arm shares another arm's cell")
     source, route, source_route = verified(source, "cell"), verified(route, "route"), verified(source_route, "route")
     require(source["stop"] is None and source["final"] is not None and source["shared_with"] is None,
@@ -565,16 +582,24 @@ def share_same(context, cell, task, arm, source, route, source_route, source_pac
             and route["routing_view_sha256"] == source_route["routing_view_sha256"] == view,
             "Both routes were made on this item's routing view")
     enabled = list(route["enabled"])
-    require(enabled and enabled == list(source_route["enabled"]) == list(source["enabled"] or []),
-            "The stage arm enables exactly the procedures the source cell ran with")
-    require(all(arm.package.get(pid).sha256 == source_package.get(pid).sha256 for pid in enabled),
-            "The shared procedures are byte-identical")
+    if request_reuse is not None:
+        from . import v218_read
+        v218_read.checked_match(context.configuration, bench, source, request_reuse)
+        require(request_reuse['identity']['enabled'] == enabled
+                and request_reuse['source_identity']['enabled'] == list(source_route['enabled']),
+                'An identical-request read retains both planned routes')
+    else:
+        require(enabled and enabled == list(source_route["enabled"]) == list(source["enabled"] or []),
+                "The stage arm enables exactly the procedures the source cell ran with")
+        require(all(arm.package.get(pid).sha256 == source_package.get(pid).sha256 for pid in enabled),
+                "The shared procedures are byte-identical")
     store.claim(cell["id"])
     now = context.clock()
     faults = [{**fault, "step": "route"} for fault in route["faults"]]
     fields = {
         "cell": cell, **{name: cell[name] for name in ROUND_KEYS if name in cell},
         "package_sha256": arm.package.sha256, "arm_kind": arm.kind, "enabled": enabled,
+        **({"card": ""} if request_reuse is not None and arm.kind == 'blank' else {}),
         "withheld": [], "restored": [],
         "attempts": [], "remedies": {}, "spent": [], "sends": [], "refused": False, "logical_calls": [],
         "deciding_receipt": source["deciding_receipt"], "worst_delivery": source["worst_delivery"],
@@ -582,7 +607,7 @@ def share_same(context, cell, task, arm, source, route, source_route, source_pac
         "final": source["final"], "official": source["official"], "judge": source["judge"],
         "shared_with": source["cell"]["id"], "sandbox": _sandbox([]), "dispatch_ts": now, "finish_ts": now,
         "solver_route": source.get("solver_route"), "stop": None}
-    fields.update(_shared_audited_fields(context, source, route))
+    fields.update(_shared_audited_fields(context, source, route, request_reuse))
     return store.save(record("cell", context.evidence, fields), None)
 
 

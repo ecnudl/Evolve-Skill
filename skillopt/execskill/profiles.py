@@ -13,6 +13,7 @@ from .policy import POLICY_VERSION_V24, POLICY_VERSION_V25, POLICY_VERSION_V28, 
 
 MAIN_V4 = "main-v4"
 MAIN_V5 = "main-v5"
+MAIN_V6 = "main-v6"
 IMPLANT_V5 = "implant-v5"
 ZEBRA_PC_V1 = "zebra-pc-v1"
 ZEBRA_PC_V2 = "zebra-pc-v2"
@@ -115,31 +116,31 @@ def is_v29(configuration):
 def is_v291(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, IMPLANT_V5, ZEBRA_PC_V8, ALFWORLD_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, ZEBRA_PC_V8, ALFWORLD_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v292(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, IMPLANT_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v293(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, IMPLANT_V5, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v294(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, IMPLANT_V5, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v295(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, IMPLANT_V5, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v215(configuration):
@@ -164,12 +165,12 @@ def is_v297(configuration):
 
 def alfworld_format_rule(configuration, bench=None):
     """The format rule for this run; the historical admissible-share rule stays frozen."""
-    return "alfworld-readable-action-v2-9-6" if is_v296(configuration) or (configuration in (MAIN_V4, MAIN_V5, IMPLANT_V5) and bench == "alfworld") else "alfworld-admissible-9-10"
+    return "alfworld-readable-action-v2-9-6" if is_v296(configuration) or (configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5) and bench == "alfworld") else "alfworld-admissible-9-10"
 
 
 def train_rounds(configuration, bench=None):
     """The historical six-round limit, extended only for the Zebra v12 search."""
-    return 0 if configuration in (ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, IMPLANT_V5) or (configuration in (MAIN_V4, MAIN_V5, IMPLANT_V5) and bench == "alfworld") else 10 if configuration == ZEBRA_PC_V12 else TRAIN_ROUNDS
+    return 0 if configuration in (ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, IMPLANT_V5) or (configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5) and bench == "alfworld") else 10 if configuration == ZEBRA_PC_V12 else TRAIN_ROUNDS
 
 
 def cleanup_grace_seconds(configuration):
@@ -838,7 +839,7 @@ MAIN_V3_NAMESPACES = {'G': 'G-v3', 'D': 'D-v3'}
 
 
 def is_v210(configuration):
-    return configuration in (BASELINE_V210, MAIN_V3, MAIN_V4, MAIN_V5, IMPLANT_V5)
+    return configuration in (BASELINE_V210, MAIN_V3, MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5)
 
 
 def read_items(configuration, bench):
@@ -910,7 +911,19 @@ TEST_WITHHOLDING = {name: not is_v210(name) for name in CONFIGURATIONS}
 
 
 def is_v214(configuration):
-    return configuration in (MAIN_V5, IMPLANT_V5)
+    return configuration in (MAIN_V5, MAIN_V6, IMPLANT_V5)
+
+
+def is_v218(configuration):
+    return configuration == MAIN_V6
+
+
+def uses_v215(configuration, bench):
+    return is_v215(machinery_configuration(configuration, bench))
+
+
+def uses_v216(configuration, bench):
+    return is_v216(machinery_configuration(configuration, bench))
 
 
 def is_implant_v5(configuration):
@@ -919,6 +932,8 @@ def is_implant_v5(configuration):
 
 def machinery_configuration(configuration, bench):
     """Select an inherited method without changing the run or record identity."""
+    if is_v218(configuration):
+        return ZEBRA_PC_V15 if bench == ZEBRA else MAIN_V4
     return (ZEBRA_PC_V13 if bench == ZEBRA else MAIN_V4) if is_v214(configuration) else configuration
 
 
@@ -935,11 +950,11 @@ def acceptance_rule(configuration, bench):
 
 
 def accept_freshness(configuration, bench):
-    return ACCEPT_FRESHNESS[machinery_configuration(configuration, bench)]
+    return ACCEPT_FRESHNESS[machinery_configuration(configuration, bench)] + ('_and_main_v5_G_D' if is_v218(configuration) else '')
 
 
 def confirm_freshness(configuration, bench):
-    return CONFIRM_FRESHNESS[machinery_configuration(configuration, bench)]
+    return CONFIRM_FRESHNESS[machinery_configuration(configuration, bench)] + ('_and_main_v5_G_D' if is_v218(configuration) else '')
 
 
 def similar_pairs(configuration=PILOT):
@@ -953,7 +968,7 @@ MAIN_V4_NAMESPACES = {'G': 'G-v4', 'D': 'D-v4'}
 
 
 def is_v211(configuration):
-    return configuration in (MAIN_V4, MAIN_V5, IMPLANT_V5)
+    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5)
 
 
 def uses_readable_alf_format(configuration, bench):
@@ -1270,4 +1285,36 @@ def implant_v5_identity():
         stage_rows=['C', 'C', 'C', 'S3', 'S3', 'F'],
         scope_caps={}, caps={**CONFIGURATIONS[IMPLANT_V5], 'method': 0},
         redo_unit_caps=deepcopy(IMPLANT_READ_UNIT_CAPS))
+    return found
+
+
+# v2.18: an isolated child of main-v5, with the four registered amendments.
+MAIN_V6_ROOT = '/data/execskill-20261101-main-v6'
+MAIN_V6_MANIFEST = MAIN_V6_ROOT + '-manifest.json'
+MAIN_V6_NAMESPACES = {'G': 'G-m6', 'D': 'D-m6'}
+for _name, _table in list(globals().items()):
+    if _name.isupper() and isinstance(_table, dict) and MAIN_V5 in _table:
+        _table[MAIN_V6] = deepcopy(_table[MAIN_V5])
+RUN_ROOTS[MAIN_V6] = MAIN_V6_ROOT
+CHAIN_NAMESPACES[MAIN_V6] = MAIN_V6_NAMESPACES
+SUPPORTED_NAMESPACES += tuple(MAIN_V6_NAMESPACES.values())
+REAL_RUN_EVIDENCE[MAIN_V6] = 'main_v6_real_run'
+ACCEPT_FRESHNESS[MAIN_V6] = ACCEPT_FRESHNESS[MAIN_V5] + '_and_main_v5_G_D'
+CONFIRM_FRESHNESS[MAIN_V6] = CONFIRM_FRESHNESS[MAIN_V5] + '_and_main_v5_G_D'
+ENGINEER_CALL_BUDGETS[MAIN_V6] = ENGINEER_CALL_BUDGETS[ZEBRA_PC_V15]
+TRAIN_ENGINEER_CALL_BUDGETS[MAIN_V6] = TRAIN_ENGINEER_CALL_BUDGETS[ZEBRA_PC_V15]
+from . import v218_limits as _v218_limits
+_v218_limits.extend(_sys.modules[__name__])
+
+
+def main_v6_identity():
+    found = deepcopy(main_v5_identity())
+    found.update(configuration=MAIN_V6,
+        machinery={b: machinery_configuration(MAIN_V6, b) for b in MAIN_V5_ORDER},
+        freshness={b: {'accept': accept_freshness(MAIN_V6, b),
+                       'confirm': confirm_freshness(MAIN_V6, b)} for b in MAIN_V5_ORDER},
+        scope_caps=CONFIG_STEP_CAPS[MAIN_V6],
+        caps={**CONFIGURATIONS[MAIN_V6], 'method': CONFIG_GLM_CAP[MAIN_V6]},
+        changes={'split': _v218_limits.identity(), 'read_reuse': 'fault_free_request_identity',
+                 'heavy_lock': 'environment_work_only_logged_waits', 'zebra': ZEBRA_PC_V15})
     return found

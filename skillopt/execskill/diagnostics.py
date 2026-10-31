@@ -17,8 +17,9 @@ INPUT_BYTES = 64_000
 SCREENED_MARKER = '[diagnostic withheld by public-text screen]'
 
 
-def enabled(configuration):
-    return configuration in (CONFIGURATION, 'zebra-pc-v15')
+def enabled(configuration, bench='zebralogic'):
+    return (configuration in (CONFIGURATION, 'zebra-pc-v15')
+            or (configuration == 'main-v6' and bench == 'zebralogic'))
 
 
 def sha256(value):
@@ -169,7 +170,7 @@ def screen_record(value, *, bench='zebralogic'):
 def extract(value, *, configuration, bench='zebralogic', hook='before_call',
             procedure=None, source_sha256=None):
     """Return (diagnostic-free original output, screened bounded record or None)."""
-    if not enabled(configuration) or hook != 'before_call' or not isinstance(value, dict) or 'diagnostics' not in value:
+    if not enabled(configuration, bench) or hook != 'before_call' or not isinstance(value, dict) or 'diagnostics' not in value:
         return value, None
     clean = {k: v for k, v in value.items() if k != 'diagnostics'}
     try:

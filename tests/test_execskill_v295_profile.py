@@ -295,8 +295,8 @@ def test_zebra_ten_round_caps_recompute_each_round_dependent_reservation():
 
 
 def test_all_other_configuration_round_limits_keep_six_and_old_patience_values():
-    # implant-v5 (v2.17) learns nothing (0 rounds, 0 patience); tests/test_execskill_v217i_profile.py asserts that.
-    for config in (name for name in p.CONFIGURATIONS if not p.is_v213(name) and name != p.IMPLANT_V5):
+    assert p.train_rounds(p.IMPLANT_V5) == p.train_patience(p.IMPLANT_V5) == 0
+    for config in (name for name in p.CONFIGURATIONS if not p.is_v213(name) and not p.is_implant_v5(name)):
         assert p.train_rounds(config) == (10 if config == p.ZEBRA_PC_V12 else 6)
         expected = 8 if config == p.ZEBRA_PC_V12 else 4 if p.is_v291(config) else p.TRAIN_PATIENCE
         assert p.train_patience(config) == expected

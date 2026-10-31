@@ -246,7 +246,7 @@ def prompt_sha(configuration=None):
         return out
     if protocol.is_v214(configuration):
         from . import v214_smoke
-        return v214_smoke.prompt_pins()
+        return v214_smoke.prompt_pins(**({"configuration": configuration} if protocol.is_v218(configuration) else {}))
     if protocol.is_v213(configuration):
         return prompt_sha(protocol.ZEBRA_PC_V13)  # Inherited pins; import never invokes learning prompts.
     if protocol.is_v211(configuration):
@@ -359,7 +359,7 @@ def registered(configuration=None):
             protocol.slice_spec(configuration, b)['accept'][0], protocol.slice_spec(configuration, b)['blocks'])
             for b in learned}
         found['sizes']['v214'] = _plain(protocol.implant_v5_identity() if protocol.is_implant_v5(configuration)
-                                       else protocol.main_v5_identity())
+                                       else protocol.main_v6_identity() if protocol.is_v218(configuration) else protocol.main_v5_identity())
         return found
     if protocol.is_v211(configuration):
         from . import acceptance, v211_limits
@@ -451,7 +451,9 @@ def check(manifest):
     """The field sets of a manifest record (raises ValueError)."""
     value = protocol.verified(manifest, KIND)
     require(set(value) == FIELDS, "Not a %s manifest" % protocol.VERSION)
-    require(set(value["sandbox"]) == SANDBOX_FIELDS and set(value["sandbox"]["measured"]) == MEASURED_FIELDS,
+    require(set(value["sandbox"]) == (SANDBOX_FIELDS | ({"worker_sha256_by_bench"}
+            if protocol.is_v218(value.get("configuration")) else set()))
+            and set(value["sandbox"]["measured"]) == MEASURED_FIELDS,
             "The sandbox block holds the registered fields")
     require(set(value["environment"]) == (ENVIRONMENT_FIELDS | (
         {"sandbox"} if protocol.is_v292(value.get("configuration")) and "sandbox" in value["environment"] else set())),
@@ -524,6 +526,11 @@ def check(manifest):
         require(isinstance(pin, dict) and len(pin.get("ids", [])) == 40
                 and len(set(pin["ids"])) == 40, "The forty practice confirmation ids are pinned")
         require(pin.get("freshness") == protocol.CONFIRM_FRESHNESS[configuration], "Confirm slice provenance")
+    if protocol.is_v218(configuration):
+        require(value['sandbox'].get('worker_sha256_by_bench') == {
+            b: sandbox.worker_sha256(configuration=protocol.ZEBRA_PC_V15) if b == protocol.ZEBRA
+            else sandbox.worker_sha256() for b in protocol.active_benches(configuration)},
+            'The mixed main-v6 diagnostic worker pins')
     if protocol.is_v215(configuration):
         require(value['sandbox']['worker_sha256'] == sandbox.worker_sha256(configuration=configuration),
                 'The v2.15 diagnostics worker is pinned')
@@ -740,6 +747,10 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
         "code": pin_code(), "loaded_code": sorted(loaded_code()),
         "environment": ((_environment_for_manifest(out, configuration) if protocol.is_v292(configuration) else environment())
                         if environment_found is None else environment_found)}
+    if protocol.is_v218(configuration):
+        fields['sandbox']['worker_sha256_by_bench'] = {
+            b: sandbox.worker_sha256(configuration=protocol.ZEBRA_PC_V15) if b == protocol.ZEBRA
+            else sandbox.worker_sha256() for b in protocol.active_benches(configuration)}
     suffix = ("-v2-9" if protocol.is_v29(configuration) else "-v2-8" if protocol.is_v28(configuration) else "-alf-v2" if protocol.is_alfworld_v2(configuration) else "-alf-v1" if protocol.is_alfworld(configuration) else
               "-v2-7" if protocol.is_v27(configuration) else "-v2-6" if protocol.is_v26(configuration)
               else "-v2-5" if protocol.is_v25(configuration)
@@ -1025,7 +1036,8 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
                     'Loaded pools match the child S0 allocation and source hashes')
         if protocol.is_v214(m['configuration']):
             from . import confirm
-            require(m['data']['confirm'] == confirm.identity(protocol.ZEBRA_PC_V13, setting.pools['zebralogic']),
+            from . import v214_preparation
+            require(m['data']['confirm'] == v214_preparation.confirmation_identity(m['configuration'], setting.pools['zebralogic']),
                     'The loaded Zebra practice pool matches its inherited confirmation identity')
     elif protocol.is_v29(m["configuration"]) and not protocol.is_v213(m["configuration"]):
         from . import confirm

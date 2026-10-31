@@ -302,7 +302,7 @@ class _Run:
         self.actual = actual
         self.outcome = Outcome(inputs["cell"], inputs["bench"], audited=notes.audited(procedure))
         self.configuration = configuration
-        if diagnostics.enabled(configuration):
+        if diagnostics.enabled(configuration, inputs["bench"]):
             self.outcome.diagnostics = []
         self.dead = False
         self.capture_faults = capture_faults

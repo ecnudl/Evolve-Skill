@@ -25,7 +25,7 @@ def s1(setting, chain):
         from . import v29_route_probe
         probe = v29_route_probe.measure(setting, bench=z.BENCH)
     selected = (getattr(setting, 'extra', None) or {}).get('configuration', v.CONFIGURATION)
-    configuration = p.IMPLANT_V5 if p.is_implant_v5(selected) else v.CONFIGURATION
+    configuration = selected if selected in (p.IMPLANT_V5, p.MAIN_V6) else v.CONFIGURATION
     if p.is_implant_v5(configuration):
         probe = v.implant_solver_probe(first, chain, probe)
     return {'passed': first['passed'] is True and (probe is None or probe['passed'] is True),
@@ -52,7 +52,7 @@ def fixture_pools(setting, chain):
 
 def s2(setting, chain):
     selected = (getattr(setting, 'extra', None) or {}).get('configuration', v.CONFIGURATION)
-    configuration = p.IMPLANT_V5 if p.is_implant_v5(selected) else v.CONFIGURATION
+    configuration = selected if selected in (p.IMPLANT_V5, p.MAIN_V6) else v.CONFIGURATION
     pools, results = fixture_pools(setting, chain), {}
     for bench in p.active_benches(configuration):
         name = chain + '/v214-smoke/S2/' + bench
@@ -93,6 +93,7 @@ def s2(setting, chain):
 
 def s3(setting, chain):
     """Exactly one inherited engineer proposal, no repair or method-effect claim."""
+    configuration = p.MAIN_V6 if p.is_v218(p.configuration_of(setting)) else v.CONFIGURATION
     name = chain + '/v214-smoke/S3'
     def work(attempt):
         endpoint = units._bounded_endpoint(units.role_endpoint(setting, chain, 'engineer', 'searchqa', 1),
@@ -110,7 +111,7 @@ def s3(setting, chain):
         if receipt.get('ok') is True:
             try:
                 reply = receipt.get('response', '')
-                context = SimpleNamespace(configuration=v.CONFIGURATION, mode='train', bench='searchqa',
+                context = SimpleNamespace(configuration=configuration, mode='train', bench='searchqa',
                     parent=empty(step=name + '/parent', evidence=setting.evidence))
                 found = engineer_reader.read(reply, context)
                 parsed_changes = sum(row['error'] is None for row in found)
@@ -141,7 +142,7 @@ def s3(setting, chain):
             'unmeasured_roles': 'assumed; no additional role probes', 'sealed_reads': 0,
             'benchmark_effect_evidence': False}
     return units.run_unit(safe_path(setting.root) / name, run=setting.run, identity={'unit': name}, work=work,
-        evidence=setting.evidence, configuration=v.CONFIGURATION,
+        evidence=setting.evidence, configuration=configuration,
         drain=units.drainer(setting, chain, name))['result']
 
 
@@ -180,9 +181,9 @@ def projection(s2, chain, *, s3=None, bounds, configuration=v.CONFIGURATION):
         cost = max((sum(numerical[b]['card'] * card + numerical[b]['procedure'] * proc
                         for b, (card, proc) in cells.items()) for cells in alternatives), default=0)
         need = math.ceil(cost * ratio + reserved)
-        # The implant test scope also funds one read retry. Other test scopes
+        # Implant/main-v6 test scopes also fund one read retry. Other test scopes
         # use the registered FIRED_SHARES maximum, identical to read_budget.
-        if scope == chain + ':test' and not p.is_implant_v5(configuration):
+        if scope == chain + ':test' and not (p.is_implant_v5(configuration) or p.is_v218(configuration)):
             need = estimate + reserved
         scope_rows[scope] = {'projected': need, 'cap': caps[scope], 'passed': need <= caps[scope]}
     read_need = max(estimate + reserved, math.ceil(estimate * p.TEST_START_FACTOR))
@@ -211,7 +212,16 @@ def manifest_identity(configuration=v.CONFIGURATION):
     return _plain(v._identity(configuration))
 
 
-def sx(root):
+def sx(root, *, configuration=v.CONFIGURATION):
+    if p.is_v218(configuration):
+        from . import v218_split, v218_read
+        stage_rows = sx(safe_path(root) / "stage-rows")
+        split = v218_split.structural_smoke(safe_path(root) / "split")
+        reused = v218_read.structural_demo()
+        return {"passed": stage_rows["passed"] and split["passed"] and reused["passed"],
+                "configuration": configuration, "stage_rows": stage_rows,
+                "split": split, "read_reuse": reused, "model_calls": 0, "sealed_reads": 0}
+
     """Authored zero-model stage demo exercising persisted rows and route sharing."""
     from . import router
     root = safe_path(root)

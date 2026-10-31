@@ -107,7 +107,7 @@ import zipfile
 import zlib
 from collections import Counter
 from concurrent.futures import ProcessPoolExecutor
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from pathlib import Path
 
 from skillopt.coevo5 import data
@@ -216,6 +216,9 @@ def consent(shared, configuration=None):
     if profiles.is_implant_v5(configuration):
         require(arms == ["F", "C", "B", "stages"] and value["date"].strip(),
                 "The implant-v5 consent names F/C/B/stages in order and a nonempty date")
+    if profiles.is_v218(configuration):
+        require(arms == ["F", "C", "B", "stages"] and value["date"].strip(),
+                "The main-v6 consent names F/C/B/stages in order and a nonempty date")
     if profiles.is_v214(configuration):
         require(value["sheet_test_qualification"] is True,
                 "main-v5 read consent includes SpreadsheetBench test qualification")
@@ -391,7 +394,12 @@ def prepare_test_qualification(setting, chain, *, panel=data.test_panel, pinned=
     if pinned is None and manifest is not None:
         manifest = manifest if isinstance(manifest, dict) else read_json(safe_path(manifest))
         pinned = manifest.get("data", {}).get("pinned")
-    with contained(setting.shared):
+    environment = nullcontext()
+    if profiles.is_v218(configuration):
+        from . import v218_lock
+        environment = v218_lock.environment(setting, 'spreadsheetbench', chain=chain,
+                                             unit=chain + '/test/qualification')
+    with environment, contained(setting.shared):
         test_tasks(setting.shared, pinned, "spreadsheetbench", "%s/test/qualification" % chain,
                    run=setting.run, runtime=setting.runtime["spreadsheetbench"], native=setting.slots[NATIVE],
                    workers=setting.workers, evidence=setting.evidence, panel=panel, configuration=configuration)
@@ -665,7 +673,9 @@ def sealed_cell(full):
         "answered": answered(full),  # §6.3's mask: whether the provider delivered any reply in this cell
         "solver_route": full.get("solver_route"),  # {"route", "model"} (cells.py); route None on chain G
         **({key: full[key] for key in ("configuration", "keyword_hits", "applies", "returned_model", "returned_models")}
-           if full.get("configuration") in ("zebra-pc-v7", "alfworld-v4", "zebra-pc-v8", "alfworld-v5", "zebra-pc-v9", "alfworld-v6", "zebra-pc-v10", "alfworld-v7", "zebra-pc-v11", "alfworld-v8", "zebra-pc-v12", "alfworld-v9", "alfworld-v10", "alfworld-v11", "zebra-pc-v13", "zebra-hp-v3r4", "main-v5", "zebra-pc-v14", "zebra-pc-v15", "zebra-hp-g3r2", "implant-v5") else {}),
+           if full.get("configuration") in ("zebra-pc-v7", "alfworld-v4", "zebra-pc-v8", "alfworld-v5", "zebra-pc-v9", "alfworld-v6", "zebra-pc-v10", "alfworld-v7", "zebra-pc-v11", "alfworld-v8", "zebra-pc-v12", "alfworld-v9", "alfworld-v10", "alfworld-v11", "zebra-pc-v13", "zebra-hp-v3r4", "main-v5", "zebra-pc-v14", "zebra-pc-v15", "zebra-hp-g3r2", "implant-v5", "main-v6") else {}),
+        **({'request_reuse': full['request_reuse']} if full.get('configuration') == 'main-v6'
+           and 'request_reuse' in full else {}),
         "stop": None if full["stop"] is None else {"kind": full["stop"]["kind"]}}
 
 
@@ -1478,8 +1488,15 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
                               if profiles.is_zebra_fc(run_configuration) or main_v5 else {}))
         plan = test_plan(tasks, final, bench=bench, unit=unit, runtime=context.runtime[bench], workers=route_workers,
                          reset=reset, **({"run_configuration": run_configuration} if reduced else {}))
-        staged = stage_plan(plan, final, packages, bench=bench, runtime=context.runtime[bench],
-                            workers=route_workers) if packages else None
+        request_plan = None
+        if run_configuration == 'main-v6':
+            from . import reuse, v218_read
+            if bench in reuse.BENCHES:
+                request_plan = v218_read.plan(plan, arms, packages, bench=bench, context=context, workers=route_workers)
+                store = v218_read.Store(store, request_plan)
+        staged = (request_plan['staged'] if request_plan is not None else
+                  stage_plan(plan, final, packages, bench=bench, runtime=context.runtime[bench],
+                             workers=route_workers) if packages else None)
         by_id = {t["task_id"]: {"public": t["public"], "private": t["private"]} for t in plan["tasks"]}
         rooms = {i: task_folder(by_id[i]["public"]["game_file"])[0] for i in by_id} if bench == "alfworld" else {}
         blocks = _blocks(sorted(by_id), bench, unit)
@@ -1494,7 +1511,14 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
                     cell = {"id": cell_id(unit, label, item, run_index), "unit": unit, "arm": label,
                             "benchmark": bench, "task_id": item, "run": run_index, "block": blocks[item],
                             **({"room": rooms[item]} if rooms else {})}
-                    if label.startswith(TWIN):
+                    if request_plan is not None:
+                        source = request_plan['sources'][label][item]
+                        job = (cell, by_id[item], request_plan['arms'][label])
+                        if source is None:
+                            jobs.append(job)
+                        else:
+                            linked.append((job, source))
+                    elif label.startswith(TWIN):
                         jobs.append((cell, by_id[item], Arm(label, final, withhold={label[len(TWIN):]})))
                     elif label in packages:  # a stage arm: it runs, or shares the cell of its source
                         source = staged["sources"][label][item]
@@ -1523,7 +1547,9 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
                                  solver.routing_view(bench, task["public"], runtime=context.runtime[bench]), None)
             share_cell(context, cell, task, arm, sources[("C", cell["task_id"], cell["run"])],
                        route.to_json(), store=store)
-        fallback = _linked(context, linked, sources, plan, staged, final, packages, store=store)
+        fallback = (v218_read.linked(context, linked, sources, request_plan, store=store)
+                    if request_plan is not None else
+                    _linked(context, linked, sources, plan, staged, final, packages, store=store))
         if fallback:  # the source cell did not run with the planned procedures: the stage cell runs, after the blocks
             fallback = [fallback[i] for i in _order(list(range(len(fallback))), round_tag(unit) + ":test:fallback")]
             run_cells(context, fallback, workers=workers, store=store)
@@ -1568,7 +1594,12 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
         "structural_zero": len(zero), "twins": sum(len(v) for v in plan["twins"].values()),
         "rooms": len(set(rooms.values())) if rooms else None, "cells": sorted(c["cell"]["id"] for c in sealed),
         "transient_deleted_sha256": deleted["manifest_sha256"], "canary_scan_sha256": scan["record_sha256"],
-        **({"blank_sharing": {"source": "C", "cells": len(blank_shares), "dispatches": 0,
+        **({'request_reuse': v218_read.counts(sealed, request_plan)} if request_plan is not None else {}),
+        **({"blank_sharing": {"source": "C", "cells": (sum(c['cell']['arm'] == 'B' and c['shared_with'] is not None
+                              and c.get('request_reuse', {}).get('source_arm') == 'C' for c in sealed)
+                              if request_plan is not None else len(blank_shares)),
+                              "dispatches": (sum(c['cell']['arm'] == 'B' and c['shared_with'] is None for c in sealed)
+                                             if request_plan is not None else 0),
                               "reason": "Zebra shell omits the card sentence"}}
            if main_v5 and bench == profiles.ZEBRA else {}),
         **({"stages": {"rows": rows, "plan_sha256": staged["sha256"] if staged else None,
@@ -1668,6 +1699,11 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
         from .chain import confirmation
         confirmation(setting.root, setting.run, chain, route="B" if chain == "D" else None,
                      configuration=configuration)
+    if profiles.is_v218(configuration):
+        completed_root = read_root(setting, chain, bench)
+        require(safe_path(found['unit_root']) == completed_root, "The read unit's registered directory")
+        if (completed_root / 'unit.json').exists():
+            return EXIT_COMPLETE
     implanted_stages = None
     if profiles.is_implant_v5(configuration):
         from . import v217_implant
@@ -1682,7 +1718,7 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
         from .chain import heavy
         try:
             pointer = safe_path(setting.shared) / "test" / (SHEET_QUALIFICATION + ".json")
-            if pointer.exists():
+            if pointer.exists() or profiles.is_v218(configuration):
                 prepare_test_qualification(setting, chain, panel=panel, pinned=manifest["data"].get("pinned"))
             else:
                 with heavy(setting, "spreadsheetbench"):
@@ -1733,11 +1769,16 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
                        pools=None if configuration == profiles.BASELINE_V210 else manifest["data"].get("pools"), run=setting.run,
                        evidence=setting.evidence, panel=panel, order=order_of(setting), configuration=configuration)
     try:
-        evaluate(unit_root, run=setting.run, shared=setting.shared, pinned=pinned, chain=chain, bench=bench, arms=arms,
-                 context=units.cell_context(own, attempt, endpoint), workers=own.workers, route_workers=route_workers,
-                 canaries=load_canaries(setting.root, read=True, configuration=configuration), panel=panel, reset=reset,
-                 drain=None if configuration == profiles.BASELINE_V210 else units.drainer(setting, chain, unit),
-                 stages=stages, run_configuration=configuration)
+        environment = nullcontext()
+        if profiles.is_v218(configuration):
+            from . import v218_lock
+            environment = v218_lock.environment(own, bench)
+        with environment:
+            evaluate(unit_root, run=setting.run, shared=setting.shared, pinned=pinned, chain=chain, bench=bench, arms=arms,
+                     context=units.cell_context(own, attempt, endpoint), workers=own.workers, route_workers=route_workers,
+                     canaries=load_canaries(setting.root, read=True, configuration=configuration), panel=panel, reset=reset,
+                     drain=None if configuration == profiles.BASELINE_V210 else units.drainer(setting, chain, unit),
+                     stages=stages, run_configuration=configuration)
     except Pause as pause:
         return EXIT_AWAITING if pause.kind == "awaiting_owner_decision" else EXIT_PAUSED
     return EXIT_COMPLETE
@@ -1747,7 +1788,13 @@ def _route_worker(setting, package, item, *, inputs_dir=None):
     """``test_plan``'s and the placebo lengths' factory: a started sandbox worker holding ``package`` with the unit's
     sandbox options (its tag included) and the live and per-call pools; ``inputs_dir``: a SpreadsheetBench item's
     public input directory, mounted read-only at /input (``mounting``, Codex finding #1; ``step._item_workers``)."""
-    return sandbox.with_worker(package, kind="cell", inputs_dir=inputs_dir, **setting.sandbox,
+    factory, options = sandbox.with_worker, dict(setting.sandbox)
+    if profiles.is_v218(configuration_of(setting)):
+        from . import v218_lock
+        factory = v218_lock.workers(factory, setting)
+        if setting.extra.get('memory_lock_unit', '').endswith('/zebralogic'):
+            options['diagnostics_configuration'] = profiles.ZEBRA_PC_V15
+    return factory(package, kind="cell", inputs_dir=inputs_dir, **options,
                                live=setting.slots["execskill-sandbox-live"],
                                per_call=setting.slots["execskill-sandbox"])
 
@@ -2024,7 +2071,10 @@ def unseal(root, chain_root, chain, unit_roots, *, run, evidence, clock=_now, co
                           "fault_kinds": value["fault_kinds"], "worst_delivery": value["worst_delivery"],
                           "dispatch_ts": value["dispatch_ts"], "finish_ts": value["finish_ts"],
                           "completion_tokens": [c["completion_tokens"] for c in value["calls"]],
-                          "solver_route": value.get("solver_route")}
+                          "solver_route": value.get("solver_route"),
+                          **({'request_sha256': [c['request_sha256'] for c in value['calls']],
+                              'request_reuse': value.get('request_reuse')}
+                             if configuration == 'main-v6' else {})}
         for value in cells.values():  # the arm whose cell a shared cell reads: C's, or in a stage read F's or S<j>'s
             value["shared_arm"] = None if value["shared_with"] is None else arm_of[value["shared_with"]]
         units[own["bench"]] = cells

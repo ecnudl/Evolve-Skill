@@ -206,6 +206,13 @@ def training_units(configuration=None):
     """Configuration-bound training unit names; legacy tuples remain frozen."""
     if configuration == protocol.BASELINE_V210 or protocol.is_v213(configuration) or protocol.is_implant_v5(configuration):
         return ()
+    if protocol.is_v218(configuration):
+        return ("run", "diagnose", "generate",
+                *(name for r in range(1, protocol.train_rounds(configuration) + 1)
+                  for name in (["engineer-r%d" % r, "train-r%d" % r, "confirm-r%d" % r] +
+                               ["%s-r%d-split-p%d" % (kind, r, n) for n in range(1, protocol.MAX_CHANGES + 1)
+                                for kind in ("train", "confirm")])),
+                "audit-final", "selftest", "accept", "freeze")
     if protocol.is_v295(configuration):
         return ("run", "diagnose", "generate",
                 *("%s-r%d" % (kind, r) for r in range(1, protocol.train_rounds(configuration) + 1)
@@ -376,7 +383,9 @@ class _Step:
         root, Codex finding #7) and the unit is drained at its end, completed or paused (``units.drainer``; ticket
         C5-1). ``benches``: the other benches whose cells the unit runs (a self-test's earlier generated sets, §5.5):
         the machine-wide memory lock is the strongest any of them or the step's bench needs (``chain.heavy``; Codex
-        finding #5). ``settle(attempt, result)``: the unit's consumption settlement, run by ``units.run_unit`` after the
+        finding #5). In main-v6, cells, workbook workers and native engine operations own that lock, leaving
+        role-only work and completed-unit readback free. ``settle(attempt, result)``: the unit's consumption
+        settlement, run by ``units.run_unit`` after the
         attempt's completion evidence is persisted and again by a commit attempt after a recovery (idempotent; Codex
         finding #8)."""
         require(name in self.units, "Unknown sub-step unit")
@@ -386,12 +395,21 @@ class _Step:
                     "parent": self.parent.sha256}
         base, services = self.setting, self.services
         self.setting = units.for_unit(base, self.chain, self.bench, label)
+        if protocol.is_v218(configuration_of(self.setting)):
+            self.setting.extra['memory_lock_benches'] = (self.bench, *benches)
         cleanup_options = ({key: self.setting.sandbox[key] for key in (
             "cleanup_grace_seconds", "cleanup_events", "ready_timeout_seconds", "start_events")}
                            if protocol.is_v292(configuration_of(self.setting)) else {})
+        if protocol.is_v218(configuration_of(self.setting)) and self.bench == protocol.ZEBRA:
+            cleanup_options['diagnostics_configuration'] = protocol.ZEBRA_PC_V15
         self.services = replace(services, workers=functools.partial(services.workers,
                                                                     tag=self.setting.sandbox["tag"], **cleanup_options),
                                 registry=services.registry.bound(base.root))
+        if protocol.is_v218(configuration_of(self.setting)):
+            from . import v218_lock
+            self.services = replace(self.services,
+                workers=v218_lock.workers(self.services.workers, self.setting),
+                engine=v218_lock.engine(self.services.engine, self.setting))
         root = units.unit_path(self.chain_root, self.k, self.bench, name)
 
         def logged(attempt):  # registrar addendum 15:5x R5: the attempt's role calls, once, whatever its end
@@ -403,7 +421,7 @@ class _Step:
                 self.calls = None
 
         try:
-            with heavy(base, self.bench, *benches):
+            with nullcontext() if protocol.is_v218(configuration_of(base)) else heavy(base, self.bench, *benches):
                 found = units.run_unit(root, run=base.run, identity=identity, work=logged, evidence=self.evidence,
                                        configuration=configuration_of(base),
                                        drain=units.drainer(base, self.chain, label), settle=settle)
@@ -1229,7 +1247,7 @@ def _pair_signatures(st, candidate, parent, publics, views, *, note_coverage=Non
                 out[item][arm] = request_reuse.signature(st.bench, package, view, worker,
                                                        card_text=st.setting.cards.get(st.bench, ""), runtime=st.runtime(),
                                                        **({'configuration': configuration_of(st.setting)}
-                                                          if protocol.is_v215(configuration_of(st.setting)) else {}),
+                                                          if protocol.uses_v215(configuration_of(st.setting), st.bench) else {}),
                                                        **observe)
     return out
 
@@ -1310,6 +1328,12 @@ def _candidate(st, cut, generated):
 
 # ------------------------------------------------------------------------------------- v2: the training rounds
 def _unit_trajectories(st, name):
+    if protocol.is_v218(configuration_of(st.setting)) and "-split-p" in name:
+        from . import v218_split
+        result = st.done(name)
+        cells = {(arm, key): rows for arm, side in (("S", "incumbent"), ("S'", "candidate"))
+                 for key, rows in result.get(side + "_cells", {}).items()}
+        return list(v218_split.source_trajectories(st, cells, allow_confirmation=name.startswith("confirm-r")).values())
     return trajectories.load_run(units.unit_path(st.chain_root, st.k, st.bench, name))
 
 
@@ -1632,6 +1656,14 @@ def _notes_coverage(st, pid, enabled, candidate, cells, made, current, identical
                 request = _coverage_request(trajectory)
                 if request is None:
                     continue
+                same = captured.get(key, {})
+                if (cell["cell"]["id"] in same.get("source_cells", ())
+                        and protocol.is_v218(configuration_of(st.setting))):
+                    require(same.get("candidate_sha256") == candidate.sha256
+                            and request["request_sha256"] == same["request_sha256"],
+                            "Split coverage binds the subcandidate observation to its reused delivered request")
+                    fields.update(same["fields"].get(pid, ()))
+                    continue
                 view = solver.zebralogic.parse_user(request["user"])
                 delivered = str(view.pop(NOTES_KEY, ""))
                 shown = _shown_note_fields(st.bench, candidate, shell.get("notes", ()), view, delivered)
@@ -1761,7 +1793,7 @@ def _feedback(st, cut, unit, verdict, routed, incumbent, candidate, cells, made,
     if protocol.is_v291(configuration_of(st.setting)):
         value["format"] = _format_feedback(cells, made, set(by_key), verdict,
                                             FEEDBACK_TAG + ":" + st.label(unit) + ":format")
-    if protocol.is_v215(configuration_of(st.setting)):
+    if protocol.uses_v215(configuration_of(st.setting), st.bench):
         from . import diagnostics_feedback
         examples = [row['task_id'] for procedure in procedures for row in procedure['examples']]
         examples += [row['task_id'] for row in value.get('unfixed_examples', ())]
@@ -1869,7 +1901,7 @@ def _train_eval(st, cut, r, incumbent, candidate, generated, *, current=None):
         differs = [key for key, _ in views if before[key].enabled != after[key].enabled]
         evaluated = list(differs)
         identical, signatures, captured = [], None, {}
-        diagnostic_observations = {} if protocol.is_v215(configuration_of(st.setting)) else None
+        diagnostic_observations = {} if protocol.uses_v215(configuration_of(st.setting), st.bench) else None
         if IDENTICAL_REQUEST_REUSE[configuration_of(st.setting)]:
             signatures = _pair_signatures(st, trained, incumbent, publics,
                                          [(key, view) for key, view in views if key in differs],
@@ -1916,11 +1948,11 @@ def _train_eval(st, cut, r, incumbent, candidate, generated, *, current=None):
                              **({'diagnostics_observations': diagnostic_observations}
                                 if diagnostic_observations is not None else {}),
                              **({'diagnostics_telemetry': diagnostic_telemetry}
-                                if protocol.is_v215(configuration_of(st.setting)) else {}))
+                                if protocol.uses_v215(configuration_of(st.setting), st.bench) else {}))
         out = {"learning": TRAIN, "round": r, "incumbent_sha256": incumbent.sha256,
                "candidate_sha256": trained.sha256, "routed": len(views), "differs": len(differs),
                "cells": len(found), "adopted": verdict["adopted"], "verdict": verdict, "feedback": feedback}
-        if protocol.is_v215(configuration_of(st.setting)):
+        if protocol.uses_v215(configuration_of(st.setting), st.bench):
             from . import diagnostics_feedback
             out.update(diagnostics_feedback.telemetry(diagnostic_telemetry))
         if PRUNE_NON_FIRING[configuration_of(st.setting)]:
@@ -1929,6 +1961,9 @@ def _train_eval(st, cut, r, incumbent, candidate, generated, *, current=None):
             out.update({"version": "training-requests-v2-3", "identical": identical, "request_signatures": signatures})
         if protocol.is_v29(configuration_of(st.setting)):
             out["routing"] = {key: {"S": before[key].to_json(), "S'": after[key].to_json()} for key, _ in views}
+        if protocol.is_v218(configuration_of(st.setting)):
+            out.update(incumbent_cells={key: rows for (arm, key), rows in cells.items() if arm == "S"},
+                       candidate_cells={key: rows for (arm, key), rows in cells.items() if arm == "S'"})
         return out
 
     return st.unit(unit, work)
@@ -2128,6 +2163,10 @@ def _line(r, engineered, evaluated, *, configuration=None):
             line.update(own_fault_cells=verdict["own_fault_cells"], format_cells=dict(verdict["format_cells"]))
         if "confirm" in evaluated:
             line["confirm"] = practice_confirm.counts_only(evaluated["confirm"])
+        if protocol.is_v218(configuration) and "split" in evaluated:
+            from . import v218_split
+            require(v218_split.counts_ok(evaluated["split"]), "Split history contains counts only")
+            line["split"] = evaluated["split"]
     sealed, proposals = engineered["engineer"], []
     inert = [change["id"] for change in sealed["changes"] if change.get("inert")]
     if inert and engineered["candidate_sha256"] is None:
@@ -2152,6 +2191,10 @@ def _line(r, engineered, evaluated, *, configuration=None):
             fate = "dropped_in_combination"
         elif evaluated is not None and change["id"] in evaluated.get("pruned", ()):
             fate = "pruned_no_firing"
+        elif protocol.is_v218(configuration) and evaluated is not None and "split" in evaluated:
+            split = next((row for row in evaluated["split"] if row["procedure"] == change["id"]), None)
+            fate = ("adopted_by_split" if evaluated.get("split_winner") == change["id"] else
+                    "not_adopted:split:" + ((split["reason"] or "not_selected") if split else "not_selected"))
         else:
             fate = "adopted" if line["adopted"] else "not_adopted:" + line["reason"]
         leak_checked = stopped is None or stopped in ("C7", "C8", "C9")
@@ -2187,10 +2230,17 @@ def _train(st, cut, generated):
             if evaluated["candidate_sha256"] != candidate.sha256:  # v2.2: idle procedures were pruned
                 candidate = _package(st, evaluated["candidate_sha256"])
             if protocol.is_v29(configuration_of(st.setting)) and evaluated["adopted"]:
-                evaluated = _confirmed_training(evaluated, _confirm_eval(st, cut, r, incumbent, candidate,
-                    **({"exercise": True} if protocol.uses_v211(configuration_of(st.setting), getattr(st, "bench", None)) and st.smoke is not None else {})))
-            done.append(("train-r%d" % r, evaluated["adopted"]))
-            fed, training = "train-r%d" % r, evaluated["feedback"]
+                confirmation = _confirm_eval(st, cut, r, incumbent, candidate,
+                    **({"exercise": True} if protocol.uses_v211(configuration_of(st.setting), getattr(st, "bench", None)) and st.smoke is not None else {}))
+                if protocol.is_v218(configuration_of(st.setting)):
+                    from . import v218_split
+                    candidate, evaluated = v218_split.run(st, cut, r, incumbent, candidate, engineered,
+                        evaluated, confirmation, generated, current=_current(st, done))
+                else:
+                    evaluated = _confirmed_training(evaluated, confirmation)
+            training_unit = evaluated.get("training_unit", "train-r%d" % r) if protocol.is_v218(configuration_of(st.setting)) else "train-r%d" % r
+            done.append((training_unit, evaluated["adopted"]))
+            fed, training = training_unit, evaluated["feedback"]
             if evaluated["cells"]:
                 last = candidate
             if evaluated["adopted"]:
@@ -2229,7 +2279,11 @@ def _audit_final(st, candidate, rounds_done):
             if engineered:
                 prior.extend({**record, "_source_unit": st.label("engineer-r%d" % r)}
                              for record in engineered["engineer"].get("audits", ()))
-            for source, name in (("confirm", "confirm-r%d" % r), ("train", "train-r%d" % r)):
+            sources = [("confirm", "confirm-r%d" % r), ("train", "train-r%d" % r)]
+            if protocol.is_v218(configuration_of(st.setting)):
+                sources += [(kind, "%s-r%d-split-p%d" % (kind, r, n))
+                            for n in range(1, protocol.MAX_CHANGES + 1) for kind in ("train", "confirm")]
+            for source, name in sources:
                 if st.done(name):
                     for trajectory in _unit_trajectories(st, name):
                         if trajectory.get("arm") == "S'":
@@ -2240,6 +2294,8 @@ def _audit_final(st, candidate, rounds_done):
                             snapshots.append({**trajectory, "audit_source": source,
                                 "package_procedures": {p.id: hashlib.sha256(p.source.encode("utf-8")).hexdigest()
                                                        for p in observed.procedures} if observed else {}})
+        if protocol.is_v218(configuration_of(st.setting)):
+            snapshots = list({row["cell"]: row for row in snapshots}.values())
         situations = audit.situations_from_cells(snapshots, candidate, configuration=configuration_of(st.setting))
         excluded = {key for record in prior for key in record.get("situation_keys", ())}
         counts = {}
@@ -2518,7 +2574,7 @@ def _freeze(st, cut, candidate, accepted):
                 outcomes = (replay.replay_many(procedure, entries, st.services.workers, inputs_dirs=inputs,
                             **({'configuration': configuration_of(st.setting)}
                                if protocol.is_v214(configuration_of(st.setting))
-                                  or protocol.is_v215(configuration_of(st.setting)) else {}))
+                                  or protocol.uses_v215(configuration_of(st.setting), st.bench) else {}))
                             if runs_here else {})
                 lengths = [len(note["text"]) for outcome in outcomes.values() for note in outcome.notes
                            if note["text"]]
@@ -2553,12 +2609,12 @@ def run_step(setting, chain, bench, k, parent, *, services, chain_root=None, smo
         package, value = fixed_import.import_step(setting, chain_root or Path(setting.root) / chain,
                                                 chain, k, bench, parent)
         return StepRecord(package, value)
-    if configuration_of(setting) in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5) and bench == "alfworld":
+    if configuration_of(setting) in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6) and bench == "alfworld":
         from . import v210_import
         package, value = v210_import.import_step(setting, chain_root or Path(setting.root) / chain,
                                                  chain, k, bench, parent)
         return StepRecord(package, value)
-    if configuration_of(setting) in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5):
+    if configuration_of(setting) in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6):
         from .v210_import import check_learning_capacity
         check_learning_capacity(parent)
     if smoke is None:
@@ -2671,7 +2727,7 @@ def run_unit_spec(manifest, *, spec):
     setting = manifests.setting_of(manifest, chain)
     budgets.own_ledger(setting, chain).declare({**budgets.chain_caps(chain, configuration),
                                                 **budgets.first_call_caps(chain)})
-    services = (None if protocol.is_implant_v5(configuration) or protocol.is_v213(configuration) or (configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5) and bench == "alfworld") else
+    services = (None if protocol.is_implant_v5(configuration) or protocol.is_v213(configuration) or (configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6) and bench == "alfworld") else
                 manifests.services_of(manifest, chain, setting=setting))
     chain_root = safe_path(setting.root) / chain
     try:

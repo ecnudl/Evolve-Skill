@@ -71,7 +71,7 @@ def _evidence(ctx, procedure, report):
     from . import fault_feedback
     result = fault_feedback.summarize(procedure, report, configuration=ctx.configuration,
         **({'bench': ctx.bench} if p.is_v214(ctx.configuration) else {}))
-    if p.is_v215(ctx.configuration):
+    if p.uses_v215(ctx.configuration, ctx.bench):
         from . import diagnostics_feedback
         example = result.get('example_call')
         diagnostics_feedback.attach(result, lambda: diagnostics_feedback.from_checks(

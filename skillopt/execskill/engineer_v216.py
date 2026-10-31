@@ -66,7 +66,7 @@ def repair_cycle(ctx, change, report, taken=(), *, attempts):
     the unit's budget pause, exactly as in v14.
     """
     from . import engineer as e, engineer_v28
-    if not p.is_v216(ctx.configuration):
+    if not p.uses_v216(ctx.configuration, ctx.bench):
         raise ValueError('The bounded repair cycle belongs to zebra-pc-v15')
     current, final = report, change
     checked_indices = [next(index for index, attempt in enumerate(attempts) if attempt is current)]

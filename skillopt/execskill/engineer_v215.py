@@ -30,7 +30,7 @@ def system(configuration, *, train):
 
 def dispatch(ctx, user):
     """Preserve the exact inherited mode and repair suffix, then add the new section."""
-    require(p.is_v215(ctx.configuration), 'The v2.15 engineer prompt belongs to zebra-pc-v14')
+    require(p.uses_v215(ctx.configuration, ctx.bench), 'The v2.15 engineer prompt belongs to zebra-pc-v14')
     from . import engineer
     parent = copy(ctx)
     parent.configuration = p.ZEBRA_PC_V13

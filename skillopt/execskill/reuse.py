@@ -35,7 +35,8 @@ def signature(bench, package, view, worker, *, card_text="", runtime=None, withh
 
     shell = solver._Shell(bench, package, no_call, worker, withhold=withhold, restore=restore, placebo=placebo,
                           text=None, native=None, nominal=None,
-                          **({'configuration': configuration} if profiles.is_v215(configuration) else {}))
+                          **({'configuration': configuration}
+                             if profiles.is_v215(configuration) or profiles.is_v218(configuration) else {}))
     shell.started = worker is not None
     shell.route_on(view)
     text, names = shell.before(view, solver._public_text(view))

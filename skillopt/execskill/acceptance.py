@@ -312,7 +312,7 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
                                                            card_text=reuse.get("card_text", ""),
                                                            runtime=reuse.get("runtime"), **keywords,
                                                            **({'configuration': configuration}
-                                                              if profiles.is_v215(configuration) else {}))
+                                                              if profiles.uses_v215(configuration, bench) else {}))
         sealed = with_reuse(sealed, request_reuse.from_signatures(sealed, signatures))
     write_json(safe_path(root) / "sealed.json", sealed)
     return sealed

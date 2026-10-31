@@ -117,7 +117,7 @@ def test_zebra_shell_and_trajectory_keep_v212_shape_without_v211_effects():
 
 
 @pytest.mark.parametrize('configuration', [name for name in p.CONFIGURATIONS
-                                         if name not in (p.MAIN_V5, p.IMPLANT_V5)])
+                                         if name not in (p.MAIN_V5, p.IMPLANT_V5, p.MAIN_V6)])
 def test_every_older_configuration_preserves_literal_parent_effect_shape(configuration):
     for bench in ('spreadsheetbench', 'alfworld', p.ZEBRA):
         current = shell(configuration, bench)

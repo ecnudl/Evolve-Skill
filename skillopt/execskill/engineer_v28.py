@@ -324,7 +324,7 @@ def run(ctx):
                             'calls': [], 'kept_index': 0, 'stop_reason': 'failed_checks', 'eligible': False}
             fault_fields['fault_repair'] = repaired
         cycle_fields = None
-        if p.is_v216(ctx.configuration) and final.kind in e.CODED:
+        if p.uses_v216(ctx.configuration, ctx.bench) and final.kind in e.CODED:
             from . import engineer_v216
             final, current, survived, cycle_fields = engineer_v216.repair_cycle(
                 ctx, final, current, taken, attempts=attempts)
@@ -339,7 +339,7 @@ def run(ctx):
             inert, deferred = bool(current.get('inert')), bool(current.get('deferred'))
             fault_fields['inert_repair'] = repaired
         audit_fields = cycle_fields or {}
-        if (not p.is_v216(ctx.configuration) and p.is_v29(ctx.configuration)
+        if (not p.uses_v216(ctx.configuration, ctx.bench) and p.is_v29(ctx.configuration)
                 and survived and not inert and not deferred and final.kind in e.CODED):
             from . import audit
             audit_procedure_id = final.procedure.id
@@ -419,7 +419,7 @@ def run(ctx):
     if p.is_v294(ctx.configuration):
         from . import engineer_v294, engineer_v295
         prompt = engineer_v295 if p.is_v295(ctx.configuration) else engineer_v294
-        if p.is_v215(ctx.configuration):
+        if p.uses_v215(ctx.configuration, ctx.bench):
             from . import engineer_v215
             prompt = engineer_v215
         if not p.uses_v211(ctx.configuration, ctx.bench):
@@ -430,7 +430,7 @@ def run(ctx):
     if train:
         fields.update(mode=e.TRAIN, round=ctx.round, base_sha256=ctx.base.sha256, budget=e.budget(ctx), lint=lint,
                       analysis=analysis, analyst_prompt_sha256=e.ANALYST_PROMPT_SHA256, disclosed=e._disclosed_items(ctx))
-    if p.is_v215(ctx.configuration):
+    if p.uses_v215(ctx.configuration, ctx.bench):
         from . import diagnostics_feedback
         fields.update(diagnostics_feedback.telemetry(ctx.sheet))
     return package, p.record(p.ENGINEER_RECORDS[p.machinery_configuration(ctx.configuration, ctx.bench)], ctx.evidence, fields)

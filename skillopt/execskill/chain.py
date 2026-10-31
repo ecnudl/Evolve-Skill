@@ -56,7 +56,7 @@ import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from fractions import Fraction
 from pathlib import Path
 from types import SimpleNamespace
@@ -126,6 +126,11 @@ def heavy_mode(benches):
 def heavy(setting, bench, *more):
     """The machine-wide memory lock of a unit on ``bench`` whose cells also run on ``more`` (``heavy_mode``; module
     docstring); waits its turn, untimed like every route-B slot wait (plan §4)."""
+    if p.is_v218(configuration_of(setting)):
+        from .v218_lock import environment
+        with environment(setting, bench, *more):
+            yield
+        return
     mode = heavy_mode((bench, *more))
     if mode is None:
         yield
@@ -495,8 +500,12 @@ def evaluate(setting, chain, package, *, launch=launch_child):
     if p.is_v214(configuration_of(setting)):
         from . import evaluation
         # Both chains wait for the one shared qualification and its artifact cleanup before any read child starts.
-        with heavy(setting, "spreadsheetbench"):
-            evaluation.prepare_test_qualification(setting, chain)
+        if p.is_v218(configuration_of(setting)):
+            if any(not (root / 'unit.json').exists() for root in roots.values()):
+                evaluation.prepare_test_qualification(setting, chain)
+        else:
+            with heavy(setting, "spreadsheetbench"):
+                evaluation.prepare_test_qualification(setting, chain)
 
     def one(bench):
         root = roots[bench]
@@ -504,7 +513,7 @@ def evaluate(setting, chain, package, *, launch=launch_child):
         if not (root / "unit.json").exists():
             spec = {"chain": chain, "bench": bench, "package_sha256": package.sha256, "unit_root": str(root)}
             before = len(attempts(root))
-            with heavy(setting, bench):
+            with nullcontext() if p.is_v218(configuration_of(setting)) else heavy(setting, bench):
                 code = launch(setting, spec)
             if not (root / "unit.json").exists():
                 if code != EXIT_AWAITING and len(attempts(root)) == before:

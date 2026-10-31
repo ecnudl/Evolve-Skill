@@ -225,6 +225,8 @@ def cell_context(setting, attempt, endpoint, *, solve=solver.solve):
 
     def worker(bench):
         options = dict(setting.sandbox)
+        if protocol.is_v218(protocol.configuration_of(setting)) and bench == protocol.ZEBRA:
+            options['diagnostics_configuration'] = protocol.ZEBRA_PC_V15
         if protocol.is_v292(protocol.configuration_of(setting)):
             options["cleanup_grace_seconds"] = protocol.cleanup_grace_seconds(protocol.configuration_of(setting))
             options["ready_timeout_seconds"] = protocol.ready_timeout_seconds(protocol.configuration_of(setting))
@@ -234,9 +236,14 @@ def cell_context(setting, attempt, endpoint, *, solve=solver.solve):
                if endpoint.model == protocol.CHAINS["D"] else {})
     from .instruction_start import active_cards
     cards = active_cards(setting.cards, protocol.configuration_of(setting))
+    environment = None
+    if protocol.is_v218(protocol.configuration_of(setting)):
+        from . import v218_lock
+        environment = lambda bench, unit: v218_lock.environment(setting, bench, unit=unit)
     return Context(attempt=attempt, endpoint=endpoint, runtime=setting.runtime, cards=cards,
                    native=pools[NATIVE], episodes=pools[EPISODE], worker=worker, evidence=setting.evidence,
-                   nominal=nominal, solve=solve, configuration=protocol.configuration_of(setting))
+                   nominal=nominal, solve=solve, configuration=protocol.configuration_of(setting),
+                   **({'environment': environment} if environment is not None else {}))
 
 
 def for_unit(setting, chain, bench, unit):
@@ -251,6 +258,9 @@ def for_unit(setting, chain, bench, unit):
                        cleanup_events=_cleanup_events(setting, chain, unit),
                        ready_timeout_seconds=protocol.ready_timeout_seconds(protocol.configuration_of(setting)),
                        start_events=_start_events(setting, chain, unit))
+    if protocol.is_v218(protocol.configuration_of(setting)):
+        return replace(setting, sandbox=options, workers=workers, extra={**setting.extra,
+            'memory_lock_chain': chain, 'memory_lock_unit': unit})
     return replace(setting, sandbox=options, workers=workers)
 
 

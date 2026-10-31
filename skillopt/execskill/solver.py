@@ -273,7 +273,7 @@ class _Shell:
         self.shortcut = shortcut
         self.configuration = configuration
         self.effects = []
-        if diagnostics.enabled(configuration):
+        if diagnostics.enabled(configuration, bench):
             self.diagnostics = []
         self.shams = frozenset(placebo["procedures"]) if placebo else frozenset()
         self.receipts, self.calls, self.events, self.faults, self.notes = [], [], [], [], []
@@ -521,7 +521,7 @@ class _Shell:
                   "sandbox": self.sandbox()}
         if profiles.uses_v211(self.configuration, self.bench):
             fields['effects'] = list(self.effects)
-        if diagnostics.enabled(self.configuration):
+        if diagnostics.enabled(self.configuration, self.bench):
             fields['diagnostics'] = list(self.diagnostics)
         if any(notes.audited(p) for p in self.package.procedures):
             fields["keyword_hits"] = notes.keyword_summary([row for entry in self.notes for row in entry["dropped"]])

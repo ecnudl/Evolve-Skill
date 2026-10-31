@@ -636,6 +636,10 @@ def readout(units, *, learned, procedures, label, evidence, stages=None, configu
             contrasts[bench] = {first + "-" + second: _contrast(
                 cells, first, second, _items(cells, first, second), bootstrap=True, sensitivity=True)
                 for first, second in pairs}
+        request_analysis = {}
+        if configuration == 'main-v6':
+            from . import v218_read
+            request_analysis['identical_request_analysis'] = v218_read.secondary(units, stages)
         return record("readout", evidence, {
             "configuration": configuration, "evidence_kind": ("post_hoc_selected_upper_bound" if hand_picked else
                              "pipeline_control" if zebra else EVIDENCE_KIND), "read_label": label,
@@ -648,6 +652,7 @@ def readout(units, *, learned, procedures, label, evidence, stages=None, configu
                 "q3_noninferiority": q3_noninferiority(units, exposed, configuration=configuration)
                     if any(bench in units for bench in dissimilar(exposed, configuration)) else None}),
             "shared_unanswered": {bench: len(unanswered(cells)) for bench, cells in units.items()},
+            **request_analysis,
             "arms": {bench: arm_table(cells) for bench, cells in units.items()},
             "placebo": {"removed": True}, "code_vs_text": {"removed": True}, "twins": {"removed": True},
             **({"stages": stage_table(units, stages, configuration=configuration),
@@ -698,7 +703,7 @@ def report(manifest, *, out):
         learned = [b for b in roster if b in procedures.values()
                    and not profiles.is_v213(manifest["configuration"])
                    and not profiles.is_implant_v5(manifest["configuration"])
-                   and not (manifest["configuration"] in (profiles.MAIN_V3, profiles.MAIN_V4, profiles.MAIN_V5)
+                   and not (manifest["configuration"] in (profiles.MAIN_V3, profiles.MAIN_V4, profiles.MAIN_V5, 'main-v6')
                             and b == "alfworld")]
         units = [chain_root / "test" / b for b in roster if (chain_root / "test" / b / "unit.json").exists()]
         opened = evaluation.unseal(root, chain_root, chain, units, run=run, evidence=evidence,

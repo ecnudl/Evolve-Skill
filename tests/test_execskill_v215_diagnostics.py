@@ -26,7 +26,7 @@ def test_extract_keeps_note_fields_detached_and_binds_screened_content_hashes():
         sort_keys=True, separators=(',', ':')).encode()).hexdigest()
 
 
-@pytest.mark.parametrize('configuration', [c for c in p.CONFIGURATIONS if not p.is_v215(c)])
+@pytest.mark.parametrize('configuration', [c for c in p.CONFIGURATIONS if not p.is_v215(c) and not p.is_v218(c)])
 def test_every_older_configuration_preserves_exact_raw_hook_output(configuration):
     value = {'facts': ['Authored fact.'], 'diagnostics': {'malformed': 'must stay historical'}}
     clean, record = d.extract(value, configuration=configuration)
