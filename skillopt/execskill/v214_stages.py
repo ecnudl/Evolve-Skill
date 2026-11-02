@@ -25,7 +25,7 @@ def s1(setting, chain):
         from . import v29_route_probe
         probe = v29_route_probe.measure(setting, bench=z.BENCH)
     selected = (getattr(setting, 'extra', None) or {}).get('configuration', v.CONFIGURATION)
-    configuration = selected if selected in (p.IMPLANT_V5, p.MAIN_V6) else v.CONFIGURATION
+    configuration = selected if selected in (p.IMPLANT_V5, p.MAIN_V6, p.CROSS_V5) else v.CONFIGURATION
     if p.is_implant_v5(configuration):
         probe = v.implant_solver_probe(first, chain, probe)
     return {'passed': first['passed'] is True and (probe is None or probe['passed'] is True),
@@ -52,7 +52,7 @@ def fixture_pools(setting, chain):
 
 def s2(setting, chain):
     selected = (getattr(setting, 'extra', None) or {}).get('configuration', v.CONFIGURATION)
-    configuration = selected if selected in (p.IMPLANT_V5, p.MAIN_V6) else v.CONFIGURATION
+    configuration = selected if selected in (p.IMPLANT_V5, p.MAIN_V6, p.CROSS_V5) else v.CONFIGURATION
     pools, results = fixture_pools(setting, chain), {}
     for bench in p.active_benches(configuration):
         name = chain + '/v214-smoke/S2/' + bench
@@ -63,6 +63,9 @@ def s2(setting, chain):
                 max_tokens_bound=p.ledger_bound(p.CHAINS[chain], bench, branch=local.branch, longest=local.longest))
             tasks = {rounds.key(bench, row['task_id']): {'public': row['public'], 'private': row['private']}
                      for row in pools[bench]}
+            if p.is_v219(configuration):
+                from . import v219_smoke
+                return v219_smoke.practice(local, attempt, endpoint, name, bench, tasks, chain)
             card = Arm('card', empty(step=name, evidence=local.evidence))
             first_key = next(iter(tasks))
             first = rounds.run_round(replace(local, workers=1), attempt, endpoint, name, {'C': card},
@@ -158,13 +161,17 @@ def projection(s2, chain, *, s3=None, bounds, configuration=v.CONFIGURATION):
     per_cell, sizes, actual, charged = {}, {}, 0, 0
     for bench, row in s2['benches'].items():
         measured = row['measurements']
-        entry = measured.get('per_class', {}).get(bench, {}).get('card', {})
-        require(row.get('passed') is True and row.get('arms') == ['C'] and row.get('items') == v.S2_ITEMS[bench]
-                and entry.get('cells') == v.S2_ITEMS[bench] and entry.get('tokens', 0) > 0,
-                'SE6 only uses the registered measured C practice cells')
-        card = Fraction(entry['tokens'], entry['cells'])
-        per_cell[bench] = {'card': str(card), 'procedure': str(card * p.PROCEDURE_ARM_FACTOR[1]),
-                           'procedure_assumed': True}
+        if p.is_v219(configuration):
+            from . import v219_smoke
+            per_cell[bench] = v219_smoke.measured_prices(row, bench)
+        else:
+            entry = measured.get('per_class', {}).get(bench, {}).get('card', {})
+            require(row.get('passed') is True and row.get('arms') == ['C'] and row.get('items') == v.S2_ITEMS[bench]
+                    and entry.get('cells') == v.S2_ITEMS[bench] and entry.get('tokens', 0) > 0,
+                    'SE6 only uses the registered measured C practice cells')
+            card = Fraction(entry['tokens'], entry['cells'])
+            per_cell[bench] = {'card': str(card), 'procedure': str(card * p.PROCEDURE_ARM_FACTOR[1]),
+                               'procedure_assumed': True}
         sizes[bench] = measured['request_bytes'][bench]
         actual += measured['actual']
         charged += row['settled_tokens']
@@ -198,7 +205,7 @@ def projection(s2, chain, *, s3=None, bounds, configuration=v.CONFIGURATION):
         'later_G_cost_factor': ('not_applicable_no_learning_run' if p.is_implant_v5(configuration)
                                 else 'runtime read_budget rechecks max(1, measured training factor)'),
         'read_scopes': read_scopes, 'solver_scopes': scope_rows,
-        'stage_packages': 4, 'solver_bounds': deepcopy(bounds), 'sealed_reads': 0,
+        'stage_packages': 0 if p.is_v219(configuration) else 4, 'solver_bounds': deepcopy(bounds), 'sealed_reads': 0,
         'method_cost': ({'model_calls': 0, 'all_role_caps': 0, 'learning': 'none'}
                         if p.is_implant_v5(configuration) else
                         {'engineer_tokens_per_call': s3['tokens'], 'other_roles': 'unmeasured; assumed',

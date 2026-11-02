@@ -83,7 +83,8 @@ SHORT_ANSWER = Fraction(1, 4)
 # ------------------------------------------------------------------------------------------- cells and contrasts
 def side(arm):
     """§6.3: F, its twins and the stage arms (packages with procedures, as F) are read on L, every other arm on H."""
-    return "L" if arm == "F" or arm.startswith(TWIN) or STAGE_LABEL.fullmatch(arm) else "H"
+    return "L" if arm == "F" or arm.startswith(TWIN) or STAGE_LABEL.fullmatch(arm) or arm in (
+        "X_searchqa", "X_officeqa", "X_zebralogic", "X_spreadsheetbench", "X_alfworld") else "H"
 
 
 def _runs(cells, arm, item):
@@ -611,7 +612,11 @@ def readout(units, *, learned, procedures, label, evidence, stages=None, configu
     None, only where F learned nothing and the stage arms carry the read)."""
     from . import profiles
     if profiles.is_v210(configuration) or profiles.is_zebra_fc(configuration):
-        main_v5 = profiles.is_v214(configuration)
+        cross = profiles.is_v219(configuration)
+        main_v5 = profiles.is_v214(configuration) and not cross
+        if cross:
+            from . import v219_read
+            require(stages is None, "Cross readout contains no stage rows")
         if main_v5:
             require(stages is not None, "main-v5 readout includes the frozen stage rows")
         contrasts = {}
@@ -624,12 +629,13 @@ def readout(units, *, learned, procedures, label, evidence, stages=None, configu
         imported = [ZEBRA, "alfworld"] if implanted else [ZEBRA] if hand_picked else [] if baseline or zebra else ["alfworld"]
         # Imported programs are not newly learned here, and their home bench is
         # not an unexposed transfer target. Its F-C remains measured below.
-        exposed = [bench for bench in (read_benches(configuration) if main_v5 else SUPPORTED_BENCHES if zebra else BENCHES)
+        exposed = [bench for bench in (read_benches(configuration) if main_v5 or cross else SUPPORTED_BENCHES if zebra else BENCHES)
                    if bench in set(learned) | set(imported)]
         pairs = (("F", "C"),) if zebra else (("C", "B"),) if baseline else (("F", "C"), ("C", "B"), ("F", "B"))
         for bench in sorted(units, key=SUPPORTED_BENCHES.index):
             cells = units[bench]
-            expected = ({"F", "C", "B", *stages} if main_v5 else set(profiles.read_arms_of(configuration)))
+            expected = (set(v219_read.labels(bench)) if cross else
+                        {"F", "C", "B", *stages} if main_v5 else set(profiles.read_arms_of(configuration)))
             require({arm for arm, _, _ in cells} == expected,
                     "v2.10 readout arms must match the configuration")
             _clustered(bench, cells)
@@ -637,11 +643,16 @@ def readout(units, *, learned, procedures, label, evidence, stages=None, configu
                 cells, first, second, _items(cells, first, second), bootstrap=True, sensitivity=True)
                 for first, second in pairs}
         request_analysis = {}
-        if configuration == 'main-v6':
+        if configuration == 'main-v6' or cross:
             from . import v218_read
-            request_analysis['identical_request_analysis'] = v218_read.secondary(units, stages)
+            request_analysis['identical_request_analysis'] = v218_read.secondary(units, ['C'] if cross else stages)
+        if cross:
+            request_analysis['cross'] = v219_read.matrix(units)
+            request_analysis['identical_request_analysis']['cross'] = v219_read.matrix(units, secondary=True)
+            del request_analysis['identical_request_analysis']['stages']
         return record("readout", evidence, {
-            "configuration": configuration, "evidence_kind": ("post_hoc_selected_upper_bound" if hand_picked else
+            "configuration": configuration, "evidence_kind": (v219_read.EVIDENCE_KIND if cross else
+                             "post_hoc_selected_upper_bound" if hand_picked else
                              "pipeline_control" if zebra else EVIDENCE_KIND), "read_label": label,
             "learned": list(learned), "imported": imported,
             "contrasts": contrasts, "contrasts_reading": "descriptive",

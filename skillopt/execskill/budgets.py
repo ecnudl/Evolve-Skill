@@ -165,6 +165,10 @@ def chain_caps(chain, pilot=PILOT):
     plan, step_caps, glm = PILOTS[pilot], CONFIG_STEP_CAPS[pilot], CONFIG_GLM_CAP[pilot]
     out = {ROOT: plan["solver_cap"] + glm, chain + ":solver": plan["solver_cap"],
            chain + ":test": plan["test_read_cap"], chain + ":redo": plan["redo_reserve"], chain + ":glm": glm}
+    from . import profiles
+    if profiles.is_v219(pilot):
+        # The registered redo is a read-unit reserve, not an uncharged learning scope.
+        out[chain + ":test"] += out.pop(chain + ":redo")
     out = {scope: cap for scope, cap in out.items() if cap > 0}
     for k, bench in enumerate(plan["order"], 1):
         if bench not in step_caps:

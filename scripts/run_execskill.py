@@ -1230,7 +1230,7 @@ def parser():
             command.add_argument('--stage', choices=('S0', 'S2', 'S3', 'SE6', 'SX'), required=True)
     for name in ('snapshot', 'selftest', 's0', 'manifest', 'structural-smoke', 'smoke-run', 'smoke-summary'):
         command = sub.add_parser('v214-' + name)
-        command.add_argument('--configuration', choices=(protocol.MAIN_V5, protocol.IMPLANT_V5, protocol.MAIN_V6),
+        command.add_argument('--configuration', choices=(protocol.MAIN_V5, protocol.IMPLANT_V5, protocol.MAIN_V6, protocol.CROSS_V5),
                              default=protocol.MAIN_V5)
         if name not in ('smoke-run', 'smoke-summary'):
             command.add_argument('--out', required=True)
@@ -1245,7 +1245,7 @@ def parser():
                 for flag in ('root', 'selftest', 'sheet-runtime'):
                     command.add_argument('--' + flag, required=True)
                 command.add_argument('--snapshot', default=str(PROJECT_ROOT))
-                command.add_argument('--consent', help='main-v6/implant-v5 owner consent copied into the root before launch')
+                command.add_argument('--consent', help='main-v6/implant-v5/cross-v5 owner consent copied into the root before launch')
         elif name == 'manifest':
             for flag in ('root', 's0', 'provenance', 'roles-repo', 'route-b-env', 'sheet-runtime'):
                 command.add_argument('--' + flag, required=True)

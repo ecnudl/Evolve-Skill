@@ -237,7 +237,7 @@ def cell_context(setting, attempt, endpoint, *, solve=solver.solve):
     from .instruction_start import active_cards
     cards = active_cards(setting.cards, protocol.configuration_of(setting))
     environment = None
-    if protocol.is_v218(protocol.configuration_of(setting)):
+    if protocol.uses_environment_lock(protocol.configuration_of(setting)):
         from . import v218_lock
         environment = lambda bench, unit: v218_lock.environment(setting, bench, unit=unit)
     return Context(attempt=attempt, endpoint=endpoint, runtime=setting.runtime, cards=cards,
@@ -258,7 +258,7 @@ def for_unit(setting, chain, bench, unit):
                        cleanup_events=_cleanup_events(setting, chain, unit),
                        ready_timeout_seconds=protocol.ready_timeout_seconds(protocol.configuration_of(setting)),
                        start_events=_start_events(setting, chain, unit))
-    if protocol.is_v218(protocol.configuration_of(setting)):
+    if protocol.uses_environment_lock(protocol.configuration_of(setting)):
         return replace(setting, sandbox=options, workers=workers, extra={**setting.extra,
             'memory_lock_chain': chain, 'memory_lock_unit': unit})
     return replace(setting, sandbox=options, workers=workers)

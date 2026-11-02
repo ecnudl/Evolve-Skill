@@ -164,11 +164,20 @@ def _worker(context, bench, package):
 
 def _shell(context, cell, task, arm, call, **extra):
     bench = cell["benchmark"]
+    if profiles.is_v219(context.configuration) and cell['arm'].startswith('X_'):
+        require(bench in profiles.read_benches(context.configuration) and cell['unit'] in {
+            chain + scope + bench for chain in profiles.CHAINS
+            for scope in ('/test/', '/v214-smoke/S2/')},
+            "Cross arm %s is not allowed in unit %s; only registered test-read and S2 practice units accept cross arms"
+            % (cell['arm'], cell['unit']))
     if cell.get("shortcut") is not None:  # a shortcut-probe cell (§7.2, ticket C1-2); absent otherwise
         extra["shortcut"] = cell["shortcut"]
     if profiles.is_v211(context.configuration) or profiles.is_v215(context.configuration):
         extra['configuration'] = context.configuration
     card = context.cards[bench]
+    if profiles.is_v219(context.configuration):
+        from . import v219_read
+        card = v219_read.card_text(context, bench, cell['arm'])
     if arm.kind == "blank":
         require(profiles.is_v210(context.configuration) and not arm.package.procedures,
                 "B has empty guidance and no procedure in v2.10 only")
@@ -388,7 +397,7 @@ def _shared_audited_fields(context, source, route, request_reuse=None):
     if not is_v29(context.configuration):
         return {}
     keyword_hits = source.get("keyword_hits", {"count": 0, "sentences": []})
-    if profiles.is_v218(context.configuration) and request_reuse is not None:
+    if (profiles.is_v218(context.configuration) or profiles.is_v219(context.configuration)) and request_reuse is not None:
         # Silent procedures can change audit hits without changing the shared request.
         keyword_hits = request_reuse['planning_metadata']['keyword_hits']
     return {"configuration": context.configuration,
@@ -403,7 +412,7 @@ def run_cell(context, cell, task, arm, *, store):
     round has them, "shortcut" on a shortcut-probe cell); ``task``: {"public", "private"}; ``arm``: the cell's
     ``Arm``; ``store``: ``TrainingStore`` or the test read's adapter. Returns the stored record; raises ``Pause`` after
     storing it when the run must stop."""
-    if profiles.is_v218(context.configuration) and context.environment is not None:
+    if (profiles.is_v218(context.configuration) or profiles.is_v219(context.configuration)) and context.environment is not None:
         with context.environment(cell['benchmark'], cell['unit']):
             return run_cell(replace(context, environment=None), cell, task, arm, store=store)
     _check_cell(cell)
@@ -494,6 +503,9 @@ def run_cell(context, cell, task, arm, *, store):
         "solver_route": _solver_route(context, recorders, cell["benchmark"]),
         "dispatch_ts": dispatched, "finish_ts": finished, "stop": stop}
     fields.update(_audited_fields(context, runs, recorders, route))
+    if profiles.is_v219(context.configuration):
+        from . import v219_read
+        fields['card_source'] = v219_read.card_source(bench, cell['arm'])
     revised = context.runtime.get(bench, {}).get("code_extraction_version") == "explicit-python-fences-v2"
     sealed = record("cell-v2-3" if revised else "cell", context.evidence, fields)
     trajectory = None
@@ -550,6 +562,9 @@ def share_cell(context, cell, task, arm, source, route, *, store, request_reuse=
         "shared_with": source["cell"]["id"], "sandbox": _sandbox([]), "dispatch_ts": now, "finish_ts": now,
         "solver_route": source.get("solver_route"), "stop": None}
     fields.update(_shared_audited_fields(context, source, route, request_reuse))
+    if profiles.is_v219(context.configuration):
+        from . import v219_read
+        fields['card_source'] = v219_read.card_source(bench, cell['arm'])
     return store.save(record("cell", context.evidence, fields), None)
 
 
@@ -608,6 +623,9 @@ def share_same(context, cell, task, arm, source, route, source_route, source_pac
         "shared_with": source["cell"]["id"], "sandbox": _sandbox([]), "dispatch_ts": now, "finish_ts": now,
         "solver_route": source.get("solver_route"), "stop": None}
     fields.update(_shared_audited_fields(context, source, route, request_reuse))
+    if profiles.is_v219(context.configuration):
+        from . import v219_read
+        fields['card_source'] = v219_read.card_source(bench, cell['arm'])
     return store.save(record("cell", context.evidence, fields), None)
 
 

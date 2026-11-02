@@ -26,12 +26,13 @@ S2_ITEMS = {'searchqa': 20, 'officeqa': 20, 'zebralogic': 10, 'spreadsheetbench'
 
 
 def _options(configuration):
-    require(configuration in (CONFIGURATION, p.IMPLANT_V5, p.MAIN_V6), 'A main-v5 or implant-v5 configuration')
+    require(configuration in (CONFIGURATION, p.IMPLANT_V5, p.MAIN_V6, p.CROSS_V5), 'A main-v5 or implant-v5 configuration')
     return {} if configuration == CONFIGURATION else {'configuration': configuration}
 
 
 def _identity(configuration):
-    return (p.main_v6_identity() if p.is_v218(configuration) else
+    return (p.cross_v5_identity() if p.is_v219(configuration) else
+            p.main_v6_identity() if p.is_v218(configuration) else
             p.implant_v5_identity() if p.is_implant_v5(configuration) else p.main_v5_identity())
 
 
@@ -48,7 +49,7 @@ def prepare_consent(root, configuration, *, consent_file=None):
         require(isinstance(value, dict) and set(value) == p.CONSENT_FIELDS
                 and value.get('by') == 'owner' and value.get('test_evaluation') is True
                 and value.get('sheet_test_qualification') is True
-                and value.get('multi_arm_arms') == ['F', 'C', 'B', 'stages']
+                and value.get('multi_arm_arms') == list(p.read_arms_of(configuration))
                 and isinstance(value.get('date'), str) and value['date'].strip()
                 and isinstance(value.get('note'), str) and value['note'].strip(),
                 'The supplied implant consent has the exact owner-approved five-benchmark shape')
@@ -107,6 +108,13 @@ def schedule(configuration=CONFIGURATION):
                      maximum_schedule=manifest._plain(_identity(configuration)))
         found.pop('S3')
         found.pop('SX')
+        if p.is_v219(configuration):
+            from . import v219_read
+            found['S2_arms'] = {bench: list(v219_read.labels(bench)) for bench in p.active_benches(configuration)}
+            found['S2_cross_items_per_bench'] = 1
+            found['SE6'] = {'procedure_cost': 'max(registered factor over measured card, measured procedure)',
+                'card_cost': 'maximum dispatched per-arm mean; shared cells excluded',
+                'stage_packages': 0, 'gate': 'worst full cross read plus one read-unit retry and reservation'}
         return found
     return {'configuration': configuration, 'chains': ['G', 'D'], 'stages': list(stages_of(configuration)),
         'benchmarks': list(p.active_benches(configuration)), 'S2': dict(S2_ITEMS), 'S2_arms': ['C'],
@@ -142,7 +150,8 @@ def collect_s0(out, *, preparation_file, zebra_pool, zebra_split_manifest, root,
     sheet = launch_sheet.read(sheet_runtime, snapshot_root=source)
     checked = prelaunch.zero_call_checks(source, python=sys.executable) if checks is None else checks
     # The parent fingerprint artifact is a public source fixture, never a data panel.
-    fingerprint = source / ('tests/fixtures/execskill/v218_parents_before.json' if p.is_v218(configuration) else
+    fingerprint = source / ('tests/fixtures/execskill/v219_parents_before.json' if p.is_v219(configuration) else
+                            'tests/fixtures/execskill/v218_parents_before.json' if p.is_v218(configuration) else
                             'tests/fixtures/execskill/v217i_parents_before.json'
                             if p.is_implant_v5(configuration) else 'tests/fixtures/execskill/v214_parents_before.json')
     require(fingerprint.is_file(), 'The before-edit parent fingerprint is included in the snapshot')
@@ -400,7 +409,8 @@ def structural_smoke(manifest_path, *, out, configuration=CONFIGURATION):
     manifest.verify_code(value)
     if p.is_implant_v5(configuration):
         from . import v217_implant
-        demo = v217_implant.structural_smoke(safe_path(out).parent / 'implant-v5-structural-stage-demo')
+        demo = v217_implant.structural_smoke(safe_path(out).parent / (configuration + '-structural-stage-demo'),
+            **({'configuration': configuration} if p.is_v219(configuration) else {}))
     else:
         demo = v214_stages.sx(safe_path(out).parent / 'v214-structural-stage-demo', **_options(configuration))
     result = p.record('v214-structural-smoke', 'engineering_fixture', {
@@ -507,6 +517,10 @@ def selftest(out, *, preparation_file, zebra_pool, zebra_split_manifest, configu
                                               configuration=p.ZEBRA_PC_V15)
         require(zebra_worker['passed'] is True, 'The main-v6 Zebra diagnostics worker selftest must pass')
         measured = {key: max(value, zebra_worker['measured'][key]) for key, value in measured.items()}
+        with v218_lock.preparation(out, 'native-peak'):
+            measured['native_peak_rss_kib'] = s0.native_peak(largest, sandbox.Docker())
+    elif p.is_v219(configuration):
+        from . import v218_lock
         with v218_lock.preparation(out, 'native-peak'):
             measured['native_peak_rss_kib'] = s0.native_peak(largest, sandbox.Docker())
     else:

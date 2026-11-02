@@ -34,9 +34,14 @@ def representatives(identities, labels, *, bench):
 def plan(base, arms, packages, *, bench, context, workers):
     """C wins, then running F/stage representatives; B never represents another arm."""
     from . import evaluation
-    require(context.configuration == p.MAIN_V6 and bench in reuse.BENCHES,
+    require((context.configuration == p.MAIN_V6 or p.is_v219(context.configuration)) and bench in reuse.BENCHES,
             'Request-class read planning belongs only to main-v6 request-identity benches')
-    labels = ['C', 'F', *sorted(packages, key=lambda label: int(label[1:])), 'B']
+    cross = p.is_v219(context.configuration)
+    if cross:
+        from . import v219_read
+        require(not packages, 'Cross reads have no stage packages')
+    labels = (['C', 'F', *v219_read.cross_labels(bench), 'B'] if cross else
+              ['C', 'F', *sorted(packages, key=lambda label: int(label[1:])), 'B'])
     chosen = {**arms, **{label: Arm('candidate', package) for label, package in packages.items()}}
     require(set(chosen) == set(labels) and all(isinstance(arm, Arm) for arm in chosen.values()),
             'The main-v6 read has plain C/F/B and stage arms')
@@ -51,7 +56,8 @@ def plan(base, arms, packages, *, bench, context, workers):
             factory = workers(arm.package, item) if arm.package.for_bench(bench) else nullcontext(None)
             with factory as worker:
                 identity = reuse.signature(bench, arm.package, view, worker,
-                    card_text='' if arm.kind == 'blank' else context.cards.get(bench, ''),
+                    card_text=(v219_read.card_text(context, bench, label) if cross else
+                               '' if arm.kind == 'blank' else context.cards.get(bench, '')),
                     runtime=context.runtime[bench], configuration=context.configuration,
                     note_observer=lambda shell, text: captured.append((shell.route, {
                         'keyword_hits': notes.keyword_summary([row for entry in shell.notes
@@ -61,9 +67,12 @@ def plan(base, arms, packages, *, bench, context, workers):
         chosen_sources = representatives({label: identities[label][item] for label in labels}, labels, bench=bench)
         for label in labels:
             sources[label][item] = chosen_sources[label]
-    summary = {'version': VERSION, 'sources': sources, 'planning_metadata': planning_metadata,
+    summary = {'version': v219_read.VERSION if cross else VERSION, 'sources': sources, 'planning_metadata': planning_metadata,
         'identities': {label: {item: public_identity(identity) for item, identity in entries.items()}
                        for label, entries in identities.items()}}
+    if cross:
+        summary['card_sources'] = {label: v219_read.card_source(bench, label) for label in labels}
+        summary['card_sha256'] = {label: digest(v219_read.card_text(context, bench, label)) for label in labels}
     return {**summary, 'identities': identities, 'routes': routes, 'arms': chosen, 'sha256': digest(summary),
             'staged': {'routes': {label: routes[label] for label in packages},
                        'sources': {label: sources[label] for label in packages},
@@ -80,7 +89,7 @@ def shareable(source, identity):
 
 
 def checked_match(configuration, bench, source, value):
-    require(configuration == p.MAIN_V6 and isinstance(value, dict)
+    require((configuration == p.MAIN_V6 or p.is_v219(configuration)) and isinstance(value, dict)
             and reuse.interchangeable(value.get('identity'), value.get('source_identity'), bench=bench)
             and shareable(source, value['source_identity']),
             'main-v6 shares only a fault-free, interchangeable request that its source actually sent')
@@ -102,10 +111,10 @@ class Store:
         fallback = cell['id'] in self.fallback
         reason = ('source_not_reusable' if fallback else 'dispatched' if source is None else
                   'identical_to_C' if source == 'C' else 'identical_to_F' if source == 'F' else
-                  'identical_to_stage')
+                  'identical_to_cross' if source.startswith('X_') else 'identical_to_stage')
         identity = self.planned['identities'][label][item]
         fields = {key: found for key, found in value.items() if key not in ('version', 'evidence', p.RECORD_HASH)}
-        fields['request_reuse'] = {'version': VERSION, 'plan_sha256': self.planned['sha256'],
+        fields['request_reuse'] = {'version': self.planned['version'], 'plan_sha256': self.planned['sha256'],
             'reason': reason, 'identity': public_identity(identity),
             'source_arm': None if fallback else source, 'planned_source_arm': source,
             'source_identity': (public_identity(self.planned['identities'][source][item])
@@ -139,7 +148,7 @@ def linked(context, jobs, sources, planned, *, store):
 
 def counts(cells, planned):
     shared = [row for row in cells if row['shared_with'] is not None]
-    return {'version': VERSION, 'plan_sha256': planned['sha256'], 'shared_cells': len(shared),
+    return {'version': planned['version'], 'plan_sha256': planned['sha256'], 'shared_cells': len(shared),
             'shared_cells_by_reason': dict(sorted(Counter(row['request_reuse']['reason'] for row in shared).items())),
             'dispatched_cells': len(cells) - len(shared),
             'fallback_cells': sum(row['request_reuse']['reason'] == 'source_not_reusable' for row in cells)}
@@ -167,15 +176,18 @@ def identical_item(cells, first, second, item):
                and own == request_hashes(cells, second, item, run) for run in runs)
 
 
+def contrast(cells, first, second, items, **options):
+    """The registered second analysis: complete byte-identical requests contribute zero."""
+    from . import readout as r
+    values = r.differences(cells, first, second, items)
+    tied = [identical_item(cells, first, second, item) for item in items]
+    return {**r.estimate([Fraction(0) if tie else value for value, tie in zip(values, tied)],
+                       design=r._design(cells, items), **options), 'identical_request_items': sum(tied)}
+
+
 def secondary(units, rows):
     """All registered pairwise contrasts, exact request ties, beside the unchanged primary."""
     from . import readout as r
-
-    def contrast(cells, first, second, items, **options):
-        values = r.differences(cells, first, second, items)
-        tied = [identical_item(cells, first, second, item) for item in items]
-        return {**r.estimate([Fraction(0) if tie else value for value, tie in zip(values, tied)],
-                           design=r._design(cells, items), **options), 'identical_request_items': sum(tied)}
 
     contrasts, stages = {}, {}
     for bench, cells in units.items():

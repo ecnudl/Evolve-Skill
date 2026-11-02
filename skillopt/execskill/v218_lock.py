@@ -82,7 +82,7 @@ def environment(setting, *benches, unit=None, chain=None):
     deadlock. Unrelated threads coordinate locally rather than flocking a file
     already held by this process; shared ALFWorld workers can run together.
     """
-    if not p.is_v218(p.configuration_of(setting)):
+    if not p.uses_environment_lock(p.configuration_of(setting)):
         yield
         return
     from .chain import HEAVY_LOCK, heavy_mode

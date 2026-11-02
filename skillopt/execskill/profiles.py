@@ -15,6 +15,7 @@ MAIN_V4 = "main-v4"
 MAIN_V5 = "main-v5"
 MAIN_V6 = "main-v6"
 IMPLANT_V5 = "implant-v5"
+CROSS_V5 = "cross-v5"
 ZEBRA_PC_V1 = "zebra-pc-v1"
 ZEBRA_PC_V2 = "zebra-pc-v2"
 ZEBRA_PC_V3 = "zebra-pc-v3"
@@ -116,31 +117,31 @@ def is_v29(configuration):
 def is_v291(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, ZEBRA_PC_V8, ALFWORLD_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, CROSS_V5, ZEBRA_PC_V8, ALFWORLD_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v292(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, CROSS_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v293(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, CROSS_V5, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v294(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, CROSS_V5, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v295(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, CROSS_V5, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v215(configuration):
@@ -165,12 +166,12 @@ def is_v297(configuration):
 
 def alfworld_format_rule(configuration, bench=None):
     """The format rule for this run; the historical admissible-share rule stays frozen."""
-    return "alfworld-readable-action-v2-9-6" if is_v296(configuration) or (configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5) and bench == "alfworld") else "alfworld-admissible-9-10"
+    return "alfworld-readable-action-v2-9-6" if is_v296(configuration) or (configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, CROSS_V5) and bench == "alfworld") else "alfworld-admissible-9-10"
 
 
 def train_rounds(configuration, bench=None):
     """The historical six-round limit, extended only for the Zebra v12 search."""
-    return 0 if configuration in (ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, IMPLANT_V5) or (configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5) and bench == "alfworld") else 10 if configuration == ZEBRA_PC_V12 else TRAIN_ROUNDS
+    return 0 if configuration in (ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, IMPLANT_V5, CROSS_V5) or (configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, CROSS_V5) and bench == "alfworld") else 10 if configuration == ZEBRA_PC_V12 else TRAIN_ROUNDS
 
 
 def cleanup_grace_seconds(configuration):
@@ -184,7 +185,7 @@ def ready_timeout_seconds(configuration):
 
 
 def train_patience(configuration, bench=None):
-    return 0 if configuration in (ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, IMPLANT_V5) else 8 if configuration == ZEBRA_PC_V12 else 4 if is_v291(configuration) else TRAIN_PATIENCE
+    return 0 if configuration in (ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, IMPLANT_V5, CROSS_V5) else 8 if configuration == ZEBRA_PC_V12 else 4 if is_v291(configuration) else TRAIN_PATIENCE
 
 
 FAULT_REPAIRS = 2
@@ -520,6 +521,8 @@ def stage_arms_max(configuration):
 
 def read_arms_of(configuration):
     require(supports_configuration(configuration), "Unknown run configuration")
+    if is_v219(configuration):
+        return ("F", "C", "B", "cross")
     if is_v214(configuration):
         return ("F", "C", "B", STAGES)
     if is_zebra_fc(configuration):
@@ -530,6 +533,8 @@ def read_arms_of(configuration):
 
 
 def estimate_arms(configuration):
+    if is_v219(configuration):
+        return 5  # F plus four cross arms; per-bench reuse is priced by TEST_READ_CELLS.
     if is_v214(configuration):
         return 1 + stage_arms_max(configuration)
     if is_zebra_fc(configuration):
@@ -582,6 +587,18 @@ def fired_share(bench, pilot=PILOT):
 
 
 def read_estimate_terms(per_cell, ratio, pilot=PILOT):
+    if is_v219(pilot):
+        require(isinstance(per_cell, dict) and set(per_cell) == set(read_benches(pilot)),
+                "Cross reads measure all five panels")
+        terms = {}
+        for bench, (cards, procedures) in TEST_READ_CELLS[pilot].items():
+            entry = per_cell[bench]
+            card = legacy._exact(entry["card"], "card cell")
+            proc = (card * PROCEDURE_ARM_FACTOR[1]
+                    if entry.get("procedure_assumed") is True or entry.get("procedure") is None
+                    else legacy._exact(entry["procedure"], "procedure cell"))
+            terms[bench] = legacy._exact(ratio, "ratio") * (cards * card + procedures * proc)
+        return terms
     if is_v214(pilot):
         require(isinstance(per_cell, dict) and set(per_cell) == set(read_benches(pilot)),
                 'Five-bench main-v5 per-cell measurement required')
@@ -839,7 +856,7 @@ MAIN_V3_NAMESPACES = {'G': 'G-v3', 'D': 'D-v3'}
 
 
 def is_v210(configuration):
-    return configuration in (BASELINE_V210, MAIN_V3, MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5)
+    return configuration in (BASELINE_V210, MAIN_V3, MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, CROSS_V5)
 
 
 def read_items(configuration, bench):
@@ -911,11 +928,19 @@ TEST_WITHHOLDING = {name: not is_v210(name) for name in CONFIGURATIONS}
 
 
 def is_v214(configuration):
-    return configuration in (MAIN_V5, MAIN_V6, IMPLANT_V5)
+    return configuration in (MAIN_V5, MAIN_V6, IMPLANT_V5, CROSS_V5)
 
 
 def is_v218(configuration):
     return configuration == MAIN_V6
+
+
+def is_v219(configuration):
+    return configuration == CROSS_V5
+
+
+def uses_environment_lock(configuration):
+    return is_v218(configuration) or is_v219(configuration)
 
 
 def uses_v215(configuration, bench):
@@ -927,7 +952,7 @@ def uses_v216(configuration, bench):
 
 
 def is_implant_v5(configuration):
-    return configuration == IMPLANT_V5
+    return configuration in (IMPLANT_V5, CROSS_V5)
 
 
 def machinery_configuration(configuration, bench):
@@ -968,7 +993,7 @@ MAIN_V4_NAMESPACES = {'G': 'G-v4', 'D': 'D-v4'}
 
 
 def is_v211(configuration):
-    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5)
+    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, CROSS_V5)
 
 
 def uses_readable_alf_format(configuration, bench):
@@ -1317,4 +1342,54 @@ def main_v6_identity():
         caps={**CONFIGURATIONS[MAIN_V6], 'method': CONFIG_GLM_CAP[MAIN_V6]},
         changes={'split': _v218_limits.identity(), 'read_reuse': 'fault_free_request_identity',
                  'heavy_lock': 'environment_work_only_logged_waits', 'zebra': ZEBRA_PC_V15})
+    return found
+
+
+# v2.19: the same fixed implant chain, with cross-card chain-end reads only.
+CROSS_V5_ROOT = '/data/execskill-20261102-cross-v5'
+CROSS_V5_MANIFEST = CROSS_V5_ROOT + '-manifest.json'
+CROSS_V5_NAMESPACES = {'G': 'G-x5', 'D': 'D-x5'}
+for _name, _table in list(globals().items()):
+    if _name.isupper() and isinstance(_table, dict) and IMPLANT_V5 in _table:
+        _table[CROSS_V5] = deepcopy(_table[IMPLANT_V5])
+RUN_ROOTS[CROSS_V5] = CROSS_V5_ROOT
+CHAIN_NAMESPACES[CROSS_V5] = CROSS_V5_NAMESPACES
+SUPPORTED_NAMESPACES += tuple(CROSS_V5_NAMESPACES.values())
+REAL_RUN_EVIDENCE[CROSS_V5] = 'cross_v5_test_read'
+STAGE_READ[CROSS_V5] = False
+# X arms are package arms even on panels where none of the fixed procedures fire.
+TEST_READ_CELLS[CROSS_V5] = {
+    b: ((n, n) if b == ZEBRA else (2*n, 5*n) if b == 'alfworld' else (2*n, 4*n))
+    for b, n in MAIN_V5_TEST_ITEMS.items()}
+CROSS_READ_UNIT_CAPS = {
+    b: legacy._round_up(MAIN_CAP_FACTOR * (CELL_ANCHORS[b][1]
+        * (cards + PROCEDURE_ARM_FACTOR[1] * procedures)
+        + MAIN_RESERVATIONS * READ_RESERVATION), MILLION)
+    for b, (cards, procedures) in TEST_READ_CELLS[CROSS_V5].items()}
+CONFIGURATIONS[CROSS_V5]['test_read_cap'] = legacy._round_up(MAIN_CAP_FACTOR * (
+    sum(CELL_ANCHORS[b][1] * (cards + PROCEDURE_ARM_FACTOR[1] * procedures)
+        for b, (cards, procedures) in TEST_READ_CELLS[CROSS_V5].items())
+    + len(MAIN_V5_ORDER) * MAIN_RESERVATIONS * READ_RESERVATION), MILLION)
+CONFIGURATIONS[CROSS_V5]['redo_reserve'] = max(CROSS_READ_UNIT_CAPS.values())
+CONFIGURATIONS[CROSS_V5]['solver_cap'] = (CONFIGURATIONS[CROSS_V5]['test_read_cap']
+    + FIRST_CALL_CAP + CONFIGURATIONS[CROSS_V5]['redo_reserve'])
+
+
+def cross_v5_identity():
+    found = deepcopy(implant_v5_identity())
+    found.update(configuration=CROSS_V5, evidence_kind='post_hoc_selected_upper_bound_transfer',
+        stage_rows=[], stage_arms_max=0, stage_timing='none',
+        read_arms=list(read_arms_of(CROSS_V5)), read_cells=deepcopy(TEST_READ_CELLS[CROSS_V5]),
+        read_base_cells_per_chain=sum(c+q for c,q in TEST_READ_CELLS[CROSS_V5].values()),
+        read_logical_cells_per_chain=7*sum(MAIN_V5_TEST_ITEMS.values()),
+        read_formula='maximum dispatched arms 6/6/2/6/7; package arms use inherited 1.6 factor',
+        caps={**CONFIGURATIONS[CROSS_V5], 'method': 0},
+        redo_unit_caps=deepcopy(CROSS_READ_UNIT_CAPS),
+        cross={'sources': list(MAIN_V5_ORDER), 'diagonal': 'F', 'card_source_field': 'card_source',
+               'request_reuse': 'main-v6 fault-free request identity, C then F then fixed X order',
+               'zebra_column': 'F-C by construction; the target shell omits every card',
+               'heavy_lock': 'main-v6 environment_work_only_logged_waits',
+               'read_retry_charged_scope': '<chain>:test',
+               'funded_test_cap': CONFIGURATIONS[CROSS_V5]['test_read_cap']
+                                  + CONFIGURATIONS[CROSS_V5]['redo_reserve']})
     return found

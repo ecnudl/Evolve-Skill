@@ -126,7 +126,7 @@ def heavy_mode(benches):
 def heavy(setting, bench, *more):
     """The machine-wide memory lock of a unit on ``bench`` whose cells also run on ``more`` (``heavy_mode``; module
     docstring); waits its turn, untimed like every route-B slot wait (plan §4)."""
-    if p.is_v218(configuration_of(setting)):
+    if p.uses_environment_lock(configuration_of(setting)):
         from .v218_lock import environment
         with environment(setting, bench, *more):
             yield
@@ -500,7 +500,7 @@ def evaluate(setting, chain, package, *, launch=launch_child):
     if p.is_v214(configuration_of(setting)):
         from . import evaluation
         # Both chains wait for the one shared qualification and its artifact cleanup before any read child starts.
-        if p.is_v218(configuration_of(setting)):
+        if p.uses_environment_lock(configuration_of(setting)):
             if any(not (root / 'unit.json').exists() for root in roots.values()):
                 evaluation.prepare_test_qualification(setting, chain)
         else:
@@ -513,7 +513,7 @@ def evaluate(setting, chain, package, *, launch=launch_child):
         if not (root / "unit.json").exists():
             spec = {"chain": chain, "bench": bench, "package_sha256": package.sha256, "unit_root": str(root)}
             before = len(attempts(root))
-            with nullcontext() if p.is_v218(configuration_of(setting)) else heavy(setting, bench):
+            with nullcontext() if p.uses_environment_lock(configuration_of(setting)) else heavy(setting, bench):
                 code = launch(setting, spec)
             if not (root / "unit.json").exists():
                 if code != EXIT_AWAITING and len(attempts(root)) == before:
@@ -593,6 +593,9 @@ def run(setting, chain, *, learn, launch=launch_child):
         from .instruction_start import START, blank_definition
         read_definition = {"arms": list(p.read_arms_of(configuration)),
                            "instruction_start": START, "blank_arm": blank_definition()}
+    if p.is_v219(configuration):
+        read_definition.update(evidence_kind='post_hoc_selected_upper_bound_transfer',
+                               learned=[], imported=['zebralogic', 'alfworld'])
     with exclusive(root / RUNNER_LOCK):
         ended = _terminal(root, identity)
         if ended is not None:

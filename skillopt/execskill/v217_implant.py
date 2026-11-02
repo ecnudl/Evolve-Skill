@@ -40,7 +40,7 @@ def zebra_package(chain, parent, *, source=None):
     return candidate
 
 
-def _record(chain, k, bench, parent, package, *, source=None, provenance=None):
+def _record(chain, k, bench, parent, package, *, source=None, provenance=None, configuration=p.IMPLANT_V5):
     name = '%s/s%d-%s' % (chain, k, bench)
     fields = {'chain': chain, 'k': k, 'bench': bench, 'step': name,
         'learning': 'none' if source is None else 'import',
@@ -49,7 +49,7 @@ def _record(chain, k, bench, parent, package, *, source=None, provenance=None):
         'decision': 'skip' if source is None else 'import',
         'reason': SKIP_REASON if source is None else 'preregistered_implant_zebra_import',
         'decision_sha256': None, 'fault_items': [], 'violating_items': [], 'units': {},
-        'evidence_kind': EVIDENCE_KIND}
+        'evidence_kind': 'post_hoc_selected_upper_bound_transfer' if p.is_v219(configuration) else EVIDENCE_KIND}
     if source is not None:
         fields.update(origin=source['origin'], source_package_sha256=source['package_record_sha256'],
                       import_sha256=provenance[p.RECORD_HASH])
@@ -64,6 +64,7 @@ def run_step(setting, chain_root, chain, k, bench, parent):
     require(isinstance(parent, Package) and parent.evidence == setting.evidence,
             'The implant chain retains its evidenced parent package')
     source = pins()
+    configuration = p.configuration_of(setting)
     require(setting.extra.get(PIN_KEY) == source, 'The implant source pins differ from the fixed fixtures')
     if k == 5:
         # The same module, source pins, procedure ordering and capacity check as main-v5.
@@ -73,19 +74,21 @@ def run_step(setting, chain_root, chain, k, bench, parent):
             chain, empty(step=chain + '/s0', evidence=setting.evidence), source=source[chain]),
             'A skipped implant step retains its prescribed parent package')
         package, provenance = parent, None
-        value = _record(chain, k, bench, parent, package)
+        value = _record(chain, k, bench, parent, package, configuration=configuration)
     else:
         package = zebra_package(chain, parent, source=source[chain])
         original, copied = source[chain]['procedures'][0], package.procedures[0]
         provenance = p.record('implant-v2-17', setting.evidence, {
             'chain': chain, 'origin': source[chain]['origin'], 'source': source[chain],
-            'evidence_kind': EVIDENCE_KIND, 'program_bytes_changed': False,
+            'evidence_kind': 'post_hoc_selected_upper_bound_transfer' if p.is_v219(configuration) else EVIDENCE_KIND,
+            'program_bytes_changed': False,
             'source_package_sha256': source[chain]['package_record_sha256'],
             'chain_parent_sha256': parent.sha256, 'package_sha256': package.sha256,
             'procedure': {'id': copied.id, 'source_record_sha256': original['record_sha256'],
                           'source_sha256': original['source_sha256'], 'imported_record_sha256': copied.sha256},
             'changed_procedure_fields': ['evidence', p.RECORD_HASH]})
-        value = _record(chain, k, bench, parent, package, source=source[chain], provenance=provenance)
+        value = _record(chain, k, bench, parent, package, source=source[chain], provenance=provenance,
+                        configuration=configuration)
     root = safe_path(chain_root)
     path = root / ('s%d-%s' % (k, bench)) / 'step.json'
     if path.exists():
@@ -103,6 +106,22 @@ def run_step(setting, chain_root, chain, k, bench, parent):
     return package, value
 
 
+def final_package(chain, evidence):
+    """The exact fixed composition, also used by cross-v5's practice smoke."""
+    require(chain in p.CHAINS, 'A fixed package belongs to G or D')
+    start = empty(step=chain + '/s0', evidence=evidence)
+    zebra = zebra_package(chain, start)
+    source = v210_import.pins()
+    alf = tuple(replace(Procedure.from_json(row['record']), evidence=evidence)
+                for row in source['procedures'])
+    expected = Package(zebra.procedures + alf, chain + '/s5-alfworld', evidence,
+                       zebra.sha256, zebra.retired,
+                       {**zebra.narrowed, **source['package']['narrowed']},
+                       {**zebra.describer, **source['package']['describer']})
+    validate(expected, zebra)
+    return expected
+
+
 def check_read_packages(chain, final, stages):
     """Assert the fixed row sequence and exact treatment composition before cells."""
     require(chain in p.CHAINS and isinstance(final, Package) and isinstance(stages, dict)
@@ -111,13 +130,7 @@ def check_read_packages(chain, final, stages):
     start = empty(step=chain + '/s0', evidence=final.evidence)
     zebra = zebra_package(chain, start)
     require(stages['packages']['S3'] == zebra, 'S3 is exactly the fixed Zebra implant')
-    source = v210_import.pins()
-    alf = tuple(replace(Procedure.from_json(row['record']), evidence=final.evidence)
-                for row in source['procedures'])
-    expected = Package(zebra.procedures + alf, chain + '/s5-alfworld', final.evidence,
-                       zebra.sha256, zebra.retired,
-                       {**zebra.narrowed, **source['package']['narrowed']},
-                       {**zebra.describer, **source['package']['describer']})
+    expected = final_package(chain, final.evidence)
     require(final == expected, 'F is the fixed Zebra implant plus the three alfworld-v11 procedures in order')
     validate(final, zebra)
     return stages
@@ -152,13 +165,13 @@ def check_stage_rows(chain_root, chain, order, final, start, stages):
     return stages
 
 
-def structural_smoke(root):
+def structural_smoke(root, *, configuration=p.IMPLANT_V5):
     """Persist and check both fixed chains with no clients, workers or task data."""
     from . import evaluation, step
 
     root = safe_path(root)
     setting = SimpleNamespace(root=root, evidence='engineering_fixture', extra={
-        'configuration': p.IMPLANT_V5, PIN_KEY: pins(), 'alfworld_v11_import': v210_import.pins()})
+        'configuration': configuration, PIN_KEY: pins(), 'alfworld_v11_import': v210_import.pins()})
     rows, packages = {}, {}
     for chain in p.CHAINS:
         start = parent = empty(step=chain + '/s0', evidence=setting.evidence)
@@ -168,5 +181,5 @@ def structural_smoke(root):
         check_stage_rows(root / chain, chain, p.MAIN_V5_ORDER, parent, start, stages)
         rows[chain] = stages['rows']
         packages[chain] = {'S3': stages['packages']['S3'].sha256, 'F': parent.sha256}
-    return {'passed': True, 'configuration': p.IMPLANT_V5, 'rows': rows, 'packages': packages,
+    return {'passed': True, 'configuration': configuration, 'rows': rows, 'packages': packages,
             'model_calls': 0, 'sealed_reads': 0, 'learning_units': 0}

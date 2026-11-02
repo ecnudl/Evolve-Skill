@@ -358,7 +358,8 @@ def registered(configuration=None):
         found['sizes']['min_astar'] = {b: acceptance.minimum_astar(protocol.acceptance_rule(configuration, b),
             protocol.slice_spec(configuration, b)['accept'][0], protocol.slice_spec(configuration, b)['blocks'])
             for b in learned}
-        found['sizes']['v214'] = _plain(protocol.implant_v5_identity() if protocol.is_implant_v5(configuration)
+        found['sizes']['v214'] = _plain(protocol.cross_v5_identity() if protocol.is_v219(configuration)
+                                       else protocol.implant_v5_identity() if protocol.is_implant_v5(configuration)
                                        else protocol.main_v6_identity() if protocol.is_v218(configuration) else protocol.main_v5_identity())
         return found
     if protocol.is_v211(configuration):

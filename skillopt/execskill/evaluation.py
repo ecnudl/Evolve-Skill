@@ -213,9 +213,12 @@ def consent(shared, configuration=None):
     if profiles.is_v217(configuration):
         require(arms == ["F", "C"] and value["date"].strip(),
                 "The fixed g3r2 consent names F/C in order and a nonempty date")
-    if profiles.is_implant_v5(configuration):
+    if profiles.is_implant_v5(configuration) and not profiles.is_v219(configuration):
         require(arms == ["F", "C", "B", "stages"] and value["date"].strip(),
                 "The implant-v5 consent names F/C/B/stages in order and a nonempty date")
+    if profiles.is_v219(configuration):
+        require(arms == ["F", "C", "B", "cross"] and value["date"].strip(),
+                "The cross-v5 consent names F/C/B/cross in order and a nonempty date")
     if profiles.is_v218(configuration):
         require(arms == ["F", "C", "B", "stages"] and value["date"].strip(),
                 "The main-v6 consent names F/C/B/stages in order and a nonempty date")
@@ -395,7 +398,7 @@ def prepare_test_qualification(setting, chain, *, panel=data.test_panel, pinned=
         manifest = manifest if isinstance(manifest, dict) else read_json(safe_path(manifest))
         pinned = manifest.get("data", {}).get("pinned")
     environment = nullcontext()
-    if profiles.is_v218(configuration):
+    if profiles.uses_environment_lock(configuration):
         from . import v218_lock
         environment = v218_lock.environment(setting, 'spreadsheetbench', chain=chain,
                                              unit=chain + '/test/qualification')
@@ -673,8 +676,9 @@ def sealed_cell(full):
         "answered": answered(full),  # §6.3's mask: whether the provider delivered any reply in this cell
         "solver_route": full.get("solver_route"),  # {"route", "model"} (cells.py); route None on chain G
         **({key: full[key] for key in ("configuration", "keyword_hits", "applies", "returned_model", "returned_models")}
-           if full.get("configuration") in ("zebra-pc-v7", "alfworld-v4", "zebra-pc-v8", "alfworld-v5", "zebra-pc-v9", "alfworld-v6", "zebra-pc-v10", "alfworld-v7", "zebra-pc-v11", "alfworld-v8", "zebra-pc-v12", "alfworld-v9", "alfworld-v10", "alfworld-v11", "zebra-pc-v13", "zebra-hp-v3r4", "main-v5", "zebra-pc-v14", "zebra-pc-v15", "zebra-hp-g3r2", "implant-v5", "main-v6") else {}),
-        **({'request_reuse': full['request_reuse']} if full.get('configuration') == 'main-v6'
+           if full.get("configuration") in ("zebra-pc-v7", "alfworld-v4", "zebra-pc-v8", "alfworld-v5", "zebra-pc-v9", "alfworld-v6", "zebra-pc-v10", "alfworld-v7", "zebra-pc-v11", "alfworld-v8", "zebra-pc-v12", "alfworld-v9", "alfworld-v10", "alfworld-v11", "zebra-pc-v13", "zebra-hp-v3r4", "main-v5", "zebra-pc-v14", "zebra-pc-v15", "zebra-hp-g3r2", "implant-v5", "main-v6", "cross-v5") else {}),
+        **({'card_source': full['card_source']} if full.get('configuration') == 'cross-v5' else {}),
+        **({'request_reuse': full['request_reuse']} if full.get('configuration') in ('main-v6', 'cross-v5')
            and 'request_reuse' in full else {}),
         "stop": None if full["stop"] is None else {"kind": full["stop"]["kind"]}}
 
@@ -1282,10 +1286,15 @@ def _blocks(items, bench, unit):
     return {item: "b%d" % (1 + n // size) for n, item in enumerate(order)}
 
 
-def _arm(arms, label, cell, task):
+def _arm(arms, label, cell, task, *, configuration=None):
     chosen = arms[label] if isinstance(arms[label], Arm) else arms[label](cell, task)
-    require(isinstance(chosen, Arm) and chosen.kind == ARM_KINDS[label], "Arm %s has kind %s" % (label,
-                                                                                               ARM_KINDS[label]))
+    if profiles.is_v219(configuration) and label.startswith('X_'):
+        from . import v219_read
+        require(label in v219_read.cross_labels(cell['benchmark']), 'A cross arm uses another bench card')
+        expected = 'candidate'
+    else:
+        expected = ARM_KINDS[label]
+    require(isinstance(chosen, Arm) and chosen.kind == expected, "Arm %s has kind %s" % (label, expected))
     return chosen
 
 
@@ -1421,11 +1430,16 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
         require(chain == "G" and bench == profiles.ZEBRA,
                 "The fixed g3r2 read is chain G ZebraLogic only")
     main_v5 = profiles.is_v214(run_configuration)
+    cross = profiles.is_v219(run_configuration)
     child = profiles.is_v210(run_configuration)
     reduced = child or profiles.is_zebra_fc(run_configuration)
     expected = read_arms_of(run_configuration) if reduced else ARMS
     if main_v5:
         expected = tuple(arm for arm in expected if arm != profiles.STAGES)
+    if cross:
+        from . import v219_read
+        expected = v219_read.labels(bench)
+        require(stages is None, "Cross reads have no stage rows or arms")
     require(set(arms) == set(expected), "The read's arms must match the configuration exactly")
     if reduced:
         require(context.configuration == run_configuration,
@@ -1442,8 +1456,17 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
     if profiles.is_implant_v5(run_configuration):
         from . import v217_implant
         require(final.procedures, "F = C: the implanted read requires its fixed programs")
-        v217_implant.check_read_packages(chain, final, stages)
-    if main_v5:
+        if cross:
+            require(final == v217_implant.final_package(chain, final.evidence),
+                    "Cross F is exactly the fixed implant chain-end package")
+            require(all(arms[label].package == final and arms[label].kind == "candidate"
+                        and not (arms[label].withhold or arms[label].restore)
+                        and arms[label].placebo is None and arms[label].text is None
+                        for label in v219_read.cross_labels(bench)),
+                    "Every cross arm runs the unchanged final package")
+        else:
+            v217_implant.check_read_packages(chain, final, stages)
+    if main_v5 and not cross:
         require(rows is not None and len(rows) == len(profiles.CONFIGURATIONS[run_configuration]["order"]) + 1
                 and rows[-1] == ("F" if final.procedures else "C")
                 and all(label == "%s%d" % (STAGE_ARM, rows.index(label))
@@ -1489,7 +1512,7 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
         plan = test_plan(tasks, final, bench=bench, unit=unit, runtime=context.runtime[bench], workers=route_workers,
                          reset=reset, **({"run_configuration": run_configuration} if reduced else {}))
         request_plan = None
-        if run_configuration == 'main-v6':
+        if run_configuration == 'main-v6' or cross:
             from . import reuse, v218_read
             if bench in reuse.BENCHES:
                 request_plan = v218_read.plan(plan, arms, packages, bench=bench, context=context, workers=route_workers)
@@ -1529,10 +1552,10 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
                             linked.append((job, source))
                     elif main_v5 and bench == profiles.ZEBRA and label == "B":
                         # The Zebra shell never sends the instruction card: B's request is exactly C's.
-                        blank_shares.append((cell, by_id[item], _arm(arms, label, cell, by_id[item])))
+                        blank_shares.append((cell, by_id[item], _arm(arms, label, cell, by_id[item], configuration=run_configuration)))
                     else:
-                        (shares if item in zero and label in (("F",) if reduced else ("F", "P_F", "T_F")) else jobs).append(
-                            (cell, by_id[item], _arm(arms, label, cell, by_id[item])))
+                        (shares if not cross and item in zero and label in (("F",) if reduced else ("F", "P_F", "T_F")) else jobs).append(
+                            (cell, by_id[item], _arm(arms, label, cell, by_id[item], configuration=run_configuration)))
         sources = {}
         for block in sorted(set(blocks.values())):
             members = [job for job in jobs if job[0]["block"] == block]
@@ -1699,7 +1722,7 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
         from .chain import confirmation
         confirmation(setting.root, setting.run, chain, route="B" if chain == "D" else None,
                      configuration=configuration)
-    if profiles.is_v218(configuration):
+    if profiles.uses_environment_lock(configuration):
         completed_root = read_root(setting, chain, bench)
         require(safe_path(found['unit_root']) == completed_root, "The read unit's registered directory")
         if (completed_root / 'unit.json').exists():
@@ -1718,7 +1741,7 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
         from .chain import heavy
         try:
             pointer = safe_path(setting.shared) / "test" / (SHEET_QUALIFICATION + ".json")
-            if pointer.exists() or profiles.is_v218(configuration):
+            if pointer.exists() or profiles.uses_environment_lock(configuration):
                 prepare_test_qualification(setting, chain, panel=panel, pinned=manifest["data"].get("pinned"))
             else:
                 with heavy(setting, "spreadsheetbench"):
@@ -1738,7 +1761,8 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
     final = start if (STAGE_READ[configuration] or profiles.is_v210(configuration)) and found["package_sha256"] == start.sha256 else load(
         chain_root / "packages" / (found["package_sha256"] + ".json"))
     require(final.sha256 == found["package_sha256"], "The final package of the chain")
-    stages = (implanted_stages if profiles.is_implant_v5(configuration) else
+    stages = (None if profiles.is_v219(configuration) else
+              implanted_stages if profiles.is_implant_v5(configuration) else
               stage_rows(chain_root, chain, order_of(setting), final, start) if STAGE_READ[configuration] else None)
     unit = "%s/test/%s" % (chain, bench)
     own = units.for_unit(setting, chain, bench, unit)
@@ -1764,13 +1788,16 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
                 "P_F": placebo_arm(final, donor_corpora(chain_root), bench=bench, unit=unit, runtime=runtime,
                                    workers=route_workers),
                 "T_F": Arm("text", final, text=frozen_texts(chain_root, final))}
+    if profiles.is_v219(configuration):
+        from . import v219_read
+        arms = v219_read.arms(bench, final, card)
     pinned = manifest["data"].get("pinned")
     make_read_canaries(setting.root, pinned,
                        pools=None if configuration == profiles.BASELINE_V210 else manifest["data"].get("pools"), run=setting.run,
                        evidence=setting.evidence, panel=panel, order=order_of(setting), configuration=configuration)
     try:
         environment = nullcontext()
-        if profiles.is_v218(configuration):
+        if profiles.uses_environment_lock(configuration):
             from . import v218_lock
             environment = v218_lock.environment(own, bench)
         with environment:
@@ -1789,10 +1816,10 @@ def _route_worker(setting, package, item, *, inputs_dir=None):
     sandbox options (its tag included) and the live and per-call pools; ``inputs_dir``: a SpreadsheetBench item's
     public input directory, mounted read-only at /input (``mounting``, Codex finding #1; ``step._item_workers``)."""
     factory, options = sandbox.with_worker, dict(setting.sandbox)
-    if profiles.is_v218(configuration_of(setting)):
+    if profiles.uses_environment_lock(configuration_of(setting)):
         from . import v218_lock
         factory = v218_lock.workers(factory, setting)
-        if setting.extra.get('memory_lock_unit', '').endswith('/zebralogic'):
+        if profiles.is_v218(configuration_of(setting)) and setting.extra.get('memory_lock_unit', '').endswith('/zebralogic'):
             options['diagnostics_configuration'] = profiles.ZEBRA_PC_V15
     return factory(package, kind="cell", inputs_dir=inputs_dir, **options,
                                live=setting.slots["execskill-sandbox-live"],
@@ -2074,7 +2101,9 @@ def unseal(root, chain_root, chain, unit_roots, *, run, evidence, clock=_now, co
                           "solver_route": value.get("solver_route"),
                           **({'request_sha256': [c['request_sha256'] for c in value['calls']],
                               'request_reuse': value.get('request_reuse')}
-                             if configuration == 'main-v6' else {})}
+                             if configuration in ('main-v6', 'cross-v5') else {}),
+                          **({'card_source': value['card_source'], 'arm_kind': value['arm_kind']}
+                             if profiles.is_v219(configuration) else {})}
         for value in cells.values():  # the arm whose cell a shared cell reads: C's, or in a stage read F's or S<j>'s
             value["shared_arm"] = None if value["shared_with"] is None else arm_of[value["shared_with"]]
         units[own["bench"]] = cells
