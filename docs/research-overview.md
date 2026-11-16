@@ -1,6 +1,6 @@
 # 跨域安全 Skill 进化：研究索引
 
-> **当前状态与接手入口：[项目介绍与当前状态](project-status.md)**（活文档）；本页为 10/3 以前的历史索引。
+> **当前状态与接手入口：[项目介绍与当前状态](project-status.md)**（活文档）；结果精选见 [results-highlights.md](results-highlights.md)；11/02 归档移出的文件见 [archive-index.md](archive-index.md)。本页为 10/3 以前的历史索引，其中指向已归档文件的链接请到归档索引里找。
 
 索引更新：2026-10-03。目标是通过 **Coding Rubric + 有界 Research** 提高 Skill 学习与范围判断的质量，兼顾多领域收益和负迁移，而不是逐域追求最高分。
 

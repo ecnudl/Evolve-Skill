@@ -223,7 +223,7 @@ source if its smoke panels are identical), what the readout tables look like, an
 
 Written by the coordinator of session 9b763bee after seven read-only verifiers checked the 48 critic findings of
 `spec/read-plan-critic-A.md` / `-B.md` against commit 8375ecb, answered B1-B5 / Q1-Q18 / N1-N10 of `spec/read-plan.md`,
-and hunted unanchored for missed request inputs (verdicts: `SkillOpt-scratch/typed-v2-build/rp-verify/ALL-results.json`
+and hunted unanchored for missed request inputs (verdicts: `<local-scratch>/typed-v2-build/rp-verify/ALL-results.json`
 on the coordinator's machine; 45 of 48 findings accepted in full or in part). These decisions bind the corrected
 `spec/read-plan.md`. They do not touch Steps 1 to 7 of IMPLEMENTATION-ORDER.md. The read plan is still built after Step 6 (O10).
 
@@ -406,7 +406,7 @@ points. Binding answers:
 
 ## Added 2026-11-12 20:50: coordinator answers to the design-merge open points (RP14)
 
-The merged design (`SkillOpt-scratch/typed-v2-build/design-merge/`, to be copied into this directory after batch 3)
+The merged design (`<local-scratch>/typed-v2-build/design-merge/`, to be copied into this directory after batch 3)
 listed points the addendum did not decide. Binding answers:
 - **Reset wrap and `open_panel`:** Step 6 (build id 6s) does the `open_panel` extraction of R24 AND the D13 ALFWorld
   reset wrap in one change, so `T/reads.py` is edited once; the read-plan integration uses `open_panel` as built.

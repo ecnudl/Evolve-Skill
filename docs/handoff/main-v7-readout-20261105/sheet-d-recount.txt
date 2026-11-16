@@ -1,0 +1,31 @@
+# D chain, SpreadsheetBench, 204 items, chain-end test cells of runs the owner already opened. 11/05 17:49. Strict = unknown_artifact counts wrong; lenient = counts right; same rule on both sides of a pair; +- is a rough item-level 95% half-width, not family clustered.
+== main-v4 cells 612 arms ['B', 'C', 'F']
+   B              n=204 {'pass': 122, 'fail': 77, 'unknown_artifact': 5}
+   C              n=204 {'pass': 117, 'fail': 83, 'unknown_artifact': 4} | vs B strict 21/26 -2.5+-6.6 | lenient 22/28 -2.9+-6.8
+   F              n=204 {'pass': 117, 'fail': 83, 'unknown_artifact': 4} | vs B strict 22/27 -2.5+-6.7 | lenient 22/28 -2.9+-6.8
+== main-v5 cells 612 arms ['B', 'C', 'F']
+   B              n=204 {'pass': 124, 'fail': 74, 'unknown_artifact': 6}
+   C              n=204 {'fail': 85, 'pass': 116, 'unknown_artifact': 3} | vs B strict 22/30 -3.9+-6.9 | lenient 22/33 -5.4+-7.1
+   F              n=204 {'pass': 117, 'fail': 85, 'unknown_artifact': 2} | vs B strict 17/24 -3.4+-6.1 | lenient 16/27 -5.4+-6.3
+== implant-v5 cells 816 arms ['B', 'C', 'F', 'S3']
+   B              n=204 {'fail': 76, 'pass': 121, 'unknown_artifact': 7}
+   C              n=204 {'pass': 117, 'fail': 84, 'unknown_artifact': 3} | vs B strict 22/26 -2.0+-6.7 | lenient 22/30 -3.9+-6.9
+   F              n=204 {'pass': 116, 'fail': 81, 'unknown_artifact': 7} | vs B strict 22/27 -2.5+-6.7 | lenient 23/28 -2.5+-6.9
+   S3             n=204 {'pass': 117, 'fail': 84, 'unknown_artifact': 3} | vs B strict 22/26 -2.0+-6.7 | lenient 22/30 -3.9+-6.9
+== cross-v5 cells 1428 arms ['B', 'C', 'F', 'X_alfworld', 'X_officeqa', 'X_searchqa', 'X_zebralogic']
+   B              n=204 {'pass': 123, 'fail': 74, 'unknown_artifact': 7}
+   C              n=204 {'pass': 115, 'fail': 85, 'unknown_artifact': 4} | vs B strict 21/29 -3.9+-6.8 | lenient 21/32 -5.4+-7.0
+   F              n=204 {'fail': 85, 'pass': 115, 'unknown_artifact': 4} | vs B strict 21/29 -3.9+-6.8 | lenient 21/32 -5.4+-7.0
+   X_alfworld     n=204 {'fail': 75, 'pass': 124, 'unknown_artifact': 5} | vs B strict 22/21 +0.5+-6.3 | lenient 23/24 -0.5+-6.6
+   X_officeqa     n=204 {'fail': 87, 'pass': 112, 'unknown_artifact': 5} | vs B strict 11/22 -5.4+-5.5 | lenient 13/26 -6.4+-6.0
+   X_searchqa     n=204 {'pass': 93, 'fail': 106, 'unknown_artifact': 5} | vs B strict 13/43 -14.7+-6.9 | lenient 13/45 -15.7+-7.0
+   X_zebralogic   n=204 {'fail': 70, 'pass': 129, 'unknown_artifact': 5} | vs B strict 22/16 +2.9+-5.9 | lenient 21/17 +2.0+-5.9
+== main-v6 cells 816 arms ['B', 'C', 'F', 'S3']
+   B              n=204 {'pass': 124, 'fail': 75, 'unknown_artifact': 5}
+   C              n=204 {'pass': 114, 'fail': 84, 'unknown_artifact': 6} | vs B strict 20/30 -4.9+-6.8 | lenient 20/29 -4.4+-6.7
+   F              n=204 {'pass': 114, 'fail': 84, 'unknown_artifact': 6} | vs B strict 20/30 -4.9+-6.8 | lenient 20/29 -4.4+-6.7
+   S3             n=204 {'pass': 114, 'fail': 84, 'unknown_artifact': 6} | vs B strict 20/30 -4.9+-6.8 | lenient 20/29 -4.4+-6.7
+== main-v7 cells 612 arms ['B', 'C', 'F']
+   B              n=204 {'pass': 128, 'fail': 71, 'unknown_artifact': 5}
+   C              n=204 {'pass': 116, 'fail': 85, 'unknown_artifact': 3} | vs B strict 17/29 -5.9+-6.5 | lenient 17/31 -6.9+-6.6
+   F              n=204 {'pass': 116, 'fail': 85, 'unknown_artifact': 3} | vs B strict 17/29 -5.9+-6.5 | lenient 17/31 -6.9+-6.6

@@ -245,7 +245,7 @@ These supersede the two-step pilot (owner #1, #13). The SB → OQ pilot is not r
 | SearchQA step | Run slice: 300 × 1 from the SearchQA pool. Acceptance slice: 1,000 × 1 in 4 blocks, from the kept fresh tail (`exclusion.apply_exclusion` → `supply.slices(kept=)`). These are the registered tentative sizes, adopted. |
 | LiveMath step | Run 119 × 1 (54 meta-absent + 65 meta-present); acceptance 100 × 2. J7 per §6.4: 64 meta-present items are sent options-only (`examiner.shortcut_variant`'s stem-hiding transform), and S′ − C ≥ 10 points on them withholds acceptance. Builders check the pool can hold these counts and report if it cannot. |
 | ALFWorld step | Pool: the fresh supply `$HIST/supply/alfworld-xs.json` with rooms, exported as `data.pools.alfworld`. Slices by room groups as registered (§3.1 O6): run 60, accept 150 in 4 room blocks. No P_i (owner #9 not taken). Closes I1-1. |
-| deepseek route B | Route A is elucid (`deepseek-v4.1-flash-1017`, registered, smoke-probed). Route B is the second provider: `/root/.config/weak-solver/northgate.env` (mode 600, never printed), model `deepseek-v4-flash` through the same explicit PJLAB gateway, `reasoning_effort: "none"`. A zero-cost `/v1/models` listing found no v4.1 name. Eight short probe calls found: reasoning off works; temperature-0 outputs are nondeterministic within each route and overlap across routes (an identical reply hash occurred on both); elucid adds 7 prompt tokens. Identity is therefore not verifiable and is recorded as a caveat. Switching rule: chain D starts and stays on route A. Only after a unit pauses for exhausted balance (route B's code: HTTP 429 `insufficient_quota`; route A's code as observed) does the operator run `switch-route --chain D --to B` and recover. The paused unit then redoes whole on route B, as the redo rules already define. Every cell and receipt records its route, and analyses report chain D by route. Route B uses ledger branch N (conservative bound B), without its own probe. |
+| deepseek route B | Route A is elucid (`deepseek-v4.1-flash-1017`, registered, smoke-probed). Route B is the second provider: `<deepseek-credentials-file>` (mode 600, never printed), model `deepseek-v4-flash` through the same explicit PJLAB gateway, `reasoning_effort: "none"`. A zero-cost `/v1/models` listing found no v4.1 name. Eight short probe calls found: reasoning off works; temperature-0 outputs are nondeterministic within each route and overlap across routes (an identical reply hash occurred on both); elucid adds 7 prompt tokens. Identity is therefore not verifiable and is recorded as a caveat. Switching rule: chain D starts and stays on route A. Only after a unit pauses for exhausted balance (route B's code: HTTP 429 `insufficient_quota`; route A's code as observed) does the operator run `switch-route --chain D --to B` and recover. The paused unit then redoes whole on route B, as the redo rules already define. Every cell and receipt records its route, and analyses report chain D by route. Route B uses ledger branch N (conservative bound B), without its own probe. |
 | Codex review (one round, 16:5x mirror) | NOT ACCEPTABLE: 1 BLOCKER, 9 MAJOR, 3 MINOR (`docs/handoff/execskill-codex-review-code-20261022.md`). All 13 are fixed before the snapshot, each with a test and, where a check could silently vanish, a mutation entry. No second Codex round (owner rule): the integrated code goes to the smoke. Owners are in `notes/M-coordination.md`. |
 | Smoke | The five gating stages run as registered, on the final snapshot. S-E6 projects the `main` configuration (five benches). A passing summary starts the main experiment. |
 
@@ -358,7 +358,7 @@ directory under the same protocol version (registration v3 §13).
 
 **Codex.** The owner's 10:3x rule allows a second review round only after a failed smoke, and only on what failed. A
 narrow round runs in parallel with the S0 rerun: the fix, plus the same defect class on the path still to run (smoke
-S1–S-E6, the main run's cuts, blocks and read). Brief: `scratchpad/execskill/codex/brief-smoke-s0-round2.md`
+S1–S-E6, the main run's cuts, blocks and read). Brief: `<local-scratch>/brief-smoke-s0-round2.md`
 (gpt-6-astra, ultra, read-only, on a mirror of the dev tree at `a6f49d3`). Result, verbatim:
 
 > No BLOCKER or MAJOR findings in the requested scope.
@@ -514,7 +514,7 @@ native_lock. The format row needs every arm ≥ 9/10 and X, P at most 1/20 below
 
 | Bench | C | X | P | Why the failing cells failed |
 |---|---|---|---|---|
-| SearchQA | 35/40 | 40/40 | 40/40 | 5 C replies were a bare answer with no answer tag (e.g. "South Carolina"). The official scorer still scores them; 3 of the 5 pass. |
+| SearchQA | 35/40 | 40/40 | 40/40 | 5 C replies were a bare answer with no answer tag. The official scorer still scores them; 3 of the 5 pass. |
 | OfficeQA | 40/40 | 40/40 | 36/40 | 4 P cells: the one allowed second reply of the `<calc>` round trip (§2.4) was again calc-only, with no answer. |
 | LiveMath | 39/40 | 40/40 | 39/40 | Above the floor. |
 | SpreadsheetBench | 40/40 | 40/40 | 40/40 | — |
@@ -644,7 +644,7 @@ native_lock. The format row needs every arm ≥ 9/10 and X, P at most 1/20 below
     which first needs elucid's label drift resolved or northgate.
 
 ```bash
-ssh dl.dulin+root.ailab-datatools.ws@h.pjlab.org.cn "python3 -c 'import json,sys; json.dump({\"decision\": \"waive\", \"smoke_result\": sys.argv[1], \"rows\": [\"S2.format\"], \"note\": sys.argv[2]}, open(sys.argv[3], \"x\"))' 6258c34f98ca2c41c5ea5c30df1d02058ea54ea2c786dde520404ca4a516662e 'owner waives S2.format for the chain-G main run' /data/execskill-20261021-pre/smoke/shared/owner-smoke-waiver.json"
+ssh <datatools-login> "python3 -c 'import json,sys; json.dump({\"decision\": \"waive\", \"smoke_result\": sys.argv[1], \"rows\": [\"S2.format\"], \"note\": sys.argv[2]}, open(sys.argv[3], \"x\"))' 6258c34f98ca2c41c5ea5c30df1d02058ea54ea2c786dde520404ca4a516662e 'owner waives S2.format for the chain-G main run' /data/execskill-20261021-pre/smoke/shared/owner-smoke-waiver.json"
 ```
 
 ## Owner decision 2026-10-23 11:1x: waive S2.format; chain G's main run launched 11:18
@@ -671,7 +671,7 @@ instruction the registrar wrote the waiver with the documented one-line command 
      evidence `main_real_run`, configuration main;
    - all 13 compared fields equal to the smoke manifest;
    - caps as registered (per chain: solver 1.52B, test 407M, redo 72M, glm 288M, confirm 1.1M; overall 3.616B).
-4. **Route/TLS check**: open.bigmodel.cn, hk.getelucid.com and northgate.xiaobei.top all answered HTTP 200.
+4. **Route/TLS check**: open.bigmodel.cn, <elucid-gateway-host> and <northgate-gateway-host> all answered HTTP 200.
 5. **Chain G started** 2026-10-23 11:18:30 in tmux `execskill-main-G` (`main-run-d.sh G`, snapshot d, log
    `main-G-run-1.log`). **Chain D was not started.**
 

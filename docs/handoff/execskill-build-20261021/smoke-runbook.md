@@ -406,7 +406,7 @@ from skillopt.continual_eval.core import read_json
 s1 = protocol.verified(read_json('$SMOKE/stages/S1.json'), 'smoke-stage')['result']   # S1's branch and longest
 d = manifest.solver_block('D', env_path='$ELUCID', branch=s1['branch'], longest=s1['longest'])
 print(json.dumps({'solver': {'D': d, 'G': manifest.solver_block('G', env_path='$GREPO')}, 'roles': manifest.ROLES,
-                  'routes': {'D': {'B': routes.pin('D', 'B', env_path='/root/.config/weak-solver/northgate.env',
+                  'routes': {'D': {'B': routes.pin('D', 'B', env_path='<deepseek-credentials-file>',
                                                    solver_block=d)}}}))"
 ```
 

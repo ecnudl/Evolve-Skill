@@ -3,7 +3,7 @@
 Status: CORRECTED 2026-11-12 (fix1), then SECOND CHECK applied (fix2: issues I-1..I-16 and ADV1..ADV14 of two
 checkers, section 8.2; D16 and D17 of the addendum, added 17:45 and 17:51, are now taken in). Inputs: the draft of
 16:06, critic A (A1-A17), critic B (CB1-CB31), the verdicts of seven verifiers
-(`SkillOpt-scratch/typed-v2-build/rp-verify/ALL-results.json`, ids vA1, vA2, vB1, vB2, vB3, vQ, vH) and the
+(`<local-scratch>/typed-v2-build/rp-verify/ALL-results.json`, ids vA1, vA2, vB1, vB2, vB3, vQ, vH) and the
 coordinator decisions RP1-RP11 (last section of `DECISIONS-ADDENDUM-20261112.md`). Design only; nothing in the tree
 is edited. Precedence: addendum coordinator sections > `DESIGN.md` > spec files. Paths relative to
 `<repo-root>`; `T/` = `skillopt/execskill/typed/`, `X/` = `skillopt/execskill/`.

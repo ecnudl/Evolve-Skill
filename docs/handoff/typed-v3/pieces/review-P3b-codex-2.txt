@@ -1,4 +1,4 @@
-Codex second look at P3b's fixes (67fb84a) and the merge with the resume replay (b8a2045, d545269); gpt-6-astra, effort ultra, read-only, 2026-11-15 06:25-06:27, on commit d545269; brief: SkillOpt-scratch/typed-v3-design/codex/brief-P3b-review2.md; 99,367 tokens.
+Codex second look at P3b's fixes (67fb84a) and the merge with the resume replay (b8a2045, d545269); gpt-6-astra, effort ultra, read-only, 2026-11-15 06:25-06:27, on commit d545269; brief: <local-scratch>/typed-v3-design/codex/brief-P3b-review2.md; 99,367 tokens.
 
 No new BLOCKER, MAJOR, or MINOR findings in the requested fixes and merge.
 

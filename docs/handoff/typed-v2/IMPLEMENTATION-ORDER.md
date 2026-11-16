@@ -9,7 +9,7 @@ D17, O10, RP1 to RP13) and with the build as it was actually done (implementer r
 `impl/rp-core.md`, the git history of `<repo-root>` and its worktrees, observed at
 about 19:55). Marks as in `DESIGN.md`: a source id in brackets for folded decisions, "Changed by <id>: <what>" where
 the addendum replaced a line, [impl <id>] for a build fact, [I] for an inference or a proposal of this merge;
-[workflow] marks a rule of the build workflow's implementer prompts (`SkillOpt-scratch/typed-v2-build/workflow-A.js`:
+[workflow] marks a rule of the build workflow's implementer prompts (`<local-scratch>/typed-v2-build/workflow-A.js`:
 its precedence line and "HARD RULES"), not an addendum decision. The step ids 1a .. 5x come from the addendum [BS, D16, D17] and rp-core from
 the report name in RP13; the name "batch 3", the ids 6s, rp-int, rp-ro, 7g and "Step R" are this merge's [I].
 `T/` = `skillopt/execskill/typed/`, `X/` = `skillopt/execskill/`, `C` = `T/chain.py`, `W` = `T/writers.py`. Line

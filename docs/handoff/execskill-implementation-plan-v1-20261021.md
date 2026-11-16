@@ -13,7 +13,7 @@ a later read-only verifier pass (not a new review round) found propagation gaps,
 preflight line ranges, `tag_exact` episodes, calc T8 figures, the owner-#9 P_i cap; REG §19). Version strings are unchanged. Companion of `execskill-registration-v1-20261021.md` (same
 directory; "REG §n" below). The registration decides WHAT is measured and the thresholds; this plan decides HOW it is built. Where
 they disagree, the registration wins and the plan is a bug. Line references to frozen code were taken from the local repo
-(`/Users/dulin/Documents/Paper/SkillOpt`), which is byte-identical to the dl snapshot f (`dl:/data/coevo5-20261019-v3-source-f`)
+(`<repo>`), which is byte-identical to the dl snapshot f (`dl:/data/coevo5-20261019-v3-source-f`)
 for `skillopt/`, `scripts/` [CI F3]; they are valid for `/data/execskill-dev` at `010d453`.
 
 **Owner rules 2026-10-21 22:3x (binding; REG §0 "负责人 22:3x 的定调", REG §21).** (a) Every REG §14 decision is taken at its default: the

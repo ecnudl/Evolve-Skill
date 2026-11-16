@@ -1396,7 +1396,7 @@ Added by the merge (test files as built or planned; same command; the full typed
 - Ops helpers [impl 5w; R73]: the copies of `decdump.py`, `reuse.py`, `cost.py`, `attdump.py`, `fault_probe.py` read
   `<arm>#<r>`, `per_item`, `baseline`, `candidate_arm`, `gate_verdict` and the run counts of `decisions.json`; the
   copies of `mounts.py` / `mounts2.py` print settled and alias counts from the state. A draft launcher exists as
-  `SkillOpt-scratch/typed-v2-build/ops/run-typed2.sh` (not reviewed by this merge).
+  `<local-scratch>/typed-v2-build/ops/run-typed2.sh` (not reviewed by this merge).
 
 ## 7. Owner decisions taken (formerly: hooks waiting for the owner)
 

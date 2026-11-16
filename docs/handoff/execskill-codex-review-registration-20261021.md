@@ -1,6 +1,6 @@
 Reviewed read-only; no paid calls or test-pool data were accessed. The calculation script reproduces its stored output exactly.
 
-References: **R** = [registration](/Users/dulin/Documents/Paper/SkillOpt/docs/handoff/execskill-registration-v1-20261021.md), **P** = [implementation plan](/Users/dulin/Documents/Paper/SkillOpt/docs/handoff/execskill-implementation-plan-v1-20261021.md), **C** = [calculation script](/Users/dulin/Documents/Paper/SkillOpt/docs/handoff/execskill-calc-20261021.py). Line numbers below refer to these files.
+References: **R** = [registration](execskill-registration-v1-20261021.md), **P** = [implementation plan](execskill-implementation-plan-v1-20261021.md), **C** = [calculation script](execskill-calc-20261021.py). Line numbers below refer to these files.
 
 1. **BLOCKER — The claimed ≤5% false-acceptance guarantee is false for the registered mean-effect null.**
 
@@ -54,7 +54,7 @@ References: **R** = [registration](/Users/dulin/Documents/Paper/SkillOpt/docs/ha
 
    **Location:** R lines 319–321 and 439–440; P line 51.
 
-   **Why:** Under “official correct **OR** JSON correct,” `<answer>A</answer> {"answer":"B"}` can pass when either A or B is correct. The frozen scorer reads A from the tag ([backends.py:491](/Users/dulin/Documents/Paper/SkillOpt/skillopt/continual_eval/backends.py:491)), while the frozen single-letter format check still passes ([checks.py:35](/Users/dulin/Documents/Paper/SkillOpt/skillopt/coevo5/checks.py:35)). Thus J4 does not necessarily prevent this metric exploit.
+   **Why:** Under “official correct **OR** JSON correct,” `<answer>A</answer> {"answer":"B"}` can pass when either A or B is correct. The frozen scorer reads A from the tag ([backends.py:491](../../skillopt/continual_eval/backends.py#L491)), while the frozen single-letter format check still passes ([checks.py:35](../../skillopt/coevo5/checks.py#L35)). Thus J4 does not necessarily prevent this metric exploit.
 
    **Fix:** Choose one answer using reference-independent precedence. For example, use a valid official answer carrier first, and JSON only when that carrier is unusable. Add conflicting-tag/JSON fixtures. Supporting additional formats should not grant additional guesses.
 
@@ -62,7 +62,7 @@ References: **R** = [registration](/Users/dulin/Documents/Paper/SkillOpt/docs/ha
 
    **Location:** R §7.2, lines 502–508; P lines 63 and 338.
 
-   **Why:** Reproducing one OfficeQA answer does not establish that a proposed formula remains correct after perturbation. Evaluating an examiner-supplied LiveMath expression accurately does not establish that it answers the generated question. Spreadsheet qualification explicitly submits the reference workbook as the prediction and scores it against itself ([qualify.py:38](/Users/dulin/Documents/Paper/SkillOpt/skillopt/coevo5/qualify.py:38), [qualify.py:101](/Users/dulin/Documents/Paper/SkillOpt/skillopt/coevo5/qualify.py:101)). Recalculation also cannot update literal answers without a reference transformation.
+   **Why:** Reproducing one OfficeQA answer does not establish that a proposed formula remains correct after perturbation. Evaluating an examiner-supplied LiveMath expression accurately does not establish that it answers the generated question. Spreadsheet qualification explicitly submits the reference workbook as the prediction and scores it against itself ([qualify.py:38](../../skillopt/coevo5/qualify.py#L38), [qualify.py:101](../../skillopt/coevo5/qualify.py#L101)). Recalculation also cannot update literal answers without a reference transformation.
 
    **Fix:** Restrict generation to independently verified transformation families with fixed reference functions or simulators. Separate semantic correctness from scorer/engine qualification. Drop transformations without an independently specified answer mapping.
 
@@ -79,7 +79,7 @@ References: **R** = [registration](/Users/dulin/Documents/Paper/SkillOpt/docs/ha
 
     **Location:** R lines 486–495; P lines 336–337.
 
-    **Why:** A prefix of `min(T,10)` steps reveals whether an episode ended before ten steps. The frozen loop exits on `won` or `done` ([backends.py:768](/Users/dulin/Documents/Paper/SkillOpt/skillopt/continual_eval/backends.py:768)). Consequently, prefix length and terminal observations can distinguish early successes without learning a failure mechanism. Testing only a `len(steps)==50` detector misses this.
+    **Why:** A prefix of `min(T,10)` steps reveals whether an episode ended before ten steps. The frozen loop exits on `won` or `done` ([backends.py:768](../../skillopt/continual_eval/backends.py#L768)). Consequently, prefix length and terminal observations can distinguish early successes without learning a failure mechanism. Testing only a `len(steps)==50` detector misses this.
 
     **Fix:** Define a landmark prediction task among episodes still active immediately before step ten. Supply a fixed-length nonterminal view, handle infrastructure censoring explicitly, and report early terminations separately. Test short successful trajectories and terminal-text leakage.
 
@@ -95,7 +95,7 @@ References: **R** = [registration](/Users/dulin/Documents/Paper/SkillOpt/docs/ha
 
     **Location:** R lines 159–160 versus P5 at line 332; P lines 52, 54 and 206.
 
-    **Why:** The text disagrees about whether a delivered but truncated repair is used. More importantly, frozen [cells.py:196](/Users/dulin/Documents/Paper/SkillOpt/skillopt/coevo5/cells.py:196) invokes preflight before scoring/classification. Preflight applies delivery checks ([outcomes.py:215](/Users/dulin/Documents/Paper/SkillOpt/skillopt/coevo5/outcomes.py:215)), which inspect the last receipt ([outcomes.py:256](/Users/dulin/Documents/Paper/SkillOpt/skillopt/coevo5/outcomes.py:256)). A failed repair can therefore turn a valid first program into unknown/fail before the proposed classification wrapper runs.
+    **Why:** The text disagrees about whether a delivered but truncated repair is used. More importantly, frozen [cells.py:196](../../skillopt/coevo5/cells.py#L196) invokes preflight before scoring/classification. Preflight applies delivery checks ([outcomes.py:215](../../skillopt/coevo5/outcomes.py#L215)), which inspect the last receipt ([outcomes.py:256](../../skillopt/coevo5/outcomes.py#L256)). A failed repair can therefore turn a valid first program into unknown/fail before the proposed classification wrapper runs.
 
     **Fix:** Adapt preflight as well as classification: scan all receipts for mandatory stops, score the deciding receipt, and record worst delivery separately. Test valid-first/failed-second and valid-first/truncated-second cases through actual scoring.
 
@@ -103,7 +103,7 @@ References: **R** = [registration](/Users/dulin/Documents/Paper/SkillOpt/docs/ha
 
     **Location:** P lines 54, 332 and 358: “ORDERED list of sends.”
 
-    **Why:** The frozen recorder may send several times for one logical call, recording each send but returning only the final receipt ([calls.py:214](/Users/dulin/Documents/Paper/SkillOpt/skillopt/coevo5/calls.py:214), [calls.py:268](/Users/dulin/Documents/Paper/SkillOpt/skillopt/coevo5/calls.py:268)). Replaying unsuccessful transport attempts as solver replies changes control flow and request matching.
+    **Why:** The frozen recorder may send several times for one logical call, recording each send but returning only the final receipt ([calls.py:214](../../skillopt/coevo5/calls.py#L214), [calls.py:268](../../skillopt/coevo5/calls.py#L268)). Replaying unsuccessful transport attempts as solver replies changes control flow and request matching.
 
     **Fix:** Persist logical-call boundaries, returned receipts and associated send indices. Replay logical replies; retain transport sends for accounting. Add a combined resend + two-call repair + reexecution fixture.
 
@@ -111,7 +111,7 @@ References: **R** = [registration](/Users/dulin/Documents/Paper/SkillOpt/docs/ha
 
     **Location:** P lines 246–251.
 
-    **Why:** Each cleanup requires the entire `execskill-sbx-` container prefix to be absent, while six workers may legitimately coexist. Closing one worker will find the others and raise `CleanupUnconfirmed`. Frozen native cleanup checks the specific UUID-named container ([backends.py:158](/Users/dulin/Documents/Paper/SkillOpt/skillopt/continual_eval/backends.py:158), [backends.py:190](/Users/dulin/Documents/Paper/SkillOpt/skillopt/continual_eval/backends.py:190)).
+    **Why:** Each cleanup requires the entire `execskill-sbx-` container prefix to be absent, while six workers may legitimately coexist. Closing one worker will find the others and raise `CleanupUnconfirmed`. Frozen native cleanup checks the specific UUID-named container ([backends.py:158](../../skillopt/continual_eval/backends.py#L158), [backends.py:190](../../skillopt/continual_eval/backends.py#L190)).
 
     **Fix:** Verify removal of the exact owned container. Check prefix-wide absence only after draining the unit. Test closing one of two live workers.
 
@@ -119,7 +119,7 @@ References: **R** = [registration](/Users/dulin/Documents/Paper/SkillOpt/docs/ha
 
     **Location:** P lines 63 and 71; R lines 67–79.
 
-    **Why:** The plan imports `qualify.qualify` unchanged. That function imports frozen v3 `VERSION` and writes a v3 qualification record ([qualify.py:24](/Users/dulin/Documents/Paper/SkillOpt/skillopt/coevo5/qualify.py:24), [qualify.py:124](/Users/dulin/Documents/Paper/SkillOpt/skillopt/coevo5/qualify.py:124)). New generated, fixture and evaluation qualifications would violate the new-protocol identity invariant.
+    **Why:** The plan imports `qualify.qualify` unchanged. That function imports frozen v3 `VERSION` and writes a v3 qualification record ([qualify.py:24](../../skillopt/coevo5/qualify.py#L24), [qualify.py:124](../../skillopt/coevo5/qualify.py#L124)). New generated, fixture and evaluation qualifications would violate the new-protocol identity invariant.
 
     **Fix:** Copy the record-producing qualification closure into `execskill`, retaining frozen scoring helpers. Accept v3 records only through the explicit historical-import path.
 
@@ -127,7 +127,7 @@ References: **R** = [registration](/Users/dulin/Documents/Paper/SkillOpt/docs/ha
 
     **Location:** R lines 283–284; P lines 54, 70, 109 and 189.
 
-    **Why:** Frozen evaluation calls ordinary cells ([evaluation.py:379](/Users/dulin/Documents/Paper/SkillOpt/skillopt/coevo5/evaluation.py:379)). Those cells persist full predictions and receipts, not merely hashes ([cells.py:97](/Users/dulin/Documents/Paper/SkillOpt/skillopt/coevo5/cells.py:97), [cells.py:187](/Users/dulin/Documents/Paper/SkillOpt/skillopt/coevo5/cells.py:187), [cells.py:224](/Users/dulin/Documents/Paper/SkillOpt/skillopt/coevo5/cells.py:224)). ALFWorld predictions include observations. Sealing console output does not remove these artifacts.
+    **Why:** Frozen evaluation calls ordinary cells ([evaluation.py:379](../../skillopt/coevo5/evaluation.py#L379)). Those cells persist full predictions and receipts, not merely hashes ([cells.py:97](../../skillopt/coevo5/cells.py#L97), [cells.py:187](../../skillopt/coevo5/cells.py#L187), [cells.py:224](../../skillopt/coevo5/cells.py#L224)). ALFWorld predictions include observations. Sealing console output does not remove these artifacts.
 
     **Fix:** Specify an evaluation-specific persistence adapter, transient replay storage and destruction/retention rules. Search every resulting artifact for canary test content. If sealed raw artifacts are required, explicitly amend the storage promise and access policy.
 
@@ -145,7 +145,7 @@ References: **R** = [registration](/Users/dulin/Documents/Paper/SkillOpt/docs/ha
 
     **Why:** Acceptance budgets assume 0.75 twins per item for SB/OQ and 0.5 for ALFWorld. Three new plus three inherited procedures can require three twins per item in step two. Using the script’s own high token assumptions gives **71.55M ALFWorld acceptance tokens**, already above its **66.9M ledger cap before any ledger inflation**. OfficeQA becomes approximately 19.34M, or 29.01M at the permitted 1.5 ratio, versus its 20.5M cap. Additionally, two parameter adjustments permit three difficulty trials, but the script budgets two; G_acc says “all arms,” while the script budgets four.
 
-    **Fix:** Derive counts from an explicit maximum schedule or cap procedure/twin counts accordingly. Resolve G_acc arms, retries and adjustment counts. Include reservation headroom: frozen [budget.py:283](/Users/dulin/Documents/Paper/SkillOpt/skillopt/coevo5/budget.py:283) needs room for a full next reservation, not just expected settlement. S-E6 cannot repair missing workload counts merely by measuring per-cell cost.
+    **Fix:** Derive counts from an explicit maximum schedule or cap procedure/twin counts accordingly. Resolve G_acc arms, retries and adjustment counts. Include reservation headroom: frozen [budget.py:283](../../skillopt/coevo5/budget.py#L283) needs room for a full next reservation, not just expected settlement. S-E6 cannot repair missing workload counts merely by measuring per-cell cost.
 
 19. **MAJOR — The smoke criteria contradict their deliberate reasoning probe.**
 
@@ -183,7 +183,7 @@ References: **R** = [registration](/Users/dulin/Documents/Paper/SkillOpt/docs/ha
 
     **Location:** R line 134 versus line 653; P lines 194–197 and 324.
 
-    **Why:** §2.3 promises unconditional equivalence, while later sections correctly exempt ALFWorld normalization. Frozen [backends.py:752](/Users/dulin/Documents/Paper/SkillOpt/skillopt/continual_eval/backends.py:752) executes the extracted raw action; normalization changes transitions and subsequent requests. New `shell` metadata also makes literal whole-prediction equality impossible.
+    **Why:** §2.3 promises unconditional equivalence, while later sections correctly exempt ALFWorld normalization. Frozen [backends.py:752](../../skillopt/continual_eval/backends.py#L752) executes the extracted raw action; normalization changes transitions and subsequent requests. New `shell` metadata also makes literal whole-prediction equality impossible.
 
     **Fix:** Put the exception in §2.3 and define the exact request and prediction projections compared.
 

@@ -142,7 +142,7 @@ Marked [impl <id>] in D and IO, from `impl/1a.md`, `1b.md`, `1m.md`, `3.md`, `4a
 commits cdf85b6, e2cf9e7, 3f7e933 and the working tree observed at about 19:55. They fill names and record fields
 where the build fixed them (D 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.4, 5) and the build tables of IO.
 Marked [workflow] in IO (fix pass): the implementer rules of the build workflow's prompts
-(`SkillOpt-scratch/typed-v2-build/workflow-A.js`: the precedence line 31 and "HARD RULES", lines 33-40): own files
+(`<local-scratch>/typed-v2-build/workflow-A.js`: the precedence line 31 and "HARD RULES", lines 33-40): own files
 only, nothing under `skillopt/` outside `T/`, no ssh / network / paid call, no git write, never delete or weaken a
 test, Python 3.11 and 3.13, the precedence for implementers.
 
