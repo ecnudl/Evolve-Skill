@@ -1,0 +1,56 @@
+# main-v7 practice side per-round gate counts (11/05 11:4x; read-only; no test directory, no prompts or replies)
+== G s1-searchqa decision not_run n 4
+   /training/rounds/0/rule {"touched": 300, "fixed": 14, "broken": 12, "net": 2, "gain_floor": 30, "harm_cap": 9.333333333333334, "whole_batch": 0.006666666666666667, "decision": "reject"}
+   /training/rounds/1/rule {"touched": 297, "fixed": 8, "broken": 12, "net": -4, "gain_floor": 30, "harm_cap": 5.333333333333333, "whole_batch": -0.013333333333333334, "decision": "reject"}
+   /training/rounds/2/rule {"touched": 236, "fixed": 4, "broken": 7, "net": -3, "gain_floor": 24, "harm_cap": 2.6666666666666665, "whole_batch": -0.01, "decision": "reject"}
+   /training/rounds/3/rule {"touched": 191, "fixed": 6, "broken": 4, "net": 2, "gain_floor": 20, "harm_cap": 4.0, "whole_batch": 0.006666666666666667, "decision": "reject"}
+== G s2-officeqa decision not_run n 4
+   /training/rounds/0/rule {"touched": 5, "fixed": 0, "broken": 2, "net": -2, "gain_floor": 3, "harm_cap": 0.0, "whole_batch": -0.05555555555555555, "decision": "reject"}
+   /training/rounds/1/rule {"touched": 6, "fixed": 0, "broken": 3, "net": -3, "gain_floor": 3, "harm_cap": 0.0, "whole_batch": -0.08333333333333333, "decision": "reject"}
+   /training/rounds/2/rule {"touched": 3, "fixed": 1, "broken": 0, "net": 1, "gain_floor": 3, "harm_cap": 0.6666666666666666, "whole_batch": 0.05555555555555555, "decision": "reject"}
+   /training/rounds/3/rule {"touched": 18, "fixed": 3, "broken": 2, "net": 1, "gain_floor": 3, "harm_cap": 2.0, "whole_batch": 0.027777777777777776, "decision": "reject"}
+== G s3-zebralogic decision not_run n 4
+   /training/rounds/1/rule {"touched": 59, "fixed": 13, "broken": 9, "net": 4, "gain_floor": 6, "harm_cap": 8.666666666666666, "whole_batch": 0.06666666666666667, "decision": "reject"}
+   /training/rounds/2/rule {"touched": 60, "fixed": 15, "broken": 10, "net": 5, "gain_floor": 6, "harm_cap": 10.0, "whole_batch": 0.08333333333333333, "decision": "reject"}
+   /training/rounds/3/rule {"touched": 59, "fixed": 8, "broken": 10, "net": -2, "gain_floor": 6, "harm_cap": 5.333333333333333, "whole_batch": -0.03333333333333333, "decision": "reject"}
+   /training/rounds/4/rule {"touched": 59, "fixed": 11, "broken": 9, "net": 2, "gain_floor": 6, "harm_cap": 7.333333333333333, "whole_batch": 0.03333333333333333, "decision": "reject"}
+== G s4-spreadsheetbench decision not_run n 4
+   /training/rounds/0/rule {"touched": 16, "fixed": 3, "broken": 2, "net": 1, "gain_floor": 3, "harm_cap": 2.0, "whole_batch": 0.0, "decision": "reject"}
+   /training/rounds/1/rule {"touched": 30, "fixed": 7, "broken": 3, "net": 4, "gain_floor": 3, "harm_cap": 4.666666666666667, "whole_batch": 0.08064516129032258, "decision": "accept"}
+   /training/rounds/2/rule {"touched": 31, "fixed": 6, "broken": 3, "net": 3, "gain_floor": 4, "harm_cap": 4.0, "whole_batch": 0.04838709677419355, "decision": "reject"}
+   /training/rounds/3/rule {"touched": 31, "fixed": 8, "broken": 7, "net": 1, "gain_floor": 4, "harm_cap": 5.333333333333333, "whole_batch": 0.03225806451612903, "decision": "reject"}
+== D s1-searchqa decision not_run n 4
+   /training/rounds/0/rule {"touched": 144, "fixed": 3, "broken": 2, "net": 1, "gain_floor": 15, "harm_cap": 2.0, "whole_batch": 0.0033333333333333335, "decision": "reject"}
+   /training/rounds/1/rule {"touched": 163, "fixed": 3, "broken": 4, "net": -1, "gain_floor": 17, "harm_cap": 2.0, "whole_batch": -0.0033333333333333335, "decision": "reject"}
+   /training/rounds/2/rule {"touched": 114, "fixed": 1, "broken": 1, "net": 0, "gain_floor": 12, "harm_cap": 0.6666666666666666, "whole_batch": 0.0, "decision": "reject"}
+   /training/rounds/3/rule {"touched": 129, "fixed": 6, "broken": 3, "net": 3, "gain_floor": 13, "harm_cap": 4.0, "whole_batch": 0.01, "decision": "reject"}
+== D s2-officeqa decision not_run n 4
+   /training/rounds/0/rule {"touched": 16, "fixed": 3, "broken": 4, "net": -1, "gain_floor": 3, "harm_cap": 2.0, "whole_batch": 0.0, "decision": "reject"}
+   /training/rounds/1/rule {"touched": 13, "fixed": 2, "broken": 2, "net": 0, "gain_floor": 3, "harm_cap": 1.3333333333333333, "whole_batch": 0.010416666666666666, "decision": "reject"}
+   /training/rounds/2/rule {"touched": 13, "fixed": 2, "broken": 2, "net": 0, "gain_floor": 3, "harm_cap": 1.3333333333333333, "whole_batch": -0.020833333333333332, "decision": "reject"}
+   /training/rounds/3/rule {"touched": 17, "fixed": 3, "broken": 1, "net": 2, "gain_floor": 3, "harm_cap": 2.0, "whole_batch": 0.020833333333333332, "decision": "reject"}
+== D s3-zebralogic decision not_run n 3
+   /training/rounds/0/rule {"touched": 25, "fixed": 0, "broken": 0, "net": 0, "gain_floor": 3, "harm_cap": 0.0, "whole_batch": 0.0, "decision": "reject"}
+   /training/rounds/1/rule {"touched": 53, "fixed": 5, "broken": 10, "net": -5, "gain_floor": 6, "harm_cap": 3.3333333333333335, "whole_batch": -0.08333333333333333, "decision": "reject"}
+   /training/rounds/3/rule {"touched": 24, "fixed": 2, "broken": 0, "net": 2, "gain_floor": 3, "harm_cap": 1.3333333333333333, "whole_batch": 0.03333333333333333, "decision": "reject"}
+== D s4-spreadsheetbench decision not_run n 4
+   /training/rounds/2/rule {"touched": 31, "fixed": 8, "broken": 1, "net": 7, "gain_floor": 4, "harm_cap": 5.333333333333333, "whole_batch": 0.16129032258064516, "decision": "accept"}
+   /training/rounds/3/rule {"touched": 30, "fixed": 5, "broken": 1, "net": 4, "gain_floor": 3, "harm_cap": 3.3333333333333335, "whole_batch": 0.08064516129032258, "decision": "accept"}
+   /training/rounds/4/rule {"touched": 30, "fixed": 5, "broken": 4, "net": 1, "gain_floor": 3, "harm_cap": 3.3333333333333335, "whole_batch": 0.04838709677419355, "decision": "reject"}
+   /training/rounds/5/rule {"touched": 30, "fixed": 9, "broken": 1, "net": 8, "gain_floor": 3, "harm_cap": 6.0, "whole_batch": 0.16129032258064516, "decision": "accept"}
+
+# confirmation slices
+G s1-searchqa rounds 4 items per round [300, 300, 300, 300] confirm []
+G s2-officeqa rounds 4 items per round [18, 18, 18, 18] confirm []
+G s3-zebralogic rounds 5 items per round [0, 60, 60, 60, 60] confirm []
+G s4-spreadsheetbench rounds 4 items per round [31, 31, 31, 31] confirm [(2, 4, 0, 1)]
+D s1-searchqa rounds 4 items per round [300, 300, 300, 300] confirm []
+D s2-officeqa rounds 4 items per round [18, 18, 18, 18] confirm []
+D s3-zebralogic rounds 6 items per round [60, 60, 0, 60, 0, 0] confirm []
+D s4-spreadsheetbench rounds 6 items per round [0, 0, 31, 31, 31, 31] confirm [(3, 4, 0, 1), (4, 4, 2, 0), (6, 4, 1, 0)]
+
+# tokens from shared/ledger-<chain>/state.json
+G overall 27323549 solver 21621448 test 12068128 glm 5702101 confirm 36 redo None
+  [((1, 'searchqa'), 4958703), ((2, 'officeqa'), 2094699), ((3, 'zebralogic'), 3873097), ((4, 'spreadsheetbench'), 4328886)]
+D overall 30463285 solver 21854561 test 14639446 glm 8608724 confirm 26 redo None
+  [((1, 'searchqa'), 3173521), ((2, 'officeqa'), 3039475), ((3, 'zebralogic'), 3157751), ((4, 'spreadsheetbench'), 6453066)]

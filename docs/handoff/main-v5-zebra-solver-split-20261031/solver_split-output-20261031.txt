@@ -1,0 +1,18 @@
+== train-r1 S' cells 57 S missing 0
+   solver_note     n= 6  S pass  4  S' pass  3  fixed  1  broken  2
+   no_solver_note  n=51  S pass 41  S' pass 37  fixed  7  broken 11
+== train-r2 S' cells 57 S missing 0
+   solver_note     n=16  S pass 14  S' pass 16  fixed  2  broken  0
+   no_solver_note  n=41  S pass 30  S' pass 34  fixed  9  broken  5
+== confirm-r2 S' cells 38 S missing 0
+   solver_note     n=11  S pass  9  S' pass 11  fixed  2  broken  0
+   no_solver_note  n=27  S pass 25  S' pass 19  fixed  2  broken  8
+== train-r3 S' cells 60 S missing 0
+   solver_note     n=16  S pass 11  S' pass 14  fixed  3  broken  0
+   no_solver_note  n=44  S pass 29  S' pass 34  fixed 13  broken  8
+== confirm-r3 S' cells 40 S missing 0
+   solver_note     n=11  S pass  9  S' pass 11  fixed  2  broken  0
+   no_solver_note  n=29  S pass 26  S' pass 22  fixed  3  broken  7
+== train-r4 S' cells 52 S missing 0
+   solver_note     n= 0  S pass  0  S' pass  0  fixed  0  broken  0
+   no_solver_note  n=52  S pass 37  S' pass 37  fixed  9  broken  9

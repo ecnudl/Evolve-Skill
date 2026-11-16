@@ -1,0 +1,6 @@
+train-r1 totals 8/13 verdict 8/13 OK | p-zebralogic-3-1 note_items=6 fixed=1 broken=2 ; p-zebralogic-3-2 note_items=57 fixed=8 broken=13
+train-r2 totals 11/5 verdict 11/5 OK | p-zebralogic-3-3 note_items=16 fixed=2 broken=0 ; p-zebralogic-3-4 note_items=54 fixed=11 broken=5
+confirm-r2 totals 4/8 verdict 4/8 OK | p-zebralogic-3-3 note_items=11 fixed=2 broken=0 ; p-zebralogic-3-4 note_items=38 fixed=4 broken=8
+train-r3 totals 16/8 verdict 16/8 OK | p-zebralogic-3-5 note_items=55 fixed=16 broken=7 ; p-zebralogic-3-6 note_items=16 fixed=3 broken=0 ; p-zebralogic-3-7 note_items=60 fixed=16 broken=8
+confirm-r3 totals 5/7 verdict 5/7 OK | p-zebralogic-3-5 note_items=36 fixed=5 broken=5 ; p-zebralogic-3-6 note_items=11 fixed=2 broken=0 ; p-zebralogic-3-7 note_items=40 fixed=5 broken=7
+train-r4 totals 9/9 verdict 9/9 OK | p-zebralogic-3-9 note_items=52 fixed=9 broken=9

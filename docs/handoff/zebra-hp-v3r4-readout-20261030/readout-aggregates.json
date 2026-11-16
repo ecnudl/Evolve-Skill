@@ -1,0 +1,203 @@
+{
+ "run_root": "/data/execskill-20261030-zebra-hp-v3r4",
+ "run": "c81956628641978687ab07f7fd13e888f7893b2d60cca255ab9253339f6ca5be",
+ "configuration": "zebra-hp-v3r4",
+ "label": "owner_requested_read_only_extraction_20261030_not_registered_unseal",
+ "chain": "D",
+ "test_read": {
+  "status": "read",
+  "package_sha256": "284eb75535f77be62910ff31ccfb60324f62e1196e31a997be1c1a98e9f3dcfc"
+ },
+ "procedures": {
+  "p-zebralogic-1-1": "zebralogic"
+ },
+ "unit_counts": {
+  "zebralogic": {
+   "cells": 400,
+   "shared": 0,
+   "by_arm": {
+    "C": 200,
+    "F": 200
+   },
+   "unknown": 0,
+   "unknown_by_kind": {},
+   "infrastructure": 0
+  }
+ },
+ "readout_record_sha256": "33932a53624c6a05f8c54310b370a4bb7a75a5777f4736a7ca7adce97f80dedb",
+ "readout": {
+  "configuration": "zebra-hp-v3r4",
+  "evidence_kind": "post_hoc_selected_upper_bound",
+  "read_label": "owner_requested_read_only_extraction_20261030_not_registered_unseal",
+  "learned": [],
+  "imported": [
+   "zebralogic"
+  ],
+  "contrasts": {
+   "zebralogic": {
+    "F-C": {
+     "n": 200,
+     "mean": 0.115,
+     "se": 0.023699861119538805,
+     "df": 199,
+     "p_t": 1.2296391703140521e-06,
+     "ci95": [
+      0.06826490376746819,
+      0.16173509623253182
+     ],
+     "lower95_one_sided": 0.07583487162230515,
+     "upper95_one_sided": 0.15416512837769486,
+     "bootstrap_ci95": [
+      0.07,
+      0.16
+     ],
+     "sensitivity": {
+      "p_signflip": 1.999980000199998e-05,
+      "p_wilcoxon": 2.1124547024964357e-06
+     }
+    }
+   }
+  },
+  "contrasts_reading": "descriptive",
+  "similar": [],
+  "dissimilar": [],
+  "q1_home": null,
+  "q2_similar": {},
+  "q3_noninferiority": null,
+  "shared_unanswered": {
+   "zebralogic": 0
+  },
+  "arms": {
+   "zebralogic": {
+    "C": {
+     "period": "this_period",
+     "cells": 200,
+     "shared": 0,
+     "v2": 0.825,
+     "official": 0.825,
+     "official_completion": 0.825,
+     "lenient": 0.0,
+     "unknown": {},
+     "flags": {
+      "truncated": 10
+     },
+     "format": {
+      "grid": 190,
+      "reply": 190,
+      "violation": 10
+     },
+     "fault_cells": 0,
+     "faults": {},
+     "enable_rate": 0.0,
+     "short_answer_reference": {
+      "window": 0,
+      "cells": 200,
+      "no_usage": 0,
+      "median": 2637.0,
+      "status": "defined"
+     },
+     "windows": [
+      {
+       "window": 0,
+       "cells": 200,
+       "answer_tag_share": null,
+       "mean_completion_tokens": 4055.16,
+       "short_answer_share": 0.005,
+       "no_usage": 0
+      }
+     ]
+    },
+    "F": {
+     "period": "this_period",
+     "cells": 200,
+     "shared": 0,
+     "v2": 0.94,
+     "official": 0.94,
+     "official_completion": 0.94,
+     "lenient": 0.0,
+     "unknown": {},
+     "flags": {
+      "truncated": 4
+     },
+     "format": {
+      "grid": 196,
+      "reply": 196,
+      "violation": 4
+     },
+     "fault_cells": 8,
+     "faults": {
+      "timeout": 8
+     },
+     "enable_rate": 1.0,
+     "short_answer_reference": {
+      "window": 0,
+      "cells": 200,
+      "no_usage": 0,
+      "median": 589.0,
+      "status": "defined"
+     },
+     "windows": [
+      {
+       "window": 0,
+       "cells": 200,
+       "answer_tag_share": null,
+       "mean_completion_tokens": 1338.47,
+       "short_answer_share": 0.0,
+       "no_usage": 0
+      }
+     ]
+    }
+   }
+  },
+  "placebo": {
+   "removed": true
+  },
+  "code_vs_text": {
+   "removed": true
+  },
+  "twins": {
+   "removed": true
+  },
+  "version": "fivebench-execskill-v1-readout",
+  "evidence": "zebra_hp_v3r4_test_read",
+  "record_sha256": "33932a53624c6a05f8c54310b370a4bb7a75a5777f4736a7ca7adce97f80dedb"
+ },
+ "per_bench": {
+  "zebralogic": {
+   "items_both_arms": 200,
+   "acc": {
+    "F": 0.94,
+    "C": 0.825
+   },
+   "side": {
+    "F": "L",
+    "C": "H"
+   },
+   "F-C_items": {
+    "n": 200,
+    "better": 24,
+    "worse": 1,
+    "tied": 175
+   },
+   "enabled_F": 200,
+   "faults_F": 8,
+   "tokens": {
+    "F": {
+     "pass": 188,
+     "fail": 12
+    },
+    "C": {
+     "pass": 165,
+     "fail": 35
+    }
+   },
+   "answered": {
+    "F": 200,
+    "C": 200
+   },
+   "solver_models": {
+    "deepseek-v4-flash": 400
+   }
+  }
+ }
+}
