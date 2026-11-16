@@ -21,7 +21,7 @@
 
 **为泛化做了什么、还缺什么。** 写手看不到判定题和门槛题；门槛值按噪声定；题型隔离保护不相似的任务；新任务并入已有题型时，候选还要在老任务的门槛题上不退步。“进化”和“验证”目前只协同了一半：每一步的考题针对当前技能库的弱点重新造，但出题一方不从结果里学习、一步之内题目不随候选变化、判分标准不进化。详见[当前流程](docs/current-workflow.md)开头 11/16 的补充。
 
-**当前状态。** `typed-v3` 两条链（求解模型 GLM-5.3 与 deepseek-v4-flash）11/15 起在开发机上运行，测试读数封存到链跑完才打开；进度和练习侧的门槛决定见[项目状态](docs/project-status.md) §0。`typed-v3` 的代码在第二步审查后公开；目前公开的代码到 route B v2.19（分支 `research/exec-skill-zpc`）。
+**当前状态。** `typed-v3` 两条链（求解模型 GLM-5.3 与 deepseek-v4-flash）11/15 起在开发机上运行，测试读数封存到链跑完才打开；进度和练习侧的门槛决定见[项目状态](docs/project-status.md) §0。`typed-v3` 的代码已公开在分支 [`research/typed-skills-v3`](https://github.com/ecnudl/Evolve-Skill/tree/research/typed-skills-v3)：代码在 `skillopt/execskill/typed/`，设计记录和审查在 `docs/handoff/typed-v3/`，分支里同时带着本页这一版文档。为公开排除了 5 个含 ALFWorld 原文和模型动作的运行记录（`tests/fixtures/execskill/v22{0,1,2,5,6}_parents_before.json`），读它们的测试在缺文件时跳过。
 
 **10/3 18:57：新 F（序列 v4 / 学习 v7）运行中**：SkillOpt 与官方 GEPA 依次在五域进化，Skill 接口提高到 32,000 字节，用于得到 No-Skill / SkillOpt / GEPA 的完整五域对比；尚无成绩，见[新 F 报告](docs/fivebench-f-skillopt-gepa-20261003.md)。
 
