@@ -3,6 +3,13 @@ from skillopt.execskill import package, profiles as p, readout, v225_read
 from tests.test_execskill_acceptance import fast_statistics  # noqa: F401
 from tests.test_execskill_v225_read import synthetic_units
 from tests.execskill_v293_fakes import tmp_path  # noqa: F401
+from pathlib import Path as _CapturePath
+import pytest as _capture_pytest
+_PARENT_CAPTURES = [_CapturePath(__file__).parent / f'fixtures/execskill/v{v}_parents_before.json'
+                    for v in ('220', '221', '222', '225', '226')]
+needs_parent_captures = _capture_pytest.mark.skipif(
+    not all(capture.exists() for capture in _PARENT_CAPTURES),
+    reason='parent captures not published (they hold ALFWorld game text)')
 
 
 def test_main_v10_aggregate_and_readout_keep_the_new_configuration(fast_statistics):
@@ -32,6 +39,7 @@ def test_main_v10_structural_readout_demo_uses_the_pinned_reference(fast_statist
     assert result['model_calls'] == result['sealed_reads'] == 0
 
 
+@needs_parent_captures
 def test_main_v10_full_structural_smoke_uses_real_registration_paths(tmp_path, fast_statistics, monkeypatch):
     from skillopt.execskill import v225_smoke
     monkeypatch.setitem(p.RUN_ROOTS, p.MAIN_V10, str(tmp_path/'v226'))

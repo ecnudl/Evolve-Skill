@@ -14,6 +14,13 @@ from tests.execskill_v293_fakes import tmp_path  # noqa: F401
 from tests.test_execskill_v225_writer import FakeRoles
 from tests.test_execskill_v225_routing import VIEWS
 from tests.test_execskill_acceptance import fast_statistics  # noqa: F401
+from pathlib import Path as _CapturePath
+import pytest as _capture_pytest
+_PARENT_CAPTURES = [_CapturePath(__file__).parent / f'fixtures/execskill/v{v}_parents_before.json'
+                    for v in ('220', '221', '222', '225', '226')]
+needs_parent_captures = _capture_pytest.mark.skipif(
+    not all(capture.exists() for capture in _PARENT_CAPTURES),
+    reason='parent captures not published (they hold ALFWorld game text)')
 
 
 def authored_s2(root, monkeypatch, chain, *, cross_card_accept=True):
@@ -153,6 +160,7 @@ def test_se6_uses_four_card_and_six_procedure_arms_with_actual_measured_prices(t
     assert result['read_estimate'] == sum(terms.values())
 
 
+@needs_parent_captures
 def test_s0_pins_writer_policy_template_task_cards_and_ten_read_arms():
     from skillopt.execskill import policy
     pins = smoke.pins({b: {} for b in p.MAIN_V5_ORDER})
@@ -177,6 +185,7 @@ def test_smoke_writer_preserves_c0_provenance_and_cannot_be_used_by_learner():
         v225_writer.select_examples([{**trace,'arm':'C'}], smoke=True, incumbent_evidence='engineering_fixture', **kwargs)
 
 
+@needs_parent_captures
 def test_sx_real_card_controller_precedes_procedure_rounds_and_all_authored_read_plans(tmp_path, fast_statistics):
     result = smoke.structural_smoke(tmp_path/'sx')
     assert smoke.check_structural(result) == result

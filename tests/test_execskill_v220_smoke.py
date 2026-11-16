@@ -20,6 +20,13 @@ from tests.test_execskill_v211_manifest import reseal
 from tests.test_execskill_v217i_smoke import first_call
 from tests.test_execskill_v214_smoke import measured_probe
 from tests.test_execskill_v220_read import consent, fixed_worker
+from pathlib import Path as _CapturePath
+import pytest as _capture_pytest
+_PARENT_CAPTURES = [_CapturePath(__file__).parent / f'fixtures/execskill/v{v}_parents_before.json'
+                    for v in ('220', '221', '222', '225', '226')]
+needs_parent_captures = _capture_pytest.mark.skipif(
+    not all(capture.exists() for capture in _PARENT_CAPTURES),
+    reason='parent captures not published (they hold ALFWorld game text)')
 
 CHILD = p.SEARCHQA_HP_V6
 
@@ -77,6 +84,7 @@ def setup(root, monkeypatch, chain='G'):
 
 
 @pytest.mark.parametrize('chain', ['G', 'D'])
+@needs_parent_captures
 def test_preparation_and_manifest_pin_searchqa_only_and_both_completed_sources(tmp_path, monkeypatch, chain):
     checked, made, options = setup(tmp_path, monkeypatch, chain)
     assert checked['configuration'] == made['configuration'] == CHILD
@@ -329,6 +337,7 @@ def test_measured_readiness_recomputes_searchqa_projection_and_probes(tmp_path, 
                             s0_sha256='c' * 64, configuration=CHILD)
 
 
+@needs_parent_captures
 def test_real_manifest_requires_both_measured_chains_and_never_reopens_source_root(tmp_path, monkeypatch):
     _, made, options = setup(tmp_path / 'setup', monkeypatch)
     options.update(smoke_chain=None, root=tmp_path / 'real')
