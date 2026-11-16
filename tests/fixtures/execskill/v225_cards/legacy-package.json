@@ -1,0 +1,36 @@
+{
+  "describer": {},
+  "evidence": "engineering_fixture",
+  "narrowed": {},
+  "order": [
+    "p-searchqa-0-1",
+    "p-searchqa-0-2",
+    "p-officeqa-0-1",
+    "p-officeqa-0-2",
+    "p-officeqa-0-3",
+    "p-spreadsheetbench-0-1",
+    "p-spreadsheetbench-0-2",
+    "p-spreadsheetbench-0-3",
+    "p-alfworld-0-1",
+    "p-alfworld-0-2",
+    "p-alfworld-0-3"
+  ],
+  "parent_sha256": null,
+  "procedures": [
+    "217bf86326f1b7bc98a3e7a5ff42c745528c184717861730c2251ccb4aef7d82",
+    "bb12ad186720d10c5f2c485661758c87fd46f718713155f5b1cd74b90ad2026f",
+    "ea270c069330810c1a89c92d312900317fda02bbd98f4f218a47bd50a420a77c",
+    "455d0b0b1826cf9f854f6e629e41f8e5ee296a226eff479d5194fd36025857a6",
+    "b081534a677459ea66e26d241cbe86a435ca06a4b02292032c655f3a59da9084",
+    "8733708a088d07558a512bfdf3e07340ae763557bf3201e54f9b69feb8b56623",
+    "52049269be995382715a9daed8bc7865d42d1196ffca745925406d2358bed3fd",
+    "b26ee1bb32d70a74d9e979c099cf9ec74b80dfbf4774b648b02bf61f42a14a42",
+    "8dbeb8ab7b285260e88eebf7330ea69d21ac85414b0f04b477a4a0d58c014414",
+    "da7dbb4e403731d0126fd10c281ea73b9bd541c12ccba43ea03757ae1a917551",
+    "fc54a18795d2862891672c2711b8df59c40445e9fbe7a977b19cea2b9a334484"
+  ],
+  "record_sha256": "4510e19afca617366dbd4f693bc846fe88d64ba10e1ea0c88d38e53985c57cce",
+  "retired": [],
+  "step": "G/s0",
+  "version": "fivebench-execskill-v1-package"
+}

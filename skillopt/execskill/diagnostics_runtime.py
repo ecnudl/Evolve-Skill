@@ -9,9 +9,13 @@ from . import diagnostics
 
 
 def worker_call(worker, procedure, hook, args, *, timeout_s, configuration=None, bench='zebralogic'):
-    """Real workers bound before output limits; authored workers may return plain values."""
+    """Bind diagnostic processing before output limits; retain legacy authored fallbacks."""
     child = diagnostics.enabled(configuration, bench) and hook == 'before_call'
     method = getattr(worker, 'call_diagnostics', None) if child else None
+    if child and configuration == 'main-v10':
+        from .errors import ConfigurationError
+        if not callable(method) or not diagnostics.enabled(getattr(worker, 'diagnostics_configuration', None)):
+            raise ConfigurationError('diagnostics_worker_unbound: Zebra before_call requires diagnostics_configuration')
     if method is not None:
         return method(procedure, hook, args, timeout_s=timeout_s, bench=bench)
     return worker.call(procedure, hook, args, timeout_s=timeout_s)

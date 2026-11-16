@@ -1,0 +1,27 @@
+{
+  "id": "p-alfworld-1-14",
+  "origin": "alfworld",
+  "accepted_at": null,
+  "description": "Keeps the empty-receptacle memory and re-visit discouragement unchanged, but narrows the 'never-visited' exploration hint so it only lists unvisited 'go to' targets whose receptacle type (the word before the number, e.g. cabinet, drawer, countertop) appears verbatim in this episode's own initial_observation room description. This stops the hint from steering the agent toward receptacles from other rooms that appeared in admissible_commands, which caused wasted steps. Still uses only the episode's own action/observation/admissible_commands stream and makes no claims about where objects are.",
+  "hooks": [
+    "applies",
+    "alf_before_step",
+    "alf_after_step"
+  ],
+  "source": "# change: empty_receptacle_memory_v3 (p-alfworld-2-1)\ndef applies(view):\n    return True\n\n\ndef alf_after_step(event, state):\n    st = state if isinstance(state, dict) else {}\n    recept = {}\n    for k, v in (st.get(\"recept\") or {}).items():\n        if isinstance(v, dict):\n            recept[k[:120]] = {\"n\": int(v.get(\"n\", 0)),\n                               \"last_obs\": str(v.get(\"last_obs\", \"\"))[:200]}\n    a = event.get(\"action\") or \"\"\n    if isinstance(a, str) and a.startswith(\"go to \") and len(a) <= 120:\n        o = (event.get(\"observation\") or \"\").strip()\n        e = recept.get(a)\n        if e is None:\n            recept[a] = {\"n\": 1, \"last_obs\": o[:200]}\n        else:\n            e[\"n\"] = e[\"n\"] + 1\n            e[\"last_obs\"] = o[:200]\n    return {\"step\": st.get(\"step\", -1) + 1, \"recept\": recept}\n\n\ndef alf_before_step(view, state):\n    if not isinstance(state, dict):\n        return {\"fields\": {}, \"discourage\": []}\n    recept = state.get(\"recept\") or {}\n    empty, disc = [], []\n    for cmd, e in sorted(recept.items()):\n        if not isinstance(e, dict):\n            continue\n        obs = str(e.get(\"last_obs\", \"\"))\n        if \"you see nothing\" not in obs:\n            continue\n        n = int(e.get(\"n\", 0))\n        if n >= 2:\n            empty.append(\"%s (%d visits, empty)\" % (cmd, n))\n            disc.append(cmd)\n    warns = []\n    if empty:\n        warns.append((\"Empty-on-last-visit receptacles visited 2+ times: \"\n                      + \"; \".join(empty))[:200])\n    n = state.get(\"step\", -1) + 1\n    if n >= 12:\n        room = (view.get(\"initial_observation\") or \"\").lower()\n        adm = view.get(\"admissible_commands\") or []\n        room_types = set()\n        for w in room.replace(\",\", \" \").replace(\".\", \" \").split():\n            room_types.add(w)\n        unvis = []\n        for c in adm:\n            if not (isinstance(c, str) and c.startswith(\"go to \")):\n                continue\n            if c in recept:\n                continue\n            words = c[6:].split()\n            if len(words) >= 2 and words[0] in room_types:\n                unvis.append(c)\n            if len(unvis) >= 8:\n                break\n        if len(unvis) >= 3:\n            warns.append((\"Never-visited 'go to' targets in this room so far: \"\n                          + \", \".join(c[6:] for c in unvis))[:200])\n    if warns:\n        return {\"fields\": {\"warnings\": warns[:3]}, \"discourage\": disc[:10]}\n    return {\"fields\": {}, \"discourage\": []}\n",
+  "header": "Empty-receptacle memory; unvisited hints limited to receptacles named in this room.",
+  "max_note_chars": 800,
+  "requests_second_call": false,
+  "state_bytes": 4096,
+  "excluded_benches": [],
+  "replay_tests": [],
+  "lineage": {
+    "parent": null,
+    "revises": null,
+    "engineer_call": "75f3a2a4139fe971bab2c50f8a0392a882dab59a180f9b00f2b9cef25c69dae4"
+  },
+  "policy_version": "fivebench-execskill-v2-9-policy",
+  "version": "fivebench-execskill-v1-procedure-v2-9",
+  "evidence": "alfworld_v11_real_run",
+  "record_sha256": "9ab7ff8b708e0992ffa1ecaa8a68334587e63e6523e0fe61d8960992709fa919"
+}

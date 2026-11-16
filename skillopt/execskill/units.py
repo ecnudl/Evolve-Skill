@@ -144,6 +144,15 @@ def role_endpoint(setting, chain, role, bench, k):
     ``budgets.glm_scopes``."""
     client = setting.clients(ROLE_MODEL, None)
     require(client.model == ROLE_MODEL, "Every method role is GLM-5.3")
+    if protocol.is_v225(protocol.configuration_of(setting)) and role == 'card_writer':
+        configuration = protocol.MAIN_V9
+        if protocol.is_v226(protocol.configuration_of(setting)):
+            configuration = protocol.configuration_of(setting)
+        registered = protocol.card_writer_settings(configuration)
+        client = copy(client)
+        client.max_tokens = registered['max_tokens']
+        return budgets.endpoint(setting, budgets.glm_scopes(chain, role, bench, k,
+            configuration=configuration), client=client, max_tokens_bound=registered['max_tokens'])
     return budgets.endpoint(setting, budgets.glm_scopes(chain, role, bench, k), client=client,
                             max_tokens_bound=ROLE_MAX_TOKENS)
 
@@ -240,10 +249,14 @@ def cell_context(setting, attempt, endpoint, *, solve=solver.solve):
     if protocol.uses_environment_lock(protocol.configuration_of(setting)):
         from . import v218_lock
         environment = lambda bench, unit: v218_lock.environment(setting, bench, unit=unit)
+    imported = {}
+    if protocol.is_v220(protocol.configuration_of(setting)):
+        from . import v220_import
+        imported['searchqa_import'] = setting.extra[v220_import.PIN_KEY]
     return Context(attempt=attempt, endpoint=endpoint, runtime=setting.runtime, cards=cards,
                    native=pools[NATIVE], episodes=pools[EPISODE], worker=worker, evidence=setting.evidence,
                    nominal=nominal, solve=solve, configuration=protocol.configuration_of(setting),
-                   **({'environment': environment} if environment is not None else {}))
+                   **({'environment': environment} if environment is not None else {}), **imported)
 
 
 def for_unit(setting, chain, bench, unit):
@@ -251,8 +264,14 @@ def for_unit(setting, chain, bench, unit):
     keyword ``tag`` = ``unit_tag(chain, unit)``, so every container the unit's workers start is named for the unit and
     ``drain_unit(chain, unit)`` finds exactly those, and on ALFWorld at most ``ALFWORLD_WORKERS`` cells at once."""
     require(bench in SUPPORTED_BENCHES and type(unit) is str and unit, "A unit of a known bench")
+    if protocol.is_v222(protocol.configuration_of(setting)):
+        from . import v222_cards
+        setting = replace(setting, cards=v222_cards.setting_cards(setting, chain),
+                          runtime=v222_cards.setting_runtime(setting, chain))
     workers = min(setting.workers, ALFWORLD_WORKERS) if bench == "alfworld" else setting.workers
     options = {**setting.sandbox, "tag": unit_tag(chain, unit)}
+    if protocol.is_v226(protocol.configuration_of(setting)):
+        options["diagnostics_configuration"] = protocol.ZEBRA_PC_V15
     if protocol.is_v292(protocol.configuration_of(setting)):
         options.update(cleanup_grace_seconds=protocol.cleanup_grace_seconds(protocol.configuration_of(setting)),
                        cleanup_events=_cleanup_events(setting, chain, unit),
@@ -324,6 +343,15 @@ def completed(unit_root, *, run, identity):
 
 
 def run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=None, configuration=protocol.PILOT):
+    options = dict(run=run, identity=identity, work=work, evidence=evidence, drain=drain,
+                   settle=settle, configuration=configuration)
+    if protocol.is_v221(configuration):
+        from . import v221_recovery
+        return v221_recovery.run_unit(unit_root, execute=_run_unit, **options)
+    return _run_unit(unit_root, **options)
+
+
+def _run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=None, configuration=protocol.PILOT):
     """Run ``work(attempt)`` -> result (a JSON-safe dict) in the unit's next attempt, unless the unit is complete.
     The commit (module docstring; Codex finding #8): the result is persisted as the attempt's completion evidence
     (``COMPLETED``) before ``settle(attempt, result)`` -- the unit's consumption settlement, idempotent -- runs; when an
@@ -338,10 +366,20 @@ def run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=Non
     unit_root.mkdir(parents=True, exist_ok=True)
     name = identity["unit"]
     with exclusive(unit_root / ".lock"):
+        if protocol.is_v226(configuration) and {'k', 'bench'} <= set(identity):
+            from . import v226_candidates
+            try:
+                v226_candidates.snapshot(unit_root.parent)
+            except Exception as error:
+                raise Pause('configuration', 'candidate_error_journal_invalid', name) from error
         done = complete(unit_root, run=run, identity=identity)
         if done is not None:
             return done
-        attempt = _next_attempt(unit_root)
+        if protocol.is_v221(configuration):
+            from . import v221_recovery
+            attempt = v221_recovery.next_attempt(unit_root)
+        else:
+            attempt = _next_attempt(unit_root)
         if attempt is None:
             raise Pause("awaiting_owner_decision", attempts(unit_root)[-1].name, name)
         finished = completed(unit_root, run=run, identity=identity)  # a commit attempt spends nothing: no redo limit
@@ -354,9 +392,22 @@ def run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=Non
             cleanup_events.clear()
         if start_events is not None:
             start_events.clear()
-        def lifecycle():
+        def lifecycle(*, strict=False):
             events = {key: rows for key, rows in (("cleanups", cleanup_events), ("starts", start_events)) if rows}
-            return {"sandbox": events} if events else {}
+            fields = {"sandbox": events} if events else {}
+            if protocol.is_v226(configuration) and {'k', 'bench'} <= set(identity):
+                from . import v226_candidates
+                try:
+                    head = v226_candidates.snapshot(unit_root.parent)
+                    fields['candidate_errors'] = head['candidate_errors']
+                    fields['candidate_error_journal'] = head
+                except (OSError, ValueError, v226_candidates.ConfigurationError):
+                    if strict:
+                        raise
+                    # A broken journal must not mask the original pause or
+                    # prevent its status from being recorded.
+                    fields['candidate_errors_status'] = 'journal_unavailable'
+            return fields
         write_json(attempt / "started.json", record("unit-started" + suffix, evidence, {
             "run": run, "identity": identity, **({"commit_of": finished[0].name} if finished else {})}))
         try:
@@ -364,7 +415,8 @@ def run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=Non
                 if finished is None:
                     result = work(attempt)
                     write_json(attempt / COMPLETED, record("unit-completed" + suffix, evidence, {
-                        "run": run, "identity": identity, "attempt": attempt.name, "result": result}))
+                        "run": run, "identity": identity, "attempt": attempt.name, "result": result,
+                        **(lifecycle(strict=True) if protocol.is_v226(configuration) else {})}))
                     worked = attempt
                 else:
                     worked, result = finished
@@ -380,20 +432,26 @@ def run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=Non
                     if start_events:
                         write_json(attempt / "sandbox-starts.json", {"starts": start_events})
         except Pause as pause:
+            recovery = v221_recovery.exception_pause(pause) if protocol.is_v221(configuration) else None
             write_json(attempt / "status.json", record("unit-status" + suffix, evidence, {
                 "status": "paused", "kind": pause.kind, "reason": pause.reason, "cell": pause.cell,
-                **lifecycle()}))
+                **({'auto_retry_eligible': recovery is not None, **(recovery or {})}
+                   if protocol.is_v221(configuration) else {}), **lifecycle()}))
             raise
         except Exception as error:  # a stop of the run, a configuration check or a crash: the unit pauses
             (attempt / "diagnostics.log").write_text(traceback.format_exc(), encoding="utf-8")
             kind = stop_kind(error) or ("configuration" if isinstance(error, ValueError) else "exception")
+            recovery = v221_recovery.exception_pause(error) if protocol.is_v221(configuration) else None
             write_json(attempt / "status.json", record("unit-status" + suffix, evidence, {
                 "status": "paused", "kind": kind, "reason": type(error).__name__, "cell": None,
-                **lifecycle()}))
+                **({'auto_retry_eligible': recovery is not None, **(recovery or {})}
+                   if protocol.is_v221(configuration) else {}), **lifecycle()}))
             raise Pause(kind, type(error).__name__, name) from error
         value = record("unit" + suffix, evidence, {"run": run, "identity": identity, "status": "complete",
                                           "attempt": worked.name, "result": result,
                                           **lifecycle(),
+                                          **({'automatic_retries': v221_recovery.records(unit_root)}
+                                             if protocol.is_v221(configuration) else {}),
                                           **({"committed_in": attempt.name} if finished else {})})
         write_json(unit_root / "unit.json", value)
         return value

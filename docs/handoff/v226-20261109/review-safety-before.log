@@ -1,0 +1,188 @@
+F..F..F..FFFFF                                                           [100%]
+=================================== FAILURES ===================================
+__ test_corrupt_sealed_receipt_pauses_without_candidate_error[confirmation-{] __
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-aeli1aus')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b9162c0>
+site = 'confirmation', payload = '{'
+
+    @pytest.mark.parametrize('payload', ['{', '[]', '{"unsealed": true}'])
+    @pytest.mark.parametrize('site', ['confirmation', 'selftest', 'acceptance'])
+    def test_corrupt_sealed_receipt_pauses_without_candidate_error(tmp_path, monkeypatch, site, payload):
+        st, parent, candidate, state, _ = setup(tmp_path, monkeypatch)
+        rows = zebra_pool(2)
+        if site == 'confirmation':
+            path = st.root/'confirm-selection-r1.json'
+            invoke = lambda: step._confirm_eval(st, {'confirm': rows}, 1, parent, candidate, exercise=True)
+            unit = 'confirm-r1'
+        elif site == 'selftest':
+            path = st.root/'selftest/request-plan.json'
+            generated = {'g_self': [{**row, 'id': row['task_id']} for row in rows]}
+            invoke = lambda: step._selftest(st, 'selftest', candidate, generated, candidate_key='procedure-r1')
+            unit = 'selftest'
+        else:
+            path = st.root/'accept-r1/sealed.json'
+            monkeypatch.setattr(v222_runtime, 'cross_gate', lambda *a, **kw: (candidate, {'passed': True}))
+            monkeypatch.setattr(step, '_g_acc', lambda *a: None)
+            invoke = lambda: step._accept(st, {'accept': rows}, candidate, None, unit='accept-r1')
+            unit = 'accept-r1'
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(payload)
+>       with pytest.raises(Pause) as raised:
+E       Failed: DID NOT RAISE <class 'skillopt.coevo5.cells.Pause'>
+
+tests/test_execskill_v226_review_safety.py:37: Failed
+____ test_corrupt_sealed_receipt_pauses_without_candidate_error[selftest-{] ____
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-x_1omnm8')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b8d1370>
+site = 'selftest', payload = '{'
+
+    @pytest.mark.parametrize('payload', ['{', '[]', '{"unsealed": true}'])
+    @pytest.mark.parametrize('site', ['confirmation', 'selftest', 'acceptance'])
+    def test_corrupt_sealed_receipt_pauses_without_candidate_error(tmp_path, monkeypatch, site, payload):
+        st, parent, candidate, state, _ = setup(tmp_path, monkeypatch)
+        rows = zebra_pool(2)
+        if site == 'confirmation':
+            path = st.root/'confirm-selection-r1.json'
+            invoke = lambda: step._confirm_eval(st, {'confirm': rows}, 1, parent, candidate, exercise=True)
+            unit = 'confirm-r1'
+        elif site == 'selftest':
+            path = st.root/'selftest/request-plan.json'
+            generated = {'g_self': [{**row, 'id': row['task_id']} for row in rows]}
+            invoke = lambda: step._selftest(st, 'selftest', candidate, generated, candidate_key='procedure-r1')
+            unit = 'selftest'
+        else:
+            path = st.root/'accept-r1/sealed.json'
+            monkeypatch.setattr(v222_runtime, 'cross_gate', lambda *a, **kw: (candidate, {'passed': True}))
+            monkeypatch.setattr(step, '_g_acc', lambda *a: None)
+            invoke = lambda: step._accept(st, {'accept': rows}, candidate, None, unit='accept-r1')
+            unit = 'accept-r1'
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(payload)
+>       with pytest.raises(Pause) as raised:
+E       Failed: DID NOT RAISE <class 'skillopt.coevo5.cells.Pause'>
+
+tests/test_execskill_v226_review_safety.py:37: Failed
+___ test_corrupt_sealed_receipt_pauses_without_candidate_error[acceptance-{] ___
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-o7pk8qjr')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bc5c350>
+site = 'acceptance', payload = '{'
+
+    @pytest.mark.parametrize('payload', ['{', '[]', '{"unsealed": true}'])
+    @pytest.mark.parametrize('site', ['confirmation', 'selftest', 'acceptance'])
+    def test_corrupt_sealed_receipt_pauses_without_candidate_error(tmp_path, monkeypatch, site, payload):
+        st, parent, candidate, state, _ = setup(tmp_path, monkeypatch)
+        rows = zebra_pool(2)
+        if site == 'confirmation':
+            path = st.root/'confirm-selection-r1.json'
+            invoke = lambda: step._confirm_eval(st, {'confirm': rows}, 1, parent, candidate, exercise=True)
+            unit = 'confirm-r1'
+        elif site == 'selftest':
+            path = st.root/'selftest/request-plan.json'
+            generated = {'g_self': [{**row, 'id': row['task_id']} for row in rows]}
+            invoke = lambda: step._selftest(st, 'selftest', candidate, generated, candidate_key='procedure-r1')
+            unit = 'selftest'
+        else:
+            path = st.root/'accept-r1/sealed.json'
+            monkeypatch.setattr(v222_runtime, 'cross_gate', lambda *a, **kw: (candidate, {'passed': True}))
+            monkeypatch.setattr(step, '_g_acc', lambda *a: None)
+            invoke = lambda: step._accept(st, {'accept': rows}, candidate, None, unit='accept-r1')
+            unit = 'accept-r1'
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(payload)
+>       with pytest.raises(Pause) as raised:
+E       Failed: DID NOT RAISE <class 'skillopt.coevo5.cells.Pause'>
+
+tests/test_execskill_v226_review_safety.py:37: Failed
+____________ test_nonconsecutive_candidate_signature_is_systematic _____________
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-9h8na2ns')
+
+    def test_nonconsecutive_candidate_signature_is_systematic(tmp_path):
+        st, parent = fixture(tmp_path)
+        run(st, parent, 'r1', lambda _: _raise(KeyError('first')))
+        run(st, parent, 'r2', lambda _: {})
+>       with pytest.raises(KeyError):
+E       Failed: DID NOT RAISE <class 'KeyError'>
+
+tests/test_execskill_v226_review_safety.py:48: Failed
+______________ test_prior_step_candidate_signature_is_systematic _______________
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-0qj5bwyt')
+
+    def test_prior_step_candidate_signature_is_systematic(tmp_path):
+        st, parent = fixture(tmp_path/'G/s2-officeqa')
+        st.chain_root, st.k = tmp_path/'G', 2
+        result = run(st, parent, 'r1', lambda _: _raise(KeyError('first')))
+        write_json(st.root/'step.json', p.record('step', st.evidence,
+            {'candidate_errors': c.counts(st.root), 'candidate_error_events': [result['fault']]}))
+        later, _ = fixture(tmp_path/'G/s3-zebralogic')
+        later.chain_root, later.k = st.chain_root, 3
+>       with pytest.raises(KeyError):
+E       Failed: DID NOT RAISE <class 'KeyError'>
+
+tests/test_execskill_v226_review_safety.py:60: Failed
+_____________ test_deleted_journal_tail_is_detected_by_unit_anchor _____________
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-os1zc9_z')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b98e970>
+
+    def test_deleted_journal_tail_is_detected_by_unit_anchor(tmp_path, monkeypatch):
+        st, parent, candidate, _, _ = setup(tmp_path, monkeypatch)
+        st.unit('train-r1', c.guard(st, 'r1', parent,
+            lambda _: _raise(KeyError('first')), lambda event: {'candidate_error': event}))
+        paths = sorted((st.root/c.FILE).glob('*.json'))
+        paths[-1].unlink()
+>       with pytest.raises(ValueError, match='anchor'):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execskill_v226_review_safety.py:70: Failed
+______________ test_step_error_counts_must_match_unit_and_journal ______________
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-6iam8aoo')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b98dfd0>
+
+    def test_step_error_counts_must_match_unit_and_journal(tmp_path, monkeypatch):
+        st, parent, candidate, _, _ = setup(tmp_path, monkeypatch)
+        st.unit('train-r1', c.guard(st, 'r1', parent,
+            lambda _: _raise(KeyError('first')), lambda event: {'candidate_error': event}))
+        write_json(st.root/'step.json', p.record('step', st.evidence, {'candidate_errors': {}}))
+>       with pytest.raises(ValueError, match='counts'):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execskill_v226_review_safety.py:79: Failed
+_________ test_immediate_cross_rejection_precedes_acceptance_selection _________
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-62z1eum8')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10babbd40>
+
+    def test_immediate_cross_rejection_precedes_acceptance_selection(tmp_path, monkeypatch):
+        st, parent, candidate, _, _ = setup(tmp_path, monkeypatch)
+        monkeypatch.setattr(v222_runtime, 'cross_gate', lambda *a, **kw:
+            (None, {'passed': False, 'proposed_sha256': candidate.sha256}))
+        selected = []
+        def select():
+            selected.append(True)
+            return zebra_pool(2), {}
+        result = step._accept(st, {'accept': zebra_pool(2)}, candidate, None,
+                              unit='accept-r1', incumbent=parent, select=select)
+        assert result['reason'] == 'cross_bench_harm'
+>       assert selected == [] and st.services.registry.calls == []
+E       assert ([True] == []
+E         
+E         Left contains one more item: True
+E         Use -v to get more diff)
+
+tests/test_execskill_v226_review_safety.py:94: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execskill_v226_review_safety.py::test_corrupt_sealed_receipt_pauses_without_candidate_error[confirmation-{]
+FAILED tests/test_execskill_v226_review_safety.py::test_corrupt_sealed_receipt_pauses_without_candidate_error[selftest-{]
+FAILED tests/test_execskill_v226_review_safety.py::test_corrupt_sealed_receipt_pauses_without_candidate_error[acceptance-{]
+FAILED tests/test_execskill_v226_review_safety.py::test_nonconsecutive_candidate_signature_is_systematic
+FAILED tests/test_execskill_v226_review_safety.py::test_prior_step_candidate_signature_is_systematic
+FAILED tests/test_execskill_v226_review_safety.py::test_deleted_journal_tail_is_detected_by_unit_anchor
+FAILED tests/test_execskill_v226_review_safety.py::test_step_error_counts_must_match_unit_and_journal
+FAILED tests/test_execskill_v226_review_safety.py::test_immediate_cross_rejection_precedes_acceptance_selection
+8 failed, 6 passed in 0.92s

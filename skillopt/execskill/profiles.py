@@ -9,13 +9,18 @@ from copy import deepcopy
 
 from .protocol import *  # re-export the historical vocabulary, without mutating its tables
 from . import protocol as legacy
-from .policy import POLICY_VERSION_V24, POLICY_VERSION_V25, POLICY_VERSION_V28, POLICY_VERSION_V29, MAX_SOURCE_BYTES_V28, MAX_SOURCE_BYTES_V29
+from .policy import POLICY_VERSION_V24, POLICY_VERSION_V25, POLICY_VERSION_V28, POLICY_VERSION_V29, POLICY_VERSION_V222, MAX_SOURCE_BYTES_V28, MAX_SOURCE_BYTES_V29
 
 MAIN_V4 = "main-v4"
 MAIN_V5 = "main-v5"
 MAIN_V6 = "main-v6"
+MAIN_V7 = "main-v7"
+MAIN_V8 = "main-v8"
+MAIN_V9 = "main-v9"
+MAIN_V10 = "main-v10"
 IMPLANT_V5 = "implant-v5"
 CROSS_V5 = "cross-v5"
+SEARCHQA_HP_V6 = "searchqa-hp-v6"
 ZEBRA_PC_V1 = "zebra-pc-v1"
 ZEBRA_PC_V2 = "zebra-pc-v2"
 ZEBRA_PC_V3 = "zebra-pc-v3"
@@ -46,6 +51,28 @@ ALFWORLD_V10 = "alfworld-v10"
 ALFWORLD_V11 = "alfworld-v11"
 ZEBRA = "zebralogic"
 SUPPORTED_BENCHES = BENCHES + (ZEBRA,)
+
+
+def is_v226(configuration):
+    return configuration == MAIN_V10
+
+
+def is_v225(configuration):
+    return configuration in (MAIN_V9, MAIN_V10)
+
+
+def is_v222(configuration):
+    return configuration in (MAIN_V8, MAIN_V9, MAIN_V10)
+
+
+def is_v221(configuration):
+    return configuration in (MAIN_V7, MAIN_V8, MAIN_V9, MAIN_V10)
+
+
+def is_v220(configuration):
+    return configuration == SEARCHQA_HP_V6
+
+
 FEATURE_FAMILIES = {name: ("v2.3" if name == MAIN_V2_3 else "historical") for name in CONFIGURATIONS}
 FEATURE_FAMILIES[ZEBRA_PC_V1] = "v2.3"
 FEATURE_FAMILIES[ZEBRA_PC_V2] = "v2.4"
@@ -117,31 +144,31 @@ def is_v29(configuration):
 def is_v291(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, CROSS_V5, ZEBRA_PC_V8, ALFWORLD_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, MAIN_V10, IMPLANT_V5, CROSS_V5, SEARCHQA_HP_V6, ZEBRA_PC_V8, ALFWORLD_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v292(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, CROSS_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, MAIN_V10, IMPLANT_V5, CROSS_V5, SEARCHQA_HP_V6, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v293(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, CROSS_V5, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, MAIN_V10, IMPLANT_V5, CROSS_V5, SEARCHQA_HP_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v294(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, CROSS_V5, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, MAIN_V10, IMPLANT_V5, CROSS_V5, SEARCHQA_HP_V6, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v295(configuration):
     configuration = configuration or PILOT
     require(configuration in FEATURE_FAMILIES, "Unknown run configuration")
-    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, CROSS_V5, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
+    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, MAIN_V10, IMPLANT_V5, CROSS_V5, SEARCHQA_HP_V6, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)
 
 
 def is_v215(configuration):
@@ -166,12 +193,14 @@ def is_v297(configuration):
 
 def alfworld_format_rule(configuration, bench=None):
     """The format rule for this run; the historical admissible-share rule stays frozen."""
-    return "alfworld-readable-action-v2-9-6" if is_v296(configuration) or (configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, CROSS_V5) and bench == "alfworld") else "alfworld-admissible-9-10"
+    return "alfworld-readable-action-v2-9-6" if is_v296(configuration) or (configuration in (MAIN_V4, MAIN_V5, MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, MAIN_V10, IMPLANT_V5, CROSS_V5) and bench == "alfworld") else "alfworld-admissible-9-10"
 
 
 def train_rounds(configuration, bench=None):
     """The historical six-round limit, extended only for the Zebra v12 search."""
-    return 0 if configuration in (ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, IMPLANT_V5, CROSS_V5) or (configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, CROSS_V5) and bench == "alfworld") else 10 if configuration == ZEBRA_PC_V12 else TRAIN_ROUNDS
+    if is_v220(configuration):
+        return 0
+    return 0 if configuration in (ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, IMPLANT_V5, CROSS_V5) or (configuration in (MAIN_V4, MAIN_V5, MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, MAIN_V10, IMPLANT_V5, CROSS_V5) and bench == "alfworld") else 10 if configuration == ZEBRA_PC_V12 else TRAIN_ROUNDS
 
 
 def cleanup_grace_seconds(configuration):
@@ -185,6 +214,8 @@ def ready_timeout_seconds(configuration):
 
 
 def train_patience(configuration, bench=None):
+    if is_v220(configuration):
+        return 0
     return 0 if configuration in (ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, IMPLANT_V5, CROSS_V5) else 8 if configuration == ZEBRA_PC_V12 else 4 if is_v291(configuration) else TRAIN_PATIENCE
 
 
@@ -480,6 +511,8 @@ def configuration_of(setting):
 def active_benches(configuration):
     configuration = configuration or PILOT
     require(supports_configuration(configuration), "Unknown run configuration")
+    if is_v220(configuration):
+        return ("searchqa",)
     if is_v214(configuration):
         return CONFIGURATIONS[configuration]["order"]
     # Historical clients/cards/read rosters were all five, even in two-step pilots.
@@ -506,6 +539,8 @@ def namespace_of(setting, chain):
 
 def first_call_bench(configuration=PILOT):
     require(supports_configuration(configuration), "Unknown run configuration")
+    if is_v220(configuration):
+        return "searchqa"
     return CONFIGURATIONS[configuration]["order"][0]
 
 
@@ -516,11 +551,19 @@ def order_tag(bench):
 
 def stage_arms_max(configuration):
     require(supports_configuration(configuration), "Unknown run configuration")
+    if is_v225(configuration):
+        return 5
     return len(CONFIGURATIONS[configuration]["order"]) - 1 if STAGE_READ[configuration] else 0
 
 
 def read_arms_of(configuration):
     require(supports_configuration(configuration), "Unknown run configuration")
+    if is_v225(configuration):
+        return ('B', 'C0', 'C', 'S1', 'S2', 'S3', 'S4', 'S5', 'I', 'C_end')
+    if is_v222(configuration):
+        return ('B', 'C0', 'C', 'F', STAGES)
+    if is_v220(configuration):
+        return ("F", "C")
     if is_v219(configuration):
         return ("F", "C", "B", "cross")
     if is_v214(configuration):
@@ -533,6 +576,10 @@ def read_arms_of(configuration):
 
 
 def estimate_arms(configuration):
+    if is_v225(configuration):
+        return 6
+    if is_v222(configuration):
+        return 2 + stage_arms_max(configuration)
     if is_v219(configuration):
         return 5  # F plus four cross arms; per-bench reuse is priced by TEST_READ_CELLS.
     if is_v214(configuration):
@@ -570,6 +617,9 @@ def ledger_bound(model, bench, *, branch=None, longest=None):
 
 
 def fired_share(bench, pilot=PILOT):
+    if is_v220(pilot):
+        require(bench == 'searchqa', 'Only the registered SearchQA panel')
+        return Fraction(1)
     if is_v214(pilot):
         require(bench in active_benches(pilot), "Only the registered mixed panel")
         home = CONFIGURATIONS[pilot]["order"]
@@ -587,6 +637,27 @@ def fired_share(bench, pilot=PILOT):
 
 
 def read_estimate_terms(per_cell, ratio, pilot=PILOT):
+    if is_v222(pilot):
+        require(isinstance(per_cell, dict) and set(per_cell) == set(read_benches(pilot)),
+                'The segmented-card read measures all five panels')
+        terms = {}
+        for bench, (cards, procedures) in TEST_READ_CELLS[pilot].items():
+            entry = per_cell[bench]
+            card = legacy._exact(entry['card'], 'card cell')
+            proc = (card * PROCEDURE_ARM_FACTOR[1]
+                    if entry.get('procedure_assumed') is True or entry.get('procedure') is None
+                    else legacy._exact(entry['procedure'], 'procedure cell'))
+            terms[bench] = legacy._exact(ratio, 'ratio') * (cards * card + procedures * proc)
+        return terms
+    if is_v220(pilot):
+        require(isinstance(per_cell, dict) and set(per_cell) == {'searchqa'},
+                'The SearchQA-only per-cell measurement is required')
+        entry = per_cell['searchqa']
+        card = legacy._exact(entry['card'], 'card cell')
+        proc = (card * PROCEDURE_ARM_FACTOR[1]
+                if entry.get('procedure_assumed') is True or entry.get('procedure') is None
+                else legacy._exact(entry['procedure'], 'procedure cell'))
+        return {'searchqa': legacy._exact(ratio, 'ratio') * 400 * (card + proc)}
     if is_v219(pilot):
         require(isinstance(per_cell, dict) and set(per_cell) == set(read_benches(pilot)),
                 "Cross reads measure all five panels")
@@ -856,7 +927,7 @@ MAIN_V3_NAMESPACES = {'G': 'G-v3', 'D': 'D-v3'}
 
 
 def is_v210(configuration):
-    return configuration in (BASELINE_V210, MAIN_V3, MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, CROSS_V5)
+    return configuration in (BASELINE_V210, MAIN_V3, MAIN_V4, MAIN_V5, MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, MAIN_V10, IMPLANT_V5, CROSS_V5, SEARCHQA_HP_V6)
 
 
 def read_items(configuration, bench):
@@ -928,15 +999,19 @@ TEST_WITHHOLDING = {name: not is_v210(name) for name in CONFIGURATIONS}
 
 
 def is_v214(configuration):
-    return configuration in (MAIN_V5, MAIN_V6, IMPLANT_V5, CROSS_V5)
+    return configuration in (MAIN_V5, MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, MAIN_V10, IMPLANT_V5, CROSS_V5, SEARCHQA_HP_V6)
 
 
 def is_v218(configuration):
-    return configuration == MAIN_V6
+    return configuration in (MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, MAIN_V10)
 
 
 def is_v219(configuration):
     return configuration == CROSS_V5
+
+
+def uses_request_reuse(configuration):
+    return is_v218(configuration) or is_v219(configuration) or is_v220(configuration)
 
 
 def uses_environment_lock(configuration):
@@ -993,7 +1068,7 @@ MAIN_V4_NAMESPACES = {'G': 'G-v4', 'D': 'D-v4'}
 
 
 def is_v211(configuration):
-    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, IMPLANT_V5, CROSS_V5)
+    return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, MAIN_V10, IMPLANT_V5, CROSS_V5, SEARCHQA_HP_V6)
 
 
 def uses_readable_alf_format(configuration, bench):
@@ -1062,6 +1137,10 @@ def audit_spec(configuration, bench):
 
 def engineer_prompt(configuration, bench, mode='single', purpose='propose'):
     require(mode in ('single', 'train'), 'Registered engineer mode')
+    if is_v221(configuration):
+        from . import engineer_v221
+        return engineer_v221.system(bench, train=mode == 'train', purpose=purpose,
+            **({'configuration': configuration} if is_v222(configuration) else {}))
     if uses_v211(configuration, bench):
         from . import engineer_v211
         return engineer_v211.system(bench, train=mode == 'train', purpose=purpose)
@@ -1392,4 +1471,248 @@ def cross_v5_identity():
                'read_retry_charged_scope': '<chain>:test',
                'funded_test_cap': CONFIGURATIONS[CROSS_V5]['test_read_cap']
                                   + CONFIGURATIONS[CROSS_V5]['redo_reserve']})
+    return found
+
+
+# v2.20: two fixed imports and an owner-waived SearchQA-only F/C upper-bound read.
+SEARCHQA_HP_V6_ROOT = '/data/execskill-20261102-searchqa-hp-v6'
+SEARCHQA_HP_V6_MANIFEST = SEARCHQA_HP_V6_ROOT + '-manifest.json'
+SEARCHQA_HP_V6_NAMESPACES = {'G': 'G-sq6', 'D': 'D-sq6'}
+SEARCHQA_HP_V6_ORDER = ('main-v6-final', 'searchqa-candidate')
+for _name, _table in list(globals().items()):
+    if _name.isupper() and isinstance(_table, dict) and ZEBRA_HP_V3R4 in _table:
+        _table[SEARCHQA_HP_V6] = deepcopy(_table[ZEBRA_HP_V3R4])
+RUN_ROOTS[SEARCHQA_HP_V6] = SEARCHQA_HP_V6_ROOT
+CHAIN_NAMESPACES[SEARCHQA_HP_V6] = SEARCHQA_HP_V6_NAMESPACES
+SUPPORTED_NAMESPACES += tuple(SEARCHQA_HP_V6_NAMESPACES.values())
+REAL_RUN_EVIDENCE[SEARCHQA_HP_V6] = 'searchqa_hp_v6_test_read'
+ACCEPT_FRESHNESS[SEARCHQA_HP_V6] = 'not_applicable_post_hoc_rejected_searchqa_candidate_import'
+CONFIRM_FRESHNESS[SEARCHQA_HP_V6] = ACCEPT_FRESHNESS[SEARCHQA_HP_V6]
+SIMILAR_PAIRS_BY_CONFIGURATION[SEARCHQA_HP_V6] = ()
+TEST_READ_CELLS[SEARCHQA_HP_V6] = {'searchqa': (400, 400)}
+SEARCHQA_HP_V6_READ_CAP = legacy._round_up(MAIN_CAP_FACTOR * (
+    CELL_ANCHORS['searchqa'][1] * (400 + PROCEDURE_ARM_FACTOR[1] * 400)
+    + MAIN_RESERVATIONS * READ_RESERVATION), MILLION)
+CONFIGURATIONS[SEARCHQA_HP_V6].update(order=SEARCHQA_HP_V6_ORDER,
+    test_read_cap=SEARCHQA_HP_V6_READ_CAP, redo_reserve=SEARCHQA_HP_V6_READ_CAP,
+    solver_cap=2 * SEARCHQA_HP_V6_READ_CAP + FIRST_CALL_CAP)
+
+
+def searchqa_hp_v6_identity():
+    return {'configuration': SEARCHQA_HP_V6, 'evidence_kind': 'post_hoc_selected_upper_bound',
+        'order': list(SEARCHQA_HP_V6_ORDER), 'learning': 'import', 'method_calls': 0,
+        'main_v6_source_root': MAIN_V6_ROOT, 'source_binding': 'S0 both completed chains; pinned record copies only at runtime',
+        'candidate_fixture': 'tests/fixtures/execskill/v220_searchqa_hp',
+        'read_benches': ['searchqa'], 'read_items': {'searchqa': 400}, 'read_arms': ['F', 'C'],
+        'read_cells': deepcopy(TEST_READ_CELLS[SEARCHQA_HP_V6]), 'stage_rows': [],
+        'stage_arms_max': 0, 'stage_timing': 'none', 'sheet_test_qualification': False,
+        'request_reuse': 'main-v6 fault-free exact request identity; F shares C',
+        'memory_lock': 'never', 'machinery': {'searchqa': machinery_configuration(MAIN_V6, 'searchqa')},
+        'caps': {**CONFIGURATIONS[SEARCHQA_HP_V6], 'method': 0},
+        'read_retry_charged_scope': '<chain>:test', 'funded_test_cap': 2 * SEARCHQA_HP_V6_READ_CAP,
+        'read_formula': 'ceil_1000000(3*(high_searchqa*(400+1.6*400)+16*520192))',
+        'analysis': ['registered paired F-C', 'byte-identical requests count zero'],
+        'candidate_rejection': 'failed: J1 under practical-v2-11-pooled',
+        'panel_exposure': ['main-v4', 'main-v5', 'baseline-v210', 'implant-v5', 'cross-v5']}
+
+
+# v2.21: additive gain/no-harm child; the frozen tables above are never mutated.
+GAIN_MIN_ITEMS = 3
+GAIN_MIN_SHARE = Fraction(1, 10)
+HARM_RATIO = Fraction(2, 3)
+WHOLE_BATCH_FLOOR = Fraction(-1, 100)
+MAIN_V7_ROOT = '/data/execskill-20261103-main-v7'
+MAIN_V7_MANIFEST = MAIN_V7_ROOT + '-manifest.json'
+MAIN_V7_NAMESPACES = {'G': 'G-v7', 'D': 'D-v7'}
+for _name, _table in list(globals().items()):
+    if _name.isupper() and isinstance(_table, dict) and MAIN_V6 in _table:
+        _table[MAIN_V7] = deepcopy(_table[MAIN_V6])
+RUN_ROOTS[MAIN_V7] = MAIN_V7_ROOT
+CHAIN_NAMESPACES[MAIN_V7] = MAIN_V7_NAMESPACES
+SUPPORTED_NAMESPACES += tuple(MAIN_V7_NAMESPACES.values())
+REAL_RUN_EVIDENCE[MAIN_V7] = 'main_v7_real_run'
+from . import v221_limits as _v221_limits
+_v221_limits.extend(_sys.modules[__name__])
+
+
+def main_v7_identity():
+    found = deepcopy(main_v6_identity())
+    found.update(configuration=MAIN_V7,
+        scope_caps=deepcopy(CONFIG_STEP_CAPS[MAIN_V7]),
+        caps={**CONFIGURATIONS[MAIN_V7], 'method': CONFIG_GLM_CAP[MAIN_V7]},
+        cap_derivation=_v221_limits.identity(),
+        decision_rule={'name': 'gain-and-no-harm-v2-21',
+            'constants': {'GAIN_MIN_ITEMS': GAIN_MIN_ITEMS, 'GAIN_MIN_SHARE': GAIN_MIN_SHARE,
+                          'HARM_RATIO': HARM_RATIO, 'WHOLE_BATCH_FLOOR': WHOLE_BATCH_FLOOR},
+            'stages': ['training', 'confirmation', 'acceptance'],
+            'guards': 'J3/J4/J5/J6 diagnostics only; policy checks remain hard',
+            'audit_drop': 'both judges untrue and own confirmation broken > fixed'},
+        immediate_acceptance={'touched_target': 60, 'maximum_items': 'current A-size',
+            'freshness': 'consume unseen acceptance prefix; never recycle exhausted items',
+            'rounds': TRAIN_ROUNDS, 'no_end_of_step_acceptance': True},
+        confirmation_freshness={'round_slices': 'main-v6 by value', 'cross_round_cache': False,
+            'zebra': 'consume the existing 40-item slice once; later confirmations reject exhausted'},
+        split='adopt passing sub-candidates in order; judge merged once; best single fallback',
+        automatic_retry={'count': 1, 'delay_seconds': 60, 'pure_infrastructure_only': True},
+        launch="not before the owner's go")
+    return found
+
+
+# v2.22 copies the complete main-v7 registration before adding routed cards and
+# explicitly bounded cross-benchmark no-harm work. No older table is modified.
+MAIN_V8_ROOT = '/data/execskill-20261103-main-v8'
+MAIN_V8_MANIFEST = MAIN_V8_ROOT + '-manifest.json'
+MAIN_V8_NAMESPACES = {'G': 'G-v8', 'D': 'D-v8'}
+for _name, _table in list(globals().items()):
+    if _name.isupper() and isinstance(_table, dict) and MAIN_V7 in _table:
+        _table[MAIN_V8] = deepcopy(_table[MAIN_V7])
+RUN_ROOTS[MAIN_V8] = MAIN_V8_ROOT
+CHAIN_NAMESPACES[MAIN_V8] = MAIN_V8_NAMESPACES
+SUPPORTED_NAMESPACES += tuple(MAIN_V8_NAMESPACES.values())
+REAL_RUN_EVIDENCE[MAIN_V8] = 'main_v8_real_run'
+POLICY_VERSIONS[MAIN_V8] = POLICY_VERSION_V222
+from . import v222_limits as _v222_limits
+_v222_limits.extend(_sys.modules[__name__])
+
+
+def main_v8_identity():
+    found = deepcopy(main_v7_identity())
+    found.update(configuration=MAIN_V8,
+        scope_caps=deepcopy(CONFIG_STEP_CAPS[MAIN_V8]),
+        caps={**CONFIGURATIONS[MAIN_V8], 'method': CONFIG_GLM_CAP[MAIN_V8]},
+        cap_derivation=_v222_limits.identity(),
+        read_arms=list(read_arms_of(MAIN_V8)), read_cells=deepcopy(TEST_READ_CELLS[MAIN_V8]),
+        read_base_cells_per_chain=4 * sum(MAIN_V5_TEST_ITEMS.values()),
+        read_logical_cells_per_chain=8 * sum(MAIN_V5_TEST_ITEMS.values()),
+        read_formula='ratio * sum(n_b * (2*card_b + 6*procedure_b)); no request-reuse discount',
+        cards={'fixture': 'tests/fixtures/execskill/v222_cards',
+               'format': 'fixed shell block in every arm except B',
+               'segments': 'structural predicates, note delivery, maximum 1500 characters each',
+               'initial_package': 'P0 contains all five home-structure content decompositions',
+               'decomposition_check': {'arms': ['C_hist', 'C'], 'items': 100, 'alfworld_games': 20,
+                   'count_rule': 'min(cap, available practice except own acceptance)', 'minimum_available': 18,
+                   'whole_slice_floor': WHOLE_BATCH_FLOOR, 'format_counters': 'not worse',
+                   'fallback': 'whole historical card in every arm except B; no P0 segments or hygiene for that bench'}},
+        cross_bench_gate={'stages': ['confirmation', 'acceptance'],
+            'harm_slice_items': {b: 20 if b == 'alfworld' else 60 for b in MAIN_V5_ORDER},
+            'count_rule': 'min(cap, available practice except own acceptance)', 'minimum_available': 18,
+            'practice_supply_record': 'v222_practice_supply', 'decomposition_overlap_allowed': True,
+            'identity': 'inert sandbox request comparison; zero cost for zero firing',
+            'fired_items': 'one paired parent/candidate run per fired item',
+            'net_floor': 0, 'whole_slice_floor': WHOLE_BATCH_FLOOR,
+            'failure': 'narrow, inertly re-check every other bench, or reject',
+            'cross_identity': 'non-home touched test items derived only from F cells'},
+        hygiene={'hygiene_mode': 'measured_candidates',
+                 'candidate': 'at most one own P0 segment deletion per round, worst net<0 on at least 3 touched items',
+                 'decision': 'unchanged train-confirm-accept and cross-bench gates inside existing candidate caps',
+                 'excluded': ['alfworld', 'whole_card_fallback'], 'reuse': 'exact request identity only'})
+    return found
+
+
+# v2.25 is a separate configuration: all parent tables are copied before overrides.
+MAIN_V9_ROOT = '/data/execskill-20261104-main-v9'
+MAIN_V9_MANIFEST = MAIN_V9_ROOT + '-manifest.json'
+MAIN_V9_NAMESPACES = {'G': 'G-v9', 'D': 'D-v9'}
+for _name, _table in list(globals().items()):
+    if _name.isupper() and isinstance(_table, dict) and MAIN_V8 in _table:
+        _table[MAIN_V9] = deepcopy(_table[MAIN_V8])
+RUN_ROOTS[MAIN_V9] = MAIN_V9_ROOT
+CHAIN_NAMESPACES[MAIN_V9] = MAIN_V9_NAMESPACES
+SUPPORTED_NAMESPACES += tuple(MAIN_V9_NAMESPACES.values())
+REAL_RUN_EVIDENCE[MAIN_V9] = 'main_v9_real_run'
+POLICY_VERSIONS[MAIN_V9] = POLICY_VERSION_V222
+from . import v225_limits as _v225_limits
+_v225_limits.extend(_sys.modules[__name__])
+
+# The inherited ROLE_* constants are scalars, not per-configuration tables.
+# Register the extra role separately so old manifest bytes remain unchanged.
+METHOD_ROLE_SETTINGS_BY_CONFIGURATION = {MAIN_V9: {'card_writer': {
+    'model': ROLE_MODEL, 'max_tokens': ENGINEER_MAX_TOKENS[MAIN_V9],
+    'reasoning': ROLE_REASONING, 'read_timeout': ROLE_READ_TIMEOUT,
+    'input_chars': _v225_limits.CARD_WRITER_INPUT_CHARS}}}
+
+
+def card_writer_settings(configuration):
+    require(is_v225(configuration), 'The instruction writer is registered only for main-v9')
+    return deepcopy(METHOD_ROLE_SETTINGS_BY_CONFIGURATION[configuration]['card_writer'])
+
+
+def main_v9_identity():
+    from .v225_phase import CONFIRMATION_SMALL_SLICE_BELOW_ITEMS, CONFIRMATION_SMALL_SLICE_GAIN_FLOOR
+    found = deepcopy(main_v8_identity())
+    found.update(configuration=MAIN_V9,
+        scope_caps=deepcopy(CONFIG_STEP_CAPS[MAIN_V9]),
+        caps={**CONFIGURATIONS[MAIN_V9], 'method': CONFIG_GLM_CAP[MAIN_V9]},
+        cap_derivation=_v225_limits.identity(),
+        read_arms=list(read_arms_of(MAIN_V9)), read_cells=deepcopy(TEST_READ_CELLS[MAIN_V9]),
+        read_base_cells_per_chain=4 * sum(MAIN_V5_TEST_ITEMS.values()),
+        read_logical_cells_per_chain=10 * sum(MAIN_V5_TEST_ITEMS.values()),
+        stage_arms_max=5, stage_timing='overlapped_after_each_step; reads never inform learning',
+        read_formula='ratio * sum(n_b * (4*card_b + 6*procedure_b)); every cell fresh',
+        cards={'kind': 'constants-only card procedure; never executed', 'initial_package': 'empty',
+               'max_chars': 3000, 'max_bullets': 12, 'max_cards': 5, 'max_card_edits': 4,
+               'composition': 'learned card + two newlines + fixed format block',
+               'routing': 'item own bench via registered exclusion layer',
+               'format': 'fixed shell block in every arm except B', 'alfworld_card': None},
+        card_writer=card_writer_settings(MAIN_V9),
+        card_phase={'rounds': 3, 'calls_per_round': 2, 'examples': {'failures': 12, 'successes': 6},
+                    'references': 'failed practice examples only', 'gain_floor': 'max(3,ceil(0.05*T))',
+                    'harm_ratio': HARM_RATIO, 'whole_batch_floor': WHOLE_BATCH_FLOOR,
+                    'accept_items': deepcopy(_v225_limits.CARD_ACCEPT_ITEMS),
+                    'confirmation': {'searchqa': 40}, 'procedure_phase': 'skipped_pool_exhausted'},
+        confirmation_small_slice={'below_items': CONFIRMATION_SMALL_SLICE_BELOW_ITEMS,
+                                  'gain_floor': CONFIRMATION_SMALL_SLICE_GAIN_FLOOR,
+                                  'harm_ratio': HARM_RATIO, 'whole_batch_floor': WHOLE_BATCH_FLOOR},
+        cross_cards={'pairs': deepcopy(similar_pairs(MAIN_V9)), 'empty_slots_only': True,
+                     'rule': 'max(3,ceil(0.05*T)); broken<=2/3*fixed; whole>=-0.01',
+                     'failure': 'reject unchanged; never narrow', 'reexport': False},
+        shell={'P0': False, 'decomposition': False, 'whole_card_fallback': False,
+               'engineer': 'composed card fixed during procedure rounds'},
+        hygiene={'hygiene_mode': 'off_no_p0'},
+        read_layout={'labels': list(_v225_limits.READ_LABELS), 'units_per_chain': 40,
+                     'panel_arm_reads_per_chain': 50, 'fresh': True, 'F': 'S5 alias',
+                     'I': 'cards only, once at chain end', 'C_end': 'historical C drift control'},
+        metrics={'anchor_C': 'vendored cl_metrics field-for-field', 'anchor_C0': 'real start',
+                 'anchor_B': True, 'same_side_L': True, 'changed_only': True, 'same_text': True})
+    return found
+
+
+# v2.26 fixes are a new registration; inherited budgets and parent rows stay frozen.
+MAIN_V10_ROOT = '/data/execskill-20261109-main-v10'
+MAIN_V10_MANIFEST = MAIN_V10_ROOT + '-manifest.json'
+MAIN_V10_NAMESPACES = {'G': 'G-v10', 'D': 'D-v10'}
+for _name, _table in list(globals().items()):
+    if _name.isupper() and isinstance(_table, dict) and MAIN_V9 in _table:
+        _table[MAIN_V10] = deepcopy(_table[MAIN_V9])
+RUN_ROOTS[MAIN_V10] = MAIN_V10_ROOT
+CHAIN_NAMESPACES[MAIN_V10] = MAIN_V10_NAMESPACES
+SUPPORTED_NAMESPACES += tuple(MAIN_V10_NAMESPACES.values())
+REAL_RUN_EVIDENCE[MAIN_V10] = 'main_v10_real_run'
+
+
+def main_v10_identity():
+    found = deepcopy(main_v9_identity())
+    found.update(configuration=MAIN_V10,
+        cl_metrics={'version': 'main-v10-cl-metrics-v1', 'anchor': 'C0',
+            'changed_only': 'aggregates re-anchored to C0 before changed-only analysis',
+            'incremental': 'S1-C0 at k=1; S_k-S_{k-1} thereafter',
+            'harm': 'negative mean with hi<0 harmed; missing pair or negative mean without hi uncertain',
+            'TS_TD': 'incremental means at changed steps',
+            'anchor_C': 'descriptive historical comparison only'},
+        recovery_v226={
+            'candidate_error': 'unexpected single-candidate evaluation exceptions are recorded faults',
+            'systematic': 'same exception/where for parent, any earlier candidate or any earlier step pauses; final accepted-candidate self-test is system work',
+            'excluded': ['Pause', 'sealing', 'policy', 'leakage', 'canary', 'budget', 'machine', 'network'],
+            'records': 'step.json candidate_errors signature counts; readout counts; unit status and completion anchor journal revision and record hash',
+            'resume': 'deterministic evaluation core with sealed signatures reused',
+            'diagnostics_loss': 'configure within call slot and retry-once loss handling'},
+        fixes_v226={
+            'previous': 'fault and format counts only',
+            'zebra_diagnostics': 'diagnostics-enabled unit-bound workers for every Zebra hook',
+            'request_identity': 'same configuration and composed card as solver dispatch',
+            'card_identity_contradiction': 'changed guidance with unchanged requests pauses',
+            'cross_harm': 'candidate-attributable faults only; inherited faults informational',
+            'card_cross_harm': 'failed or narrowed gate rejects without a configuration pause',
+            'procedure_scope': 'policy-aware procedure_benches',
+            'officeqa_blocks': 'chain/test/bench shared by every read event'})
     return found

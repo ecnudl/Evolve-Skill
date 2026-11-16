@@ -1,0 +1,29 @@
+{
+  "id": "p-searchqa-1-11",
+  "origin": "searchqa",
+  "accepted_at": null,
+  "description": "For questions containing 'this' plus a noun, finds snippet sentences that contain at least half of the question's content words and reports capitalized phrases from those sentences that do not appear in the question, together with the number of matching sentences, as candidates.",
+  "hooks": [
+    "applies",
+    "before_call"
+  ],
+  "source": "import re\n\n_WORD_RE = re.compile(r\"[A-Za-z][A-Za-z']*\")\n_STOP = frozenset((\"this\", \"the\", \"a\", \"an\", \"of\", \"in\", \"on\", \"for\", \"with\",\n                   \"as\", \"by\", \"and\", \"or\", \"to\", \"before\", \"after\", \"that\",\n                   \"is\", \"was\", \"are\", \"were\", \"be\", \"made\", \"his\", \"her\",\n                   \"its\", \"their\", \"he\", \"she\", \"it\", \"they\", \"from\", \"at\"))\n_THIS_RE = re.compile(r\"\\bthis\\b\\s+[A-Za-z]\")\n_PHRASE_RE = re.compile(r\"\\b([A-Z][A-Za-z']*(?:\\s+[A-Z][A-Za-z']*){0,3})\\b\")\n\n\ndef applies(view):\n    q = view.get(\"question\", \"\")\n    return bool(_THIS_RE.search(q))\n\n\ndef _content_words(text):\n    return [w.lower() for w in _WORD_RE.findall(text)\n            if w.lower() not in _STOP and len(w) > 2]\n\n\ndef before_call(view, state):\n    q = view.get(\"question\", \"\")\n    ctx = view.get(\"context\", \"\")\n    qwords = _content_words(q)\n    if not qwords:\n        return None\n    needed = max(1, (len(qwords) + 1) // 2)\n    sentences = re.split(r\"(?<=[.!?])\\s+|\\.\\.\\.\", ctx)\n    matches = []\n    for s in sentences:\n        words = set(_content_words(s))\n        hit = sum(1 for w in qwords if w in words)\n        if hit >= needed:\n            matches.append(s)\n    if not matches:\n        return None\n    qlower = q.lower()\n    cands = []\n    seen = set()\n    for s in matches:\n        for m in _PHRASE_RE.finditer(s):\n            phr = m.group(0).strip()\n            if phr.lower() in qlower:\n                continue\n            key = phr.lower()\n            if key in seen:\n                continue\n            seen.add(key)\n            if len(phr) <= 120:\n                cands.append(phr)\n            if len(cands) >= 8:\n                break\n        if len(cands) >= 8:\n            break\n    if not cands:\n        return None\n    facts = [\"Question content words matched by at least half: %d matching snippet sentences.\" % len(matches)]\n    return {\"facts\": facts, \"candidates\": cands}\n",
+  "header": "Sentence-local co-occurrence candidate finder",
+  "max_note_chars": 2000,
+  "requests_second_call": false,
+  "state_bytes": 0,
+  "excluded_benches": [
+    "spreadsheetbench",
+    "alfworld"
+  ],
+  "replay_tests": [],
+  "lineage": {
+    "parent": null,
+    "revises": null,
+    "engineer_call": "ffde59ddef4fab3203d46737106cdd7146b4f428d721cb99a2f19699763257a2"
+  },
+  "policy_version": "fivebench-execskill-v2-9-policy",
+  "version": "fivebench-execskill-v1-procedure-v2-9",
+  "evidence": "main_v6_real_run",
+  "record_sha256": "7abdb4afe13d9e60d62c9ff5dff80113eca74765fa2540f8ab95e5f5d33b7c6d"
+}

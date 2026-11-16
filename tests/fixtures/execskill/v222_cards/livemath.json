@@ -1,0 +1,67 @@
+{
+  "bench": "livemath",
+  "format": {
+    "chars": 309,
+    "line_indices": [
+      10,
+      11
+    ],
+    "sha256": "f9cfe74dd370c0145087317749602b81ac6509ed375c8085cdca4dab0f124c87",
+    "text": "- Decide on exactly one letter; if uncertain, choose the most defensible option after elimination rather than leaving the answer ambiguous.\n- Return only a single letter (A–E) inside `<answer>...</answer>`, with nothing else in the tag, as the final part of your reply; the last such tag is what gets scored.\n"
+  },
+  "historical": {
+    "chars": 2068,
+    "sha256": "9cb3d860ec6970b545d5a8503a3eb5c504eed302ff4554b5dcca58b10bcf654b",
+    "text": "- The question is built from a theorem in a recent arXiv paper, so expect precise, technical mathematical content; read the statement carefully for quantifiers, hypotheses, and exact constants.\n- Do not assume the theorem is one you know from classical literature; it may be a recent refinement, so verify each option against the statement rather than against memory of older results.\n- Parse the \"question\" field completely before looking at the choices: identify what is being asked (a value, an inclusion, a yes/no decision, a completion of a sentence).\n- Examine all five options; distractors are typically near-misses such as swapped quantifiers, weakened/strengthened hypotheses, wrong constants or dimensions, or plausible but false generalizations.\n- Check edge cases and boundary conditions: strict vs. non-strict inequalities, open vs. closed sets, equality vs. containment, \"for all\" vs. \"there exists\".\n- Beware of options that are true statements in general but do not answer the specific question, or that hold only under additional assumptions not present in the question.\n- Use only the supplied public information; do not rely on external knowledge of the specific paper, but standard mathematical reasoning and background are fine.\n- If two options look close, translate both into precise mathematical language and test them against simple examples or limiting cases consistent with the hypotheses.\n- Eliminate clearly wrong options first; among the remainder, prefer the option that matches the theorem's exact formulation rather than a paraphrase that changes meaning.\n- When the question asks to \"complete\" a statement, ensure grammatical and logical continuity with the stem; a choice may be correct only when read in the full sentence.\n- Decide on exactly one letter; if uncertain, choose the most defensible option after elimination rather than leaving the answer ambiguous.\n- Return only a single letter (A–E) inside `<answer>...</answer>`, with nothing else in the tag, as the final part of your reply; the last such tag is what gets scored.\n"
+  },
+  "segments": [
+    {
+      "chars": 557,
+      "id": "livemath-1",
+      "line_indices": [
+        0,
+        1,
+        2
+      ],
+      "max_note_chars": 1500,
+      "predicate": {
+        "kind": "multiple_choice"
+      },
+      "sha256": "0219157829a27386a22f28d45e29bacde912c385f7f343b76e1fe0ffa6cc3f2a",
+      "text": "- The question is built from a theorem in a recent arXiv paper, so expect precise, technical mathematical content; read the statement carefully for quantifiers, hypotheses, and exact constants.\n- Do not assume the theorem is one you know from classical literature; it may be a recent refinement, so verify each option against the statement rather than against memory of older results.\n- Parse the \"question\" field completely before looking at the choices: identify what is being asked (a value, an inclusion, a yes/no decision, a completion of a sentence).\n"
+    },
+    {
+      "chars": 531,
+      "id": "livemath-2",
+      "line_indices": [
+        3,
+        4,
+        5
+      ],
+      "max_note_chars": 1500,
+      "predicate": {
+        "kind": "multiple_choice"
+      },
+      "sha256": "405d80c589c5ecd11ceae4473010074a7be9101dbaeb3960fecb8cc622caebcf",
+      "text": "- Examine all five options; distractors are typically near-misses such as swapped quantifiers, weakened/strengthened hypotheses, wrong constants or dimensions, or plausible but false generalizations.\n- Check edge cases and boundary conditions: strict vs. non-strict inequalities, open vs. closed sets, equality vs. containment, \"for all\" vs. \"there exists\".\n- Beware of options that are true statements in general but do not answer the specific question, or that hold only under additional assumptions not present in the question.\n"
+    },
+    {
+      "chars": 671,
+      "id": "livemath-3",
+      "line_indices": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "max_note_chars": 1500,
+      "predicate": {
+        "kind": "multiple_choice"
+      },
+      "sha256": "b7def2731772c47046bfdd421406b64304327b33541e46109c36fb52f9cba145",
+      "text": "- Use only the supplied public information; do not rely on external knowledge of the specific paper, but standard mathematical reasoning and background are fine.\n- If two options look close, translate both into precise mathematical language and test them against simple examples or limiting cases consistent with the hypotheses.\n- Eliminate clearly wrong options first; among the remainder, prefer the option that matches the theorem's exact formulation rather than a paraphrase that changes meaning.\n- When the question asks to \"complete\" a statement, ensure grammatical and logical continuity with the stem; a choice may be correct only when read in the full sentence.\n"
+    }
+  ],
+  "source_fixture_sha256": "175b0715909eeecb3fec356838b84566ade20b28f6a9b12cf985ad7de720ae5f",
+  "version": "instruction-decomposition-v2-22"
+}

@@ -1,0 +1,70 @@
+{
+ "step": "D/s1-searchqa",
+ "decision": "reject",
+ "reason": "failed: J1",
+ "candidate_sha256": "6796a8d412f4f91e9a1f0ffb63fe82bd5ca0d0aee3e6d3e51aa078d60a70e11c",
+ "candidate_file_sha256": "7d7642409bc14c21e239d866dcca1ee5878643b99c8730997b89d9dea3898798",
+ "parent_sha256": "15f04709d7b81db4a22af6c2639fa5a805e6f6ef4afea1a64c74b9ec952f1d65",
+ "parent_file_sha256": null,
+ "rule": "practical-v2-11-pooled",
+ "A_star": 1000,
+ "edits": [
+  {
+   "kind": "new",
+   "id": "p-searchqa-1-10",
+   "astar_items": 1000
+  },
+  {
+   "kind": "new",
+   "id": "p-searchqa-1-11",
+   "astar_items": 452
+  }
+ ],
+ "contrasts": {
+  "S'-S": {
+   "n": 1000,
+   "mean": 0.01,
+   "ci95": [
+    -0.001,
+    0.021
+   ],
+   "p_t": 0.03854523013383953,
+   "up": 21,
+   "down": 11,
+   "tie": 968
+  },
+  "S'-C": {
+   "n": 1000,
+   "mean": 0.011,
+   "ci95": [
+    -0.001,
+    0.023
+   ],
+   "p_t": 0.03526340286585964,
+   "up": 24,
+   "down": 13,
+   "tie": 963
+  }
+ },
+ "procedures": [
+  {
+   "record_sha256": "a5bb2ab29eed5aab5921b7b19663bf007f371fa7a88726916bec4494417880f7",
+   "id": "p-searchqa-1-10",
+   "origin": "searchqa",
+   "source_bytes": 2972,
+   "source_sha256": "c2cec7890da268feb6e15194d5fce52ec89d834656ee657eeb8d3d6ad113f0fd",
+   "file_sha256": "1d4c42501abba744e6e9f586138c9184bc294953359edf8b965cd63d31dc58d1",
+   "description": "Counts capitalized phrases of one to three words that occur in snippet bodies but not in the question text, ranks them by how many distinct snippets contain them, and reports the top phrases with their exact snippet counts as candidates. This targets clues whose answer is a different well-known enti"
+  },
+  {
+   "record_sha256": "7abdb4afe13d9e60d62c9ff5dff80113eca74765fa2540f8ab95e5f5d33b7c6d",
+   "id": "p-searchqa-1-11",
+   "origin": "searchqa",
+   "source_bytes": 1898,
+   "source_sha256": "364f638f99be5fb53411ddac879857644b25b3cb8cbdba9cf872eef912864746",
+   "file_sha256": "d448708d8cd4c0405eb20865ece49f2c003a3bc38e644049e269d9654d2aeac2",
+   "description": "For questions containing 'this' plus a noun, finds snippet sentences that contain at least half of the question's content words and reports capitalized phrases from those sentences that do not appear in the question, together with the number of matching sentences, as candidates."
+  }
+ ],
+ "decision_record_sha256": "fae0aece6b55435ec78a4ffe8df83b5e5f60b5b91ee96153195f4d938e627a18"
+}

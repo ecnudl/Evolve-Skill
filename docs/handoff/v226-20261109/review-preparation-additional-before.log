@@ -1,0 +1,127 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+_____ test_other_preparation_entrypoints_refuse_frozen_paths[raw-manifest] _____
+
+roots = (PosixPath('<repo-root>/.review-scratch/identity-wgpcn5pv/main-v9'), PosixPath('<repo-root>/.review-scratch/identity-wgpcn5pv/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x114778770>
+entry = 'raw-manifest'
+
+    @pytest.mark.parametrize('entry', ['raw-manifest', 'snapshot', 'structural'])
+    def test_other_preparation_entrypoints_refuse_frozen_paths(roots, monkeypatch, entry):
+        frozen, fresh = roots
+        from skillopt.execskill import v210_smoke
+        monkeypatch.setattr(v210_smoke, 'snapshot', lambda *_a, **_k: pytest.fail('Frozen snapshot was entered'))
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+            if entry == 'raw-manifest':
+>               manifest.make(frozen/'manifest.json', root=frozen, evidence='smoke', measured={}, configuration=p.MAIN_V10)
+
+tests/test_execskill_v226_preparation_review.py:106: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/manifest.py:737: in make
+    require(set(given) == GIVEN, "The manifest's given fields: %s" % sorted(GIVEN))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False
+message = "The manifest's given fields: ['cards', 'clients', 'contracts', 'data', 'fixtures', 'provenance', 'root', 'runtime', 'sheet_qualification']"
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: The manifest's given fields: ['cards', 'clients', 'contracts', 'data', 'fixtures', 'provenance', 'root', 'runtime', 'sheet_qualification']
+
+skillopt/continual_eval/core.py:32: ValueError
+
+During handling of the above exception, another exception occurred:
+
+roots = (PosixPath('<repo-root>/.review-scratch/identity-wgpcn5pv/main-v9'), PosixPath('<repo-root>/.review-scratch/identity-wgpcn5pv/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x114778770>
+entry = 'raw-manifest'
+
+    @pytest.mark.parametrize('entry', ['raw-manifest', 'snapshot', 'structural'])
+    def test_other_preparation_entrypoints_refuse_frozen_paths(roots, monkeypatch, entry):
+        frozen, fresh = roots
+        from skillopt.execskill import v210_smoke
+        monkeypatch.setattr(v210_smoke, 'snapshot', lambda *_a, **_k: pytest.fail('Frozen snapshot was entered'))
+>       with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'main-v9 root is forbidden'
+E        Input: "The manifest's given fields: ['cards', 'clients', 'contracts', 'data', 'fixtures', 'provenance', 'root', 'runtime', 'sheet_qualification']"
+
+tests/test_execskill_v226_preparation_review.py:104: AssertionError
+_______ test_other_preparation_entrypoints_refuse_frozen_paths[snapshot] _______
+
+roots = (PosixPath('<repo-root>/.review-scratch/identity-fu2yjyej/main-v9'), PosixPath('<repo-root>/.review-scratch/identity-fu2yjyej/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1147788a0>
+entry = 'snapshot'
+
+    @pytest.mark.parametrize('entry', ['raw-manifest', 'snapshot', 'structural'])
+    def test_other_preparation_entrypoints_refuse_frozen_paths(roots, monkeypatch, entry):
+        frozen, fresh = roots
+        from skillopt.execskill import v210_smoke
+        monkeypatch.setattr(v210_smoke, 'snapshot', lambda *_a, **_k: pytest.fail('Frozen snapshot was entered'))
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+            if entry == 'raw-manifest':
+                manifest.make(frozen/'manifest.json', root=frozen, evidence='smoke', measured={}, configuration=p.MAIN_V10)
+            elif entry == 'snapshot':
+>               v214_smoke.snapshot(frozen, source=fresh, git_head='unused', configuration=p.MAIN_V10)
+
+tests/test_execskill_v226_preparation_review.py:108: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:183: in snapshot
+    return v210_smoke.snapshot(out, source=source, git_head=git_head, configuration=configuration)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_a = (PosixPath('<repo-root>/.review-scratch/identity-fu2yjyej/main-v9'),)
+_k = {'configuration': 'main-v10', 'git_head': 'unused', 'source': PosixPath('<repo-root>/.review-scratch/identity-fu2yjyej/main-v10')}
+
+>   monkeypatch.setattr(v210_smoke, 'snapshot', lambda *_a, **_k: pytest.fail('Frozen snapshot was entered'))
+E   Failed: Frozen snapshot was entered
+
+tests/test_execskill_v226_preparation_review.py:103: Failed
+______ test_other_preparation_entrypoints_refuse_frozen_paths[structural] ______
+
+roots = (PosixPath('<repo-root>/.review-scratch/identity-35eg_5i4/main-v9'), PosixPath('<repo-root>/.review-scratch/identity-35eg_5i4/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x113cea570>
+entry = 'structural'
+
+    @pytest.mark.parametrize('entry', ['raw-manifest', 'snapshot', 'structural'])
+    def test_other_preparation_entrypoints_refuse_frozen_paths(roots, monkeypatch, entry):
+        frozen, fresh = roots
+        from skillopt.execskill import v210_smoke
+        monkeypatch.setattr(v210_smoke, 'snapshot', lambda *_a, **_k: pytest.fail('Frozen snapshot was entered'))
+>       with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execskill_v226_preparation_review.py:104: Failed
+_____ test_consent_target_cannot_follow_a_shared_symlink_into_frozen_root ______
+
+roots = (PosixPath('<repo-root>/.review-scratch/identity-060nzjkp/main-v9'), PosixPath('<repo-root>/.review-scratch/identity-060nzjkp/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x113c917b0>
+
+    def test_consent_target_cannot_follow_a_shared_symlink_into_frozen_root(roots, monkeypatch):
+        frozen, fresh = roots
+        (frozen/'shared').mkdir(parents=True)
+        fresh.mkdir()
+        (fresh/'shared').symlink_to(frozen/'shared', target_is_directory=True)
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Frozen symlink target was read'))
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+>           v214_smoke.prepare_consent(fresh, p.MAIN_V10, consent_file=fresh.parent/'consent.json')
+
+tests/test_execskill_v226_preparation_review.py:120: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:63: in prepare_consent
+    value = read_json(source)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_ = (PosixPath('<repo-root>/.review-scratch/identity-060nzjkp/consent.json'),)
+
+>   monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Frozen symlink target was read'))
+E   Failed: Frozen symlink target was read
+
+tests/test_execskill_v226_preparation_review.py:118: Failed
+=========================== short test summary info ============================
+FAILED tests/test_execskill_v226_preparation_review.py::test_other_preparation_entrypoints_refuse_frozen_paths[raw-manifest]
+FAILED tests/test_execskill_v226_preparation_review.py::test_other_preparation_entrypoints_refuse_frozen_paths[snapshot]
+FAILED tests/test_execskill_v226_preparation_review.py::test_other_preparation_entrypoints_refuse_frozen_paths[structural]
+FAILED tests/test_execskill_v226_preparation_review.py::test_consent_target_cannot_follow_a_shared_symlink_into_frozen_root
+4 failed, 28 deselected in 11.06s

@@ -1,0 +1,209 @@
+Platform: macOS-26.6.2-arm64-arm-64bit-Mach-O
+Python: <python>
+CWD: <repo-root>
+TMPDIR: /tmp/execskill-r2-hybcy4wk
+PYTHONPATH: <repo-root>
+Command: <python> -B -m pytest -q -p no:cacheprovider --deselect=<repo-root>/tests/test_execskill_step.py::test_step1_one_fake_officeqa_step_through_the_eight_sub_steps '--deselect=<repo-root>/tests/test_execskill_step.py::test_a_step_ending_before_the_acceptance_consumes_no_acceptance_item[blocked_twice]' --deselect=<repo-root>/tests/test_execskill_step.py::test_c7e_a_paused_acceptance_redoes_one_block_on_its_own_sub_scope --deselect=<repo-root>/tests/test_execskill_step.py::test_c7e_1_the_g_acc_cells_are_charged_to_the_examiners_scope_in_a_redone_block_too --deselect=<repo-root>/tests/test_execskill_step.py::test_codex8_an_accept_unit_killed_before_its_completion_evidence_settles_only_in_its_redo <repo-root>/tests/test_execskill_acceptance.py <repo-root>/tests/test_execskill_alf_v1_profile.py <repo-root>/tests/test_execskill_cells.py <repo-root>/tests/test_execskill_chain.py <repo-root>/tests/test_execskill_client.py <repo-root>/tests/test_execskill_manifest.py <repo-root>/tests/test_execskill_readout.py <repo-root>/tests/test_execskill_step.py <repo-root>/tests/test_execskill_units.py <repo-root>/tests/test_execskill_v210_acceptance.py <repo-root>/tests/test_execskill_v210_profile.py <repo-root>/tests/test_execskill_v211_acceptance.py <repo-root>/tests/test_execskill_v211_profile.py <repo-root>/tests/test_execskill_v212_acceptance.py <repo-root>/tests/test_execskill_v212_profile.py <repo-root>/tests/test_execskill_v213_profile.py <repo-root>/tests/test_execskill_v214_budget_gate.py <repo-root>/tests/test_execskill_v214_evaluation.py <repo-root>/tests/test_execskill_v214_fix1_budget.py <repo-root>/tests/test_execskill_v214_fix1_effects.py <repo-root>/tests/test_execskill_v214_fix1_scope.py <repo-root>/tests/test_execskill_v214_learning.py <repo-root>/tests/test_execskill_v214_preparation.py <repo-root>/tests/test_execskill_v214_profile.py <repo-root>/tests/test_execskill_v214_readout.py <repo-root>/tests/test_execskill_v214_smoke.py <repo-root>/tests/test_execskill_v215_diagnostics.py <repo-root>/tests/test_execskill_v215_diagnostics_runtime.py <repo-root>/tests/test_execskill_v215_fix1_runtime.py <repo-root>/tests/test_execskill_v215_profile.py <repo-root>/tests/test_execskill_v216_profile.py <repo-root>/tests/test_execskill_v217_profile.py <repo-root>/tests/test_execskill_v217i_profile.py <repo-root>/tests/test_execskill_v217i_smoke.py <repo-root>/tests/test_execskill_v218_fix1_split.py <repo-root>/tests/test_execskill_v218_profile.py <repo-root>/tests/test_execskill_v218_smoke.py <repo-root>/tests/test_execskill_v218_split.py <repo-root>/tests/test_execskill_v219_profile.py <repo-root>/tests/test_execskill_v219_smoke.py <repo-root>/tests/test_execskill_v220_profile.py <repo-root>/tests/test_execskill_v221_fix1.py <repo-root>/tests/test_execskill_v221_learning.py <repo-root>/tests/test_execskill_v221_preparation.py <repo-root>/tests/test_execskill_v221_profile.py <repo-root>/tests/test_execskill_v221_recovery.py <repo-root>/tests/test_execskill_v221_rule.py <repo-root>/tests/test_execskill_v221_smoke.py <repo-root>/tests/test_execskill_v222_capacity.py <repo-root>/tests/test_execskill_v222_cards.py <repo-root>/tests/test_execskill_v222_feedback.py <repo-root>/tests/test_execskill_v222_fix1_cards.py <repo-root>/tests/test_execskill_v222_fix1_hygiene.py <repo-root>/tests/test_execskill_v222_fix1_supply.py <repo-root>/tests/test_execskill_v222_fix2_alf_views.py <repo-root>/tests/test_execskill_v222_fix2_history.py <repo-root>/tests/test_execskill_v222_fix2_paths.py <repo-root>/tests/test_execskill_v222_fix4_cross.py <repo-root>/tests/test_execskill_v222_fix4_decomposition.py <repo-root>/tests/test_execskill_v222_fix4_fresh.py <repo-root>/tests/test_execskill_v222_fix5_fresh.py <repo-root>/tests/test_execskill_v222_fix5_probe.py <repo-root>/tests/test_execskill_v222_gate.py <repo-root>/tests/test_execskill_v222_hygiene.py <repo-root>/tests/test_execskill_v222_isolation.py <repo-root>/tests/test_execskill_v222_ops.py <repo-root>/tests/test_execskill_v222_preparation.py <repo-root>/tests/test_execskill_v222_profile.py <repo-root>/tests/test_execskill_v222_read.py <repo-root>/tests/test_execskill_v222_runtime.py <repo-root>/tests/test_execskill_v222_smoke.py <repo-root>/tests/test_execskill_v222_stages.py <repo-root>/tests/test_execskill_v225_anchor_environment.py <repo-root>/tests/test_execskill_v225_cards.py <repo-root>/tests/test_execskill_v225_cli_templates.py <repo-root>/tests/test_execskill_v225_cross_card.py <repo-root>/tests/test_execskill_v225_engineer_prompt.py <repo-root>/tests/test_execskill_v225_evidence.py <repo-root>/tests/test_execskill_v225_isolation.py <repo-root>/tests/test_execskill_v225_limits.py <repo-root>/tests/test_execskill_v225_literals.py <repo-root>/tests/test_execskill_v225_manifest.py <repo-root>/tests/test_execskill_v225_metrics.py <repo-root>/tests/test_execskill_v225_ops.py <repo-root>/tests/test_execskill_v225_phase.py <repo-root>/tests/test_execskill_v225_profile.py <repo-root>/tests/test_execskill_v225_read.py <repo-root>/tests/test_execskill_v225_reads.py <repo-root>/tests/test_execskill_v225_route_thinking.py <repo-root>/tests/test_execskill_v225_routing.py <repo-root>/tests/test_execskill_v225_small_confirmation.py <repo-root>/tests/test_execskill_v225_smoke.py <repo-root>/tests/test_execskill_v225_snapshot.py <repo-root>/tests/test_execskill_v225_writer.py <repo-root>/tests/test_execskill_v23_acceptance_amendment.py <repo-root>/tests/test_execskill_v23_training_amendment.py <repo-root>/tests/test_execskill_v24_profile.py <repo-root>/tests/test_execskill_v24_training.py <repo-root>/tests/test_execskill_v25_profile.py <repo-root>/tests/test_execskill_v25_training.py <repo-root>/tests/test_execskill_v26_profile.py <repo-root>/tests/test_execskill_v27_alf_profile.py <repo-root>/tests/test_execskill_v27_profile.py <repo-root>/tests/test_execskill_v28_profile.py <repo-root>/tests/test_execskill_v28_training.py <repo-root>/tests/test_execskill_v291_profile.py <repo-root>/tests/test_execskill_v292_profile.py <repo-root>/tests/test_execskill_v293_profile.py <repo-root>/tests/test_execskill_v294_profile.py <repo-root>/tests/test_execskill_v295_profile.py <repo-root>/tests/test_execskill_v296_profile.py <repo-root>/tests/test_execskill_v297_acceptance.py <repo-root>/tests/test_execskill_v297_profile.py <repo-root>/tests/test_execskill_v29_confirm.py <repo-root>/tests/test_execskill_v29_confirm_views.py <repo-root>/tests/test_execskill_v29_profile.py <repo-root>/tests/test_execskill_zpc_profile.py
+
+........................................................................ [  2%]
+........................................................................ [  4%]
+.............................................................F.F........ [  6%]
+FF.....F................................................................ [  8%]
+........................................................................ [ 10%]
+........................................................................ [ 12%]
+........................................................................ [ 14%]
+........................................................................ [ 16%]
+........................................................................ [ 18%]
+........................................................................ [ 20%]
+........................................................................ [ 22%]
+........................................................................ [ 24%]
+........................................................................ [ 26%]
+........................................................................ [ 28%]
+........................................................................ [ 30%]
+........................................................................ [ 32%]
+........................................................................ [ 34%]
+........................................................................ [ 36%]
+........................................................................ [ 38%]
+........................................................................ [ 40%]
+........................................................................ [ 42%]
+........................................................................ [ 44%]
+........................................................................ [ 46%]
+........................................................................ [ 48%]
+........................................................................ [ 50%]
+........................................................................ [ 52%]
+........................................................................ [ 54%]
+........................................................................ [ 56%]
+........................................................................ [ 58%]
+........................................................................ [ 60%]
+........................................................................ [ 63%]
+........................................................................ [ 65%]
+........................................................................ [ 67%]
+........................................................................ [ 69%]
+..................................s..................................... [ 71%]
+........................................................................ [ 73%]
+........................................................................ [ 75%]
+........................................................................ [ 77%]
+........................................................................ [ 79%]
+........................................................................ [ 81%]
+........................................................................ [ 83%]
+........................................................................ [ 85%]
+........................................................................ [ 87%]
+........................................................................ [ 89%]
+........................................................................ [ 91%]
+........................................................................ [ 93%]
+........................................................................ [ 95%]
+........................................................................ [ 97%]
+........................................................................ [ 99%]
+..............                                                           [100%]
+=================================== FAILURES ===================================
+________ test_step1_one_fake_officeqa_step_through_the_eight_sub_steps _________
+
+tmp_path = PosixPath('/private/tmp/execskill-r2-hybcy4wk/pytest-of-dulin/pytest-7/test_step1_one_fake_officeqa_s0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x106de4e50>
+workers = <function workers.<locals>.factory at 0x10ba0ce00>
+
+    def test_step1_one_fake_officeqa_step_through_the_eight_sub_steps(tmp_path, monkeypatch, workers):
+        setting, services, solver_fake, glm, waited = build(tmp_path, monkeypatch, workers)
+        found = step.run_step(setting, CHAIN, BENCH, K, PARENT, services=services)
+        root = setting.root
+        step_root = root / CHAIN / ("s%d-%s" % (K, BENCH))
+    
+        # the step record: accepted; S' with the describer's frozen text passes on
+        record = verified(read_json(step_root / step.STEP_FILE), "step")
+        assert found.record == record and record["version"] == kind("step") and record["evidence"] == FIXTURE
+>       assert record["decision"] == "accept" and record["reason"] == "J1-J7 hold"
+E       AssertionError: assert ('not_run' == 'accept'
+E         
+E         - accept
+E         + not_run)
+
+tests/test_execskill_step.py:199: AssertionError
+_ test_a_step_ending_before_the_acceptance_consumes_no_acceptance_item[blocked_twice] _
+
+tmp_path = PosixPath('/private/tmp/execskill-r2-hybcy4wk/pytest-of-dulin/pytest-7/test_a_step_ending_before_the_1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x106b8c1a0>
+workers = <function workers.<locals>.factory at 0x10ba0e340>
+variant = 'blocked_twice'
+
+    @pytest.mark.parametrize("variant", ["no_change", "blocked_twice"])
+    def test_a_step_ending_before_the_acceptance_consumes_no_acceptance_item(tmp_path, monkeypatch, workers, variant):
+        hooks = dict(HOOKS_STEP, **{NEW: dict(HOOKS_STEP[NEW], applies=_real_pages_only)})
+        setting, services, solver_fake, glm, waited = build(
+            tmp_path, monkeypatch, workers, answer=no_change if variant == "no_change" else roles_answer,
+            hooks=hooks if variant == "blocked_twice" else None)
+        found = step.run_step(setting, CHAIN, BENCH, K, PARENT, services=services)
+        step_root = setting.root / CHAIN / ("s%d-%s" % (K, BENCH))
+        record = found.record
+        assert record["decision"] == "not_run" and found.package.sha256 == PARENT.sha256 == record["package_sha256"]
+        assert record["decision_sha256"] is None and not (step_root / "accept").exists() and not waited
+        lines = services.registry.entries(CHAIN, BENCH)  # the run slice decided; the acceptance slice never registered
+        slices = verified(read_json(step_root / step.SLICES_FILE), "step-slices")["slices"]
+        assert set(lines) == set(slices["run"]) and all(line["state"] == "decided" for line in lines.values())
+        frozen = result(step_root, "freeze")["result"]
+        assert not frozen["accepted"] and frozen["descriptions"] == [] and frozen["archived"] == record["candidate_sha256"]
+        if variant == "no_change":
+            assert record["reason"] == "no_surviving_change" and record["candidate_sha256"] is None
+            assert set(record["units"]) == {"run", "diagnose", "generate", "engineer", "freeze"}
+        else:  # the change faults on every generated item in S': blocked, re-engineered once, blocked again
+>           assert record["reason"] == "selftest_blocked_twice" and record["candidate_sha256"] is not None
+E           AssertionError: assert ('no_surviving_change' == 'selftest_blocked_twice'
+E             
+E             - selftest_blocked_twice
+E             + no_surviving_change)
+
+tests/test_execskill_step.py:341: AssertionError
+______ test_c7e_a_paused_acceptance_redoes_one_block_on_its_own_sub_scope ______
+
+tmp_path = PosixPath('/private/tmp/execskill-r2-hybcy4wk/pytest-of-dulin/pytest-7/test_c7e_a_paused_acceptance_r0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x105606820>
+workers = <function workers.<locals>.factory at 0x10b8f9580>
+
+    def test_c7e_a_paused_acceptance_redoes_one_block_on_its_own_sub_scope(tmp_path, monkeypatch, workers):
+        """Ticket C7c-2 (registration §9.3: a pause redoes only one block, each redo in its own sub-scope; owner decision
+        #15: the block is redone whole, never spliced). The OfficeQA round, cut into three blocks for the test, pauses on
+        a sandbox stop inside block 2. After the owner's recovery.json the same step keeps block 1 from attempt 1, redoes
+        block 2 whole on chain G's ``...:accept:attempt-2`` and redo reserve, and runs block 3 -- never started -- on
+        ``...:accept``; the decision reads the union by its block -> attempt map and is made again from the records."""
+        monkeypatch.setitem(step.SLICES[BENCH], "blocks", 3)
+        setting, services, solver_fake, glm, waited = build(tmp_path, monkeypatch, workers)
+    
+        def middle(block, jobs):  # attempt 1: block 2 stops at its first real S' cell past the middle
+            if block != "b2":
+                return None
+            return next(n for n, job in enumerate(jobs)
+                        if job["arm"] == "S'" and job["set"] == "real" and n >= len(jobs) // 2)
+    
+        _pause(monkeypatch, middle)
+>       with pytest.raises(Pause) as stop:
+E       Failed: DID NOT RAISE <class 'skillopt.coevo5.cells.Pause'>
+
+tests/test_execskill_step.py:626: Failed
+_ test_c7e_1_the_g_acc_cells_are_charged_to_the_examiners_scope_in_a_redone_block_too _
+
+tmp_path = PosixPath('/private/tmp/execskill-r2-hybcy4wk/pytest-of-dulin/pytest-7/test_c7e_1_the_g_acc_cells_are0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1061ed400>
+workers = <function workers.<locals>.factory at 0x10ba0cd60>
+
+    def test_c7e_1_the_g_acc_cells_are_charged_to_the_examiners_scope_in_a_redone_block_too(tmp_path, monkeypatch,
+                                                                                              workers):
+        """Ticket C7e-1 (registration §3.3 "它的做题费用记在考官作用域里（9.2、9.3）", §9.2, calc T6; registrar decision
+        2026-10-22): an OfficeQA round with G_acc items (two researched tables), cut into three blocks, pauses inside the
+        first block holding G_acc jobs after one of them ran. Every G_acc send -- in attempt 1 and in the redone block of
+        attempt 2 -- is charged to chain G's ``...:examiner`` scope and to nothing else of the step; ``...:accept``, its
+        ``attempt-2`` sub-scope and the redo reserve hold the round's other cells as ticket C7c-2 has them. The stored
+        decision carries §6.2's descriptive series of both sets (ticket PR-F2-1)."""
+        monkeypatch.setitem(step.SLICES[BENCH], "blocks", 3)
+        monkeypatch.setitem(PAGES, SECOND, (SECOND, 1007, SECOND_TABLE, [], False))
+        monkeypatch.setitem(SEARCHES, CONCEPTS[1], [SECOND])
+        setting, services, solver_fake, glm, waited = build(tmp_path, monkeypatch, workers, answer=two_tables)
+        chosen = []
+    
+        def after_g_acc(block, jobs):  # attempt 1: the first block with G_acc jobs stops at a real S' job after one
+            first = next((n for n, job in enumerate(jobs) if job["set"] == "G_acc"), None)
+            if chosen or first is None:
+                return None
+            chosen.append(block)
+            return next(n for n, job in enumerate(jobs) if n > first and job["arm"] == "S'" and job["set"] == "real")
+    
+        _pause(monkeypatch, after_g_acc)
+        events_path = budgets.ledger_root(setting.root, CHAIN) / "events.jsonl"
+>       with pytest.raises(Pause) as stop:
+E       Failed: DID NOT RAISE <class 'skillopt.coevo5.cells.Pause'>
+
+tests/test_execskill_step.py:720: Failed
+_ test_codex8_an_accept_unit_killed_before_its_completion_evidence_settles_only_in_its_redo _
+
+tmp_path = PosixPath('/private/tmp/execskill-r2-hybcy4wk/pytest-of-dulin/pytest-7/test_codex8_an_accept_unit_kil0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b95f000>
+workers = <function workers.<locals>.factory at 0x10bc74e00>
+
+    def test_codex8_an_accept_unit_killed_before_its_completion_evidence_settles_only_in_its_redo(
+            tmp_path, monkeypatch, workers):
+        """Codex finding #8 on the accept unit (§3.4, §9.3, §13): the round's items are decided only after the unit's
+        completion evidence is persisted. A process killed while writing that evidence leaves A* dispatched, never decided;
+        after the owner's decision the redo registers its own items again, reuses every block the killed attempt
+        finished (no solver call), decides, persists its evidence and only then settles -- the step completes as without
+        the kill (before the fix the redo's registration met decided items and paused)."""
+        setting, services, solver_fake, glm, waited = build(tmp_path, monkeypatch, workers)
+        step_root = setting.root / CHAIN / ("s%d-%s" % (K, BENCH))
+        accept_root, real = step_root / "accept", units.write_json
+    
+        def killed_at_the_accept_evidence(path, value):
+            if path.name == units.COMPLETED and path.parent.parent == accept_root:
+                raise _Killed()
+            return real(path, value)
+    
+        monkeypatch.setattr(units, "write_json", killed_at_the_accept_evidence)
+>       with pytest.raises(_Killed):
+E       Failed: DID NOT RAISE <class 'tests.test_execskill_step._Killed'>
+
+tests/test_execskill_step.py:1045: Failed
+=========================== short test summary info ============================
+FAILED tests/test_execskill_step.py::test_step1_one_fake_officeqa_step_through_the_eight_sub_steps
+FAILED tests/test_execskill_step.py::test_a_step_ending_before_the_acceptance_consumes_no_acceptance_item[blocked_twice]
+FAILED tests/test_execskill_step.py::test_c7e_a_paused_acceptance_redoes_one_block_on_its_own_sub_scope
+FAILED tests/test_execskill_step.py::test_c7e_1_the_g_acc_cells_are_charged_to_the_examiners_scope_in_a_redone_block_too
+FAILED tests/test_execskill_step.py::test_codex8_an_accept_unit_killed_before_its_completion_evidence_settles_only_in_its_redo
+5 failed, 3536 passed, 1 skipped in 277.40s (0:04:37)
+
+Exit code: 1

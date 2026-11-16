@@ -232,6 +232,9 @@ def prompt_sha(configuration=None):
     trains (``protocol.LEARNING``) also ``v2``: v2's engineer and examiner prompts (owner decision 2026-10-23 13:3x)
     and its analysts' (owner suggestion 2026-10-23 15:1x). A v1 configuration binds exactly the first three (Codex
     review 2026-10-23 #1)."""
+    if protocol.is_v220(configuration):
+        from . import v220_smoke
+        return v220_smoke.prompt_pins()
     if protocol.is_v216(configuration):
         from . import engineer_v216
         out = prompt_sha(protocol.ZEBRA_PC_V14)
@@ -350,6 +353,12 @@ def _plain(value):
 
 def registered(configuration=None):
     """The registered seeds, sizes and thresholds the manifest binds (values of ``protocol``)."""
+    if protocol.is_v220(configuration):
+        found = registered(protocol.MAIN_V6)
+        found['sizes']['slices'] = {}
+        found['sizes']['min_astar'] = {}
+        found['sizes']['v214'] = _plain(protocol.searchqa_hp_v6_identity())
+        return found
     if protocol.is_v214(configuration):
         from . import acceptance
         found = registered(protocol.MAIN_V4)
@@ -360,6 +369,10 @@ def registered(configuration=None):
             for b in learned}
         found['sizes']['v214'] = _plain(protocol.cross_v5_identity() if protocol.is_v219(configuration)
                                        else protocol.implant_v5_identity() if protocol.is_implant_v5(configuration)
+                                       else protocol.main_v10_identity() if protocol.is_v226(configuration)
+                                       else protocol.main_v9_identity() if protocol.is_v225(configuration)
+                                       else protocol.main_v8_identity() if protocol.is_v222(configuration)
+                                       else protocol.main_v7_identity() if protocol.is_v221(configuration)
                                        else protocol.main_v6_identity() if protocol.is_v218(configuration) else protocol.main_v5_identity())
         return found
     if protocol.is_v211(configuration):
@@ -402,6 +415,10 @@ def _solver_fields(chain, env_path, branch, longest, configuration=None):
     require(branch in protocol.BRANCHES if elucid else branch is None, "Chain D names its S1 branch; chain G none")
     benches = protocol.active_benches(configuration)
     northgate = elucid and (protocol.is_v29(configuration) or protocol.is_v210(configuration))
+    extra, source = {}, client.__file__
+    if protocol.is_v225(configuration) and chain == 'D':
+        from . import v225_client
+        extra, source = v225_client.options(configuration, chain), v225_client.__file__
     return {"backend": "northgate" if northgate else "elucid" if elucid else "bigmodel", "model": model,
             "url_host": client.NORTHGATE_HOST if northgate else client.ELUCID_HOST if elucid else BIGMODEL_HOST, "env_path": str(safe_path(env_path)),
             "proxy": protocol.GATEWAY, "reasoning_effort": protocol.REASONING_EFFORT if elucid else "low",
@@ -409,7 +426,7 @@ def _solver_fields(chain, env_path, branch, longest, configuration=None):
             "read_timeout": {b: protocol.read_timeout(model, b) for b in benches},
             "slots": protocol.SLOTS[model],
             "response_model_ids": sorted(client.NORTHGATE_RESPONSE_MODEL_IDS) if northgate else sorted(client.ELUCID_RESPONSE_MODEL_IDS) if elucid else [model],
-            "client_source_sha": _sha(Path(client.__file__))}
+            "client_source_sha": _sha(Path(source)), **extra}
 
 
 def solver_block(chain, *, env_path, branch=None, longest=None, configuration=None):
@@ -424,6 +441,8 @@ def solver_block(chain, *, env_path, branch=None, longest=None, configuration=No
 
 def role_settings(configuration=None):
     """The frozen default role bound, plus v2.3's explicitly named train proposal bound (E1)."""
+    if protocol.is_v225(configuration):
+        return {**role_settings(protocol.MAIN_V8), 'card_writer': protocol.card_writer_settings(configuration)}
     return {**ROLES, "engineer_propose_max_tokens": protocol.ENGINEER_MAX_TOKENS[configuration]} \
         if protocol.is_v23(configuration) else dict(ROLES)
 
@@ -439,19 +458,56 @@ def check_clients(clients, *, configuration=None):
     solvers = clients["solver"]
     require(isinstance(solvers, dict) and solvers and set(solvers) <= set(protocol.CHAINS), "Solver blocks per chain")
     for chain, block in solvers.items():
-        require(isinstance(block, dict) and set(block) == SOLVER_FIELDS, "A solver block holds the registered fields")
+        fields = SOLVER_FIELDS | ({'thinking'} if protocol.is_v225(configuration) and chain == 'D' else set())
+        require(isinstance(block, dict) and set(block) == fields, "A solver block holds the registered fields")
         expected = solver_block(chain, env_path=block["env_path"], branch=block["branch"], longest=block["longest"], configuration=configuration)
-        same = {key for key in SOLVER_FIELDS if block[key] == expected[key]}
-        require(same == SOLVER_FIELDS, "The %s solver block differs from the registration: %s"
-                % (chain, sorted(SOLVER_FIELDS - same)))
+        same = {key for key in fields if block[key] == expected[key]}
+        require(same == fields, "The %s solver block differs from the registration: %s"
+                % (chain, sorted(fields - same)))
     require(clients["roles"] == role_settings(configuration), "The method roles' registered settings")
     routes.check_pins(clients, configuration=configuration)  # M4: route B (registrar 17:3x)
+
+
+def _check_frozen_paths(configuration, *paths):
+    """Exclude lexical and resolved main-v9 paths, including recorded metadata."""
+    if protocol.is_v226(configuration):
+        import os
+        previous = (Path(os.path.abspath(protocol.MAIN_V9_ROOT)),
+                    Path(protocol.MAIN_V9_ROOT).resolve(strict=False))
+        for path in paths:
+            if path is not None:
+                candidates = (Path(os.path.abspath(path)), Path(path).resolve(strict=False))
+                require(not any(candidate == root or root in candidate.parents
+                                for candidate in candidates for root in previous),
+                        'main-v10 requires its own run root; a main-v9 root is forbidden')
+
+
+# Separate preparation trees are registered alongside the new real run. A
+# chain or selftest may use descendants, but an arbitrary scratch root cannot
+# silently become a main-v10 preparation root.
+V226_PREPARATION_ROOT_SUFFIXES = ('-smoke', '-scratch')
+
+
+def _check_run_root(root, configuration, evidence):
+    if protocol.is_v226(configuration):
+        _check_frozen_paths(configuration, root)
+        root = safe_path(root)
+        registered = safe_path(protocol.RUN_ROOTS[configuration])
+        if evidence == protocol.REAL_RUN_EVIDENCE[configuration]:
+            require(root == registered,
+                    'main-v10 real runs require the registered new root and new manifest')
+        else:
+            preparation = [safe_path(str(registered) + suffix) for suffix in V226_PREPARATION_ROOT_SUFFIXES]
+            require(root == registered or any(root == base or base in root.parents for base in preparation),
+                    'main-v10 preparation requires a registered run, smoke or scratch root')
 
 
 def check(manifest):
     """The field sets of a manifest record (raises ValueError)."""
     value = protocol.verified(manifest, KIND)
     require(set(value) == FIELDS, "Not a %s manifest" % protocol.VERSION)
+    if protocol.is_v226(value["configuration"]):
+        _check_run_root(value["root"], value["configuration"], value["evidence"])
     require(set(value["sandbox"]) == (SANDBOX_FIELDS | ({"worker_sha256_by_bench"}
             if protocol.is_v218(value.get("configuration")) else set()))
             and set(value["sandbox"]["measured"]) == MEASURED_FIELDS,
@@ -529,10 +585,11 @@ def check(manifest):
         require(pin.get("freshness") == protocol.CONFIRM_FRESHNESS[configuration], "Confirm slice provenance")
     if protocol.is_v218(configuration):
         require(value['sandbox'].get('worker_sha256_by_bench') == {
-            b: sandbox.worker_sha256(configuration=protocol.ZEBRA_PC_V15) if b == protocol.ZEBRA
+            b: sandbox.worker_sha256(configuration=protocol.MAIN_V8) if protocol.is_v222(configuration)
+            else sandbox.worker_sha256(configuration=protocol.ZEBRA_PC_V15) if b == protocol.ZEBRA
             else sandbox.worker_sha256() for b in protocol.active_benches(configuration)},
             'The mixed main-v6 diagnostic worker pins')
-    if protocol.is_v215(configuration):
+    if protocol.is_v215(configuration) or protocol.is_v222(configuration):
         require(value['sandbox']['worker_sha256'] == sandbox.worker_sha256(configuration=configuration),
                 'The v2.15 diagnostics worker is pinned')
     if protocol.is_v23(configuration):
@@ -540,6 +597,8 @@ def check(manifest):
             version=protocol.POLICY_VERSIONS[configuration]), "The v2.3 sandbox policy is pinned")
         sheet = value["runtime"].get("spreadsheetbench")
         if sheet is None:
+            if protocol.is_v220(configuration):
+                return value  # the v220 manifest check already enforces SearchQA-only maps
             if protocol.is_alfworld(configuration):
                 return _check_alfworld(value)
             require(protocol.is_zebra(configuration), "Only a registered text-only profile omits sheet runtime")
@@ -566,17 +625,37 @@ def _check_v210(value):
     configuration, data = value["configuration"], value["data"]
     require(data.get("instructions") == instruction_start.pins(),
             "Instruction pins differ from the frozen fixture")
-    require(data.get("instruction_start") == instruction_start.START,
-            "The instruction start is the historical solver card")
+    from . import v222_cards
+    expected_start = v222_cards.START if protocol.is_v222(configuration) else instruction_start.START
+    if protocol.is_v225(configuration):
+        expected_start = 'empty_format_only_v2_25'
+    require(data.get("instruction_start") == expected_start,
+            "The instruction start matches its registered configuration")
     require(data.get("blank_arm") == instruction_start.blank_definition(),
             "The blank arm has no guidance card")
     originals = data.get("original_cards")
     require(_card_texts(originals, configuration), "The five historical instruction-card texts are pinned")
     require(data.get("card_sha256") == {bench: _sha_text_digest(text) for bench, text in originals.items()},
             "Original card hashes differ")
-    require(value["cards"] == instruction_start.active_cards(originals, configuration),
-            "Active cards equal the historical frozen instructions byte-for-byte")
+    if protocol.is_v222(configuration):
+        if protocol.is_v225(configuration):
+            from . import v225_smoke
+            require(data.get('v225') == v225_smoke.pins(value['runtime'], **({'configuration': configuration} if protocol.is_v226(configuration) else {})),
+                    'main-v9 instruction-writer, format, routing and metrics pins are unchanged')
+        require(originals == instruction_start.original_cards(value['cards'], configuration),
+                'Historical cards retain their fixed source bytes')
+        if protocol.is_v225(configuration):
+            require('v222_cards' not in data, 'main-v9 has no decomposition or P0 source pins')
+        else:
+            require(data.get('v222_cards') == v222_cards.manifest_pins(),
+                    'main-v8 binds fixed format blocks, historical cards and all segment source pins')
+    else:
+        require(value["cards"] == instruction_start.active_cards(originals, configuration),
+                "Active cards equal the historical frozen instructions byte-for-byte")
     require(value["prompt_sha"] == prompt_sha(configuration), "The v2.10 prompt pins")
+    if protocol.is_v220(configuration):
+        require('alfworld_v11_import' not in data, 'SearchQA imports only the pinned main-v6 records and candidate')
+        return value  # no sheet qualification, environment or baseline-only sandbox rules
     if configuration in (protocol.MAIN_V3, protocol.MAIN_V4) or protocol.is_v214(configuration):
         from . import v210_import
         require(data.get("alfworld_v11_import") == v210_import.pins(),
@@ -657,6 +736,9 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
     (``MEASURED_FIELDS``); ``environment_found``: ``environment()`` (computed when None); ``configuration``: the run
     configuration (``protocol.CONFIGURATIONS``), stamped with its caps. Returns the record."""
     require(configuration in protocol.CONFIGURATIONS, "Unknown run configuration: %r" % (configuration,))
+    if protocol.is_v226(configuration):
+        _check_run_root(given['root'], configuration, evidence)
+        _check_frozen_paths(configuration, out)
     out = safe_path(out)
     require(not out.exists(), "A new manifest file")
     require(set(given) == GIVEN, "The manifest's given fields: %s" % sorted(GIVEN))
@@ -664,24 +746,39 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
         measured = {key: None for key in MEASURED_FIELDS}
     if protocol.is_v210(configuration):
         from . import instruction_start
-        original = instruction_start.active_cards(given["cards"], configuration)
+        original = instruction_start.original_cards(given["cards"], configuration)
+        from . import v222_cards
+        expected_start = v222_cards.START if protocol.is_v222(configuration) else instruction_start.START
+        if protocol.is_v225(configuration):
+            expected_start = 'empty_format_only_v2_25'
         existing = given["data"].get("instructions", instruction_start.pins())
         require(existing == instruction_start.pins(), "Instruction pins differ from the frozen fixture")
-        require(given["data"].get("instruction_start", instruction_start.START) == instruction_start.START,
-                "The instruction start is the historical solver card")
+        require(given["data"].get("instruction_start", expected_start) == expected_start,
+                "The instruction start matches its registered configuration")
         require(given["data"].get("blank_arm", instruction_start.blank_definition()) == instruction_start.blank_definition(),
                 "The blank arm has no guidance card")
         data = {**given["data"], "instructions": instruction_start.pins(), "original_cards": original,
-                "instruction_start": instruction_start.START, "blank_arm": instruction_start.blank_definition(),
+                "instruction_start": expected_start, "blank_arm": instruction_start.blank_definition(),
                 "card_sha256": {bench: _sha_text_digest(text) for bench, text in original.items()}}
-        if configuration in (protocol.MAIN_V3, protocol.MAIN_V4) or protocol.is_v214(configuration):
+        if protocol.is_v220(configuration):
+            require('alfworld_v11_import' not in data, 'SearchQA has no separate ALFWorld fixture import')
+        elif configuration in (protocol.MAIN_V3, protocol.MAIN_V4) or protocol.is_v214(configuration):
             from . import v210_import
             require(data.get("alfworld_v11_import", v210_import.pins()) == v210_import.pins(),
                     "The imported ALFWorld package differs from the fixture")
             data["alfworld_v11_import"] = v210_import.pins()
         else:
             require("alfworld_v11_import" not in data, "The baseline has no imported procedures")
-        given = {**given, "cards": instruction_start.active_cards(original, configuration), "data": data}
+        if protocol.is_v225(configuration):
+            require('v222_cards' not in data, 'main-v9 has no decomposition or P0 source pins')
+            from . import v225_smoke
+            data['v225'] = v225_smoke.pins(given['runtime'], **({'configuration': configuration} if protocol.is_v226(configuration) else {}))
+        elif protocol.is_v222(configuration):
+            require(data.get('v222_cards', v222_cards.manifest_pins()) == v222_cards.manifest_pins(),
+                    'main-v8 card source pins differ')
+            data['v222_cards'] = v222_cards.manifest_pins()
+        given = {**given, "cards": instruction_start.active_cards(
+            given['cards'] if protocol.is_v222(configuration) else original, configuration), "data": data}
         if environment_found is None and configuration == protocol.BASELINE_V210:
             environment_found = baseline_environment()
     if protocol.is_implant_v5(configuration):
@@ -699,7 +796,7 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
                      **given["runtime"]["spreadsheetbench"],
                      "code_extraction_version": protocol.CODE_EXTRACTION[configuration],
                      "multiple_python_blocks": protocol.MULTIPLE_PYTHON_BLOCKS[configuration]}}}
-    if protocol.is_v214(configuration):
+    if protocol.is_v214(configuration) and not protocol.is_v220(configuration):
         from .zebralogic import CARD_VERSION
     if protocol.is_zebra(configuration):
         from .zebralogic import CARD_VERSION
@@ -712,7 +809,10 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
                      alfworld_format.bind(given["runtime"]["alfworld"], configuration)}}
         given = {**given, "clients": {**given["clients"], "roles": role_settings(configuration)},
                  "data": {**given["data"], "alfworld_features": alfworld_features(configuration)}}
-    if protocol.is_v213(configuration):
+    if protocol.is_v220(configuration):
+        from . import v220_import
+        v220_import.validate_pins(given['data'].get(v220_import.PIN_KEY))
+    elif protocol.is_v213(configuration):
         from . import v213_import, v217_import
         v213_import = v217_import if protocol.is_v217(configuration) else v213_import
         pinned = v213_import.pins()
@@ -737,11 +837,12 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
         "placebo_corpus_sha": protocol.PLACEBO_CORPUS_SHA256, "configuration": configuration,
         "caps": budgets.caps(configuration),
         "importable_versions": ([*protocol.IMPORTABLE, protocol.TEXTS_IMPORT, CARD_VERSION]
-                                if protocol.is_v214(configuration) else [*protocol.IMPORTABLE, CARD_VERSION]
+                                if protocol.is_v214(configuration) and not protocol.is_v220(configuration) else [*protocol.IMPORTABLE, CARD_VERSION]
                                 if protocol.is_zebra(configuration) else [*protocol.IMPORTABLE, protocol.TEXTS_IMPORT]),
         "sandbox": {"image_id": None if configuration == protocol.BASELINE_V210 else sandbox.IMAGE,
                     "worker_sha256": (sandbox.worker_sha256(configuration=configuration)
-                                      if protocol.is_v215(configuration) else sandbox.worker_sha256()),
+                                      if protocol.is_v215(configuration) or protocol.is_v222(configuration)
+                                      else sandbox.worker_sha256()),
                     "policy_sha256": policy.policy_sha256(version=protocol.POLICY_VERSIONS[configuration]),
                     "docker_argv_template_sha": digest({k: sandbox.argv_template(k, v) for k, v in limits.items()}),
                     "limits": {k: asdict(v) for k, v in sorted(limits.items())}, "measured": measured},
@@ -750,7 +851,8 @@ def make(out, *, evidence, environment_found=None, limits=None, measured, config
                         if environment_found is None else environment_found)}
     if protocol.is_v218(configuration):
         fields['sandbox']['worker_sha256_by_bench'] = {
-            b: sandbox.worker_sha256(configuration=protocol.ZEBRA_PC_V15) if b == protocol.ZEBRA
+            b: sandbox.worker_sha256(configuration=protocol.MAIN_V8) if protocol.is_v222(configuration)
+            else sandbox.worker_sha256(configuration=protocol.ZEBRA_PC_V15) if b == protocol.ZEBRA
             else sandbox.worker_sha256() for b in protocol.active_benches(configuration)}
     suffix = ("-v2-9" if protocol.is_v29(configuration) else "-v2-8" if protocol.is_v28(configuration) else "-alf-v2" if protocol.is_alfworld_v2(configuration) else "-alf-v1" if protocol.is_alfworld(configuration) else
               "-v2-7" if protocol.is_v27(configuration) else "-v2-6" if protocol.is_v26(configuration)
@@ -789,6 +891,18 @@ def solver_config(manifest, chain, bench, route=None):
         return {"env_path": block["env_path"], "proxy": block["proxy"], "max_tokens": block["M"][bench],
                 "read_timeout": block["read_timeout"][bench]}
     return {"repo": block["env_path"], "proxy": block["proxy"]}
+
+
+def make_solver(manifest, chain, bench, route=None, *, transport=None):
+    """One construction path for solver bodies, including main-v9's opt-in adapter."""
+    configuration = manifest['configuration']
+    model = protocol.CHAINS[chain]
+    if protocol.is_v225(configuration) and chain == 'D':
+        from . import v225_client
+        check_clients(manifest['clients'], configuration=configuration)
+        return v225_client.solver_client(model, configuration=configuration,
+            config=solver_config(manifest, chain, bench, route), transport=transport)
+    return client.solver_client(model, config=solver_config(manifest, chain, bench, route), transport=transport)
 
 
 # --------------------------------------------------------------------------------- the run adapters (A13-1)
@@ -842,6 +956,9 @@ def _smoke_pools(m, root):
 
 
 def _pools(m, chain, root):
+    if protocol.is_v220(m['configuration']):
+        require(set(m['data'].get('pools', {})) == {'searchqa'}, 'Only SearchQA practice pools are pinned')
+        return {'searchqa': _items(m['data']['pools']['searchqa'], 'searchqa')}
     if m["configuration"] == protocol.BASELINE_V210:
         return {}  # the baseline never opens training pools
     if chain == budgets.SMOKE:
@@ -855,7 +972,7 @@ def _pools(m, chain, root):
 
 def _slot_sizes(m):
     """The registered pool-size changes from S0 (plan §5): native 3 -> 2 above a 2 GiB native peak RSS."""
-    if m["configuration"] == protocol.BASELINE_V210:
+    if m["configuration"] == protocol.BASELINE_V210 or protocol.is_v220(m['configuration']):
         return None  # no procedure-sandbox measurements exist in the baseline
     peak = m["sandbox"]["measured"]["native_peak_rss_kib"]
     require(type(peak) is int and peak > 0, "The S0 native peak RSS")
@@ -876,6 +993,8 @@ def _clients(m, chain, transport, route=None):
     cache = {}
 
     def make(wanted, bench):
+        require(not protocol.is_v220(m.get('configuration')) or bench == 'searchqa',
+                'The fixed SearchQA read has no role clients or other benchmark clients')
         if bench is not None and route is not None and protocol.is_v210(m["configuration"]):
             routes.check_bound(safe_path(m["root"]) / run, route, run=m[protocol.RECORD_HASH], chain=run,
                                configuration=m["configuration"])
@@ -895,11 +1014,10 @@ def _clients(m, chain, transport, route=None):
                     raise ConfigurationError("glm-5.3 role credentials: %s" % refusal) from None
             elif protocol.is_v211(m['configuration']) and wanted == protocol.CHAINS['D'] and model != wanted:
                 require(bench in protocol.active_benches(m['configuration']), 'The audit benchmark is registered')
-                cache[key] = client.solver_client(wanted, config=solver_config(m, 'D', bench, 'B'), transport=transport)
+                cache[key] = make_solver(m, 'D', bench, 'B', transport=transport)
             else:
                 require(wanted == model and bench in protocol.active_benches(m["configuration"]), "The run's solver on a known bench")
-                cache[key] = client.solver_client(model, config=solver_config(m, run, bench, route),
-                                                  transport=transport)
+                cache[key] = make_solver(m, run, bench, route, transport=transport)
         return cache[key]
 
     return make
@@ -935,6 +1053,10 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
     of the workers, the drain and the image check (a fake in tests); ``transport``: the clients' httpx transport
     (tests)."""
     require(chain in RUNS, "Chain G, chain D or the smoke")
+    if protocol.is_v226(m["configuration"]):
+        _check_run_root(m["root"], m["configuration"], m["evidence"])
+        from .v214_preparation import _check_frozen_inputs
+        _check_frozen_inputs(m['configuration'], m)
     if protocol.is_zebra(m["configuration"]) and protocol.is_v27(m["configuration"]):
         require(chain in protocol.launchable_chains(m["configuration"]), "zebra-pc-v5 launches chain D only")
     if protocol.is_alfworld_v2(m["configuration"]):
@@ -971,15 +1093,19 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
         extra["original_cards"] = deepcopy(m["data"]["original_cards"])
         extra["instruction_start"] = m["data"]["instruction_start"]
         extra["blank_arm"] = deepcopy(m["data"]["blank_arm"])
-        if not baseline:
+        if not baseline and not protocol.is_v220(m['configuration']):
             extra["alfworld_v11_import"] = deepcopy(m["data"]["alfworld_v11_import"])
-    if protocol.is_v211(m['configuration']):
+    if protocol.is_v211(m['configuration']) and not protocol.is_v220(m['configuration']):
         extra.update(v211_allocation=deepcopy(m['data']['allocations']),
                      allocations=deepcopy(m['data']['allocations']),
                      v211_prompt_pins=deepcopy(m['data']['v211_prompt_pins']),
                      freshness_amendment=deepcopy(m['data']['freshness_amendment']))
-    if protocol.is_v214(m['configuration']):
+    if protocol.is_v214(m['configuration']) and not protocol.is_v220(m['configuration']):
         extra['confirm'] = deepcopy(m['data']['confirm'])
+    if protocol.is_v220(m['configuration']):
+        from . import v220_import
+        extra[v220_import.PIN_KEY] = deepcopy(m['data'][v220_import.PIN_KEY])
+        extra['allocations'] = deepcopy(m['data']['allocations'])  # reserved SearchQA smoke IDs only
     if protocol.is_implant_v5(m['configuration']):
         from . import v217_implant
         extra[v217_implant.PIN_KEY] = deepcopy(m['data'][v217_implant.PIN_KEY])
@@ -993,7 +1119,11 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
         extra["drain"] = functools.partial(sandbox.drain_unit, docker=docker, **cleanup_options)
     worker_options = {**cleanup_options, **({"ready_timeout_seconds": protocol.ready_timeout_seconds(m["configuration"])}
                                            if protocol.is_v292(m["configuration"]) else {})}
-    if protocol.is_v215(m['configuration']):
+    if protocol.is_v222(m['configuration']):
+        worker_options['instruction_configuration'] = m['configuration']
+    if protocol.is_v226(m['configuration']):
+        worker_options['diagnostics_configuration'] = protocol.ZEBRA_PC_V15
+    elif protocol.is_v215(m['configuration']):
         worker_options['diagnostics_configuration'] = m['configuration']
     if m["configuration"] == protocol.MAIN_V3:
         worker_options["mixed_policy_bundle"] = "main-v3-alfworld-v11"
@@ -1024,7 +1154,23 @@ def setting_of(m, chain, *, path=None, docker=None, transport=None):
         budget=budget, slots=pools,
         sandbox={} if baseline else {"docker": docker, "limits": limits_of(m), "image": m["sandbox"]["image_id"], **worker_options},
         evidence=m["evidence"], branch=bound["branch"], longest=bound["longest"], extra=extra)
-    if protocol.is_v211(m['configuration']):
+    if protocol.is_v222(m['configuration']):
+        from . import v222_smoke
+        extra['v222_practice'] = deepcopy(m['data']['v222_practice'])
+        extra['v222_practice_supply'] = deepcopy(m['data']['v222_practice_supply'])
+        extra['v222_harm_pools'] = v222_smoke.load_supply_pins(
+            m['data']['v222_practice'].get('supply_pins', {}), protected_ids=m['data'].get('protected_ids'),
+            forbidden_paths=v222_smoke.protected_paths(m['data']),
+            **({'configuration': m['configuration']} if protocol.is_v226(m['configuration']) else {}))
+        extra['v222_fallbacks'] = deepcopy(m['data'].get('v222_fallbacks', {}))
+        from . import v222_cards
+        setting.cards = v222_cards.setting_cards(setting, chain)
+        setting.runtime = v222_cards.setting_runtime(setting, chain)
+        from . import v222_smoke
+        v222_smoke.practice(setting)  # fail closed on the pinned overlay before any paid unit
+    if protocol.is_v220(m['configuration']):
+        pass  # practice-only pools; no training allocation, confirmation or role machinery
+    elif protocol.is_v211(m['configuration']):
         from . import v211_allocation
         tail, kept = step._tail(SimpleNamespace(setting=setting))
         for bench, pinned in m['data']['allocations'].items():
@@ -1067,7 +1213,11 @@ def _read_terms(terms, estimate, configuration=None):
     """Whether ``terms`` are the per-bench terms of the test-read ``estimate`` (``test-read-estimate``'s ``terms``,
     ``protocol.read_estimate_terms``): {bench: "p/q"} for every bench, each positive, the ceiling of their sum the
     estimate (registrar addendum 2026-10-22 15:3x, ticket P2C-2)."""
-    if not (isinstance(terms, dict) and set(terms) == set(protocol.read_benches(configuration))
+    expected = set(protocol.read_benches(configuration))
+    if protocol.is_v225(configuration):
+        expected = {label + '/' + bench for label in ('anchor','s1','s2','s3','s4','s5','i','c_end')
+                    for bench in protocol.MAIN_V5_ORDER}
+    if not (isinstance(terms, dict) and set(terms) == expected
             and all(type(text) is str for text in terms.values())):
         return False
     try:

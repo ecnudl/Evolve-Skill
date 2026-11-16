@@ -108,7 +108,7 @@ def sheet_engines(runtime, *, native, evidence, engine_of=None):
     ``recalculation`` names a v7 engine qualification made from this checkout (``qualify.engine_runtime``);
     ``native``: the ``spreadsheet-native`` pool; ``evidence``: the run's label, stamped on every per-item engine
     qualification record; ``engine_of``: as ``Recalculation``. Nothing is revalidated here."""
-    require(evidence in EVIDENCE, "Unknown evidence label")
+    require(evidence in EVIDENCE or evidence in ('main_v9_real_run', 'main_v10_real_run'), "Unknown evidence label")
     runtime = deepcopy(runtime)
     return sheet.Engine(recalc=Recalculation(runtime, native, engine_of=engine_of),
                         qualify=functools.partial(qualification.qualify, evidence=evidence), runtime=runtime,

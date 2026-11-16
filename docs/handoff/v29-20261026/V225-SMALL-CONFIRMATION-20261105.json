@@ -1,0 +1,194 @@
+{
+  "configuration": "main-v9",
+  "coverage": {
+    "production_caller": "Real step._confirm_eval -> confirmation_verdict, using authored dispatch/routing/cross-gate fixtures; no source-check fallback.",
+    "whole_batch": "The retained guard uses an authored upstream whole_batch override. Valid one-run binary confirmation gives whole_batch=net/items, so positive net cannot independently fail this floor."
+  },
+  "date": "2026-11-05",
+  "evidence": "engineering_fixture",
+  "full_selection": {
+    "command": "<python> -B -m pytest -q -p no:cacheprovider --basetemp=<repo-root>/.v225-confirmation-20261105/cases-all --junitxml=<repo-root>/.v225-confirmation-20261105/validation.xml tests/test_execskill_v225_*.py tests/test_execskill_v221*.py tests/test_execskill_v222*.py tests/test_execskill_v210_snapshot.py",
+    "cwd": "<repo-root>/.v225-confirmation-20261105/source",
+    "environment": {
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHONPATH": "<repo-root>/.v225-confirmation-20261105/source",
+      "TMPDIR": "<repo-root>/.v225-confirmation-20261105/runtime"
+    },
+    "errors": 0,
+    "failed": 5,
+    "failures": [
+      {
+        "cause": "Ops helper requires scratch below /tmp; incompatible with this task's original-tree-only writes.",
+        "test": "tests.test_execskill_v225_ops::test_ops_are_self_contained_snapshot_with_optional_documentation[absent]"
+      },
+      {
+        "cause": "Ops helper requires scratch below /tmp; incompatible with this task's original-tree-only writes.",
+        "test": "tests.test_execskill_v225_ops::test_ops_are_self_contained_snapshot_with_optional_documentation[partial]"
+      },
+      {
+        "cause": "Ops helper requires scratch below /tmp; incompatible with this task's original-tree-only writes.",
+        "test": "tests.test_execskill_v225_ops::test_scratch_helper_creates_sticky_shared_directory_without_requiring_root"
+      },
+      {
+        "cause": "Ops helper requires scratch below /tmp; incompatible with this task's original-tree-only writes.",
+        "test": "tests.test_execskill_v225_ops::test_suite_removes_only_owned_cases_after_verified_success[passing_summary]"
+      },
+      {
+        "cause": "Existing clock fixture sets time.time() to 1000 before importing a workbook fixture; ZIP rejects its 1970 timestamp. Failure occurs before gate execution.",
+        "test": "tests.test_execskill_v221_recovery::test_real_endpoint_receipt_settles_before_zero_socket_pause_and_unit_retry"
+      }
+    ],
+    "passed": 1341,
+    "registered_source_sha256_list_sha256": "d52ff25bab679582e8d282b755f8b450be237485912faca3337446a913105774",
+    "seconds": 177.43,
+    "skipped": 0,
+    "snapshot": "Byte-identical copy of registered source/test files inside the original tree; scratch is its sibling inside the original tree. Existing fixtures forbid scratch within their own source checkout.",
+    "tests": 1346,
+    "warnings": 1
+  },
+  "latest_validation": "review_followup",
+  "limitations": [
+    "Requested selection is not fully passing; unrelated tests were not edited.",
+    "Only the requested Mac Python 3.10.20 interpreter was run; Linux Python 3.11 and Mac Python 3.13 were not exercised.",
+    "No network, model calls, post-change measured smoke, main-v9 chain, commit or writes outside the original tree.",
+    "Disposable source copies and scratch are removed after validation; commands above identify the executed locations."
+  ],
+  "new_tests": {
+    "command": "<python> -B -m pytest -q -p no:cacheprovider --basetemp=<repo-root>/.v225-confirmation-20261105/cases-new tests/test_execskill_v225_small_confirmation.py",
+    "cwd": "<repo-root>",
+    "failed": 0,
+    "passed": 44,
+    "seconds": 0.6
+  },
+  "prechange_control": {
+    "procedure": "Restored the four changed production files to their original bytes in the disposable source copy, ran this test, then restored the post-change copy. Original checkout untouched.",
+    "production_sha256": {
+      "skillopt/execskill/profiles.py": "22ed8608289f30b0d43b1e67a5403804a512f5f9b087398ffdac016c081602f8",
+      "skillopt/execskill/step.py": "f65f73a99820768ec8ec8cec8a9950d6aca996b3717e760bfaa0c993e5c785f0",
+      "skillopt/execskill/v221_learning.py": "53ecc0b8eeb7f330b287eeb653ac1d5e1774c13cde931ba3378645889d56b82b",
+      "skillopt/execskill/v225_phase.py": "a06472136c19a24ef6fcb691902015e49ab282d4b58684fc6f28078e28772421"
+    },
+    "result": "Same ValueError: ZIP does not support timestamps before 1980",
+    "test": "tests/test_execskill_v221_recovery.py::test_real_endpoint_receipt_settles_before_zero_socket_pause_and_unit_retry"
+  },
+  "review_followup": {
+    "caller_audit": [
+      {
+        "action": "Already passes configuration_of(st.setting); unchanged.",
+        "caller": "step._confirm_eval.work",
+        "path": "skillopt/execskill/step.py:2183",
+        "production": true
+      },
+      {
+        "action": "Now passes local configuration for both n=1 and n=merge; v221_split.run reaches this evaluator for children and merges.",
+        "caller": "v221_split.evaluate.work",
+        "path": "skillopt/execskill/v221_split.py:219",
+        "production": true
+      },
+      {
+        "action": "Authored main-v7 fixture intentionally keeps omitted configuration/default behavior; unchanged.",
+        "caller": "v221_learning.structural_smoke.confirmed",
+        "path": "skillopt/execskill/v221_learning.py:336",
+        "production": false
+      }
+    ],
+    "coverage": {
+      "harm_ratio_equality": "3 fixed / 2 broken passes on five real paired items on both OfficeQA and SpreadsheetBench.",
+      "harm_ratio_equality_cases": 2,
+      "production_path": "Real v221_split.evaluate(confirmation=True), confirmation_verdict, confirmation_counts and slice binding; authored routing/dispatch/cross-gate fixtures only.",
+      "split_merge_cases": 24
+    },
+    "date": "2026-11-05",
+    "defect": "v221_split.evaluate omitted configuration, leaving main-v9 single-split and merged candidates on the old confirmation floor.",
+    "fix": "Pass configuration=configuration from the real step setting at the shared confirmation_verdict call.",
+    "focused": {
+      "command": "<python> -B -m pytest -q -p no:cacheprovider --basetemp=<repo-root>/.v225-split-confirmation-20261105/cases-new --junitxml=<repo-root>/.v225-split-confirmation-20261105/new.xml tests/test_execskill_v225_small_confirmation.py",
+      "cwd": "<repo-root>",
+      "failed": 0,
+      "passed": 70,
+      "seconds": 0.55,
+      "tests": 70
+    },
+    "full_selection": {
+      "command": "<python> -B -m pytest -q -p no:cacheprovider --basetemp=<repo-root>/.v225-split-confirmation-20261105/cases-all --junitxml=<repo-root>/.v225-split-confirmation-20261105/validation.xml tests/test_execskill_v221*.py tests/test_execskill_v225_*.py",
+      "cwd": "<repo-root>/.v225-split-confirmation-20261105/source",
+      "environment": {
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONPATH": "<repo-root>/.v225-split-confirmation-20261105/source",
+        "TMPDIR": "<repo-root>/.v225-split-confirmation-20261105/runtime"
+      },
+      "errors": 0,
+      "failed": 5,
+      "failures": [
+        {
+          "cause": "Existing clock fixture sets time.time() to 1000 before importing a workbook fixture; ZIP rejects its 1970 timestamp. Failure occurs before gate execution.",
+          "test": "tests.test_execskill_v221_recovery::test_real_endpoint_receipt_settles_before_zero_socket_pause_and_unit_retry"
+        },
+        {
+          "cause": "Ops helper requires scratch below /tmp; incompatible with this task's original-tree-only writes.",
+          "test": "tests.test_execskill_v225_ops::test_ops_are_self_contained_snapshot_with_optional_documentation[absent]"
+        },
+        {
+          "cause": "Ops helper requires scratch below /tmp; incompatible with this task's original-tree-only writes.",
+          "test": "tests.test_execskill_v225_ops::test_ops_are_self_contained_snapshot_with_optional_documentation[partial]"
+        },
+        {
+          "cause": "Ops helper requires scratch below /tmp; incompatible with this task's original-tree-only writes.",
+          "test": "tests.test_execskill_v225_ops::test_scratch_helper_creates_sticky_shared_directory_without_requiring_root"
+        },
+        {
+          "cause": "Ops helper requires scratch below /tmp; incompatible with this task's original-tree-only writes.",
+          "test": "tests.test_execskill_v225_ops::test_suite_removes_only_owned_cases_after_verified_success[passing_summary]"
+        }
+      ],
+      "failures_outside_known_set": [],
+      "passed": 832,
+      "registered_source_sha256_list_sha256": "0284473ad15e5046d96bd9c8842364dcdef72dd799ac0a3eb63d9315f606e20d",
+      "seconds": 71.43,
+      "skipped": 0,
+      "snapshot": "Byte-identical registered source/test copy and sibling scratch both inside the original tree, preserving the existing outside-source-checkout fixture requirement.",
+      "tests": 837,
+      "warnings": 1
+    },
+    "limitations": [
+      "Only Mac Python 3.10.20 executed; Linux 3.11 and Mac 3.13 not rerun.",
+      "Known /tmp and ZIP timestamp failures left unchanged.",
+      "No network, model calls, measured smoke, chain launch, commit or writes outside original tree.",
+      "Disposable source and scratch removed after validation."
+    ],
+    "preservation": {
+      "changed_file_list": "Refreshed sorted list; all affected files already present, bytes unchanged.",
+      "initial_validation": "Earlier receipt fields retained; latest results are this review_followup object.",
+      "older_pins_changed": false,
+      "original_fixture_files_byte_identical": 113,
+      "parent_fingerprints_passed": 45
+    },
+    "regression_control": {
+      "command": "<python> -B -m pytest -q -p no:cacheprovider --basetemp=<repo-root>/.v225-split-confirmation-20261105/cases-before --junitxml=<repo-root>/.v225-split-confirmation-20261105/before.xml tests/test_execskill_v225_small_confirmation.py -k split_and_merged",
+      "cwd": "<repo-root>/.v225-split-confirmation-20261105/source",
+      "expected_main_v9_failures": 8,
+      "legacy_passes": 16,
+      "procedure": "Restored only pre-fix v221_split.py in disposable in-tree copy; restored fixed bytes before full validation.",
+      "tests": 24,
+      "unexpected_failures": 0
+    },
+    "runtime": {
+      "external_calls": 0,
+      "platform": "darwin",
+      "python": "3.10.20"
+    },
+    "scripts_callers": []
+  },
+  "rule_function": "skillopt.execskill.v225_phase.procedure_confirmation",
+  "runtime": {
+    "external_calls": 0,
+    "platform": "darwin",
+    "python": "3.10.20"
+  },
+  "unchanged_evidence": {
+    "fixtures_repinned": false,
+    "original_fixture_files_byte_identical": 113,
+    "parent_capture_sha256": "9ebcdb4d169f0314a2cd3685ac01c089db14140b1dae6e7a168f2136f544a751",
+    "parent_fingerprints_passed": 45
+  }
+}

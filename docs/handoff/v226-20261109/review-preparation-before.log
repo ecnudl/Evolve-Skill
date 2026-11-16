@@ -1,0 +1,1033 @@
+FFFFFFFFFFFFFFFFFFFFFFFFFFF                                              [100%]
+=================================== FAILURES ===================================
+_____ test_preparation_refuses_frozen_root_before_any_input_read[s0-False] _____
+
+roots = (PosixPath('<tmp>/T/identity-6eijdtt9/main-v9'), PosixPath('<tmp>/T/identity-6eijdtt9/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109e88180>
+descendant = False, entry = 's0'
+
+    @pytest.mark.parametrize('descendant', [False, True])
+    @pytest.mark.parametrize('entry', ['s0', 'consent', 'manifest-smoke', 'manifest-real', 'selftest'])
+    def test_preparation_refuses_frozen_root_before_any_input_read(roots, monkeypatch, descendant, entry):
+        frozen, fresh = roots
+        root = frozen / 'review-smoke' if descendant else frozen
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Root refusal must precede input reads'))
+        from skillopt.execskill import v214_preparation
+        monkeypatch.setattr(v214_preparation, 'preparation', lambda *_a, **_k: pytest.fail('Root refusal precedes preparation'))
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+            if entry == 's0':
+>               v214_smoke.collect_s0(fresh / 's0', preparation_file='unused', root=root,
+
+tests/test_execskill_v226_preparation_review.py:33: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:199: in collect_s0
+    imported = v214_preparation.preparation(preparation_file, zebra_pool=zebra_pool,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_a = ('unused',)
+_k = {'configuration': 'main-v10', 'v222_practice_supply': None, 'zebra_pool': None, 'zebra_split_manifest': None}
+
+>   monkeypatch.setattr(v214_preparation, 'preparation', lambda *_a, **_k: pytest.fail('Root refusal precedes preparation'))
+E   Failed: Root refusal precedes preparation
+
+tests/test_execskill_v226_preparation_review.py:30: Failed
+_____ test_preparation_refuses_frozen_root_before_any_input_read[s0-True] ______
+
+roots = (PosixPath('<tmp>/T/identity-2o9kirmj/main-v9'), PosixPath('<tmp>/T/identity-2o9kirmj/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109e882b0>
+descendant = True, entry = 's0'
+
+    @pytest.mark.parametrize('descendant', [False, True])
+    @pytest.mark.parametrize('entry', ['s0', 'consent', 'manifest-smoke', 'manifest-real', 'selftest'])
+    def test_preparation_refuses_frozen_root_before_any_input_read(roots, monkeypatch, descendant, entry):
+        frozen, fresh = roots
+        root = frozen / 'review-smoke' if descendant else frozen
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Root refusal must precede input reads'))
+        from skillopt.execskill import v214_preparation
+        monkeypatch.setattr(v214_preparation, 'preparation', lambda *_a, **_k: pytest.fail('Root refusal precedes preparation'))
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+            if entry == 's0':
+>               v214_smoke.collect_s0(fresh / 's0', preparation_file='unused', root=root,
+
+tests/test_execskill_v226_preparation_review.py:33: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:199: in collect_s0
+    imported = v214_preparation.preparation(preparation_file, zebra_pool=zebra_pool,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_a = ('unused',)
+_k = {'configuration': 'main-v10', 'v222_practice_supply': None, 'zebra_pool': None, 'zebra_split_manifest': None}
+
+>   monkeypatch.setattr(v214_preparation, 'preparation', lambda *_a, **_k: pytest.fail('Root refusal precedes preparation'))
+E   Failed: Root refusal precedes preparation
+
+tests/test_execskill_v226_preparation_review.py:30: Failed
+__ test_preparation_refuses_frozen_root_before_any_input_read[consent-False] ___
+
+roots = (PosixPath('<tmp>/T/identity-kk_v_rkq/main-v9'), PosixPath('<tmp>/T/identity-kk_v_rkq/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10960c290>
+descendant = False, entry = 'consent'
+
+    @pytest.mark.parametrize('descendant', [False, True])
+    @pytest.mark.parametrize('entry', ['s0', 'consent', 'manifest-smoke', 'manifest-real', 'selftest'])
+    def test_preparation_refuses_frozen_root_before_any_input_read(roots, monkeypatch, descendant, entry):
+        frozen, fresh = roots
+        root = frozen / 'review-smoke' if descendant else frozen
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Root refusal must precede input reads'))
+        from skillopt.execskill import v214_preparation
+        monkeypatch.setattr(v214_preparation, 'preparation', lambda *_a, **_k: pytest.fail('Root refusal precedes preparation'))
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+            if entry == 's0':
+                v214_smoke.collect_s0(fresh / 's0', preparation_file='unused', root=root,
+                    selftest='unused', configuration=p.MAIN_V10)
+            elif entry == 'consent':
+>               v214_smoke.prepare_consent(root, p.MAIN_V10, consent_file='unused')
+
+tests/test_execskill_v226_preparation_review.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:61: in prepare_consent
+    value = read_json(source)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_ = (PosixPath('<repo-root>/unused'),)
+
+>   monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Root refusal must precede input reads'))
+E   Failed: Root refusal must precede input reads
+
+tests/test_execskill_v226_preparation_review.py:28: Failed
+___ test_preparation_refuses_frozen_root_before_any_input_read[consent-True] ___
+
+roots = (PosixPath('<tmp>/T/identity-rti0sdik/main-v9'), PosixPath('<tmp>/T/identity-rti0sdik/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109eb6470>
+descendant = True, entry = 'consent'
+
+    @pytest.mark.parametrize('descendant', [False, True])
+    @pytest.mark.parametrize('entry', ['s0', 'consent', 'manifest-smoke', 'manifest-real', 'selftest'])
+    def test_preparation_refuses_frozen_root_before_any_input_read(roots, monkeypatch, descendant, entry):
+        frozen, fresh = roots
+        root = frozen / 'review-smoke' if descendant else frozen
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Root refusal must precede input reads'))
+        from skillopt.execskill import v214_preparation
+        monkeypatch.setattr(v214_preparation, 'preparation', lambda *_a, **_k: pytest.fail('Root refusal precedes preparation'))
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+            if entry == 's0':
+                v214_smoke.collect_s0(fresh / 's0', preparation_file='unused', root=root,
+                    selftest='unused', configuration=p.MAIN_V10)
+            elif entry == 'consent':
+>               v214_smoke.prepare_consent(root, p.MAIN_V10, consent_file='unused')
+
+tests/test_execskill_v226_preparation_review.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:61: in prepare_consent
+    value = read_json(source)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_ = (PosixPath('<repo-root>/unused'),)
+
+>   monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Root refusal must precede input reads'))
+E   Failed: Root refusal must precede input reads
+
+tests/test_execskill_v226_preparation_review.py:28: Failed
+_ test_preparation_refuses_frozen_root_before_any_input_read[manifest-smoke-False] _
+
+roots = (PosixPath('<tmp>/T/identity-mvwo2oqk/main-v9'), PosixPath('<tmp>/T/identity-mvwo2oqk/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109eb7020>
+descendant = False, entry = 'manifest-smoke'
+
+    @pytest.mark.parametrize('descendant', [False, True])
+    @pytest.mark.parametrize('entry', ['s0', 'consent', 'manifest-smoke', 'manifest-real', 'selftest'])
+    def test_preparation_refuses_frozen_root_before_any_input_read(roots, monkeypatch, descendant, entry):
+        frozen, fresh = roots
+        root = frozen / 'review-smoke' if descendant else frozen
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Root refusal must precede input reads'))
+        from skillopt.execskill import v214_preparation
+        monkeypatch.setattr(v214_preparation, 'preparation', lambda *_a, **_k: pytest.fail('Root refusal precedes preparation'))
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+            if entry == 's0':
+                v214_smoke.collect_s0(fresh / 's0', preparation_file='unused', root=root,
+                    selftest='unused', configuration=p.MAIN_V10)
+            elif entry == 'consent':
+                v214_smoke.prepare_consent(root, p.MAIN_V10, consent_file='unused')
+            elif entry == 'selftest':
+                v214_smoke.selftest(root, preparation_file='unused', configuration=p.MAIN_V10)
+            else:
+>               v214_smoke.make_manifest(fresh / 'manifest.json', root=root, s0_file='unused',
+                    provenance='unused', roles_repo='unused', route_b_env='unused',
+                    smoke_chain='G' if entry == 'manifest-smoke' else None, configuration=p.MAIN_V10)
+
+tests/test_execskill_v226_preparation_review.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:390: in make_manifest
+    checked = p.verified(read_json(s0_file), 'v214-s0')
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_ = ('unused',)
+
+>   monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Root refusal must precede input reads'))
+E   Failed: Root refusal must precede input reads
+
+tests/test_execskill_v226_preparation_review.py:28: Failed
+_ test_preparation_refuses_frozen_root_before_any_input_read[manifest-smoke-True] _
+
+roots = (PosixPath('<tmp>/T/identity-r0_3r804/main-v9'), PosixPath('<tmp>/T/identity-r0_3r804/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109ee6d50>
+descendant = True, entry = 'manifest-smoke'
+
+    @pytest.mark.parametrize('descendant', [False, True])
+    @pytest.mark.parametrize('entry', ['s0', 'consent', 'manifest-smoke', 'manifest-real', 'selftest'])
+    def test_preparation_refuses_frozen_root_before_any_input_read(roots, monkeypatch, descendant, entry):
+        frozen, fresh = roots
+        root = frozen / 'review-smoke' if descendant else frozen
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Root refusal must precede input reads'))
+        from skillopt.execskill import v214_preparation
+        monkeypatch.setattr(v214_preparation, 'preparation', lambda *_a, **_k: pytest.fail('Root refusal precedes preparation'))
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+            if entry == 's0':
+                v214_smoke.collect_s0(fresh / 's0', preparation_file='unused', root=root,
+                    selftest='unused', configuration=p.MAIN_V10)
+            elif entry == 'consent':
+                v214_smoke.prepare_consent(root, p.MAIN_V10, consent_file='unused')
+            elif entry == 'selftest':
+                v214_smoke.selftest(root, preparation_file='unused', configuration=p.MAIN_V10)
+            else:
+>               v214_smoke.make_manifest(fresh / 'manifest.json', root=root, s0_file='unused',
+                    provenance='unused', roles_repo='unused', route_b_env='unused',
+                    smoke_chain='G' if entry == 'manifest-smoke' else None, configuration=p.MAIN_V10)
+
+tests/test_execskill_v226_preparation_review.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:390: in make_manifest
+    checked = p.verified(read_json(s0_file), 'v214-s0')
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_ = ('unused',)
+
+>   monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Root refusal must precede input reads'))
+E   Failed: Root refusal must precede input reads
+
+tests/test_execskill_v226_preparation_review.py:28: Failed
+_ test_preparation_refuses_frozen_root_before_any_input_read[manifest-real-False] _
+
+roots = (PosixPath('<tmp>/T/identity-b6k7w5tp/main-v9'), PosixPath('<tmp>/T/identity-b6k7w5tp/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109ee7250>
+descendant = False, entry = 'manifest-real'
+
+    @pytest.mark.parametrize('descendant', [False, True])
+    @pytest.mark.parametrize('entry', ['s0', 'consent', 'manifest-smoke', 'manifest-real', 'selftest'])
+    def test_preparation_refuses_frozen_root_before_any_input_read(roots, monkeypatch, descendant, entry):
+        frozen, fresh = roots
+        root = frozen / 'review-smoke' if descendant else frozen
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Root refusal must precede input reads'))
+        from skillopt.execskill import v214_preparation
+        monkeypatch.setattr(v214_preparation, 'preparation', lambda *_a, **_k: pytest.fail('Root refusal precedes preparation'))
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+            if entry == 's0':
+                v214_smoke.collect_s0(fresh / 's0', preparation_file='unused', root=root,
+                    selftest='unused', configuration=p.MAIN_V10)
+            elif entry == 'consent':
+                v214_smoke.prepare_consent(root, p.MAIN_V10, consent_file='unused')
+            elif entry == 'selftest':
+                v214_smoke.selftest(root, preparation_file='unused', configuration=p.MAIN_V10)
+            else:
+>               v214_smoke.make_manifest(fresh / 'manifest.json', root=root, s0_file='unused',
+                    provenance='unused', roles_repo='unused', route_b_env='unused',
+                    smoke_chain='G' if entry == 'manifest-smoke' else None, configuration=p.MAIN_V10)
+
+tests/test_execskill_v226_preparation_review.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:390: in make_manifest
+    checked = p.verified(read_json(s0_file), 'v214-s0')
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_ = ('unused',)
+
+>   monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Root refusal must precede input reads'))
+E   Failed: Root refusal must precede input reads
+
+tests/test_execskill_v226_preparation_review.py:28: Failed
+_ test_preparation_refuses_frozen_root_before_any_input_read[manifest-real-True] _
+
+roots = (PosixPath('<tmp>/T/identity-64m7jdw7/main-v9'), PosixPath('<tmp>/T/identity-64m7jdw7/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109f264e0>
+descendant = True, entry = 'manifest-real'
+
+    @pytest.mark.parametrize('descendant', [False, True])
+    @pytest.mark.parametrize('entry', ['s0', 'consent', 'manifest-smoke', 'manifest-real', 'selftest'])
+    def test_preparation_refuses_frozen_root_before_any_input_read(roots, monkeypatch, descendant, entry):
+        frozen, fresh = roots
+        root = frozen / 'review-smoke' if descendant else frozen
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Root refusal must precede input reads'))
+        from skillopt.execskill import v214_preparation
+        monkeypatch.setattr(v214_preparation, 'preparation', lambda *_a, **_k: pytest.fail('Root refusal precedes preparation'))
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+            if entry == 's0':
+                v214_smoke.collect_s0(fresh / 's0', preparation_file='unused', root=root,
+                    selftest='unused', configuration=p.MAIN_V10)
+            elif entry == 'consent':
+                v214_smoke.prepare_consent(root, p.MAIN_V10, consent_file='unused')
+            elif entry == 'selftest':
+                v214_smoke.selftest(root, preparation_file='unused', configuration=p.MAIN_V10)
+            else:
+>               v214_smoke.make_manifest(fresh / 'manifest.json', root=root, s0_file='unused',
+                    provenance='unused', roles_repo='unused', route_b_env='unused',
+                    smoke_chain='G' if entry == 'manifest-smoke' else None, configuration=p.MAIN_V10)
+
+tests/test_execskill_v226_preparation_review.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:390: in make_manifest
+    checked = p.verified(read_json(s0_file), 'v214-s0')
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_ = ('unused',)
+
+>   monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Root refusal must precede input reads'))
+E   Failed: Root refusal must precede input reads
+
+tests/test_execskill_v226_preparation_review.py:28: Failed
+__ test_preparation_refuses_frozen_root_before_any_input_read[selftest-False] __
+
+roots = (PosixPath('<tmp>/T/identity-hp1_kl3j/main-v9'), PosixPath('<tmp>/T/identity-hp1_kl3j/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109604050>
+descendant = False, entry = 'selftest'
+
+    @pytest.mark.parametrize('descendant', [False, True])
+    @pytest.mark.parametrize('entry', ['s0', 'consent', 'manifest-smoke', 'manifest-real', 'selftest'])
+    def test_preparation_refuses_frozen_root_before_any_input_read(roots, monkeypatch, descendant, entry):
+        frozen, fresh = roots
+        root = frozen / 'review-smoke' if descendant else frozen
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Root refusal must precede input reads'))
+        from skillopt.execskill import v214_preparation
+        monkeypatch.setattr(v214_preparation, 'preparation', lambda *_a, **_k: pytest.fail('Root refusal precedes preparation'))
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+            if entry == 's0':
+                v214_smoke.collect_s0(fresh / 's0', preparation_file='unused', root=root,
+                    selftest='unused', configuration=p.MAIN_V10)
+            elif entry == 'consent':
+                v214_smoke.prepare_consent(root, p.MAIN_V10, consent_file='unused')
+            elif entry == 'selftest':
+>               v214_smoke.selftest(root, preparation_file='unused', configuration=p.MAIN_V10)
+
+tests/test_execskill_v226_preparation_review.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:630: in selftest
+    imported = v214_preparation.preparation(preparation_file, zebra_pool=zebra_pool,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_a = ('unused',)
+_k = {'configuration': 'main-v10', 'v222_practice_supply': None, 'zebra_pool': None, 'zebra_split_manifest': None}
+
+>   monkeypatch.setattr(v214_preparation, 'preparation', lambda *_a, **_k: pytest.fail('Root refusal precedes preparation'))
+E   Failed: Root refusal precedes preparation
+
+tests/test_execskill_v226_preparation_review.py:30: Failed
+__ test_preparation_refuses_frozen_root_before_any_input_read[selftest-True] ___
+
+roots = (PosixPath('<tmp>/T/identity-ssjczccs/main-v9'), PosixPath('<tmp>/T/identity-ssjczccs/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10961e270>
+descendant = True, entry = 'selftest'
+
+    @pytest.mark.parametrize('descendant', [False, True])
+    @pytest.mark.parametrize('entry', ['s0', 'consent', 'manifest-smoke', 'manifest-real', 'selftest'])
+    def test_preparation_refuses_frozen_root_before_any_input_read(roots, monkeypatch, descendant, entry):
+        frozen, fresh = roots
+        root = frozen / 'review-smoke' if descendant else frozen
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Root refusal must precede input reads'))
+        from skillopt.execskill import v214_preparation
+        monkeypatch.setattr(v214_preparation, 'preparation', lambda *_a, **_k: pytest.fail('Root refusal precedes preparation'))
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+            if entry == 's0':
+                v214_smoke.collect_s0(fresh / 's0', preparation_file='unused', root=root,
+                    selftest='unused', configuration=p.MAIN_V10)
+            elif entry == 'consent':
+                v214_smoke.prepare_consent(root, p.MAIN_V10, consent_file='unused')
+            elif entry == 'selftest':
+>               v214_smoke.selftest(root, preparation_file='unused', configuration=p.MAIN_V10)
+
+tests/test_execskill_v226_preparation_review.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:630: in selftest
+    imported = v214_preparation.preparation(preparation_file, zebra_pool=zebra_pool,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_a = ('unused',)
+_k = {'configuration': 'main-v10', 'v222_practice_supply': None, 'zebra_pool': None, 'zebra_split_manifest': None}
+
+>   monkeypatch.setattr(v214_preparation, 'preparation', lambda *_a, **_k: pytest.fail('Root refusal precedes preparation'))
+E   Failed: Root refusal precedes preparation
+
+tests/test_execskill_v226_preparation_review.py:30: Failed
+____ test_cli_preparation_refuses_frozen_root_without_opening_it[s0-False] _____
+
+roots = (PosixPath('<tmp>/T/identity-ih8id996/main-v9'), PosixPath('<tmp>/T/identity-ih8id996/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10961f3f0>
+descendant = False, entry = 's0'
+
+    @pytest.mark.parametrize('descendant', [False, True])
+    @pytest.mark.parametrize('entry', ['s0', 'manifest-smoke', 'manifest-real', 'selftest'])
+    def test_cli_preparation_refuses_frozen_root_without_opening_it(roots, monkeypatch, descendant, entry):
+        from scripts.run_execskill import parser, v214_command
+        frozen, fresh = roots
+        root = frozen / 'review-smoke' if descendant else frozen
+        original = Path.open
+        def guarded(path, *args, **kwargs):
+            assert path != frozen and frozen not in path.parents, 'Frozen main-v9 path was opened'
+            return original(path, *args, **kwargs)
+        monkeypatch.setattr(Path, 'open', guarded)
+        command = 'manifest' if entry.startswith('manifest') else entry
+        argv = ['v214-' + command, '--configuration', p.MAIN_V10, '--out', str(root if entry == 'selftest' else fresh/'out')]
+        if command in ('s0', 'selftest'):
+            argv += ['--preparation', str(frozen/'preparation.json'), '--zebra-pool', 'unused', '--zebra-split-manifest', 'unused']
+            if command == 's0':
+                argv += ['--root', str(root), '--selftest', 'unused', '--sheet-runtime', 'unused']
+        else:
+            argv += ['--root', str(root), '--s0', str(frozen/'s0.json'), '--provenance', 'unused',
+                     '--roles-repo', 'unused', '--route-b-env', 'unused', '--sheet-runtime', 'unused']
+            if entry == 'manifest-smoke':
+                argv += ['--smoke-chain', 'G']
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+>           v214_command(parser().parse_args(argv))
+
+tests/test_execskill_v226_preparation_review.py:69: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+scripts/run_execskill.py:960: in v214_command
+    value = getattr(v214_smoke, 'collect_s0' if action == 's0' else 'selftest')(args.out, **options)
+skillopt/execskill/v214_smoke.py:199: in collect_s0
+    imported = v214_preparation.preparation(preparation_file, zebra_pool=zebra_pool,
+skillopt/execskill/v214_preparation.py:78: in preparation
+    raw = path.read_bytes()
+../../../miniconda3/lib/python3.13/pathlib/_abc.py:625: in read_bytes
+    with self.open(mode='rb') as f:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = PosixPath('<tmp>/T/identity-ih8id996/main-v9/preparation.json')
+args = (), kwargs = {'mode': 'rb'}
+@py_assert1 = ["PosixPath('<tmp>/T/identity-ih8id996/main-v9/preparation.json') != ...ath('<tmp>/T/identity-ih8id996/main-v9/preparation.json').parents\n}"]
+@py_assert3 = True, @py_assert0 = False, @py_assert11 = <PosixPath.parents>
+@py_assert9 = False
+@py_format5 = "PosixPath('<tmp>/T/identity-ih8id996/main-v9/preparation.json') != PosixPath('<tmp>/T/identity-ih8id996/main-v9')"
+@py_format7 = "PosixPath('<tmp>/T/identity-ih8id996/main-v9/preparation.json') != PosixPath('<tmp>/T/identity-ih8id996/main-v9')"
+@py_format13 = "PosixPath('<tmp>/T/identity-ih8id996/main-v9') not in <PosixPath.par...Path('<tmp>/T/identity-ih8id996/main-v9/preparation.json').parents\n}"
+@py_format15 = "PosixPath('<tmp>/T/identity-ih8id996/main-v9') not in <PosixPath.par...Path('<tmp>/T/identity-ih8id996/main-v9/preparation.json').parents\n}"
+@py_format16 = "(PosixPath('<tmp>/T/identity-ih8id996/main-v9/preparation.json') != ...ath('<tmp>/T/identity-ih8id996/main-v9/preparation.json').parents\n})"
+
+    def guarded(path, *args, **kwargs):
+>       assert path != frozen and frozen not in path.parents, 'Frozen main-v9 path was opened'
+E       AssertionError: Frozen main-v9 path was opened
+E       assert (PosixPath('<tmp>/T/identity-ih8id996/main-v9/preparation.json') != PosixPath('<tmp>/T/identity-ih8id996/main-v9') and PosixPath('<tmp>/T/identity-ih8id996/main-v9') not in <PosixPath.parents>)
+E        +  where <PosixPath.parents> = PosixPath('<tmp>/T/identity-ih8id996/main-v9/preparation.json').parents
+
+tests/test_execskill_v226_preparation_review.py:54: AssertionError
+_____ test_cli_preparation_refuses_frozen_root_without_opening_it[s0-True] _____
+
+roots = (PosixPath('<tmp>/T/identity-ofk9k7l4/main-v9'), PosixPath('<tmp>/T/identity-ofk9k7l4/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10944a9c0>
+descendant = True, entry = 's0'
+
+    @pytest.mark.parametrize('descendant', [False, True])
+    @pytest.mark.parametrize('entry', ['s0', 'manifest-smoke', 'manifest-real', 'selftest'])
+    def test_cli_preparation_refuses_frozen_root_without_opening_it(roots, monkeypatch, descendant, entry):
+        from scripts.run_execskill import parser, v214_command
+        frozen, fresh = roots
+        root = frozen / 'review-smoke' if descendant else frozen
+        original = Path.open
+        def guarded(path, *args, **kwargs):
+            assert path != frozen and frozen not in path.parents, 'Frozen main-v9 path was opened'
+            return original(path, *args, **kwargs)
+        monkeypatch.setattr(Path, 'open', guarded)
+        command = 'manifest' if entry.startswith('manifest') else entry
+        argv = ['v214-' + command, '--configuration', p.MAIN_V10, '--out', str(root if entry == 'selftest' else fresh/'out')]
+        if command in ('s0', 'selftest'):
+            argv += ['--preparation', str(frozen/'preparation.json'), '--zebra-pool', 'unused', '--zebra-split-manifest', 'unused']
+            if command == 's0':
+                argv += ['--root', str(root), '--selftest', 'unused', '--sheet-runtime', 'unused']
+        else:
+            argv += ['--root', str(root), '--s0', str(frozen/'s0.json'), '--provenance', 'unused',
+                     '--roles-repo', 'unused', '--route-b-env', 'unused', '--sheet-runtime', 'unused']
+            if entry == 'manifest-smoke':
+                argv += ['--smoke-chain', 'G']
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+>           v214_command(parser().parse_args(argv))
+
+tests/test_execskill_v226_preparation_review.py:69: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+scripts/run_execskill.py:960: in v214_command
+    value = getattr(v214_smoke, 'collect_s0' if action == 's0' else 'selftest')(args.out, **options)
+skillopt/execskill/v214_smoke.py:199: in collect_s0
+    imported = v214_preparation.preparation(preparation_file, zebra_pool=zebra_pool,
+skillopt/execskill/v214_preparation.py:78: in preparation
+    raw = path.read_bytes()
+../../../miniconda3/lib/python3.13/pathlib/_abc.py:625: in read_bytes
+    with self.open(mode='rb') as f:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = PosixPath('<tmp>/T/identity-ofk9k7l4/main-v9/preparation.json')
+args = (), kwargs = {'mode': 'rb'}
+@py_assert1 = ["PosixPath('<tmp>/T/identity-ofk9k7l4/main-v9/preparation.json') != ...ath('<tmp>/T/identity-ofk9k7l4/main-v9/preparation.json').parents\n}"]
+@py_assert3 = True, @py_assert0 = False, @py_assert11 = <PosixPath.parents>
+@py_assert9 = False
+@py_format5 = "PosixPath('<tmp>/T/identity-ofk9k7l4/main-v9/preparation.json') != PosixPath('<tmp>/T/identity-ofk9k7l4/main-v9')"
+@py_format7 = "PosixPath('<tmp>/T/identity-ofk9k7l4/main-v9/preparation.json') != PosixPath('<tmp>/T/identity-ofk9k7l4/main-v9')"
+@py_format13 = "PosixPath('<tmp>/T/identity-ofk9k7l4/main-v9') not in <PosixPath.par...Path('<tmp>/T/identity-ofk9k7l4/main-v9/preparation.json').parents\n}"
+@py_format15 = "PosixPath('<tmp>/T/identity-ofk9k7l4/main-v9') not in <PosixPath.par...Path('<tmp>/T/identity-ofk9k7l4/main-v9/preparation.json').parents\n}"
+@py_format16 = "(PosixPath('<tmp>/T/identity-ofk9k7l4/main-v9/preparation.json') != ...ath('<tmp>/T/identity-ofk9k7l4/main-v9/preparation.json').parents\n})"
+
+    def guarded(path, *args, **kwargs):
+>       assert path != frozen and frozen not in path.parents, 'Frozen main-v9 path was opened'
+E       AssertionError: Frozen main-v9 path was opened
+E       assert (PosixPath('<tmp>/T/identity-ofk9k7l4/main-v9/preparation.json') != PosixPath('<tmp>/T/identity-ofk9k7l4/main-v9') and PosixPath('<tmp>/T/identity-ofk9k7l4/main-v9') not in <PosixPath.parents>)
+E        +  where <PosixPath.parents> = PosixPath('<tmp>/T/identity-ofk9k7l4/main-v9/preparation.json').parents
+
+tests/test_execskill_v226_preparation_review.py:54: AssertionError
+_ test_cli_preparation_refuses_frozen_root_without_opening_it[manifest-smoke-False] _
+
+roots = (PosixPath('<tmp>/T/identity-4y6q4e5j/main-v9'), PosixPath('<tmp>/T/identity-4y6q4e5j/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a07ed50>
+descendant = False, entry = 'manifest-smoke'
+
+    @pytest.mark.parametrize('descendant', [False, True])
+    @pytest.mark.parametrize('entry', ['s0', 'manifest-smoke', 'manifest-real', 'selftest'])
+    def test_cli_preparation_refuses_frozen_root_without_opening_it(roots, monkeypatch, descendant, entry):
+        from scripts.run_execskill import parser, v214_command
+        frozen, fresh = roots
+        root = frozen / 'review-smoke' if descendant else frozen
+        original = Path.open
+        def guarded(path, *args, **kwargs):
+            assert path != frozen and frozen not in path.parents, 'Frozen main-v9 path was opened'
+            return original(path, *args, **kwargs)
+        monkeypatch.setattr(Path, 'open', guarded)
+        command = 'manifest' if entry.startswith('manifest') else entry
+        argv = ['v214-' + command, '--configuration', p.MAIN_V10, '--out', str(root if entry == 'selftest' else fresh/'out')]
+        if command in ('s0', 'selftest'):
+            argv += ['--preparation', str(frozen/'preparation.json'), '--zebra-pool', 'unused', '--zebra-split-manifest', 'unused']
+            if command == 's0':
+                argv += ['--root', str(root), '--selftest', 'unused', '--sheet-runtime', 'unused']
+        else:
+            argv += ['--root', str(root), '--s0', str(frozen/'s0.json'), '--provenance', 'unused',
+                     '--roles-repo', 'unused', '--route-b-env', 'unused', '--sheet-runtime', 'unused']
+            if entry == 'manifest-smoke':
+                argv += ['--smoke-chain', 'G']
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+>           v214_command(parser().parse_args(argv))
+
+tests/test_execskill_v226_preparation_review.py:69: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+scripts/run_execskill.py:962: in v214_command
+    value = v214_smoke.make_manifest(args.out, root=args.root, s0_file=args.s0,
+skillopt/execskill/v214_smoke.py:390: in make_manifest
+    checked = p.verified(read_json(s0_file), 'v214-s0')
+skillopt/continual_eval/core.py:44: in read_json
+    require(path.stat().st_size <= 64_000_000, "Oversized JSON input")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('<tmp>/T/identity-4y6q4e5j/main-v9/s0.json')
+
+    def stat(self, *, follow_symlinks=True):
+        """
+        Return the result of the stat() system call on this path, like
+        os.stat() does.
+        """
+>       return os.stat(self, follow_symlinks=follow_symlinks)
+E       FileNotFoundError: [Errno 2] No such file or directory: '<tmp>/T/identity-4y6q4e5j/main-v9/s0.json'
+
+../../../miniconda3/lib/python3.13/pathlib/_local.py:515: FileNotFoundError
+_ test_cli_preparation_refuses_frozen_root_without_opening_it[manifest-smoke-True] _
+
+roots = (PosixPath('<tmp>/T/identity-j09i6wlr/main-v9'), PosixPath('<tmp>/T/identity-j09i6wlr/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a07cad0>
+descendant = True, entry = 'manifest-smoke'
+
+    @pytest.mark.parametrize('descendant', [False, True])
+    @pytest.mark.parametrize('entry', ['s0', 'manifest-smoke', 'manifest-real', 'selftest'])
+    def test_cli_preparation_refuses_frozen_root_without_opening_it(roots, monkeypatch, descendant, entry):
+        from scripts.run_execskill import parser, v214_command
+        frozen, fresh = roots
+        root = frozen / 'review-smoke' if descendant else frozen
+        original = Path.open
+        def guarded(path, *args, **kwargs):
+            assert path != frozen and frozen not in path.parents, 'Frozen main-v9 path was opened'
+            return original(path, *args, **kwargs)
+        monkeypatch.setattr(Path, 'open', guarded)
+        command = 'manifest' if entry.startswith('manifest') else entry
+        argv = ['v214-' + command, '--configuration', p.MAIN_V10, '--out', str(root if entry == 'selftest' else fresh/'out')]
+        if command in ('s0', 'selftest'):
+            argv += ['--preparation', str(frozen/'preparation.json'), '--zebra-pool', 'unused', '--zebra-split-manifest', 'unused']
+            if command == 's0':
+                argv += ['--root', str(root), '--selftest', 'unused', '--sheet-runtime', 'unused']
+        else:
+            argv += ['--root', str(root), '--s0', str(frozen/'s0.json'), '--provenance', 'unused',
+                     '--roles-repo', 'unused', '--route-b-env', 'unused', '--sheet-runtime', 'unused']
+            if entry == 'manifest-smoke':
+                argv += ['--smoke-chain', 'G']
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+>           v214_command(parser().parse_args(argv))
+
+tests/test_execskill_v226_preparation_review.py:69: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+scripts/run_execskill.py:962: in v214_command
+    value = v214_smoke.make_manifest(args.out, root=args.root, s0_file=args.s0,
+skillopt/execskill/v214_smoke.py:390: in make_manifest
+    checked = p.verified(read_json(s0_file), 'v214-s0')
+skillopt/continual_eval/core.py:44: in read_json
+    require(path.stat().st_size <= 64_000_000, "Oversized JSON input")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('<tmp>/T/identity-j09i6wlr/main-v9/s0.json')
+
+    def stat(self, *, follow_symlinks=True):
+        """
+        Return the result of the stat() system call on this path, like
+        os.stat() does.
+        """
+>       return os.stat(self, follow_symlinks=follow_symlinks)
+E       FileNotFoundError: [Errno 2] No such file or directory: '<tmp>/T/identity-j09i6wlr/main-v9/s0.json'
+
+../../../miniconda3/lib/python3.13/pathlib/_local.py:515: FileNotFoundError
+_ test_cli_preparation_refuses_frozen_root_without_opening_it[manifest-real-False] _
+
+roots = (PosixPath('<tmp>/T/identity-2dp_xpnu/main-v9'), PosixPath('<tmp>/T/identity-2dp_xpnu/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109d95f40>
+descendant = False, entry = 'manifest-real'
+
+    @pytest.mark.parametrize('descendant', [False, True])
+    @pytest.mark.parametrize('entry', ['s0', 'manifest-smoke', 'manifest-real', 'selftest'])
+    def test_cli_preparation_refuses_frozen_root_without_opening_it(roots, monkeypatch, descendant, entry):
+        from scripts.run_execskill import parser, v214_command
+        frozen, fresh = roots
+        root = frozen / 'review-smoke' if descendant else frozen
+        original = Path.open
+        def guarded(path, *args, **kwargs):
+            assert path != frozen and frozen not in path.parents, 'Frozen main-v9 path was opened'
+            return original(path, *args, **kwargs)
+        monkeypatch.setattr(Path, 'open', guarded)
+        command = 'manifest' if entry.startswith('manifest') else entry
+        argv = ['v214-' + command, '--configuration', p.MAIN_V10, '--out', str(root if entry == 'selftest' else fresh/'out')]
+        if command in ('s0', 'selftest'):
+            argv += ['--preparation', str(frozen/'preparation.json'), '--zebra-pool', 'unused', '--zebra-split-manifest', 'unused']
+            if command == 's0':
+                argv += ['--root', str(root), '--selftest', 'unused', '--sheet-runtime', 'unused']
+        else:
+            argv += ['--root', str(root), '--s0', str(frozen/'s0.json'), '--provenance', 'unused',
+                     '--roles-repo', 'unused', '--route-b-env', 'unused', '--sheet-runtime', 'unused']
+            if entry == 'manifest-smoke':
+                argv += ['--smoke-chain', 'G']
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+>           v214_command(parser().parse_args(argv))
+
+tests/test_execskill_v226_preparation_review.py:69: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+scripts/run_execskill.py:962: in v214_command
+    value = v214_smoke.make_manifest(args.out, root=args.root, s0_file=args.s0,
+skillopt/execskill/v214_smoke.py:390: in make_manifest
+    checked = p.verified(read_json(s0_file), 'v214-s0')
+skillopt/continual_eval/core.py:44: in read_json
+    require(path.stat().st_size <= 64_000_000, "Oversized JSON input")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('<tmp>/T/identity-2dp_xpnu/main-v9/s0.json')
+
+    def stat(self, *, follow_symlinks=True):
+        """
+        Return the result of the stat() system call on this path, like
+        os.stat() does.
+        """
+>       return os.stat(self, follow_symlinks=follow_symlinks)
+E       FileNotFoundError: [Errno 2] No such file or directory: '<tmp>/T/identity-2dp_xpnu/main-v9/s0.json'
+
+../../../miniconda3/lib/python3.13/pathlib/_local.py:515: FileNotFoundError
+_ test_cli_preparation_refuses_frozen_root_without_opening_it[manifest-real-True] _
+
+roots = (PosixPath('<tmp>/T/identity-m6fwllt0/main-v9'), PosixPath('<tmp>/T/identity-m6fwllt0/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a0735f0>
+descendant = True, entry = 'manifest-real'
+
+    @pytest.mark.parametrize('descendant', [False, True])
+    @pytest.mark.parametrize('entry', ['s0', 'manifest-smoke', 'manifest-real', 'selftest'])
+    def test_cli_preparation_refuses_frozen_root_without_opening_it(roots, monkeypatch, descendant, entry):
+        from scripts.run_execskill import parser, v214_command
+        frozen, fresh = roots
+        root = frozen / 'review-smoke' if descendant else frozen
+        original = Path.open
+        def guarded(path, *args, **kwargs):
+            assert path != frozen and frozen not in path.parents, 'Frozen main-v9 path was opened'
+            return original(path, *args, **kwargs)
+        monkeypatch.setattr(Path, 'open', guarded)
+        command = 'manifest' if entry.startswith('manifest') else entry
+        argv = ['v214-' + command, '--configuration', p.MAIN_V10, '--out', str(root if entry == 'selftest' else fresh/'out')]
+        if command in ('s0', 'selftest'):
+            argv += ['--preparation', str(frozen/'preparation.json'), '--zebra-pool', 'unused', '--zebra-split-manifest', 'unused']
+            if command == 's0':
+                argv += ['--root', str(root), '--selftest', 'unused', '--sheet-runtime', 'unused']
+        else:
+            argv += ['--root', str(root), '--s0', str(frozen/'s0.json'), '--provenance', 'unused',
+                     '--roles-repo', 'unused', '--route-b-env', 'unused', '--sheet-runtime', 'unused']
+            if entry == 'manifest-smoke':
+                argv += ['--smoke-chain', 'G']
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+>           v214_command(parser().parse_args(argv))
+
+tests/test_execskill_v226_preparation_review.py:69: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+scripts/run_execskill.py:962: in v214_command
+    value = v214_smoke.make_manifest(args.out, root=args.root, s0_file=args.s0,
+skillopt/execskill/v214_smoke.py:390: in make_manifest
+    checked = p.verified(read_json(s0_file), 'v214-s0')
+skillopt/continual_eval/core.py:44: in read_json
+    require(path.stat().st_size <= 64_000_000, "Oversized JSON input")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('<tmp>/T/identity-m6fwllt0/main-v9/s0.json')
+
+    def stat(self, *, follow_symlinks=True):
+        """
+        Return the result of the stat() system call on this path, like
+        os.stat() does.
+        """
+>       return os.stat(self, follow_symlinks=follow_symlinks)
+E       FileNotFoundError: [Errno 2] No such file or directory: '<tmp>/T/identity-m6fwllt0/main-v9/s0.json'
+
+../../../miniconda3/lib/python3.13/pathlib/_local.py:515: FileNotFoundError
+_ test_cli_preparation_refuses_frozen_root_without_opening_it[selftest-False] __
+
+roots = (PosixPath('<tmp>/T/identity-qaw89uen/main-v9'), PosixPath('<tmp>/T/identity-qaw89uen/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109e327b0>
+descendant = False, entry = 'selftest'
+
+    @pytest.mark.parametrize('descendant', [False, True])
+    @pytest.mark.parametrize('entry', ['s0', 'manifest-smoke', 'manifest-real', 'selftest'])
+    def test_cli_preparation_refuses_frozen_root_without_opening_it(roots, monkeypatch, descendant, entry):
+        from scripts.run_execskill import parser, v214_command
+        frozen, fresh = roots
+        root = frozen / 'review-smoke' if descendant else frozen
+        original = Path.open
+        def guarded(path, *args, **kwargs):
+            assert path != frozen and frozen not in path.parents, 'Frozen main-v9 path was opened'
+            return original(path, *args, **kwargs)
+        monkeypatch.setattr(Path, 'open', guarded)
+        command = 'manifest' if entry.startswith('manifest') else entry
+        argv = ['v214-' + command, '--configuration', p.MAIN_V10, '--out', str(root if entry == 'selftest' else fresh/'out')]
+        if command in ('s0', 'selftest'):
+            argv += ['--preparation', str(frozen/'preparation.json'), '--zebra-pool', 'unused', '--zebra-split-manifest', 'unused']
+            if command == 's0':
+                argv += ['--root', str(root), '--selftest', 'unused', '--sheet-runtime', 'unused']
+        else:
+            argv += ['--root', str(root), '--s0', str(frozen/'s0.json'), '--provenance', 'unused',
+                     '--roles-repo', 'unused', '--route-b-env', 'unused', '--sheet-runtime', 'unused']
+            if entry == 'manifest-smoke':
+                argv += ['--smoke-chain', 'G']
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+>           v214_command(parser().parse_args(argv))
+
+tests/test_execskill_v226_preparation_review.py:69: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+scripts/run_execskill.py:960: in v214_command
+    value = getattr(v214_smoke, 'collect_s0' if action == 's0' else 'selftest')(args.out, **options)
+skillopt/execskill/v214_smoke.py:630: in selftest
+    imported = v214_preparation.preparation(preparation_file, zebra_pool=zebra_pool,
+skillopt/execskill/v214_preparation.py:78: in preparation
+    raw = path.read_bytes()
+../../../miniconda3/lib/python3.13/pathlib/_abc.py:625: in read_bytes
+    with self.open(mode='rb') as f:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = PosixPath('<tmp>/T/identity-qaw89uen/main-v9/preparation.json')
+args = (), kwargs = {'mode': 'rb'}
+@py_assert1 = ["PosixPath('<tmp>/T/identity-qaw89uen/main-v9/preparation.json') != ...ath('<tmp>/T/identity-qaw89uen/main-v9/preparation.json').parents\n}"]
+@py_assert3 = True, @py_assert0 = False, @py_assert11 = <PosixPath.parents>
+@py_assert9 = False
+@py_format5 = "PosixPath('<tmp>/T/identity-qaw89uen/main-v9/preparation.json') != PosixPath('<tmp>/T/identity-qaw89uen/main-v9')"
+@py_format7 = "PosixPath('<tmp>/T/identity-qaw89uen/main-v9/preparation.json') != PosixPath('<tmp>/T/identity-qaw89uen/main-v9')"
+@py_format13 = "PosixPath('<tmp>/T/identity-qaw89uen/main-v9') not in <PosixPath.par...Path('<tmp>/T/identity-qaw89uen/main-v9/preparation.json').parents\n}"
+@py_format15 = "PosixPath('<tmp>/T/identity-qaw89uen/main-v9') not in <PosixPath.par...Path('<tmp>/T/identity-qaw89uen/main-v9/preparation.json').parents\n}"
+@py_format16 = "(PosixPath('<tmp>/T/identity-qaw89uen/main-v9/preparation.json') != ...ath('<tmp>/T/identity-qaw89uen/main-v9/preparation.json').parents\n})"
+
+    def guarded(path, *args, **kwargs):
+>       assert path != frozen and frozen not in path.parents, 'Frozen main-v9 path was opened'
+E       AssertionError: Frozen main-v9 path was opened
+E       assert (PosixPath('<tmp>/T/identity-qaw89uen/main-v9/preparation.json') != PosixPath('<tmp>/T/identity-qaw89uen/main-v9') and PosixPath('<tmp>/T/identity-qaw89uen/main-v9') not in <PosixPath.parents>)
+E        +  where <PosixPath.parents> = PosixPath('<tmp>/T/identity-qaw89uen/main-v9/preparation.json').parents
+
+tests/test_execskill_v226_preparation_review.py:54: AssertionError
+__ test_cli_preparation_refuses_frozen_root_without_opening_it[selftest-True] __
+
+roots = (PosixPath('<tmp>/T/identity-5tbkq4ys/main-v9'), PosixPath('<tmp>/T/identity-5tbkq4ys/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10963c0f0>
+descendant = True, entry = 'selftest'
+
+    @pytest.mark.parametrize('descendant', [False, True])
+    @pytest.mark.parametrize('entry', ['s0', 'manifest-smoke', 'manifest-real', 'selftest'])
+    def test_cli_preparation_refuses_frozen_root_without_opening_it(roots, monkeypatch, descendant, entry):
+        from scripts.run_execskill import parser, v214_command
+        frozen, fresh = roots
+        root = frozen / 'review-smoke' if descendant else frozen
+        original = Path.open
+        def guarded(path, *args, **kwargs):
+            assert path != frozen and frozen not in path.parents, 'Frozen main-v9 path was opened'
+            return original(path, *args, **kwargs)
+        monkeypatch.setattr(Path, 'open', guarded)
+        command = 'manifest' if entry.startswith('manifest') else entry
+        argv = ['v214-' + command, '--configuration', p.MAIN_V10, '--out', str(root if entry == 'selftest' else fresh/'out')]
+        if command in ('s0', 'selftest'):
+            argv += ['--preparation', str(frozen/'preparation.json'), '--zebra-pool', 'unused', '--zebra-split-manifest', 'unused']
+            if command == 's0':
+                argv += ['--root', str(root), '--selftest', 'unused', '--sheet-runtime', 'unused']
+        else:
+            argv += ['--root', str(root), '--s0', str(frozen/'s0.json'), '--provenance', 'unused',
+                     '--roles-repo', 'unused', '--route-b-env', 'unused', '--sheet-runtime', 'unused']
+            if entry == 'manifest-smoke':
+                argv += ['--smoke-chain', 'G']
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+>           v214_command(parser().parse_args(argv))
+
+tests/test_execskill_v226_preparation_review.py:69: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+scripts/run_execskill.py:960: in v214_command
+    value = getattr(v214_smoke, 'collect_s0' if action == 's0' else 'selftest')(args.out, **options)
+skillopt/execskill/v214_smoke.py:630: in selftest
+    imported = v214_preparation.preparation(preparation_file, zebra_pool=zebra_pool,
+skillopt/execskill/v214_preparation.py:78: in preparation
+    raw = path.read_bytes()
+../../../miniconda3/lib/python3.13/pathlib/_abc.py:625: in read_bytes
+    with self.open(mode='rb') as f:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = PosixPath('<tmp>/T/identity-5tbkq4ys/main-v9/preparation.json')
+args = (), kwargs = {'mode': 'rb'}
+@py_assert1 = ["PosixPath('<tmp>/T/identity-5tbkq4ys/main-v9/preparation.json') != ...ath('<tmp>/T/identity-5tbkq4ys/main-v9/preparation.json').parents\n}"]
+@py_assert3 = True, @py_assert0 = False, @py_assert11 = <PosixPath.parents>
+@py_assert9 = False
+@py_format5 = "PosixPath('<tmp>/T/identity-5tbkq4ys/main-v9/preparation.json') != PosixPath('<tmp>/T/identity-5tbkq4ys/main-v9')"
+@py_format7 = "PosixPath('<tmp>/T/identity-5tbkq4ys/main-v9/preparation.json') != PosixPath('<tmp>/T/identity-5tbkq4ys/main-v9')"
+@py_format13 = "PosixPath('<tmp>/T/identity-5tbkq4ys/main-v9') not in <PosixPath.par...Path('<tmp>/T/identity-5tbkq4ys/main-v9/preparation.json').parents\n}"
+@py_format15 = "PosixPath('<tmp>/T/identity-5tbkq4ys/main-v9') not in <PosixPath.par...Path('<tmp>/T/identity-5tbkq4ys/main-v9/preparation.json').parents\n}"
+@py_format16 = "(PosixPath('<tmp>/T/identity-5tbkq4ys/main-v9/preparation.json') != ...ath('<tmp>/T/identity-5tbkq4ys/main-v9/preparation.json').parents\n})"
+
+    def guarded(path, *args, **kwargs):
+>       assert path != frozen and frozen not in path.parents, 'Frozen main-v9 path was opened'
+E       AssertionError: Frozen main-v9 path was opened
+E       assert (PosixPath('<tmp>/T/identity-5tbkq4ys/main-v9/preparation.json') != PosixPath('<tmp>/T/identity-5tbkq4ys/main-v9') and PosixPath('<tmp>/T/identity-5tbkq4ys/main-v9') not in <PosixPath.parents>)
+E        +  where <PosixPath.parents> = PosixPath('<tmp>/T/identity-5tbkq4ys/main-v9/preparation.json').parents
+
+tests/test_execskill_v226_preparation_review.py:54: AssertionError
+__________ test_frozen_consent_source_is_rejected_before_it_is_opened __________
+
+roots = (PosixPath('<tmp>/T/identity-s7mik0h9/main-v9'), PosixPath('<tmp>/T/identity-s7mik0h9/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109e299a0>
+
+    def test_frozen_consent_source_is_rejected_before_it_is_opened(roots, monkeypatch):
+        frozen, fresh = roots
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Frozen consent must not be opened'))
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+>           v214_smoke.prepare_consent(fresh, p.MAIN_V10, consent_file=frozen/'shared/consent.json')
+
+tests/test_execskill_v226_preparation_review.py:77: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:61: in prepare_consent
+    value = read_json(source)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_ = (PosixPath('<tmp>/T/identity-s7mik0h9/main-v9/shared/consent.json'),)
+
+>   monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Frozen consent must not be opened'))
+E   Failed: Frozen consent must not be opened
+
+tests/test_execskill_v226_preparation_review.py:75: Failed
+____ test_real_manifest_rejects_s0_from_another_root_before_copying_consent ____
+
+roots = (PosixPath('<tmp>/T/identity-sn0hw2o7/main-v9'), PosixPath('<tmp>/T/identity-sn0hw2o7/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109e1b250>
+
+    def test_real_manifest_rejects_s0_from_another_root_before_copying_consent(roots, monkeypatch):
+        frozen, fresh = roots
+        checked = p.record('v214-s0', 'smoke', {'configuration': p.MAIN_V10, 'passed': True,
+            'root': str(fresh)+'-smoke', 'consent': {'source': 'wrong root'}, 'consent_sha256': 'invalid'})
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: checked)
+        with pytest.raises(ValueError, match='S0.*root'):
+>           v214_smoke.make_manifest(fresh/'manifest.json', root=fresh, s0_file='unused', provenance='unused',
+                roles_repo='unused', route_b_env='unused', configuration=p.MAIN_V10)
+
+tests/test_execskill_v226_preparation_review.py:87: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:397: in make_manifest
+    require(digest(checked['consent']) == checked['consent_sha256'], 'S0 consent bytes are pinned')
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'S0 consent bytes are pinned'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: S0 consent bytes are pinned
+
+skillopt/continual_eval/core.py:32: ValueError
+
+During handling of the above exception, another exception occurred:
+
+roots = (PosixPath('<tmp>/T/identity-sn0hw2o7/main-v9'), PosixPath('<tmp>/T/identity-sn0hw2o7/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109e1b250>
+
+    def test_real_manifest_rejects_s0_from_another_root_before_copying_consent(roots, monkeypatch):
+        frozen, fresh = roots
+        checked = p.record('v214-s0', 'smoke', {'configuration': p.MAIN_V10, 'passed': True,
+            'root': str(fresh)+'-smoke', 'consent': {'source': 'wrong root'}, 'consent_sha256': 'invalid'})
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: checked)
+>       with pytest.raises(ValueError, match='S0.*root'):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'S0.*root'
+E        Input: 'S0 consent bytes are pinned'
+
+tests/test_execskill_v226_preparation_review.py:86: AssertionError
+_ test_main_v10_preparation_admits_only_registered_run_smoke_and_scratch_roots _
+
+roots = (PosixPath('<tmp>/T/identity-efpjrri1/main-v9'), PosixPath('<tmp>/T/identity-efpjrri1/main-v10'))
+
+    def test_main_v10_preparation_admits_only_registered_run_smoke_and_scratch_roots(roots):
+        _, fresh = roots
+        for root in (fresh, Path(str(fresh)+'-smoke')/'G', Path(str(fresh)+'-scratch')/'selftest'):
+            manifest._check_run_root(root, p.MAIN_V10, 'smoke')
+>       with pytest.raises(ValueError, match='registered.*root'):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execskill_v226_preparation_review.py:96: Failed
+__ test_structural_smoke_requires_explicit_configuration_like_frozen_main_v9 ___
+
+tmp_path = PosixPath('<tmp>/T/identity-653agvcs')
+fast_statistics = None
+
+    def test_structural_smoke_requires_explicit_configuration_like_frozen_main_v9(tmp_path, fast_statistics):
+        found = v225_smoke.structural_smoke(tmp_path/'structural')
+        found.pop('configuration')
+>       with pytest.raises(ValueError, match='main-v9 structural smoke pins all card and read mechanisms'):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execskill_v226_preparation_review.py:103: Failed
+___ test_measured_smoke_requires_explicit_configuration_like_frozen_main_v9 ____
+
+tmp_path = PosixPath('<tmp>/T/identity-1jsbb0cy')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109928d70>
+
+    def test_measured_smoke_requires_explicit_configuration_like_frozen_main_v9(tmp_path, monkeypatch):
+        from tests.test_execskill_v225_smoke import authored_s2
+        setting, _, _, _ = authored_s2(tmp_path/'measured', monkeypatch, 'G')
+        found = v225_smoke.s2(setting, 'G')
+        found.pop('configuration')
+>       with pytest.raises(ValueError, match='A passing main-v9 measured practice smoke'):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execskill_v226_preparation_review.py:112: Failed
+______ test_neutral_scratch_fixture_accepts_arbitrary_checkout_directory _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109928ad0>
+
+    def test_neutral_scratch_fixture_accepts_arbitrary_checkout_directory(monkeypatch):
+        from tests import execskill_v293_fakes as fake
+        from tempfile import TemporaryDirectory
+        repo = Path(__file__).resolve().parents[1]
+        with TemporaryDirectory(prefix='.review-scratch-', dir=repo) as directory:
+            monkeypatch.setenv('TMPDIR', directory)
+            gen = fake.tmp_path.__wrapped__()
+            try:
+>               assert next(gen).is_relative_to(Path(directory))
+
+tests/test_execskill_v226_preparation_review.py:124: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @pytest.fixture
+    def tmp_path():
+        root = Path(os.environ.get('TMPDIR') or '/tmp').resolve()
+        repo = Path(__file__).resolve().parents[1]
+        # A source-only audit may authorize writes only inside its working copy.
+        # Keep scratch outside source inputs, including this explicit local option.
+>       assert (root != repo and not root.is_relative_to(repo)) or root == repo / '.runtime-tmp'
+E       AssertionError
+
+tests/execskill_v293_fakes.py:15: AssertionError
+__ test_card_handoff_rejects_gate_from_other_configuration[main-v10-main-v9] ___
+
+gate_configuration = 'main-v10', run_configuration = 'main-v9'
+
+    @pytest.mark.parametrize('gate_configuration,run_configuration', [(p.MAIN_V10,p.MAIN_V9), (p.MAIN_V9,p.MAIN_V10)])
+    def test_card_handoff_rejects_gate_from_other_configuration(gate_configuration, run_configuration):
+        gate = p.record('v222-cross-gate', 'engineering_fixture', {'configuration': gate_configuration,
+            'phase': 'cross_card', 'passed': False, 'candidate_sha256': 'candidate',
+            'parent_sha256': 'parent', 'proposed_sha256': 'candidate'})
+        rows = [{'gate': gate, 'package_sha256': 'parent', 'target': 'officeqa'}]
+>       with pytest.raises(ValueError, match='Card handoff binds'):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execskill_v226_preparation_review.py:135: Failed
+__ test_card_handoff_rejects_gate_from_other_configuration[main-v9-main-v10] ___
+
+gate_configuration = 'main-v9', run_configuration = 'main-v10'
+
+    @pytest.mark.parametrize('gate_configuration,run_configuration', [(p.MAIN_V10,p.MAIN_V9), (p.MAIN_V9,p.MAIN_V10)])
+    def test_card_handoff_rejects_gate_from_other_configuration(gate_configuration, run_configuration):
+        gate = p.record('v222-cross-gate', 'engineering_fixture', {'configuration': gate_configuration,
+            'phase': 'cross_card', 'passed': False, 'candidate_sha256': 'candidate',
+            'parent_sha256': 'parent', 'proposed_sha256': 'candidate'})
+        rows = [{'gate': gate, 'package_sha256': 'parent', 'target': 'officeqa'}]
+        with pytest.raises(ValueError, match='Card handoff binds'):
+            if run_configuration == p.MAIN_V9:
+                v225_phase.cross_bindings(rows)
+            else:
+>               v225_phase.cross_bindings(rows, configuration=run_configuration)
+E               TypeError: cross_bindings() got an unexpected keyword argument 'configuration'
+
+tests/test_execskill_v226_preparation_review.py:139: TypeError
+_________ test_parent_capture_contains_all_46_baseline_configurations __________
+
+    def test_parent_capture_contains_all_46_baseline_configurations():
+        path = Path(__file__).parent/'fixtures/execskill/v226_parents_before.json'
+>       before = json.loads(path.read_text())
+
+tests/test_execskill_v226_preparation_review.py:144: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../miniconda3/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+../../../miniconda3/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('<repo-root>/tests/fixtures/execskill/v226_parents_before.json')
+mode = 'r', buffering = -1, encoding = 'locale', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+E       FileNotFoundError: [Errno 2] No such file or directory: '<repo-root>/tests/fixtures/execskill/v226_parents_before.json'
+
+../../../miniconda3/lib/python3.13/pathlib/_local.py:537: FileNotFoundError
+=========================== short test summary info ============================
+FAILED tests/test_execskill_v226_preparation_review.py::test_preparation_refuses_frozen_root_before_any_input_read[s0-False]
+FAILED tests/test_execskill_v226_preparation_review.py::test_preparation_refuses_frozen_root_before_any_input_read[s0-True]
+FAILED tests/test_execskill_v226_preparation_review.py::test_preparation_refuses_frozen_root_before_any_input_read[consent-False]
+FAILED tests/test_execskill_v226_preparation_review.py::test_preparation_refuses_frozen_root_before_any_input_read[consent-True]
+FAILED tests/test_execskill_v226_preparation_review.py::test_preparation_refuses_frozen_root_before_any_input_read[manifest-smoke-False]
+FAILED tests/test_execskill_v226_preparation_review.py::test_preparation_refuses_frozen_root_before_any_input_read[manifest-smoke-True]
+FAILED tests/test_execskill_v226_preparation_review.py::test_preparation_refuses_frozen_root_before_any_input_read[manifest-real-False]
+FAILED tests/test_execskill_v226_preparation_review.py::test_preparation_refuses_frozen_root_before_any_input_read[manifest-real-True]
+FAILED tests/test_execskill_v226_preparation_review.py::test_preparation_refuses_frozen_root_before_any_input_read[selftest-False]
+FAILED tests/test_execskill_v226_preparation_review.py::test_preparation_refuses_frozen_root_before_any_input_read[selftest-True]
+FAILED tests/test_execskill_v226_preparation_review.py::test_cli_preparation_refuses_frozen_root_without_opening_it[s0-False]
+FAILED tests/test_execskill_v226_preparation_review.py::test_cli_preparation_refuses_frozen_root_without_opening_it[s0-True]
+FAILED tests/test_execskill_v226_preparation_review.py::test_cli_preparation_refuses_frozen_root_without_opening_it[manifest-smoke-False]
+FAILED tests/test_execskill_v226_preparation_review.py::test_cli_preparation_refuses_frozen_root_without_opening_it[manifest-smoke-True]
+FAILED tests/test_execskill_v226_preparation_review.py::test_cli_preparation_refuses_frozen_root_without_opening_it[manifest-real-False]
+FAILED tests/test_execskill_v226_preparation_review.py::test_cli_preparation_refuses_frozen_root_without_opening_it[manifest-real-True]
+FAILED tests/test_execskill_v226_preparation_review.py::test_cli_preparation_refuses_frozen_root_without_opening_it[selftest-False]
+FAILED tests/test_execskill_v226_preparation_review.py::test_cli_preparation_refuses_frozen_root_without_opening_it[selftest-True]
+FAILED tests/test_execskill_v226_preparation_review.py::test_frozen_consent_source_is_rejected_before_it_is_opened
+FAILED tests/test_execskill_v226_preparation_review.py::test_real_manifest_rejects_s0_from_another_root_before_copying_consent
+FAILED tests/test_execskill_v226_preparation_review.py::test_main_v10_preparation_admits_only_registered_run_smoke_and_scratch_roots
+FAILED tests/test_execskill_v226_preparation_review.py::test_structural_smoke_requires_explicit_configuration_like_frozen_main_v9
+FAILED tests/test_execskill_v226_preparation_review.py::test_measured_smoke_requires_explicit_configuration_like_frozen_main_v9
+FAILED tests/test_execskill_v226_preparation_review.py::test_neutral_scratch_fixture_accepts_arbitrary_checkout_directory
+FAILED tests/test_execskill_v226_preparation_review.py::test_card_handoff_rejects_gate_from_other_configuration[main-v10-main-v9]
+FAILED tests/test_execskill_v226_preparation_review.py::test_card_handoff_rejects_gate_from_other_configuration[main-v9-main-v10]
+FAILED tests/test_execskill_v226_preparation_review.py::test_parent_capture_contains_all_46_baseline_configurations
+27 failed in 6.27s

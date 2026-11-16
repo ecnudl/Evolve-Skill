@@ -237,7 +237,7 @@ def test_cli_adds_cross_choice_and_preserves_parent_default(action):
     from scripts.run_execskill import parser
     commands=parser()._subparsers._group_actions[0].choices
     option=next(a for a in commands['v214-'+action]._actions if a.dest=='configuration')
-    assert tuple(option.choices)==(p.MAIN_V5,p.IMPLANT_V5,p.MAIN_V6,CHILD)
+    assert tuple(option.choices)==(p.MAIN_V5,p.IMPLANT_V5,p.MAIN_V6,CHILD,p.SEARCHQA_HP_V6, p.MAIN_V7,p.MAIN_V8,p.MAIN_V9,p.MAIN_V10)
     assert option.default==p.MAIN_V5
 
 

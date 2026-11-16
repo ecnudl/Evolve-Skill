@@ -1,0 +1,119 @@
+Frozen e589b5b platform reproduction; production and frozen tests unchanged.
+Python: <python>
+Platform: macOS-26.6.2-arm64-arm-64bit-Mach-O
+Snapshot: e589b5b3136382c08cba0fc55afa13fc14b6fdc4
+Snapshot directory: /private/tmp/execskill-v226-baseline-7cgbjsyi
+TMPDIR: /private/tmp/execskill-v226-baseline-7cgbjsyi/scratch
+Command: <python> -B -m pytest -q --tb=short -p no:cacheprovider tests/test_execskill_detectors.py::test_det1_masked_views_hide_answers_run_status_and_step_count tests/test_execskill_sandbox.py::test_sbx01_load_call_ping_with_lazy_start
+
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+________ test_det1_masked_views_hide_answers_run_status_and_step_count _________
+tests/test_execskill_detectors.py:161: in test_det1_masked_views_hide_answers_run_status_and_step_count
+    assert found["fx-answer-text"] == {"fired": [], "faults": {}}
+E   AssertionError: assert {'faults': {'..., 'fired': []} == {'faults': {}, 'fired': []}
+E     
+E     Omitting 1 identical items, use -vv to show
+E     Differing items:
+E     {'faults': {'s1': 'worker'}} != {'faults': {}}
+E     Use -v to get more diff
+__________________ test_sbx01_load_call_ping_with_lazy_start ___________________
+tests/test_execskill_sandbox.py:197: in test_sbx01_load_call_ping_with_lazy_start
+    assert result == {"ok": True, "value": value, "value_sha256": digest(value), "cpu_ms": result["cpu_ms"],
+E   KeyError: 'cpu_ms'
+=========================== short test summary info ============================
+FAILED tests/test_execskill_detectors.py::test_det1_masked_views_hide_answers_run_status_and_step_count
+FAILED tests/test_execskill_sandbox.py::test_sbx01_load_call_ping_with_lazy_start
+2 failed in 1.87s
+
+Exit status: 1
+
+Frozen baseline raw worker/platform probe
+os.waitid available: True
+prctl availability: AttributeError dlsym(RTLD_DEFAULT, prctl): symbol not found
+worker.set_dumpable(0): None
+Raw worker call response: {"exc_type": null, "fault": "worker", "line": null, "message": "worker lost during the call (worker exited (end of file); docker: worker); it restarts without fx-note", "ok": false}
+Worker ping: {"dumpable": null, "hashseed": "0", "numpy": "2.2.4", "ok": true, "op": "ping", "openpyxl": "3.1.5", "pandas": "2.2.3", "policy_sha256": "a17386849d20a617adb4e8729ac79076b2d4e0c68bc83792bbe665afa98a7dd1", "python": "3.13.12", "rss_kib": null, "seq": 6, "sympy": "1.14.0", "vsz_kib": null, "worker": "execskill-worker-v1", "worker_sha256": "bb1ccc0d90cafbda1f842569454ec676a8329d721a423246d92572632cf4ea0d"}
+Worker stderr: 
+
+Probe exit status: 0
+
+Frozen worker stderr capture (FakeDocker subclass retains removed process handles only)
+Call response: {"exc_type": null, "fault": "worker", "line": null, "message": "worker lost during the call (worker exited (end of file); docker: worker); it restarts without fx-note", "ok": false}
+Container 1 return code: 1
+Captured original worker stderr:
+Traceback (most recent call last):
+  File "/private/tmp/execskill-v226-baseline-7cgbjsyi/scratch/capture-zr15n12m/containers/execskill-sbx-0db16b48dbed4428bfede1163711e20b/runner/worker.py", line 798, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/private/tmp/execskill-v226-baseline-7cgbjsyi/scratch/capture-zr15n12m/containers/execskill-sbx-0db16b48dbed4428bfede1163711e20b/runner/worker.py", line 792, in main
+    return serve(policy, info, channel)
+  File "/private/tmp/execskill-v226-baseline-7cgbjsyi/scratch/capture-zr15n12m/containers/execskill-sbx-0db16b48dbed4428bfede1163711e20b/runner/worker.py", line 777, in serve
+    _write_all(channel, frame(handle(request, state, policy, info, channel)))
+                              ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/execskill-v226-baseline-7cgbjsyi/scratch/capture-zr15n12m/containers/execskill-sbx-0db16b48dbed4428bfede1163711e20b/runner/worker.py", line 762, in handle
+    return handle_call(request, state, channel)
+  File "/private/tmp/execskill-v226-baseline-7cgbjsyi/scratch/capture-zr15n12m/containers/execskill-sbx-0db16b48dbed4428bfede1163711e20b/runner/worker.py", line 749, in handle_call
+    return {**head, **run_call(code, fn, args, timeout_s, state["limits"], channel)}
+                      ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/execskill-v226-baseline-7cgbjsyi/scratch/capture-zr15n12m/containers/execskill-sbx-0db16b48dbed4428bfede1163711e20b/runner/worker.py", line 575, in run_call
+    status, usage, late = _reap(pid, deadline)
+                          ~~~~~^^^^^^^^^^^^^^^
+  File "/private/tmp/execskill-v226-baseline-7cgbjsyi/scratch/capture-zr15n12m/containers/execskill-sbx-0db16b48dbed4428bfede1163711e20b/runner/worker.py", line 527, in _reap
+    _kill_group(pid)
+    ~~~~~~~~~~~^^^^^
+  File "/private/tmp/execskill-v226-baseline-7cgbjsyi/scratch/capture-zr15n12m/containers/execskill-sbx-0db16b48dbed4428bfede1163711e20b/runner/worker.py", line 510, in _kill_group
+    os.killpg(pid, signal.SIGKILL)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 1] Operation not permitted
+
+
+Probe exit status: 0
+
+Minimal platform control (own exited child in its own process group; waitid WNOWAIT then killpg):
+PermissionError: [Errno 1] Operation not permitted
+
+Diagnosis: both exact frozen e589b5b tests fail identically. The raw worker response is a worker-loss fault; the worker traceback terminates in os.killpg with EPERM. Missing macOS prctl is handled by set_dumpable returning None and is not the fatal traceback. No source, test, or Linux hardening was modified.
+
+Five additional frozen e589b5b step orchestration failures
+Snapshot directory: /private/tmp/execskill-v226-baseline-7cgbjsyi
+TMPDIR: /private/tmp/execskill-v226-baseline-7cgbjsyi/scratch (mode 0755)
+Command: <python> -B -m pytest -q --tb=short -p no:cacheprovider tests/test_execskill_step.py::test_step1_one_fake_officeqa_step_through_the_eight_sub_steps tests/test_execskill_step.py::test_a_step_ending_before_the_acceptance_consumes_no_acceptance_item[blocked_twice] tests/test_execskill_step.py::test_c7e_a_paused_acceptance_redoes_one_block_on_its_own_sub_scope tests/test_execskill_step.py::test_c7e_1_the_g_acc_cells_are_charged_to_the_examiners_scope_in_a_redone_block_too tests/test_execskill_step.py::test_codex8_an_accept_unit_killed_before_its_completion_evidence_settles_only_in_its_redo
+
+FFFFF                                                                    [100%]
+=================================== FAILURES ===================================
+________ test_step1_one_fake_officeqa_step_through_the_eight_sub_steps _________
+tests/test_execskill_step.py:199: in test_step1_one_fake_officeqa_step_through_the_eight_sub_steps
+    assert record["decision"] == "accept" and record["reason"] == "J1-J7 hold"
+E   AssertionError: assert ('not_run' == 'accept'
+E     
+E     - accept
+E     + not_run)
+_ test_a_step_ending_before_the_acceptance_consumes_no_acceptance_item[blocked_twice] _
+tests/test_execskill_step.py:341: in test_a_step_ending_before_the_acceptance_consumes_no_acceptance_item
+    assert record["reason"] == "selftest_blocked_twice" and record["candidate_sha256"] is not None
+E   AssertionError: assert ('no_surviving_change' == 'selftest_blocked_twice'
+E     
+E     - selftest_blocked_twice
+E     + no_surviving_change)
+______ test_c7e_a_paused_acceptance_redoes_one_block_on_its_own_sub_scope ______
+tests/test_execskill_step.py:626: in test_c7e_a_paused_acceptance_redoes_one_block_on_its_own_sub_scope
+    with pytest.raises(Pause) as stop:
+E   Failed: DID NOT RAISE <class 'skillopt.coevo5.cells.Pause'>
+_ test_c7e_1_the_g_acc_cells_are_charged_to_the_examiners_scope_in_a_redone_block_too _
+tests/test_execskill_step.py:720: in test_c7e_1_the_g_acc_cells_are_charged_to_the_examiners_scope_in_a_redone_block_too
+    with pytest.raises(Pause) as stop:
+E   Failed: DID NOT RAISE <class 'skillopt.coevo5.cells.Pause'>
+_ test_codex8_an_accept_unit_killed_before_its_completion_evidence_settles_only_in_its_redo _
+tests/test_execskill_step.py:1045: in test_codex8_an_accept_unit_killed_before_its_completion_evidence_settles_only_in_its_redo
+    with pytest.raises(_Killed):
+E   Failed: DID NOT RAISE <class 'tests.test_execskill_step._Killed'>
+=========================== short test summary info ============================
+FAILED tests/test_execskill_step.py::test_step1_one_fake_officeqa_step_through_the_eight_sub_steps
+FAILED tests/test_execskill_step.py::test_a_step_ending_before_the_acceptance_consumes_no_acceptance_item[blocked_twice]
+FAILED tests/test_execskill_step.py::test_c7e_a_paused_acceptance_redoes_one_block_on_its_own_sub_scope
+FAILED tests/test_execskill_step.py::test_c7e_1_the_g_acc_cells_are_charged_to_the_examiners_scope_in_a_redone_block_too
+FAILED tests/test_execskill_step.py::test_codex8_an_accept_unit_killed_before_its_completion_evidence_settles_only_in_its_redo
+5 failed in 27.11s
+
+Five-target baseline exit status: 1

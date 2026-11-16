@@ -1,0 +1,67 @@
+{
+  "bench": "alfworld",
+  "format": {
+    "chars": 482,
+    "line_indices": [
+      0,
+      1,
+      10
+    ],
+    "sha256": "fcf4c38707c8e063815805421d955838ce98ea326f2c31729b49d1792ff134f9",
+    "text": "- Always emit exactly one action per reply, wrapped in `<action>...</action>`; anything outside the tag is ignored, and a missing tag causes the whole reply to be executed, which almost always fails.\n- The action must be one of the strings listed in `admissible_commands` — copy it character-for-character rather than paraphrasing, since the environment only accepts the listed commands.\n- Do not emit empty actions or replies over 1000 characters; keep the action short and exact.\n"
+  },
+  "historical": {
+    "chars": 2301,
+    "sha256": "5ae6ea9bffa3902e260182dac8b9bd055df7786e3e36e644fd883c3a9069c0b5",
+    "text": "- Always emit exactly one action per reply, wrapped in `<action>...</action>`; anything outside the tag is ignored, and a missing tag causes the whole reply to be executed, which almost always fails.\n- The action must be one of the strings listed in `admissible_commands` — copy it character-for-character rather than paraphrasing, since the environment only accepts the listed commands.\n- Before acting, re-read `initial_observation` to keep the goal in mind; it states both the task type (e.g., heat/cool/clean/examine an object, or place two objects somewhere) and the specific objects and receptacles involved.\n- Parse the task into a concrete subgoal sequence, e.g., \"find object → pick it up → find the required appliance (basin, fridge, microwave, etc.) → use it → move to the destination receptacle → put the object down\".\n- Use navigation commands (`go to X`) to explore locations named in the room description; `admissible_commands` reveals which receptacles and locations currently exist, so use it as a map of what is reachable.\n- When you need an object's location, check the likely receptacles listed in the room description one at a time (e.g., `go to countertop 1`, `open drawer 1`, `examine X`) until you find it.\n- Keep your physical state in mind: you can hold at most two objects (hands are used in commands like `take A from B`); note what you took from `recent_history` since it is not restated each turn.\n- For cleaning tasks you need a sinkbasin; for heating a microwave; for cooling a fridge. Put the object in/on the appliance (e.g., `put A in/on sinkbasin 1`, `heat A with microwave 1`), then take it back out before delivering it to the final receptacle.\n- Prefer efficient exploration: plan multi-step routes (e.g., go directly to a likely receptacle rather than re-visiting ones already seen as empty in `recent_history`).\n- Watch `observation` after each action for success/failure feedback — \"Nothing happens\" or an error message usually means the action was inapplicable; adjust rather than repeating it.\n- Do not emit empty actions or replies over 1000 characters; keep the action short and exact.\n- Track progress against the 50-step limit: if a plan stalls, fall back to systematically exploring all receptacles named in the room description rather than wandering.\n"
+  },
+  "segments": [
+    {
+      "chars": 653,
+      "id": "alfworld-1",
+      "line_indices": [
+        2,
+        3,
+        4
+      ],
+      "max_note_chars": 1500,
+      "predicate": {
+        "kind": "admissible_commands"
+      },
+      "sha256": "2360fd3edf0460c53651a67304fed2e5aa058112aee94918ce93f4d878e38941",
+      "text": "- Before acting, re-read `initial_observation` to keep the goal in mind; it states both the task type (e.g., heat/cool/clean/examine an object, or place two objects somewhere) and the specific objects and receptacles involved.\n- Parse the task into a concrete subgoal sequence, e.g., \"find object → pick it up → find the required appliance (basin, fridge, microwave, etc.) → use it → move to the destination receptacle → put the object down\".\n- Use navigation commands (`go to X`) to explore locations named in the room description; `admissible_commands` reveals which receptacles and locations currently exist, so use it as a map of what is reachable.\n"
+    },
+    {
+      "chars": 642,
+      "id": "alfworld-2",
+      "line_indices": [
+        5,
+        6,
+        7
+      ],
+      "max_note_chars": 1500,
+      "predicate": {
+        "kind": "admissible_commands"
+      },
+      "sha256": "18de43805a9a77c74cb240e1a927657cc8bd82ee4f912c4297a90f1826abd15b",
+      "text": "- When you need an object's location, check the likely receptacles listed in the room description one at a time (e.g., `go to countertop 1`, `open drawer 1`, `examine X`) until you find it.\n- Keep your physical state in mind: you can hold at most two objects (hands are used in commands like `take A from B`); note what you took from `recent_history` since it is not restated each turn.\n- For cleaning tasks you need a sinkbasin; for heating a microwave; for cooling a fridge. Put the object in/on the appliance (e.g., `put A in/on sinkbasin 1`, `heat A with microwave 1`), then take it back out before delivering it to the final receptacle.\n"
+    },
+    {
+      "chars": 524,
+      "id": "alfworld-3",
+      "line_indices": [
+        8,
+        9,
+        11
+      ],
+      "max_note_chars": 1500,
+      "predicate": {
+        "kind": "admissible_commands"
+      },
+      "sha256": "0b8c1bcee840f77b56c8e9e4276185d3b81bb6f24584bdb973e4d0535f9e48ab",
+      "text": "- Prefer efficient exploration: plan multi-step routes (e.g., go directly to a likely receptacle rather than re-visiting ones already seen as empty in `recent_history`).\n- Watch `observation` after each action for success/failure feedback — \"Nothing happens\" or an error message usually means the action was inapplicable; adjust rather than repeating it.\n- Track progress against the 50-step limit: if a plan stalls, fall back to systematically exploring all receptacles named in the room description rather than wandering.\n"
+    }
+  ],
+  "source_fixture_sha256": "175b0715909eeecb3fec356838b84566ade20b28f6a9b12cf985ad7de720ae5f",
+  "version": "instruction-decomposition-v2-22"
+}

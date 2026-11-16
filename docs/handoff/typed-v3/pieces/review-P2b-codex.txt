@@ -1,0 +1,29 @@
+Codex review of P2b (gpt-6-astra, effort ultra, read-only), 2026-11-15 03:48, on commit fa3b2a7.
+
+1. **BLOCKER — judging-item text reaches the selector.** [itemstage.py:328](<repo-root>/skillopt/execskill/typed/itemstage.py:328) → [select_items.py:207](<repo-root>/skillopt/execskill/typed/items/select_items.py:207). SearchQA sends every candidate’s public text for classification, then chooses judging A/G/K from those candidates. In the existing fixture, the selector receives `Q20`/`CTX20`, and `searchqa-20` becomes judging attack. The larger P2 brief permits candidate text, contradicting this review’s stricter prohibition. **Smallest fix under the stated prohibition:** select judging items with fixed code; reserve model-visible candidates for shown items. Remove the selector exemption in the leakage test.
+
+2. **BLOCKER — shown failures expose reference answers to writers.** [chain.py:678](<repo-root>/skillopt/execskill/typed/chain.py:678) → [writers.py:205](<repo-root>/skillopt/execskill/typed/writers.py:205). `shown_examples()` uses the existing formatter, which adds private references to failed examples; both card payloads and engineer trajectories preserve them. The fixture’s failed shown attacks expose `REF28`, `REF29`, and `REF30`. This violates the review’s unqualified reference-answer ban, although the legacy formatter intentionally supplies failed-example references. **Smallest fix:** remove reference fields from all planned writer examples—including learn and member examples—while preserving `none`.
+
+3. **BLOCKER — a recorded solver response can be overwritten and paid for again on resume.** New call sites: [itemstage.py:246](<repo-root>/skillopt/execskill/typed/itemstage.py:246) and [itemstage.py:373](<repo-root>/skillopt/execskill/typed/itemstage.py:373). Kill after `CallRecorder` persists and settles a response, but before the cell is written. Resume caches only completed cell files; [chain.py:793](<repo-root>/skillopt/execskill/typed/chain.py:793) constructs a fresh recorder, whose first flush replaces the existing calls file and sends again.
+
+   Concrete consequence: attack **54/60**, calibration **43/45** passes the check. Repeating one recorded wrong attack answer and getting it right changes attack to **55/60**, fails the check, and triggers replacement items. **Smallest fix:** add sequential persisted-response replay for planned-stage solver calls, preserving prior sends and charging only missing requests; test interruption between receipt settlement and cell storage.
+
+4. **BLOCKER — default preparation changes records.** [prepare.py:587](<repo-root>/skillopt/execskill/typed/prepare.py:587) unconditionally adds `"item_stage": "none"` and `"item_quotas": null`. These fields were absent at `bd421da`; default manifest bytes and its sealed hash therefore change. The hash also enters read-plan headers. **Smallest fix:** emit these fields only for `planned`; readers already support their absence.
+
+5. **MAJOR — tests miss the claimed compatibility and sealing guarantees.** [test_typed3_item_stage.py:999](<repo-root>/tests/test_typed3_item_stage.py:999) compares absent versus explicit `none` using the same new implementation, not `bd421da`. Its record helper excludes manifests, calls, state and ledger. The leakage test explicitly exempts selector judging text, and crash tests omit the solver receipt-to-cell window. An undetected mutation is deleting the hash-equality check at [itemstage.py:445](<repo-root>/skillopt/execskill/typed/itemstage.py:445): no focused test supplies a corrupted seal, so its removal leaves their exercised assertions unchanged. **Smallest fix:** add a frozen baseline comparison, uniform role-payload checks, the missing crash injection, and corrupted-seal rejection.
+
+Checked 1 — Analyst inputs use learn rows; revision/experience payloads contain counts and descriptions; card revision summaries, describer examples and repair reports exclude judging/gate content apart from the findings above.
+
+Checked 2 — J is centralized; gate jobs, identities, comparisons and member checks use it. Members retain real slices, later steps clear made items, and views/vectors are rebuilt in memory. No normal path with different arm-run and decision lists was found.
+
+Checked 3 — Analyst/selector receipt replay, maker slot recovery, completed intermediate records, sealed-list verification and loaded-item hash checks are sound outside the solver crash window.
+
+Checked 4 — For existing default manifests, the added runtime hooks are inactive; no changed default example list, outcomes unit, gate identity or step decision was found.
+
+Checked 5 — Quotas, both zero reasons, inclusive five-point check, single B5 replacement round, preserved guard/calibration items, items counts and final `by_class` coverage checks match the decisions.
+
+Checked 6 — Several quota, selection and class-gain expectations are independently worked out; compatibility expectations are not. The permitted pytest command failed with `No module named pytest`; tests were read, and mutations were assessed by inspection only. No edits or network access.
+
+VERDICT: NOT ACCEPTABLE -- leakage-contract violations, a re-paid and non-reproducible resume path, and changed default manifest records.
+
+Answer (2026-11-15 04:0x): findings 1, 2 and 4 are answered by decision B6 (a)-(c) in CHAIN-DECISIONS.md (the review brief's ban was broader than the approved design); finding 3 by B6 (d), one replay mechanism for every solver cell under a sealed option, built after the integration; finding 5: a corrupted-seal rejection test, a default-flow comparison against the base commit and a uniform role-payload scan are added after the integration.

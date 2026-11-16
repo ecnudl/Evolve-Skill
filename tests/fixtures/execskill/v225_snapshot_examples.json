@@ -1,0 +1,17 @@
+{
+  "purpose": "Authored scanner inputs, never executed or opened as paths.",
+  "cases": [
+    {"name": "literal", "file": "authored.py", "source": "value = Path('docs/hidden-provenance.json').read_text()\n"},
+    {"name": "division", "file": "authored.py", "source": "value = ROOT / 'docs' / 'handoff' / 'V222-SOURCE-SHA256.json'\n"},
+    {"name": "function_join", "file": "authored.py", "source": "value = os.path.join(ROOT, 'docs', 'handoff', 'private-input.json')\n"},
+    {"name": "method_join", "file": "authored.py", "source": "value = ROOT.joinpath('docs', 'inputs', 'manifest.json')\n"},
+    {"name": "aliased_join", "file": "authored.py", "source": "BASE = Path('docs')\nvalue = BASE / 'handoff' / 'hidden.json'\n"},
+    {"name": "string_join", "file": "authored.py", "source": "value = '/'.join(['docs', 'inputs', 'hidden.json'])\n"},
+    {"name": "fstring", "file": "authored.py", "source": "BASE = 'docs'\nvalue = f'{BASE}/inputs/{name}.json'\n"},
+    {"name": "json_components", "file": "authored.json", "source": "{\"source_directory\":[\"docs\",\"handoff\",\"hidden\"]}"},
+    {"name": "json_literal", "file": "authored.json", "source": "{\"provenance\":\"docs/hidden/SOURCE-SHA256.json\"}"},
+    {"name": "hidden_manifest_directory", "file": "authored.py", "source": "value = ROOT.joinpath(*pinned['source_directory']) / 'V222-SOURCE-SHA256.json'\nvalue.read_text()\n"},
+    {"name": "new_prose", "file": "authored.py", "source": "\"\"\"See docs/notes/new-provenance.md.\"\"\"\n"},
+    {"name": "registered", "file": "authored.py", "source": "value = ROOT / 'docs' / 'handoff' / 'v29-20261026' / 'v210-instructions-coevo5-v1.json'\n"}
+  ]
+}

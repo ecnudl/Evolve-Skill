@@ -1,0 +1,219 @@
+Platform: macOS-26.6.2-arm64-arm-64bit-Mach-O
+Python: <python>
+CWD/TMPDIR: /tmp/execskill-r2-hybcy4wk
+PYTHONPATH: <repo-root>
+Command: <python> -B -m pytest -q -p no:cacheprovider <repo-root>/tests/test_execskill_cells.py <repo-root>/tests/test_execskill_acceptance.py <repo-root>/tests/test_execskill_v221_learning.py <repo-root>/tests/test_execskill_v221_recovery.py <repo-root>/tests/test_execskill_v221_fix1.py <repo-root>/tests/test_execskill_v222_runtime.py <repo-root>/tests/test_execskill_v225_phase.py <repo-root>/tests/test_execskill_v225_cross_card.py <repo-root>/tests/test_execskill_v225_small_confirmation.py <repo-root>/tests/test_execskill_v225_ops.py <repo-root>/tests/test_execskill_v226_legacy_boundaries.py
+
+........................................................................ [ 15%]
+........................................................................ [ 31%]
+........................................................................ [ 46%]
+...............................................................sFFF..... [ 62%]
+.......................F................................................ [ 77%]
+........................................................................ [ 93%]
+................................                                         [100%]
+=================================== FAILURES ===================================
+___ test_ops_are_self_contained_snapshot_with_optional_documentation[absent] ___
+
+tmp_path = PosixPath('/private/tmp/execskill-r2-hybcy4wk/ops-d3e54nyi')
+documentation = 'absent'
+
+    @pytest.mark.parametrize('documentation', ['absent', 'partial', 'mismatch'])
+    def test_ops_are_self_contained_snapshot_with_optional_documentation(tmp_path, documentation):
+        # The nested authored shared-scratch fixture must also have a traversable parent.
+        tmp_path.chmod(0o755)
+        snapshot = tmp_path / 'snapshot'
+        fixture = snapshot / 'tests/fixtures/execskill/v225_ops'
+        shutil.copytree(OPS, fixture)
+        module = snapshot / 'tests' / Path(__file__).name
+        shutil.copy2(__file__, module)
+        assert {path.name for path in snapshot.iterdir()} == {'tests'}
+        if documentation != 'absent':
+            source = snapshot.joinpath(*json.loads((OPS / 'manifest.json').read_text())['source_directory'])
+            source.mkdir(parents=True)
+            for name in ('m9-env.sh', 'patch-consent-v225.py'):
+                shutil.copy2(OPS / name, source / name)
+            assert not (source / 'commit-v225.sh').exists()
+            if documentation == 'mismatch':
+                with (source / 'm9-env.sh').open('ab') as stream:
+                    stream.write(b'\n# Authored mismatch in an available deliverable.\n')
+        env = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1', 'TMPDIR': str(tmp_path), 'PYTHONPATH': str(snapshot)}
+        env.pop('PYTEST_PLUGINS', None)
+        env.pop('PYTEST_ADDOPTS', None)
+        found = subprocess.run([sys.executable, '-B', '-m', 'pytest', '-q', '-p', 'no:cacheprovider',
+            '--basetemp=' + str(tmp_path / 'runtime'), str(module.relative_to(snapshot)),
+            '-k', 'not self_contained_snapshot'], cwd=snapshot, env=env, capture_output=True, text=True, timeout=60)
+        if documentation == 'mismatch':
+            assert found.returncode == 1, found.stdout + found.stderr
+            assert '1 failed' in found.stdout and '3 deselected' in found.stdout
+            assert 'AssertionError' in found.stdout and 'FileNotFoundError' not in found.stdout
+        else:
+>           assert found.returncode == 0, found.stdout + found.stderr
+E           AssertionError: .s............................F......................................... [ 61%]
+E             ..............................................                           [100%]
+E             =================================== FAILURES ===================================
+E             __ test_scratch_helper_creates_sticky_shared_directory_without_requiring_root __
+E             
+E             tmp_path = PosixPath('/private/tmp/execskill-r2-hybcy4wk/ops-d3e54nyi/ops-rybxajm1')
+E             monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x103f7a650>
+E             
+E                 def test_scratch_helper_creates_sticky_shared_directory_without_requiring_root(tmp_path, monkeypatch):
+E                     import stat
+E                     tmp_path.chmod(0o755)
+E                     scratch = tmp_path/'shared'
+E                     scratch.mkdir(mode=0o700)
+E             >       execute_block('m9-env.sh', 'PY_SCRATCH', [scratch], monkeypatch)
+E             
+E             tests/test_execskill_v225_ops.py:246: 
+E             _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+E             tests/test_execskill_v225_ops.py:238: in execute_block
+E                 exec(compile(python_block(script, marker), '<authored-operator-helper>', 'exec'), {'__name__': 'authored_helper'})
+E             _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+E             
+E             >   ???
+E             E   AssertionError: Scratch ancestors must allow uid 65534 traversal
+E             
+E             <authored-operator-helper>:14: AssertionError
+E             =========================== short test summary info ============================
+E             FAILED tests/test_execskill_v225_ops.py::test_scratch_helper_creates_sticky_shared_directory_without_requiring_root
+E             1 failed, 116 passed, 1 skipped, 3 deselected in 0.66s
+E             
+E           assert 1 == 0
+E            +  where 1 = CompletedProcess(args=['<python>', '-B', '-m', 'pytest', '-q', '-p', 'no:cacheprovider', '--...s_sticky_shared_directory_without_requiring_root\n1 failed, 116 passed, 1 skipped, 3 deselected in 0.66s\n", stderr='').returncode
+
+<repo-root>/tests/test_execskill_v225_ops.py:86: AssertionError
+__ test_ops_are_self_contained_snapshot_with_optional_documentation[partial] ___
+
+tmp_path = PosixPath('/private/tmp/execskill-r2-hybcy4wk/ops-ctny_tpl')
+documentation = 'partial'
+
+    @pytest.mark.parametrize('documentation', ['absent', 'partial', 'mismatch'])
+    def test_ops_are_self_contained_snapshot_with_optional_documentation(tmp_path, documentation):
+        # The nested authored shared-scratch fixture must also have a traversable parent.
+        tmp_path.chmod(0o755)
+        snapshot = tmp_path / 'snapshot'
+        fixture = snapshot / 'tests/fixtures/execskill/v225_ops'
+        shutil.copytree(OPS, fixture)
+        module = snapshot / 'tests' / Path(__file__).name
+        shutil.copy2(__file__, module)
+        assert {path.name for path in snapshot.iterdir()} == {'tests'}
+        if documentation != 'absent':
+            source = snapshot.joinpath(*json.loads((OPS / 'manifest.json').read_text())['source_directory'])
+            source.mkdir(parents=True)
+            for name in ('m9-env.sh', 'patch-consent-v225.py'):
+                shutil.copy2(OPS / name, source / name)
+            assert not (source / 'commit-v225.sh').exists()
+            if documentation == 'mismatch':
+                with (source / 'm9-env.sh').open('ab') as stream:
+                    stream.write(b'\n# Authored mismatch in an available deliverable.\n')
+        env = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1', 'TMPDIR': str(tmp_path), 'PYTHONPATH': str(snapshot)}
+        env.pop('PYTEST_PLUGINS', None)
+        env.pop('PYTEST_ADDOPTS', None)
+        found = subprocess.run([sys.executable, '-B', '-m', 'pytest', '-q', '-p', 'no:cacheprovider',
+            '--basetemp=' + str(tmp_path / 'runtime'), str(module.relative_to(snapshot)),
+            '-k', 'not self_contained_snapshot'], cwd=snapshot, env=env, capture_output=True, text=True, timeout=60)
+        if documentation == 'mismatch':
+            assert found.returncode == 1, found.stdout + found.stderr
+            assert '1 failed' in found.stdout and '3 deselected' in found.stdout
+            assert 'AssertionError' in found.stdout and 'FileNotFoundError' not in found.stdout
+        else:
+>           assert found.returncode == 0, found.stdout + found.stderr
+E           AssertionError: .s............................F......................................... [ 61%]
+E             ..............................................                           [100%]
+E             =================================== FAILURES ===================================
+E             __ test_scratch_helper_creates_sticky_shared_directory_without_requiring_root __
+E             
+E             tmp_path = PosixPath('/private/tmp/execskill-r2-hybcy4wk/ops-ctny_tpl/ops-840v3bpt')
+E             monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x104d6e650>
+E             
+E                 def test_scratch_helper_creates_sticky_shared_directory_without_requiring_root(tmp_path, monkeypatch):
+E                     import stat
+E                     tmp_path.chmod(0o755)
+E                     scratch = tmp_path/'shared'
+E                     scratch.mkdir(mode=0o700)
+E             >       execute_block('m9-env.sh', 'PY_SCRATCH', [scratch], monkeypatch)
+E             
+E             tests/test_execskill_v225_ops.py:246: 
+E             _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+E             tests/test_execskill_v225_ops.py:238: in execute_block
+E                 exec(compile(python_block(script, marker), '<authored-operator-helper>', 'exec'), {'__name__': 'authored_helper'})
+E             _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+E             
+E             >   ???
+E             E   AssertionError: Scratch ancestors must allow uid 65534 traversal
+E             
+E             <authored-operator-helper>:14: AssertionError
+E             =========================== short test summary info ============================
+E             FAILED tests/test_execskill_v225_ops.py::test_scratch_helper_creates_sticky_shared_directory_without_requiring_root
+E             1 failed, 116 passed, 1 skipped, 3 deselected in 0.66s
+E             
+E           assert 1 == 0
+E            +  where 1 = CompletedProcess(args=['<python>', '-B', '-m', 'pytest', '-q', '-p', 'no:cacheprovider', '--...s_sticky_shared_directory_without_requiring_root\n1 failed, 116 passed, 1 skipped, 3 deselected in 0.66s\n", stderr='').returncode
+
+<repo-root>/tests/test_execskill_v225_ops.py:86: AssertionError
+__ test_ops_are_self_contained_snapshot_with_optional_documentation[mismatch] __
+
+tmp_path = PosixPath('/private/tmp/execskill-r2-hybcy4wk/ops-d9sauhu2')
+documentation = 'mismatch'
+
+    @pytest.mark.parametrize('documentation', ['absent', 'partial', 'mismatch'])
+    def test_ops_are_self_contained_snapshot_with_optional_documentation(tmp_path, documentation):
+        # The nested authored shared-scratch fixture must also have a traversable parent.
+        tmp_path.chmod(0o755)
+        snapshot = tmp_path / 'snapshot'
+        fixture = snapshot / 'tests/fixtures/execskill/v225_ops'
+        shutil.copytree(OPS, fixture)
+        module = snapshot / 'tests' / Path(__file__).name
+        shutil.copy2(__file__, module)
+        assert {path.name for path in snapshot.iterdir()} == {'tests'}
+        if documentation != 'absent':
+            source = snapshot.joinpath(*json.loads((OPS / 'manifest.json').read_text())['source_directory'])
+            source.mkdir(parents=True)
+            for name in ('m9-env.sh', 'patch-consent-v225.py'):
+                shutil.copy2(OPS / name, source / name)
+            assert not (source / 'commit-v225.sh').exists()
+            if documentation == 'mismatch':
+                with (source / 'm9-env.sh').open('ab') as stream:
+                    stream.write(b'\n# Authored mismatch in an available deliverable.\n')
+        env = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1', 'TMPDIR': str(tmp_path), 'PYTHONPATH': str(snapshot)}
+        env.pop('PYTEST_PLUGINS', None)
+        env.pop('PYTEST_ADDOPTS', None)
+        found = subprocess.run([sys.executable, '-B', '-m', 'pytest', '-q', '-p', 'no:cacheprovider',
+            '--basetemp=' + str(tmp_path / 'runtime'), str(module.relative_to(snapshot)),
+            '-k', 'not self_contained_snapshot'], cwd=snapshot, env=env, capture_output=True, text=True, timeout=60)
+        if documentation == 'mismatch':
+            assert found.returncode == 1, found.stdout + found.stderr
+>           assert '1 failed' in found.stdout and '3 deselected' in found.stdout
+E           AssertionError: assert ('1 failed' in '.F............................F......................................... [ 61%]\n.......................................t_scratch_helper_creates_sticky_shared_directory_without_requiring_root\n2 failed, 116 passed, 3 deselected in 0.78s\n')
+E            +  where '.F............................F......................................... [ 61%]\n.......................................t_scratch_helper_creates_sticky_shared_directory_without_requiring_root\n2 failed, 116 passed, 3 deselected in 0.78s\n' = CompletedProcess(args=['<python>', '-B', '-m', 'pytest', '-q', '-p', 'no:cacheprovider', '--...lper_creates_sticky_shared_directory_without_requiring_root\n2 failed, 116 passed, 3 deselected in 0.78s\n', stderr='').stdout
+
+<repo-root>/tests/test_execskill_v225_ops.py:83: AssertionError
+__ test_scratch_helper_creates_sticky_shared_directory_without_requiring_root __
+
+tmp_path = PosixPath('/private/tmp/execskill-r2-hybcy4wk/ops-83b7j8rc')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x106a2bbd0>
+
+    def test_scratch_helper_creates_sticky_shared_directory_without_requiring_root(tmp_path, monkeypatch):
+        import stat
+        tmp_path.chmod(0o755)
+        scratch = tmp_path/'shared'
+        scratch.mkdir(mode=0o700)
+>       execute_block('m9-env.sh', 'PY_SCRATCH', [scratch], monkeypatch)
+
+<repo-root>/tests/test_execskill_v225_ops.py:246: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<repo-root>/tests/test_execskill_v225_ops.py:238: in execute_block
+    exec(compile(python_block(script, marker), '<authored-operator-helper>', 'exec'), {'__name__': 'authored_helper'})
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   AssertionError: Scratch ancestors must allow uid 65534 traversal
+
+<authored-operator-helper>:14: AssertionError
+=========================== short test summary info ============================
+FAILED ../../..<repo-root>/tests/test_execskill_v225_ops.py::test_ops_are_self_contained_snapshot_with_optional_documentation[absent]
+FAILED ../../..<repo-root>/tests/test_execskill_v225_ops.py::test_ops_are_self_contained_snapshot_with_optional_documentation[partial]
+FAILED ../../..<repo-root>/tests/test_execskill_v225_ops.py::test_ops_are_self_contained_snapshot_with_optional_documentation[mismatch]
+FAILED ../../..<repo-root>/tests/test_execskill_v225_ops.py::test_scratch_helper_creates_sticky_shared_directory_without_requiring_root
+4 failed, 459 passed, 1 skipped in 35.26s
+
+Exit code: 1

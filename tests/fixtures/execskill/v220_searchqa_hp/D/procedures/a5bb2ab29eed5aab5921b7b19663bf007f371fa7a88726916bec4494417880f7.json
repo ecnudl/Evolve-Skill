@@ -1,0 +1,29 @@
+{
+  "id": "p-searchqa-1-10",
+  "origin": "searchqa",
+  "accepted_at": null,
+  "description": "Counts capitalized phrases of one to three words that occur in snippet bodies but not in the question text, ranks them by how many distinct snippets contain them, and reports the top phrases with their exact snippet counts as candidates. This targets clues whose answer is a different well-known entity that dominates the retrieved pages. The failing module-level literal call is replaced with a full implementation inside functions.",
+  "hooks": [
+    "applies",
+    "before_call"
+  ],
+  "source": "import re\n\n# Module constants use only allowed pure expressions.\n_WORD_RE = re.compile(r\"[A-Z][A-Za-z0-9''\\-]*\")\n_TITLE_RE = re.compile(r\"\\[TLE\\]\")\n_DOC_RE = re.compile(r\"\\[DOC\\]\")\n_STOP = frozenset(\n    [\"The\", \"A\", \"An\", \"And\", \"But\", \"For\", \"With\", \"From\", \"Into\", \"After\",\n     \"Before\", \"During\", \"This\", \"That\", \"These\", \"Those\", \"His\", \"Her\",\n     \"Their\", \"Its\", \"Was\", \"Were\", \"Is\", \"Are\", \"Has\", \"Have\", \"Had\",\n     \"Not\", \"One\", \"Two\", \"Both\", \"All\", \"Some\", \"When\", \"Where\", \"While\",\n     \"About\", \"Directed\", \"Starring\", \"Create\", \"Download\", \"Printable\",\n     \"Version\", \"See\", \"More\", \"Jeans\"]\n)\n\n\ndef applies(view):\n    # Only fires when there is context text with document markers.\n    context = view.get(\"context\") or \"\"\n    question = view.get(\"question\") or \"\"\n    return bool(context) and bool(question)\n\n\ndef _question_lower_words(question):\n    return set(question.lower().split())\n\n\ndef _snippet_texts(context):\n    parts = _DOC_RE.split(context)\n    texts = []\n    for part in parts:\n        part = part.strip()\n        if not part:\n            continue\n        texts.append(part)\n    return texts\n\n\ndef _extract_phrases(text):\n    words = _WORD_RE.findall(text)\n    phrases = set()\n    n = len(words)\n    for i in range(n):\n        if words[i] in _STOP:\n            continue\n        phrases.add(words[i])\n        if i + 1 < n and words[i + 1] not in _STOP:\n            phrases.add(words[i] + \" \" + words[i + 1])\n        if i + 2 < n and words[i + 1] not in _STOP and words[i + 2] not in _STOP:\n            phrases.add(words[i] + \" \" + words[i + 1] + \" \" + words[i + 2])\n    return phrases\n\n\ndef before_call(view, state):\n    context = view.get(\"context\") or \"\"\n    question = view.get(\"question\") or \"\"\n    if not context or not question:\n        return None\n\n    q_words = _question_lower_words(question)\n    snippets = _snippet_texts(context)\n    if not snippets:\n        return None\n\n    counts = {}\n    for snippet in snippets:\n        phrases = _extract_phrases(snippet)\n        for phrase in phrases:\n            low = phrase.lower()\n            if any(w in q_words for w in low.split()):\n                continue\n            counts[phrase] = counts.get(phrase, 0) + 1\n\n    # Keep only phrases found in more than one snippet.\n    multi = {p: c for p, c in counts.items() if c >= 2}\n    if not multi:\n        return None\n\n    ranked = sorted(multi.items(), key=lambda kv: (-kv[1], kv[0]))\n    top = ranked[:5]\n\n    candidates = []\n    for phrase, cnt in top:\n        entry = (phrase + \" (\" + str(cnt) + \" snippets)\")[:120]\n        candidates.append(entry)\n\n    facts = []\n    for phrase, cnt in top:\n        fact = (\"Capitalized phrase present in \" + str(cnt) + \" of \" +\n                str(len(snippets)) + \" snippets: \" + phrase)[:200]\n        facts.append(fact)\n\n    notes = {}\n    if facts:\n        notes[\"facts\"] = facts\n    if candidates:\n        notes[\"candidates\"] = candidates\n    if not notes:\n        return None\n    return notes\n",
+  "header": "Cross-snippet capitalized entity counter",
+  "max_note_chars": 4000,
+  "requests_second_call": false,
+  "state_bytes": 0,
+  "excluded_benches": [
+    "spreadsheetbench",
+    "alfworld"
+  ],
+  "replay_tests": [],
+  "lineage": {
+    "parent": null,
+    "revises": null,
+    "engineer_call": "01d7742cb7b5c8292eaca060a867dca11828e02f003990c59c017bebdc7f84c3"
+  },
+  "policy_version": "fivebench-execskill-v2-9-policy",
+  "version": "fivebench-execskill-v1-procedure-v2-9",
+  "evidence": "main_v6_real_run",
+  "record_sha256": "a5bb2ab29eed5aab5921b7b19663bf007f371fa7a88726916bec4494417880f7"
+}

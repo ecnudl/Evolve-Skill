@@ -1,0 +1,21 @@
+Codex second look at P3b's fixes (67fb84a) and the merge with the resume replay (b8a2045, d545269); gpt-6-astra, effort ultra, read-only, 2026-11-15 06:25-06:27, on commit d545269; brief: SkillOpt-scratch/typed-v3-design/codex/brief-P3b-review2.md; 99,367 tokens.
+
+No new BLOCKER, MAJOR, or MINOR findings in the requested fixes and merge.
+
+By inspection, records-only execution returns before replay setup, rerun marking, draining, or receipt consumption ([chain.py:972](skillopt/execskill/typed/chain.py:972)). Missing records cannot trigger model calls or file creation. I found no false pause in the specified interrupted-call, archived-rerun, card-round-2, repair-version, forced-archive, shared-member, or zero-made-item scenarios.
+
+One qualification to “any option changed”: `_open_state` does **not** bind `memory_lock` ([chain.py:3580](skillopt/execskill/typed/chain.py:3580)). This omission already exists in `67fb84a`; it is not introduced by these fixes or merges.
+
+Pytest is unavailable (`No module named pytest`); tests were read, not executed.
+
+Earlier finding 1: FIXED — comparisons are rebuilt from the intended arms’ cells, plans, sealed parameters, J and E.
+
+Earlier finding 2: FIXED — screens are bound to the expected unit, arm, incumbent, procedure IDs and candidate hash; a mismatched hash cannot pass.
+
+Earlier finding 3: FIXED — stage reconstruction uses underlying records and cells; removing decision fields no longer bypasses verification.
+
+Merge: ACCEPTABLE — the exact preset and T5 zero rows survive; individual-option overrides are rejected; default manifest construction preserves typed-v2 serialization; both sides’ option checks and tests survive; screen cells receive replay protection and remain excluded from gate runs.
+
+VERDICT: ACCEPTABLE
+
+Note (engineer, 06:3x): the memory_lock qualification predates typed-v3 (typed-v2's _open_state never bound it); memory_lock is sealed in manifest.json, which a resume loads and checks, so it cannot change between passes of one root. No change made.

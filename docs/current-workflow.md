@@ -1,5 +1,85 @@
 # 当前完整流程：Skill 与验证器如何协同进化
 
+## 11/09 main-v10：准备阶段的冻结根目录排除（fix round 3）
+
+[manifest._check_frozen_paths](../skillopt/execskill/manifest.py) 仅在 `is_v226` 下检查输入路径的
+词法绝对路径与 `resolve(strict=False)` 路径，任一位于 main-v9 根目录的词法或解析树内即拒绝。
+[v214_preparation._check_frozen_inputs](../skillopt/execskill/v214_preparation.py) 遍历继承 S0／manifest
+中的嵌套记录时，允许指向冻结树外的解释器符号链接；排除检查不打开文件，也不调用 `safe_path`。
+实际读取入口和 `_check_run_root` 仍执行原有 `safe_path` 检查，读取源文件和运行根目录仍拒绝符号链接。
+这只修复启动前路径校验；离线夹具与验证记录见[交接审计](handoff/v226-20261109/audit.txt)，不构成真实运行或方法效果证据。
+
+## 11/06 main-v9：route B 显式关闭 thinking（本地工程更新）
+
+main-v9 的 D 客户端由 `manifest._clients` 统一调用 `manifest.make_solver`，经
+[v225_client.py](../skillopt/execskill/v225_client.py) 构造 route-B 适配器；配置与请求增加
+`thinking: {type: disabled}`，同时保留 `reasoning_effort: none` 及其余字段。
+`clients.solver.D` 与 `clients.routes.D.B` 同时固定这一形状并校验精确字段集合，不一致即拒绝。
+旧 `client.py` 完全保留，因此旧配置的客户端源码 pin 与 route pin 不变；G solver 与 GLM
+角色也保持原样。训练、确认／验收、拆分／合并、卡片评估、读面板、D 审计与路由探测使用
+同一客户端工厂；D 审计在 G 链上也复用这个已登记 D 客户端，GLM 角色不受影响。
+
+冻结 `Client._receipt` 在 thinking disabled 时可先返回 `thinking_mismatch`，随后既有
+`RouteClient._receipt` 仍补齐 usage／reasoning／visible 字段和 `reasoning_mismatch` subtype，
+重发及超账本上限停链不变。请求 hash 仍基于 system/user；它不是跨运行回复缓存，完成单元、
+探针和恢复记录按 run／unit 身份及源码快照校验，同轮请求复用不能导入旧运行的回复。
+远端运维数字由操作者提供，未由本 writer 联网核查；此前 D 数据只有 reasoning_effort，
+不改标旧数字，详见[登记修订](handoff/v29-20261026/V225-PREREG.md#2026-11-06-amendment--main-v9-route-b-thinking-field)
+和[独立回执](handoff/v29-20261026/V225-ROUTE-THINKING-20261106.json)。
+
+## 11/05 路线 B v2.25 / main-v9：小切片确认与工程师反馈（本地工程更新）
+
+负责人此前决定“可以，放宽确认规则，改完冒烟通过后直接启动 main-v9”。该决定对应
+`main-v9` 的程序确认例外；据负责人提供的时序，修改发生在第一次冒烟通过之后、
+任何 main-v9 正式链之前，没有测试集数字参与决策，main-v9 测试集数字尚不存在。
+
+输入仍是封存候选与 incumbent 的逐题配对结果、请求签名和确认切片大小。
+[step.py](../skillopt/execskill/step.py) 的 `_confirm_eval` 和
+[v221_split.py](../skillopt/execskill/v221_split.py) 的 `evaluate`（单项拆分及合并）显式传配置给
+[v221_learning.py](../skillopt/execskill/v221_learning.py) 的 `confirmation_verdict`；
+[v225_phase.py](../skillopt/execskill/v225_phase.py) 的 `procedure_confirmation` 只在
+`configuration == main-v9` 且 `items < 30` 时把净修复下限改为 1，继续要求
+损坏数 ≤ 修复数的 2/3、整批平均变化 ≥ −0.01（−1 个百分点）。输出保留原规则记录，
+写入 `gain_floor=1` 和 `small_slice_clause=true`，并据此计算 decision、reason、passed。
+[profiles.py](../skillopt/execskill/profiles.py) 仅在 main-v9 身份中登记这组常量，供 manifest/S0 固定。
+
+同日追加的两项工程师改动仅用于 main-v9：[v225_cards.py](../skillopt/execskill/v225_cards.py)
+的提示要求在公开输入足以计算并验证完整答案时优先提案该程序、跨轮修复，并提醒非答案笔记的
+接近通过可能只是重跑噪声；[engineer.py](../skillopt/execskill/engineer.py) 的低覆盖惰性修复
+依据检查记录 `C6b.fires_on == 0` 才标记 `never_fires`，已触发且改变请求不足三题时标记
+既有 `empty_notes`，把诊断、实际笔记计数与覆盖计数一并交给工程师；即使四题都有笔记、
+修订只改变一或两题，也保留 `empty=0, nonempty=4` 的证据块。仅由覆盖计数触发的反馈调用
+使用 `from_replay=False`，避免存储回放崩溃把仍有生成题笔记的候选排除于惰性修复；原有
+惰性检查的崩溃分类保持。`report['inert']` 判定、原因集合、
+可修复原因集合及所有门保持不变，main-v8 及更早配置的提示、标签、证据和 pin 不变。
+这两项由操作员依据负责人长期授权执行，不来自负责人对这段新文本的原话；依据是已知
+main-v6 求解器在保留面板有效后所写的 main-v6/v7 练习记录事后分析，因此后续 main-v9
+ZebraLogic 结果必须注明受此前结果影响。main-v9 尚未运行、没有数字，改动效果未测量，
+详见[第二条登记修订](handoff/v29-20261026/V225-PREREG.md#2026-11-05-second-amendment--engineer-priority-and-truthful-inert-feedback)
+及[独立工程验证回执](handoff/v29-20261026/V225-ENGINEER-20261105.json)。
+
+OfficeQA／SpreadsheetBench 的 4 题程序确认适用；SearchQA／ZebraLogic 的 40 题确认、
+训练、验收与所有卡片门不变。main-v8 及更早配置、未传配置的调用（含结构冒烟）保持旧规则，
+逐程序 `confirmation_counts` 仍只作反馈。本次仅离线工程验证，没有联网、模型调用、
+Linux 检查或启动；改后真实冒烟和启动没有在此任务中执行。规则时序与证据边界见
+[登记修订](handoff/v29-20261026/V225-PREREG.md#2026-11-05-amendment--small-procedure-confirmation-slices)，
+本地验证记录见 [V29-NOTES](handoff/v29-20261026/V29-NOTES.md#2026-11-05--main-v9-small-procedure-confirmation-clause)，
+运行交接见[当前状态](project-status.md)，研究结论仍以[结果账本](results-and-lessons.md)为准。
+
+## 10/26 路线 B v2.8：由训练与验收判断程序效用（本地工程更新）
+
+本次仅在 `execskill-v28` 工作副本实现 `zebra-pc-v6`（父配置 `zebra-pc-v5`）和 `alfworld-v3`（父配置 `alfworld-v2`）。旧配置保留原有行为、提示、记录与指纹；新配置使用独立策略、提示和 `engineer-v2-8` / `manifest-v2-8` 身份。依据是[负责人简报](handoff/v28-20261026/BRIEF-v28-writer.md)，文件、规则分类、测试与未决事项见 [V28-NOTES](handoff/v28-20261026/V28-NOTES.md)。这是离线实现与工程夹具验证，没有新模型实验，也没有采纳 Skill 或方法效果结论。
+
+| 阶段与输入 | v2.8 行为及输出 | 代码入口 |
+| --- | --- | --- |
+| 工程师提案／修复：原始回复、被修变化、当前过程库 | 同一模式驱动的读取器处理宽容 JSON、未知键和无歧义键位置修复；先确定代码围栏归属，再继承缺失源码，避免修订吞掉兄弟提案的程序；嵌套深度上限 64，递归／内存资源错误进入格式重试；输出规范化变化与 `repairs`。仍不可读时给该变化一次格式重试，附代码生成的完整模式、示例与确切问题；占单元调用预算，不占 `TRAIN_FIXES`，再次失败记 `unparseable`。 | [engineer_reader.py](../skillopt/execskill/engineer_reader.py)、[engineer_v28.py](../skillopt/execskill/engineer_v28.py) |
+| 注册检查：规范化程序、自写测试、已登记范围内的轨迹 | 沙箱安全／加载、答案泄漏及裁决、捷径、C8 答案通道标记、24,000 字节源码上限保留为阻断项。自写测试畸形只丢该测试，失败只报告；C6 两次完整回放保留且显示第一遍结果，差异、崩溃、触发／笔记覆盖率均为信息。C7 的获胜动作／已通过题负例和参考 tracker 一致率属于质量信息，非逐字绑定仍阻断，完整故障列表先分类再截断展示；仅辅助函数的源码推导为空 hooks，记为 inert。无法应用的编辑或组合预算不足由系统延后，不当作程序失败。 | [engineer.py](../skillopt/execskill/engineer.py) `check`、[replay.py](../skillopt/execskill/replay.py) |
+| 运行与训练：程序、每题公开视图、ALFWorld 显式状态、训练轨迹 | 新策略固定 `PYTHONHASHSEED=0`；C6 正序／逆序各复用一个健康 worker，训练路由每个包一遍复用一个；不同输入挂载分开，worker 丢失或粘滞故障后为余下题目重开；逐 hook 重建模块命名空间，ALFWorld 状态仍显式传递。程序在某题故障时不为该题继续提供笔记，故障逐项记录。完全无作用的程序记 `inert`，跳过训练评价；失活修订保留 incumbent。C9 只删指示回答形式的句子／列表项并记录，支持前导从句及礼貌标记，事实中的 units、return、round、output、answer 可保留。live／replay／donor／placebo 共用故障抑制规则：仅 form_instruction 的句子删除不触发故障；其他故障清除待发笔记，晚发故障不能撤回已交付内容。训练 `own_faults`、`predicate_faults` 与最终自测故障阈值只报告，原净增益要求和格式护栏继续决定采纳。 | [sandbox/client.py](../skillopt/execskill/sandbox/client.py)、[solver.py](../skillopt/execskill/solver.py)、[notes.py](../skillopt/execskill/notes.py)、[step.py](../skillopt/execskill/step.py) |
+| 冒烟：S2 solver 用量、S3 工程角色实测 | 两个 v2.8 配置均走 S3a／S3b，允许可解析但无候选的提案；SE6 纳入 S3 实测 GLM 成本，按 13／23 工程调用上限投影并判断是否超限。 | [zebra_smoke.py](../skillopt/execskill/zebra_smoke.py)、[alf_smoke.py](../skillopt/execskill/alf_smoke.py) |
+| 验收：封存候选、父版本、批次与单元记录 | 封存新配置身份；J3 继续记录故障题、分母与阈值结果，但不决定接受。`practical-v2-2` 的 J1 至少 5 个百分点、J4、J5、J6、J7 不变；仪器失败仍按原规则暂停。 | [acceptance.py](../skillopt/execskill/acceptance.py) `prepare` / `decide` |
+
+轮数 6、patience 2、数据切片和其余验收设置继承父配置。注册的未来输出根是 `/data/execskill-20261026-zebra-pc-v6` 与 `/data/execskill-20261026-alfworld-v3`，命名空间为 `G-zpc6` / `D-zpc6` 和 `G-alf3` / `D-alf3`；G 仅保留身份，不能启动。上述 `/data` 路径本次没有创建或启动。切片已历史复用，不能称为全新独立验收；依 v28-1 更正，ALFWorld 标为 `alfworld_split_v1_slices_reused_acceptance_used_once`：v1 使用过一次验收，v2 止于训练。当前状态见[项目交接](project-status.md)，研究结论仍以[结果账本](results-and-lessons.md)及完整实验档案为准。
+
 **10/4新增KOR无标签适用性验证器（零调用、已审查）。** [kor.py](../skillopt/applicability/kor.py)（v5）只读KOR公开规则、题面和回答，按规则文本哈希登记25条规则（operation 10、puzzle 6、cipher 9），满足全部公开约束判通过、可证违反判失败、其余未知（精确有理数；无理数用区间包络，只能证伪；cipher在公开文本留有选择时按所有可接受读法判定，读法间不一致即未知）；[report_kor_applicability.py](../scripts/report_kor_applicability.py)把每个观测绑定到冻结计划、声明Skill的检查点、分数与预测，用黄金与官方分数只检验仪器。E/F两份S1上，无标签同位置净值（−14/−21）与官方（−13/−20）几乎一致，并发现14道KOR题黄金违反自身公开约束；v5的cipher检查与官方0分歧，F S3的cipher损害（20胜/49负）可不看标签测出。它是学习阶段检测跨域损害的测量仪器，尚未接入学习或部署。见[验证器报告](kor-applicability-verifier-20261004.md)。后续探针阶段试点（新探针上比较原S1、带无标签证据的机制化改写与无证据对照改写）的生成器与运行器均已审查，按用户选择待F完成后付费运行（v7约674次调用，按同规则真实均值更正后约4.0M tokens，启动前需用户再确认）；另备v8（探针生成器v5加入72道cipher探针、证据示例按类别轮流，约1,106次调用/6.0M tokens，需用户批准），见[方案](kor-applicability-step3b-plan-20261004.md)。
 
 **10/4新增BCB反馈内容试点（已就绪、未运行）。** 学习v7新增仅限BCB＋SkillOpt的显式档案`bcb-execution-evidence-v1`：失败的训练执行在反思输入中另附脱敏证据（内置异常类、失败位置分类、候选自身失败行；不含隐藏测试正文、消息或期望值），默认档案仍为标量。[run_feedback_ablation_pilot.py](../scripts/run_feedback_ablation_pilot.py)复用F的SkillOpt S1为标量臂，只改反馈档案重跑一次，同面板同派生评测源码配对比较；Codex四轮审查ACCEPTABLE，零API真实冒烟通过，付费运行等F结束。见[试点报告](feedback-ablation-pilot-20261004.md)。

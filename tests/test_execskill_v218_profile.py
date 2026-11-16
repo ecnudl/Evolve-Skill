@@ -26,7 +26,7 @@ def test_all_forty_older_configurations_are_byte_identical(name, monkeypatch):
 def test_all_forty_older_tables_are_byte_identical():
     assert len(BEFORE['configurations']) == 40
     assert hashlib.sha256(CAPTURE.read_bytes()).hexdigest() == 'cfb663c420fe5004c7ea68bd469835735ac05d859c7f2aaa0e6970ebdf7c80bb'
-    assert {n for n in p.CONFIGURATIONS if not p.is_v219(n)} - set(BEFORE['configurations']) == {CHILD}
+    assert {n for n in p.CONFIGURATIONS if not p.is_v221(n) and not p.is_v220(n) and not p.is_v219(n)} - set(BEFORE['configurations']) == {CHILD}
     for name, tables in BEFORE['profile_tables'].items():
         assert json.dumps(manifest._plain({k: getattr(p,k)[name] for k in tables}),sort_keys=True).encode() == json.dumps(tables,sort_keys=True).encode()
 

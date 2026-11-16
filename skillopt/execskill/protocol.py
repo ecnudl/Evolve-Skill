@@ -44,7 +44,7 @@ EVIDENCE = ("engineering_fixture", "smoke", "pilot_real_run", "historical_replay
             "zebra_pc_v8_real_run", "alfworld_v5_real_run", "zebra_pc_v9_real_run", "alfworld_v6_real_run",
             "zebra_pc_v10_real_run", "alfworld_v7_real_run", "zebra_pc_v11_real_run", "alfworld_v8_real_run", "zebra_pc_v12_real_run", "alfworld_v9_real_run", "alfworld_v10_real_run", "alfworld_v11_real_run",
             "baseline_v210_real_run", "main_v3_real_run", "main_v4_real_run", "zebra_pc_v13_real_run", "zebra_hp_v3r4_test_read",
-            "main_v5_real_run", "zebra_pc_v14_real_run", "zebra_pc_v15_real_run", "zebra_hp_g3r2_test_read", "implant_v5_test_read", "main_v6_real_run", "cross_v5_test_read")
+            "main_v5_real_run", "zebra_pc_v14_real_run", "zebra_pc_v15_real_run", "zebra_hp_g3r2_test_read", "implant_v5_test_read", "main_v6_real_run", "cross_v5_test_read", "searchqa_hp_v6_test_read", "main_v7_real_run", "main_v8_real_run")
 IMPORTABLE = ("fivebench-coevolution-v3-sheet-qualification",)  # §1, owner #7, Codex F15: the one v3 record kind read
 TEXTS_IMPORT = "fivebench-coevolution-v3-texts-import"  # §2.2: the v3 task cards, imported by value (plan §6)
 
@@ -58,7 +58,9 @@ def kind(name):
 def record(name, evidence, fields):
     """A new record of this protocol (§1; plan §2): ``fields`` stamped with ``version`` = ``kind(name)`` and the
     ``evidence`` label, sealed with ``record_sha256``."""
-    require(evidence in EVIDENCE, "Unknown evidence label")
+    # The frozen evidence tuple is historical; the additive main-v9 label is
+    # admitted explicitly without rewriting any older registration table.
+    require(evidence in EVIDENCE or evidence in ('main_v9_real_run', 'main_v10_real_run'), "Unknown evidence label")
     require(isinstance(fields, dict) and not {"version", "evidence", RECORD_HASH} & set(fields),
             "A record's fields leave version, evidence and record_sha256 to the stamp")
     return seal({**fields, "version": kind(name), "evidence": evidence}, field=RECORD_HASH)
@@ -83,7 +85,8 @@ def verified(value, name=None):
                                 kind(name + "-alf-v2"), kind(name + "-v2-8"), kind(name + "-v2-9")))
             or (name == "procedure" and version in (kind("procedure-v2-8"), kind("procedure-v2-9"))),
             "A record of another kind")
-    require(value.get("evidence") in EVIDENCE, "Unknown evidence label")
+    require(value.get("evidence") in EVIDENCE or value.get("evidence") in ('main_v9_real_run', 'main_v10_real_run'),
+            "Unknown evidence label")
     return value
 
 
@@ -835,7 +838,7 @@ STAGES = "stages"  # the name the owner's read consent gives the stage arms (``r
 
 def stage_arms_max(configuration):
     """The most stage arms a read of ``configuration`` runs: one per step before the last (whose package is F)."""
-    if configuration in ('main-v5', 'implant-v5', 'main-v6', 'cross-v5'):
+    if configuration in ('main-v5', 'implant-v5', 'main-v6', 'cross-v5', 'searchqa-hp-v6', 'main-v7', 'main-v8', 'main-v9', 'main-v10'):
         from . import profiles
         return profiles.stage_arms_max(configuration)
     require(configuration in STAGE_READ, "Unknown run configuration")
@@ -845,7 +848,7 @@ def stage_arms_max(configuration):
 def read_arms_of(configuration):
     """The arms the owner's read consent names for ``configuration`` (``multi_arm_arms``): ``TEST_ARMS``, with
     ``STAGES`` in a stage-read configuration. Named without a ``test_`` prefix, so pytest never collects it."""
-    if configuration in ('main-v5', 'implant-v5', 'main-v6', 'cross-v5'):
+    if configuration in ('main-v5', 'implant-v5', 'main-v6', 'cross-v5', 'searchqa-hp-v6', 'main-v7', 'main-v8', 'main-v9', 'main-v10'):
         from . import profiles
         return profiles.read_arms_of(configuration)
     if configuration in ('baseline-v210', 'main-v3'):
@@ -858,7 +861,7 @@ def estimate_arms(pilot):
     """The procedure arms per fired test item the read estimate prices (``read_estimate_terms``):
     ``TEST_READ_ESTIMATE_ARMS`` plus every stage arm (``stage_arms_max``) at a full procedure cell, though a stage cell
     sends nothing where its procedures are another cell's."""
-    if pilot in ('main-v5', 'implant-v5', 'main-v6', 'cross-v5'):
+    if pilot in ('main-v5', 'implant-v5', 'main-v6', 'cross-v5', 'searchqa-hp-v6', 'main-v7', 'main-v8', 'main-v9', 'main-v10'):
         from . import profiles
         return profiles.estimate_arms(pilot)
     return TEST_READ_ESTIMATE_ARMS + stage_arms_max(pilot)

@@ -73,7 +73,8 @@ def _benches(value):
 
 def procedure_benches(procedure):
     """Historical procedures keep exactly their registered five-benchmark scope."""
-    return SUPPORTED_BENCHES if procedure.origin == ZEBRA else BENCHES
+    return SUPPORTED_BENCHES if (procedure.origin == ZEBRA
+        or getattr(procedure, 'policy_version', None) in (policy.POLICY_VERSION_V222, policy.POLICY_VERSION_V225)) else BENCHES
 
 
 def procedure_input_benches(procedure, *, excluded=()):
@@ -129,12 +130,13 @@ class Procedure:
         return hash(self.sha256)
 
     def _validate(self):
-        outcome_judged = self.policy_version in (policy.POLICY_VERSION_V28, policy.POLICY_VERSION_V29)
+        outcome_judged = self.policy_version in (policy.POLICY_VERSION_V28, policy.POLICY_VERSION_V29, policy.POLICY_VERSION_V222, policy.POLICY_VERSION_V225)
         learned = LEARNED_ID.fullmatch(self.id) if type(self.id) is str else None
         ensure(_is_procedure_id(self.id), "A procedure id is p-<bench>-<step>-<n> or fx-<name>")
         ensure(self.origin in SUPPORTED_BENCHES and (learned is None or learned.group(1) == self.origin),
                "A procedure's origin is the bench in its id")
-        ensure(self.evidence in EVIDENCE and (learned is not None or self.evidence == FIXTURE),
+        ensure((self.evidence in EVIDENCE or self.evidence in ('main_v9_real_run', 'main_v10_real_run'))
+               and (learned is not None or self.evidence == FIXTURE),
                "Evidence is registered; a fixture procedure is an engineering fixture")
         ensure(type(self.description) is str and 0 < len(self.description) <= MAX_DESCRIPTION_CHARS,
                "A description is 1-600 characters")
@@ -184,6 +186,19 @@ class Procedure:
                "Lineage names a revised procedure together with its hash")
         ensure(self.accepted_at is None or (type(self.accepted_at) is str and STEP.fullmatch(self.accepted_at)),
                "accepted_at is a step label or null")
+        if self.policy_version == policy.POLICY_VERSION_V222:
+            from .v222_cards import segment_violation
+            violation = segment_violation(self)
+            ensure(violation is None, violation)
+        if self.policy_version == policy.POLICY_VERSION_V225:
+            from .v225_cards import metadata, MAX_CARD_CHARS
+            card = metadata(self)
+            ensure(card is not None and card['home'] == self.origin and 0 < len(card['text']) <= MAX_CARD_CHARS
+                   and self.excluded_benches == tuple(b for b in SUPPORTED_BENCHES if b != card['route'])
+                   and self.hooks == () and self.header == '' and self.max_note_chars == 0
+                   and not self.requests_second_call and self.state_bytes == 0 and not self.replay_tests
+                   and self.lineage['parent'] is None and self.lineage['revises'] is None,
+                   'A card is constants-only, routed to exactly one bench and never executable')
 
     @property
     def is_fixture(self):
@@ -196,7 +211,9 @@ class Procedure:
                       replay_tests=_plain(list(self.replay_tests)), lineage=dict(self.lineage))
         if self.policy_version != policy.POLICY_VERSION:
             fields["policy_version"] = self.policy_version
-            stamp = ("procedure-v2-9" if self.policy_version == policy.POLICY_VERSION_V29 else
+            stamp = ("procedure-v2-25" if self.policy_version == policy.POLICY_VERSION_V225 else
+                     "procedure-v2-22" if self.policy_version == policy.POLICY_VERSION_V222 else
+                     "procedure-v2-9" if self.policy_version == policy.POLICY_VERSION_V29 else
                      "procedure-v2-8" if self.policy_version == policy.POLICY_VERSION_V28 else
                      "procedure-v2-5" if self.policy_version == policy.POLICY_VERSION_V25 else
                      "procedure-v2-4" if self.policy_version == policy.POLICY_VERSION_V24 else "procedure-v2-3")
@@ -210,8 +227,10 @@ class Procedure:
     @classmethod
     def from_json(cls, value):
         version = value.get("policy_version") if isinstance(value, dict) else None
-        modern = version in (policy.POLICY_VERSION_V23, policy.POLICY_VERSION_V24, policy.POLICY_VERSION_V25, policy.POLICY_VERSION_V28, policy.POLICY_VERSION_V29)
-        stamp = ("procedure-v2-9" if version == policy.POLICY_VERSION_V29 else
+        modern = version in (policy.POLICY_VERSION_V23, policy.POLICY_VERSION_V24, policy.POLICY_VERSION_V25, policy.POLICY_VERSION_V28, policy.POLICY_VERSION_V29, policy.POLICY_VERSION_V222, policy.POLICY_VERSION_V225)
+        stamp = ("procedure-v2-25" if version == policy.POLICY_VERSION_V225 else
+                 "procedure-v2-22" if version == policy.POLICY_VERSION_V222 else
+                 "procedure-v2-9" if version == policy.POLICY_VERSION_V29 else
                  "procedure-v2-8" if version == policy.POLICY_VERSION_V28 else
                  "procedure-v2-5" if version == policy.POLICY_VERSION_V25 else
                  "procedure-v2-4" if version == policy.POLICY_VERSION_V24
@@ -234,7 +253,7 @@ def default_applies(procedure):
     Source definitions are authoritative; declarations must never fabricate an
     entry point that the code does not define.
     """
-    return (procedure.policy_version == policy.POLICY_VERSION_V29
+    return (procedure.policy_version in (policy.POLICY_VERSION_V29, policy.POLICY_VERSION_V222)
             and "applies" not in _hook_functions(procedure.source))
 
 
@@ -297,7 +316,14 @@ class Package:
     def for_bench(self, bench):
         """The procedures that may run on ``bench``, in package order (the router's input)."""
         require(bench in SUPPORTED_BENCHES, "Unknown bench")
-        return tuple(p for p in self.procedures if bench in procedure_benches(p) and bench not in self.excluded(p.id))
+        return tuple(p for p in self.procedures if p.policy_version != policy.POLICY_VERSION_V225
+                     and bench in procedure_benches(p) and bench not in self.excluded(p.id))
+
+    def card_for(self, bench):
+        """The one inert instruction card routed to this benchmark, outside worker inputs."""
+        from .v225_cards import metadata
+        require(bench in SUPPORTED_BENCHES, 'Unknown bench')
+        return next((p for p in self.procedures if (row := metadata(p)) is not None and row['route'] == bench), None)
 
     def to_json(self):
         """The sealed record: ``version`` = fivebench-execskill-v1-package, ``evidence``, ``record_sha256``."""
@@ -314,22 +340,29 @@ class Package:
 
 def _check_package(package):
     procedures = package.procedures
-    ensure(all(isinstance(p, Procedure) for p in procedures) and len(procedures) <= MAX_PROCEDURES,
+    from .v225_cards import is_card, metadata, MAX_CARDS
+    ordinary = [p for p in procedures if not is_card(p)]
+    cards = [p for p in procedures if is_card(p)]
+    ensure(all(isinstance(p, Procedure) for p in procedures) and len(ordinary) <= MAX_PROCEDURES,
            "A package holds at most 24 procedures")
+    ensure(len(cards) <= MAX_CARDS and len({metadata(p)['route'] for p in cards}) == len(cards),
+           'At most five cards, one per route bench')
     ensure(len(set(package.order)) == len(procedures) and len({p.sha256 for p in procedures}) == len(procedures),
            "Procedure ids and contents are distinct")
-    ensure(sum(len(p.source.encode("utf-8")) for p in procedures) <= MAX_PACKAGE_BYTES,
+    ensure(sum(len(p.source.encode("utf-8")) for p in ordinary) <= MAX_PACKAGE_BYTES,
            "A package's sources total at most 64,000 bytes")
     ensure(package.parent_sha256 is None
            or (type(package.parent_sha256) is str and SHA.fullmatch(package.parent_sha256) is not None),
            "The parent is a package hash or null")
     ensure(type(package.step) is str and STEP.fullmatch(package.step) is not None, "A step label is required")
-    ensure(package.evidence in EVIDENCE and (package.evidence == FIXTURE or not any(p.is_fixture for p in procedures)),
+    ensure((package.evidence in EVIDENCE or package.evidence in ('main_v9_real_run', 'main_v10_real_run'))
+           and (package.evidence == FIXTURE or not any(p.is_fixture for p in procedures)),
            "Evidence is registered; a package holding a fixture procedure is an engineering fixture")
     ensure(all(type(s) is str and SHA.fullmatch(s) for s in package.retired)
            and not set(package.retired) & {p.sha256 for p in procedures}, "Retired procedures are hashes not in use")
     for procedure_id, benches in package.narrowed.items():
         ensure(procedure_id in package.order and benches, "A narrowing names a procedure of the package and benches")
+        ensure(not is_card(package.get(procedure_id)), 'A card route is immutable; cross copies use distinct cards')
         own = package.get(procedure_id).excluded_benches
         scope = procedure_benches(package.get(procedure_id))
         ensure(set(benches) <= set(scope) and not set(benches) & set(own)
@@ -337,6 +370,7 @@ def _check_package(package):
                "A narrowing adds benches and leaves at least one")
     for procedure_id, entry in package.describer.items():
         ensure(procedure_id in package.order and type(entry) is dict
+               and not is_card(package.get(procedure_id))
                and sorted(entry) == ["prompt_sha256", "text_sha256"]
                and all(type(v) is str and SHA.fullmatch(v) for v in entry.values()),
                "A describer entry holds the text and prompt hashes of a procedure of the package")
@@ -383,7 +417,11 @@ def validate(package, parent=None):
     if parent is not None:
         ensure(package.parent_sha256 == parent.sha256, "The candidate's parent hash is not its parent's")
         changes = edits(parent, package)
-        ensure(len(changes) <= MAX_CHANGES, "At most %d edits per step (%d)" % (MAX_CHANGES, len(changes)))
+        from .v225_cards import card_edit, MAX_CARD_EDITS
+        card_changes = [edit for edit in changes if card_edit(edit)]
+        ordinary = [edit for edit in changes if not card_edit(edit)]
+        ensure(len(ordinary) <= MAX_CHANGES, "At most %d edits per step (%d)" % (MAX_CHANGES, len(ordinary)))
+        ensure(len(card_changes) <= MAX_CARD_EDITS, 'At most four card edits per step')
 
 
 def with_(package, *, step, add=(), revise=(), remove=(), narrow=None, evidence=None):

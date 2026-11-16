@@ -1,0 +1,32 @@
+Platform: macOS-26.6.2-arm64-arm-64bit-Mach-O
+Python: <python>
+CWD/TMPDIR: /tmp/execskill-r2-hybcy4wk
+PYTHONPATH: <repo-root>
+Command: <python> -B -m pytest -q -p no:cacheprovider -x <repo-root>/tests/test_execskill_sandbox.py
+
+.F
+=================================== FAILURES ===================================
+__________________ test_sbx01_load_call_ping_with_lazy_start ___________________
+
+fake = <tests.execskill_fakes_docker.FakeDocker object at 0x107adeba0>
+make = <function make.<locals>.factory at 0x107bbbec0>
+
+    def test_sbx01_load_call_ping_with_lazy_start(fake, make):
+        procedure = pkg.Procedure(id="fx-note", origin="officeqa", description="Counts the lines of a table view.",
+                                  hooks=("applies", "before_call"), source=source(NOTE), evidence="engineering_fixture",
+                                  max_note_chars=200)
+        real = make(pkg.Package((procedure,), "fixture", "engineering_fixture"))
+        assert fake.argvs == [] and real.names == []  # lazy: nothing runs before the first call
+        result = real.call("fx-note", "before_call", [VIEW, {}], timeout_s=5)
+        value = {"facts": ["lines: 2"]}
+>       assert result == {"ok": True, "value": value, "value_sha256": digest(value), "cpu_ms": result["cpu_ms"],
+                          "rss_kib": result["rss_kib"]}
+E       KeyError: 'cpu_ms'
+
+<repo-root>/tests/test_execskill_sandbox.py:197: KeyError
+=========================== short test summary info ============================
+FAILED ../../..<repo-root>/tests/test_execskill_sandbox.py::test_sbx01_load_call_ping_with_lazy_start
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 1 passed in 1.66s
+
+Exit code: 1

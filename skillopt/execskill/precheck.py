@@ -69,7 +69,8 @@ def container_name(tag=None):
 
 def report(status, *, evidence, exc_type=None, message="", answer_cells=None, reason=None, **extra):
     """A pre-check run report (``fivebench-execskill-v1-precheck``)."""
-    require(status in STATUSES and evidence in EVIDENCE, "A known pre-check status and evidence label")
+    require(status in STATUSES and (evidence in EVIDENCE or evidence in ('main_v9_real_run', 'main_v10_real_run')),
+            "A known pre-check status and evidence label")
     return {"version": kind("precheck"), "evidence": evidence, "status": status, "exc_type": exc_type,
             "message": message, "answer_cells": answer_cells, "reason": reason or status, **extra}
 

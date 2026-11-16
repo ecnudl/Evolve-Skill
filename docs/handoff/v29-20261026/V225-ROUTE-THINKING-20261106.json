@@ -1,0 +1,442 @@
+{
+  "S1": {
+    "adapter_tested": true,
+    "current_main_v9_has_S1_e": false,
+    "current_production_path": "v214_stages.s1 -> chain.first_call + v29_route_probe.measure (3 length probes)",
+    "decision": {
+      "control_client": "v225_client.control_client stays unused in production.",
+      "date": "2026-11-06",
+      "schedule": "First-call confirmation plus three northgate length probes; no S1-e call added.",
+      "scope_question_resolved": true,
+      "source": "User decision in the documentation follow-up",
+      "source_code_changed": false
+    },
+    "legacy_control": "smoke.ControlClient inherits ElucidClient (route A), used only by smoke.run_probe",
+    "new_adapter": "v225_client.control_client copies the registered main-v9 route-B client and clears thinking and effort, leaving the original intact",
+    "production_control_wired": false
+  },
+  "chain": "D",
+  "configuration": "main-v9",
+  "construction_only_path": {
+    "change": "Uses manifest.make_solver; constructs and closes without sending. Main-v9 remains fixed on route B.",
+    "path": "scripts/run_execskill.py::switch_route"
+  },
+  "date": "2026-11-06",
+  "documentation_followup": {
+    "change_kind": "documentation_only",
+    "date": "2026-11-06",
+    "decision": "Keep first-call confirmation plus three length probes; v225_client.control_client stays unused in production.",
+    "provider_observations_added": "01:44–01:56 HTTP 400 cap refusals under both shapes and approximately 25 additional reported prompt tokens on reasoning replies; observations only.",
+    "review": "No BLOCKER or MAJOR; MINOR pending-S1-e wording resolved.",
+    "validation": {
+      "commits": 0,
+      "launches": 0,
+      "model_calls": 0,
+      "network_calls": 0,
+      "other_tests_run": false,
+      "parent_fingerprints": {
+        "command": [
+          "<python>",
+          "-B",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "--basetemp=<repo-root>/.v225-handoff-20261106/cases",
+          "tests/test_execskill_v225_profile.py::test_all_forty_five_parent_fingerprints_stay_byte_identical"
+        ],
+        "errors": 0,
+        "failed": 0,
+        "passed": 45
+      },
+      "source_code_changed": false,
+      "source_index": {
+        "entries": 1664,
+        "matched": 1664,
+        "method": "Recompute SHA256 for every files entry; compare indexed source/test/fixture hashes with the pre-documentation baseline.",
+        "mismatches": 0,
+        "path": "docs/handoff/v29-20261026/V225-SOURCE-SHA256.json",
+        "unchanged_source_test_fixture_entries": 1601
+      }
+    }
+  },
+  "excluded_paths": [
+    {
+      "path": "scripts/card_probe.py",
+      "reason": "CONFIGURATION is fixed to baseline-v210; cannot select main-v9."
+    },
+    {
+      "path": "smoke.run_probe / smoke.ControlClient",
+      "reason": "Legacy smoke spec has no main-v9 configuration path; main-v9 smoke uses v214_stages.s1."
+    },
+    {
+      "path": "scripts/weak_solver_probe.py and skillopt/coevo5 clients",
+      "reason": "Separate registered protocols/frozen client; no main-v9 construction path."
+    },
+    {
+      "path": "v214_stages.s3",
+      "reason": "Only a GLM engineer proposal, not a D solver send; untouched."
+    }
+  ],
+  "facts_provenance": {
+    "data_retained": "usage numbers only (operator report)",
+    "independently_verified": false,
+    "remote_artifact": "dl:/data/membase-20261105-ops/route-probe",
+    "remote_files_read_by_writer": false,
+    "source": "User/operator brief, 2026-11-06 Beijing time"
+  },
+  "implementation": {
+    "CONFIG_KEYS_unchanged": true,
+    "factory": "manifest.make_solver -> v225_client.solver_client -> v225_client.RouteClient",
+    "guards": "Frozen Client._receipt may return thinking_mismatch early; inherited RouteClient._receipt still supplies reasoning_tokens, visible_completion_tokens, over_nominal and reasoning_mismatch subtype; resend and ledger bounds unchanged.",
+    "identity": [
+      "clients.solver.D.thinking",
+      "clients.routes.D.B.thinking",
+      "main-v9 D client_source_sha pins v225_client.py",
+      "whole-source manifest code pins still verify all loaded files"
+    ],
+    "legacy_client_unchanged": true,
+    "reason_for_separate_adapter": "Editing client.py would change every older client_source_sha; the adapter preserves exact older solver blocks and route pins."
+  },
+  "limits": [
+    "No network, external service/model, real smoke, chain launch, commit, or outside-tree edit/execution.",
+    "Reported remote observations are not independently verified and do not establish a method effect."
+  ],
+  "observations": {
+    "before_midnight": {
+      "reasoning_replies": 0,
+      "settled_calls": 13500
+    },
+    "first_real_ledger_reasoning_time": "2026-11-06 00:11:47",
+    "membase_reasoning_replies": {
+      "count": 26,
+      "end": "00:58",
+      "start": "00:11",
+      "window_total_calls": null
+    },
+    "overruns": [
+      {
+        "completion_tokens": 29662,
+        "halt_phase": "stage settlement",
+        "ledger_halted_at": "00:47",
+        "max_tokens": 16384,
+        "reasoning_tokens": 26907,
+        "run": "chain D v2.24 GEPA learning",
+        "time": "00:36"
+      },
+      {
+        "above_ledger_bound": true,
+        "also_stopped_chain": "G",
+        "bound_not_supplied": true,
+        "completion_tokens": 6144,
+        "ledger": "shared membase",
+        "run": "chain D membase ALFWorld read",
+        "time": "00:58:32"
+      }
+    ],
+    "prior_request": {
+      "reasoning_effort": "none"
+    },
+    "probes": {
+      "0115": [
+        {
+          "reasoning_replies": 4,
+          "replies": 100,
+          "shape": "reasoning_effort none only"
+        },
+        {
+          "reasoning_replies": 0,
+          "replies": 100,
+          "shape": "thinking disabled only"
+        },
+        {
+          "reasoning_replies": 0,
+          "replies": 100,
+          "shape": "both fields"
+        },
+        {
+          "alias": "deepseek-flash",
+          "attempts": 100,
+          "delivered": 0,
+          "outcome": "HTTP refusal"
+        }
+      ],
+      "0117": [
+        {
+          "reasoning_replies": 11,
+          "replies": 800,
+          "shape": "reasoning_effort none only"
+        },
+        {
+          "reasoning_replies": 0,
+          "replies": 800,
+          "shape": "both fields"
+        }
+      ],
+      "cost_not_supplied": true,
+      "max_tokens": 1024,
+      "mean_completion_all_replies": {
+        "both_fields": 45.0,
+        "reasoning_effort_none_only": 50.7
+      },
+      "prompts": "same puzzle prompts",
+      "temperature": 0
+    },
+    "provider_0144_0156": {
+      "date": "2026-11-06",
+      "end": "01:56",
+      "http_refusals": {
+        "by_max_tokens": {
+          "16384": {
+            "percent_approx": [
+              3,
+              4
+            ]
+          },
+          "65536": {
+            "percent_approx": [
+              3,
+              4
+            ]
+          },
+          "8192": {
+            "percent_approx": 0.7
+          }
+        },
+        "condition": "max_tokens > 4096",
+        "exact_counts_and_denominators_supplied": false,
+        "message": "expected a value <= 4096",
+        "reported_frequency_percent_approx": [
+          3,
+          4
+        ],
+        "request_shapes": [
+          "reasoning_effort none alone",
+          "reasoning_effort none plus thinking disabled"
+        ],
+        "status": 400
+      },
+      "inferred_provider_mechanism": null,
+      "prompt_usage": {
+        "additional_prompt_tokens_approx": 25,
+        "comparison": "Replies carrying reasoning versus ordinary replies on the same prompt"
+      },
+      "request_caps_or_guards_changed": false,
+      "source": "User/operator follow-up; observations only, not independently verified by this writer",
+      "start": "01:44",
+      "timezone": "Asia/Shanghai"
+    },
+    "serving": "northgate/deepseek-v4-flash"
+  },
+  "protocol_boundary": {
+    "body": {
+      "reasoning_effort": "none",
+      "thinking": {
+        "type": "disabled"
+      }
+    },
+    "earlier_chain_D_data": "reasoning_effort alone",
+    "earlier_numbers_relabelled": false,
+    "guarantee_of_no_reasoning": false,
+    "method_effect_measured": false,
+    "other_body_fields_unchanged": true
+  },
+  "reuse_audit": {
+    "earlier_run_or_snapshot_solver_reply_cache": false,
+    "factory_cache": "manifest._clients caches client objects only; repeated requests still send.",
+    "request_hash": "Unchanged SHA256(system + NUL + user); not a full-body or global response-cache key.",
+    "within_run": [
+      "v225_phase.measure receives an in-memory parent-cell cache reset at card learning entry",
+      "v221_split._resume_cells and v222_runtime._resume_pairs read only the current unit/attempt directory under immutable request bindings",
+      "units.complete/completed and v221_recovery authorize resume only for the same run and unit identity",
+      "v29_route_probe.measure_all requires the same run and current source digest",
+      "manifest.verify_code/verify_unit reject source-snapshot mismatches before units",
+      "v225_read has fresh independent read dispatches; no cross-arm cell reuse"
+    ]
+  },
+  "route": "B",
+  "send_path_inventory": [
+    {
+      "client_path": "setting.clients -> manifest._clients -> manifest.make_solver",
+      "paths": [
+        "skillopt/execskill/chain.py::first_call"
+      ],
+      "purpose": "First-call confirmation for chain D"
+    },
+    {
+      "client_path": "setting.clients -> manifest._clients -> manifest.make_solver",
+      "paths": [
+        "skillopt/execskill/step.py::_Step.solver",
+        "skillopt/execskill/units.py::solver_endpoint",
+        "skillopt/execskill/step.py::_cells"
+      ],
+      "purpose": "Run/practice cells, generated-item probes, selftests, procedure training, confirmation and acceptance"
+    },
+    {
+      "client_path": "st.solver -> units.solver_endpoint -> setting.clients -> manifest.make_solver",
+      "paths": [
+        "skillopt/execskill/v221_split.py::evaluate",
+        "skillopt/execskill/v222_runtime.py::cross_gate"
+      ],
+      "purpose": "Split/merged procedure evaluation and cross-bench practice/harm gates"
+    },
+    {
+      "client_path": "st.solver -> units.solver_endpoint -> setting.clients -> manifest.make_solver",
+      "paths": [
+        "skillopt/execskill/v225_phase.py::measure"
+      ],
+      "purpose": "Card training, acceptance and confirmation"
+    },
+    {
+      "client_path": "own.clients -> manifest._clients -> manifest.make_solver",
+      "note": "main-v9 dispatches through v225_read; its read result records shared_cells=0",
+      "paths": [
+        "skillopt/execskill/v225_read.py::_run_unit_attempt",
+        "skillopt/execskill/evaluation.py::run_unit_spec"
+      ],
+      "purpose": "Independent main-v9 read units and inherited read endpoint adapter"
+    },
+    {
+      "client_path": "copy(setting.clients(D,bench)); only max_tokens is reduced to JUDGE_MAX_TOKENS",
+      "note": "The G solver and all GLM role clients remain untouched",
+      "paths": [
+        "skillopt/execskill/units.py::audit_judges"
+      ],
+      "purpose": "D audit/reviewer client, also requested by G-chain dual audits"
+    },
+    {
+      "client_path": "setting.clients -> manifest._clients -> manifest.make_solver",
+      "paths": [
+        "skillopt/execskill/v214_stages.py::s1",
+        "skillopt/execskill/v29_route_probe.py::measure",
+        "skillopt/execskill/v29_route_probe.py::measure_all"
+      ],
+      "purpose": "Main-v9 S1 first response and registered northgate length/readiness probes"
+    },
+    {
+      "client_path": "setting.clients directly or through st.solver / v222_smoke._endpoint -> manifest.make_solver",
+      "paths": [
+        "skillopt/execskill/v214_stages.py::s2",
+        "skillopt/execskill/v225_smoke.py::s2",
+        "skillopt/execskill/v225_smoke.py::card_probe",
+        "skillopt/execskill/v225_smoke.py::probe_endpoint",
+        "skillopt/execskill/v222_smoke.py::_endpoint"
+      ],
+      "purpose": "Main-v9 S2 practice smoke, card/cross-bench probes and pricing"
+    }
+  ],
+  "status": "complete; main-v9 S1 schedule unchanged and control adapter unused in production by decision",
+  "timezone": "Asia/Shanghai",
+  "validation": {
+    "broad_selection_run": false,
+    "latest_focused": {
+      "command": [
+        "<python>",
+        "-B",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--basetemp=<repo-root>/.v225-route-20261106/cases/focused",
+        "tests/test_execskill_v225_route_thinking.py"
+      ],
+      "cwd": "<repo-root>",
+      "errors": 0,
+      "failed": 0,
+      "note": "Adds the actual current S1 first-call/length-probe path after the scoped run.",
+      "passed": 93
+    },
+    "legacy_client_and_route_identity_cases_passed": 45,
+    "linux_S0_run": false,
+    "model_calls": 0,
+    "network_calls": 0,
+    "parent_fingerprints_passed": 45,
+    "platform": "Darwin",
+    "prior_fixture_files_unchanged": 113,
+    "python": "3.10.20",
+    "scoped": {
+      "TMPDIR": "<repo-root>/.v225-route-20261106/runtime",
+      "command": [
+        "<python>",
+        "-B",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--basetemp=<repo-root>/.v225-route-20261106/cases/scoped",
+        "--junitxml=<repo-root>/.v225-route-20261106/scoped.xml",
+        "tests/test_execskill_v225_cards.py",
+        "tests/test_execskill_v225_cli_templates.py",
+        "tests/test_execskill_v225_cross_card.py",
+        "tests/test_execskill_v225_engineer_prompt.py",
+        "tests/test_execskill_v225_evidence.py",
+        "tests/test_execskill_v225_isolation.py",
+        "tests/test_execskill_v225_limits.py",
+        "tests/test_execskill_v225_literals.py",
+        "tests/test_execskill_v225_manifest.py",
+        "tests/test_execskill_v225_metrics.py",
+        "tests/test_execskill_v225_ops.py",
+        "tests/test_execskill_v225_phase.py",
+        "tests/test_execskill_v225_profile.py",
+        "tests/test_execskill_v225_read.py",
+        "tests/test_execskill_v225_reads.py",
+        "tests/test_execskill_v225_route_thinking.py",
+        "tests/test_execskill_v225_routing.py",
+        "tests/test_execskill_v225_small_confirmation.py",
+        "tests/test_execskill_v225_smoke.py",
+        "tests/test_execskill_v225_snapshot.py",
+        "tests/test_execskill_v225_writer.py",
+        "tests/test_execskill_manifest.py",
+        "tests/test_execskill_routes.py",
+        "tests/test_execskill_client.py",
+        "tests/test_execskill_v29_manifest_smoke.py"
+      ],
+      "counts_by_file": {
+        "tests.test_execskill_client": 76,
+        "tests.test_execskill_manifest": 21,
+        "tests.test_execskill_routes": 46,
+        "tests.test_execskill_v225_cards": 40,
+        "tests.test_execskill_v225_cli_templates": 35,
+        "tests.test_execskill_v225_cross_card": 23,
+        "tests.test_execskill_v225_engineer_prompt": 41,
+        "tests.test_execskill_v225_evidence": 8,
+        "tests.test_execskill_v225_isolation": 23,
+        "tests.test_execskill_v225_limits": 4,
+        "tests.test_execskill_v225_literals": 2,
+        "tests.test_execskill_v225_manifest": 1,
+        "tests.test_execskill_v225_metrics": 4,
+        "tests.test_execskill_v225_ops": 121,
+        "tests.test_execskill_v225_phase": 45,
+        "tests.test_execskill_v225_profile": 56,
+        "tests.test_execskill_v225_read": 6,
+        "tests.test_execskill_v225_reads": 33,
+        "tests.test_execskill_v225_route_thinking": 92,
+        "tests.test_execskill_v225_routing": 53,
+        "tests.test_execskill_v225_small_confirmation": 70,
+        "tests.test_execskill_v225_smoke": 13,
+        "tests.test_execskill_v225_snapshot": 15,
+        "tests.test_execskill_v225_writer": 31,
+        "tests.test_execskill_v29_manifest_smoke": 17
+      },
+      "cwd": "<repo-root>/.v225-route-20261106/snapshot",
+      "errors": 0,
+      "failed": 4,
+      "failures": [
+        "tests.test_execskill_v225_ops::test_ops_are_self_contained_snapshot_with_optional_documentation[absent]",
+        "tests.test_execskill_v225_ops::test_ops_are_self_contained_snapshot_with_optional_documentation[partial]",
+        "tests.test_execskill_v225_ops::test_scratch_helper_creates_sticky_shared_directory_without_requiring_root",
+        "tests.test_execskill_v225_ops::test_suite_removes_only_owned_cases_after_verified_success[passing_summary]"
+      ],
+      "files": 25,
+      "issues_outside_known_tmp_and_zip_set": 0,
+      "known_tmp_failures": 4,
+      "passed": 872,
+      "skipped": 0,
+      "source_copy": "Byte-identical registered source/tests copied within the tree, with sibling scratch also inside the tree.",
+      "tests": 876
+    }
+  }
+}

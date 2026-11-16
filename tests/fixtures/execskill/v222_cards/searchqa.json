@@ -1,0 +1,55 @@
+{
+  "bench": "searchqa",
+  "format": {
+    "chars": 966,
+    "line_indices": [
+      3,
+      5,
+      6,
+      7,
+      9,
+      11
+    ],
+    "sha256": "d411e6a37168467b28140de9ed95b7fd249d3a0c9d4b741d8037329cca35994c",
+    "text": "- Prefer an answer that appears verbatim in the snippets over one you synthesize; the metric is exact match, so the exact surface form from the context is safest.\n- Answer with the minimal entity or value requested, not a full sentence: e.g., a name, a date, a title, a number.\n- Match the question's expected unit and granularity: if asked \"how many\", give just the number (unless the source shows a unit is part of the canonical answer).\n- If the question asks for one of several (e.g., \"which city\"), return only that item, not a list, unless the question explicitly asks for multiple.\n- Handle titles and proper nouns carefully: include articles that are part of a title (e.g., \"the great gatsby\" keeps \"great gatsby\"), since normalization only strips articles ambiguously — keeping the source's wording avoids risk.\n- Output the final answer inside `<answer>...</answer>`, ensuring that the last such tag in your reply contains exactly the concise answer text.\n"
+  },
+  "historical": {
+    "chars": 1846,
+    "sha256": "48b10afcc1dd0dcf09faee5c30f2e44470f62c2671fc6d907c16c8e51f1e0bfd",
+    "text": "- Read the question first and note its type (person, place, date, number, title, etc.) so you know what form the answer should take.\n- Scan all snippets, not just the first: the answer may appear only in a later snippet, and early snippets are often irrelevant.\n- Snippets are noisy: ignore SEO text, navigation fragments, and off-topic content. Use only what directly answers the question.\n- Prefer an answer that appears verbatim in the snippets over one you synthesize; the metric is exact match, so the exact surface form from the context is safest.\n- If snippets disagree, favor the most authoritative, specific, or repeated source; consider whether the question's phrasing (e.g., \"Jeopardy!\"-style clue) implies a well-known fact.\n- Answer with the minimal entity or value requested, not a full sentence: e.g., a name, a date, a title, a number.\n- Match the question's expected unit and granularity: if asked \"how many\", give just the number (unless the source shows a unit is part of the canonical answer).\n- If the question asks for one of several (e.g., \"which city\"), return only that item, not a list, unless the question explicitly asks for multiple.\n- Watch for near-miss distractors in the snippets (similar names, different dates, related works); verify the snippet actually matches all constraints in the question.\n- Handle titles and proper nouns carefully: include articles that are part of a title (e.g., \"the great gatsby\" keeps \"great gatsby\"), since normalization only strips articles ambiguously — keeping the source's wording avoids risk.\n- If no snippet contains the answer, still give your best short guess from the context or general knowledge; an empty answer scores zero.\n- Output the final answer inside `<answer>...</answer>`, ensuring that the last such tag in your reply contains exactly the concise answer text.\n"
+  },
+  "segments": [
+    {
+      "chars": 391,
+      "id": "searchqa-1",
+      "line_indices": [
+        0,
+        1,
+        2
+      ],
+      "max_note_chars": 1500,
+      "predicate": {
+        "kind": "evidence_context"
+      },
+      "sha256": "e8b4d89f832e4ca86334bfe0579825404497b7430b0357aff6d1efa3d0418cb1",
+      "text": "- Read the question first and note its type (person, place, date, number, title, etc.) so you know what form the answer should take.\n- Scan all snippets, not just the first: the answer may appear only in a later snippet, and early snippets are often irrelevant.\n- Snippets are noisy: ignore SEO text, navigation fragments, and off-topic content. Use only what directly answers the question.\n"
+    },
+    {
+      "chars": 489,
+      "id": "searchqa-2",
+      "line_indices": [
+        4,
+        8,
+        10
+      ],
+      "max_note_chars": 1500,
+      "predicate": {
+        "kind": "evidence_context"
+      },
+      "sha256": "c62d9324efb0e7a9f40fc351a488d60738641cacd36a23aa80741e7815a81104",
+      "text": "- If snippets disagree, favor the most authoritative, specific, or repeated source; consider whether the question's phrasing (e.g., \"Jeopardy!\"-style clue) implies a well-known fact.\n- Watch for near-miss distractors in the snippets (similar names, different dates, related works); verify the snippet actually matches all constraints in the question.\n- If no snippet contains the answer, still give your best short guess from the context or general knowledge; an empty answer scores zero.\n"
+    }
+  ],
+  "source_fixture_sha256": "175b0715909eeecb3fec356838b84566ade20b28f6a9b12cf985ad7de720ae5f",
+  "version": "instruction-decomposition-v2-22"
+}

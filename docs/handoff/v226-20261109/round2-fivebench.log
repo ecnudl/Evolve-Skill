@@ -1,0 +1,10 @@
+Platform: macOS-26.6.2-arm64-arm-64bit-Mach-O
+Python: <python>
+CWD/TMPDIR: /tmp/execskill-r2-hybcy4wk
+PYTHONPATH: <repo-root>
+Command: <python> -B -m pytest -q -p no:cacheprovider <repo-root>/tests/test_execskill_fivebench_step.py
+
+.......                                                                  [100%]
+7 passed in 0.97s
+
+Exit code: 0

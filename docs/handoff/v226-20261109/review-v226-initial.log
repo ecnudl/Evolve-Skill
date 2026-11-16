@@ -1,0 +1,85 @@
+........................................................................ [ 30%]
+.........FF............................................................. [ 61%]
+........................................................................ [ 91%]
+...................                                                      [100%]
+=================================== FAILURES ===================================
+_ test_previous_sequence_counts_are_normalized_without_relaxing_engineer[value0-2] _
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-zcs6ydx7')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111343230>
+value = ('a', 'b'), expected = 2
+
+    @pytest.mark.parametrize('value,expected', [(('a', 'b'), 2), ({'a', 'b'}, 2)])
+    def test_previous_sequence_counts_are_normalized_without_relaxing_engineer(tmp_path, monkeypatch, value, expected):
+        st, _ = authored_step(tmp_path, empty(step='G/s0', evidence='engineering_fixture'))
+        path = st.chain_root/'s3-zebralogic'/step.STEP_FILE
+        write_json(path, {})
+        monkeypatch.setattr(step, 'verified', lambda *_: {'decision': 'reject', 'fault_items': value, 'violating_items': 0})
+>       assert step._previous(st)['faults'] == {'fault_items': expected}
+
+tests/test_execskill_v226_diagnostics.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/step.py:1095: in _previous
+    value = _read_record(st, steps[0], "step")
+skillopt/execskill/step.py:1293: in _read_record
+    return read_record(path, kind)
+skillopt/execskill/v226_candidates.py:93: in read_record
+    return p.verified(value, kind) if kind is not None else value
+skillopt/execskill/protocol.py:72: in verified
+    value = verify(value, field=RECORD_HASH)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = {}, field = 'record_sha256'
+
+    def verify(value, field="record_hash"):
+        if not isinstance(value, dict):
+            raise ValueError("Expected sealed object")
+        payload = {k: v for k, v in value.items() if k != field}
+        json.dumps(payload, allow_nan=False)
+        if value.get(field) != digest(payload):
+>           raise ValueError("Evidence/version checksum mismatch")
+E           ValueError: Evidence/version checksum mismatch
+
+skillopt/coevolution_v5/core.py:60: ValueError
+_ test_previous_sequence_counts_are_normalized_without_relaxing_engineer[value1-2] _
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-a7debydq')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111430fa0>
+value = {'a', 'b'}, expected = 2
+
+    @pytest.mark.parametrize('value,expected', [(('a', 'b'), 2), ({'a', 'b'}, 2)])
+    def test_previous_sequence_counts_are_normalized_without_relaxing_engineer(tmp_path, monkeypatch, value, expected):
+        st, _ = authored_step(tmp_path, empty(step='G/s0', evidence='engineering_fixture'))
+        path = st.chain_root/'s3-zebralogic'/step.STEP_FILE
+        write_json(path, {})
+        monkeypatch.setattr(step, 'verified', lambda *_: {'decision': 'reject', 'fault_items': value, 'violating_items': 0})
+>       assert step._previous(st)['faults'] == {'fault_items': expected}
+
+tests/test_execskill_v226_diagnostics.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/step.py:1095: in _previous
+    value = _read_record(st, steps[0], "step")
+skillopt/execskill/step.py:1293: in _read_record
+    return read_record(path, kind)
+skillopt/execskill/v226_candidates.py:93: in read_record
+    return p.verified(value, kind) if kind is not None else value
+skillopt/execskill/protocol.py:72: in verified
+    value = verify(value, field=RECORD_HASH)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = {}, field = 'record_sha256'
+
+    def verify(value, field="record_hash"):
+        if not isinstance(value, dict):
+            raise ValueError("Expected sealed object")
+        payload = {k: v for k, v in value.items() if k != field}
+        json.dumps(payload, allow_nan=False)
+        if value.get(field) != digest(payload):
+>           raise ValueError("Evidence/version checksum mismatch")
+E           ValueError: Evidence/version checksum mismatch
+
+skillopt/coevolution_v5/core.py:60: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_execskill_v226_diagnostics.py::test_previous_sequence_counts_are_normalized_without_relaxing_engineer[value0-2]
+FAILED tests/test_execskill_v226_diagnostics.py::test_previous_sequence_counts_are_normalized_without_relaxing_engineer[value1-2]
+2 failed, 233 passed in 145.33s (0:02:25)

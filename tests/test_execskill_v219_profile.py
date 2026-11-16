@@ -29,7 +29,7 @@ def test_all_forty_one_older_configurations_are_byte_identical(name, monkeypatch
 def test_capture_and_every_older_table_remain_byte_identical():
     assert hashlib.sha256(CAPTURE.read_bytes()).hexdigest() == '7bfbff8fc6b65953a51dbb4ae7ff8ac717da8ec633bf704c59040e52c0066509'
     assert len(BEFORE['configurations']) == 41
-    assert set(p.CONFIGURATIONS) - set(BEFORE['configurations']) == {CHILD}
+    assert {n for n in p.CONFIGURATIONS if not p.is_v221(n) and not p.is_v220(n)} - set(BEFORE['configurations']) == {CHILD}
     for name, tables in BEFORE['profile_tables'].items():
         actual = manifest._plain({key: getattr(p, key)[name] for key in tables})
         assert json.dumps(actual, sort_keys=True).encode() == json.dumps(tables, sort_keys=True).encode()

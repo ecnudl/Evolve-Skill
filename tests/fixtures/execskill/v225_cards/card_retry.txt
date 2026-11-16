@@ -1,0 +1,1 @@
+Your reply could not be used as the card: {reason}. Reply again with only the card text, following every rule of the system message.

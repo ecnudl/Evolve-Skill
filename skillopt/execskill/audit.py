@@ -872,6 +872,17 @@ def audit1(ctx, change, report):
     result = run_audit([change.procedure], situations, ctx.audit_judges, bench=ctx.bench,
         configuration=ctx.configuration, step=ctx.step, round=ctx.round, change_id=str(change.n),
         counts={change.procedure.id: c6_counts(entries, outcomes)}, cache=ctx.sheet.setdefault('audit_cache', {}))
+    if profiles.is_v221(ctx.configuration):
+        # Confirmation has not happened at this point. Preserve the two judges'
+        # truth verdicts, but do not let the old audit-fix/drop loop decide them.
+        # Confirmed policy findings still enter that unchanged hard-check path.
+        truth = [finding for finding in result['confirmed'] if not _v221_policy(finding)]
+        result = {**result, 'audit_verdict': result['decision'], 'truth_confirmed': truth,
+                  'procedure_sources': {change.procedure.id: text_sha256(change.procedure.source)},
+                  'confirmed': [finding for finding in result['confirmed'] if _v221_policy(finding)],
+                  'advisory': result['advisory'] + truth,
+                  'truth_gate': 'deferred_until_own_confirmation_net_harm'}
+        result['decision'] = 'confirmed' if result['confirmed'] else 'pass'
     ctx.sheet.setdefault('audits', []).append(result)
     return result
 
@@ -935,7 +946,64 @@ def feedback(result):
             "advisory": _json_copy(result['advisory'])}
 
 
-def removed_procedures(result, order):
+def _v221_policy(finding):
+    codes = {'P2', 'P3', 'P4', 'P5', 'P6'}
+    return finding.get('verdict') in codes or any(
+        row.get('verdict') in codes or row.get('policy') in codes
+        for row in finding.get('judges', {}).values())
+
+
+def v221_prior_truth(result, prior, candidate):
+    """Retain already judged note truth for precisely the surviving source.
+
+    The final audit samples undisclosed situations, so earlier Part B findings
+    are not reconstructed by its source-template cache. Their source identity
+    must match before they can inform the deferred confirmation-harm decision.
+    """
+    sources = {procedure.id: text_sha256(procedure.source) for procedure in candidate.procedures}
+    retained = list(result.get('truth_confirmed', ()))
+    seen = {digest(finding) for finding in retained}
+    for earlier in prior:
+        for finding in earlier.get('truth_confirmed', ()):
+            pid = finding.get('procedure')
+            if pid not in sources or earlier.get('procedure_sources', {}).get(pid) != sources[pid]:
+                continue
+            entry = {**copy.deepcopy(finding), 'reused_from_unit': earlier.get('_source_unit'),
+                     'source_sha256': sources[pid]}
+            key = digest(entry)
+            if key not in seen:
+                retained.append(entry)
+                seen.add(key)
+    return {**result, 'truth_confirmed': retained}
+
+
+def v221_decisions(result, order, confirmation):
+    """Per-procedure audit decisions: an untrue-note verdict also needs own net harm."""
+    rows = []
+    for pid in order:
+        findings = [row for row in result['confirmed'] + result.get('truth_confirmed', [])
+                    if row.get('procedure') == pid]
+        policy = any(_v221_policy(row) for row in findings)
+        untrue = any(set(row.get('judges', {})) >= {'G', 'D'} and all(
+            row['judges'][judge].get('truth') == 'false' or row['judges'][judge].get('verdict') == 'P1'
+            for judge in ('G', 'D')) for row in findings)
+        own = (confirmation or {}).get(pid)
+        known = (isinstance(own, dict) and all(type(own.get(key)) is int and own[key] >= 0
+                                             for key in ('fixed', 'broken')))
+        harm = known and own['broken'] > own['fixed']
+        drop = bool(policy or untrue and harm)
+        rows.append({'procedure': pid, 'both_judges_untrue': untrue, 'hard_policy': policy,
+                     'confirmation': dict(own) if known else None, 'own_net_harm': bool(harm),
+                     'decision': 'drop' if drop else 'keep',
+                     'reason': ('hard_policy' if policy else 'both_untrue_and_own_net_harm' if drop else
+                                'truth_is_diagnostic_without_own_net_harm')})
+    return rows
+
+
+def removed_procedures(result, order, *, configuration=None, confirmation=None):
+    if profiles.is_v221(configuration):
+        return [row['procedure'] for row in v221_decisions(result, order, confirmation)
+                if row['decision'] == 'drop']
     remove = {f['procedure'] for f in result['confirmed'] if f['kind'] != 'contradiction'}
     for finding in result['confirmed']:
         if finding['kind'] == 'contradiction':

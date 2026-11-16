@@ -1,0 +1,24 @@
+{
+  "configuration": "main-v9",
+  "executed_operations": false,
+  "files": {
+    "commit-v225.sh": "45da3e08cdf288ca9c79c70ca3b7e5dfbf3fee0b64ee01c6e94d27ef904156c3",
+    "m9-alone.py": "345d03269cae2c3e2738612201540890d134cac7d3a23ca44b33695005173a01",
+    "m9-env.sh": "55fe8a32417deb0961a82833607fa4a5a8e4bef26eda41060468dac1cad8328a",
+    "m9-go.sh": "25fdf6bf5aa9347c924dde2ca63b2d434b872a55134670b2095e55ab1abea881",
+    "m9-launch.sh": "51d67118ae015034f0ce1a9119734cabd80180c228ee43192e558d898890e7fe",
+    "m9-prep.sh": "41729c681d8962656967774864e68b7bb8491b029bda0051ae8ee06b8c53ac83",
+    "m9-run.sh": "c37b3e2c0d6fe4ffd106f9a4cafe391d374a57e2a3bc7bfa01108e5fc133a8a8",
+    "m9-smoke.sh": "17c2f09d7d4d7de07cb2fc82cef5851f387cf40be1d450557b87f84e318a1c82",
+    "patch-consent-v225.py": "f47797eb2eef08f832622f421f354ac70d1793286362f7cc715725ac68d07a1c",
+    "run-v225-pre.sh": "932e9e6284a48a10b22a9dbe8985a12642fb7816d42725da6ed172ad8b056642"
+  },
+  "snapshot_optional_prose": {
+    "source_directory": "Optional source-deliverable mirror only; pinned fixture hashes and configuration assertions always run."
+  },
+  "source_directory": [
+    "docs",
+    "handoff",
+    "v29-20261026"
+  ]
+}

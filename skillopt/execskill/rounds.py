@@ -31,6 +31,7 @@ from .cells import Arm, Pause, TrainingStore, cell_id, run_cells
 from .outcomes_ext import UNKNOWN_FAULT
 from .profiles import SUPPORTED_BENCHES, BENCHES, INFRA_UNKNOWN_MAX, SEED, round_tag
 from .units import cell_context
+from . import profiles as p
 
 INFRASTRUCTURE = ("infrastructure", "unclassified")  # the frozen guard's kinds (step.py:128-130)
 
@@ -74,6 +75,11 @@ def run_round(setting, attempt, endpoint, unit, arms, schedule, tasks, *, tag, b
                 chosen = arms[arm] if isinstance(arms[arm], Arm) else arms[arm](cell)
                 require(isinstance(chosen, Arm), "An arm is an Arm or gives one per cell")
                 jobs.append((cell, {"public": tasks[item]["public"], "private": tasks[item]["private"]}, chosen))
+    if p.is_v225(p.configuration_of(setting)) and '/v225-smoke/card-probe/' in unit and jobs:
+        from . import v225_smoke
+        root = setting.extra.get('v225_smoke_probe_root')
+        require(root is not None, 'A main-v9 card probe reserves its dispatch count before cells start')
+        v225_smoke.reserve_probe_dispatch(root, 'solver', len(jobs), evidence=setting.evidence)
     context = cell_context(setting, attempt, endpoint)
     store = store or TrainingStore(attempt)
     done = []

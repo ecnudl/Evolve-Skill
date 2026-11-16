@@ -34,14 +34,23 @@ def representatives(identities, labels, *, bench):
 def plan(base, arms, packages, *, bench, context, workers):
     """C wins, then running F/stage representatives; B never represents another arm."""
     from . import evaluation
-    require((context.configuration == p.MAIN_V6 or p.is_v219(context.configuration)) and bench in reuse.BENCHES,
+    if p.is_v225(context.configuration):
+        from . import v225_read
+        return v225_read.fresh_plan(base, arms, packages, bench=bench, context=context, workers=workers)
+    require(p.uses_request_reuse(context.configuration) and bench in reuse.BENCHES,
             'Request-class read planning belongs only to main-v6 request-identity benches')
     cross = p.is_v219(context.configuration)
+    searchqa = p.is_v220(context.configuration)
+    if searchqa:
+        from . import v220_read
+        require(bench == 'searchqa' and not packages, 'The SearchQA import read has only F/C and no stages')
     if cross:
         from . import v219_read
         require(not packages, 'Cross reads have no stage packages')
-    labels = (['C', 'F', *v219_read.cross_labels(bench), 'B'] if cross else
+    labels = (['C', 'F'] if searchqa else ['C', 'F', *v219_read.cross_labels(bench), 'B'] if cross else
               ['C', 'F', *sorted(packages, key=lambda label: int(label[1:])), 'B'])
+    if p.is_v222(context.configuration):
+        labels = ['C', 'C0', 'F', *sorted(packages, key=lambda label: int(label[1:])), 'B']
     chosen = {**arms, **{label: Arm('candidate', package) for label, package in packages.items()}}
     require(set(chosen) == set(labels) and all(isinstance(arm, Arm) for arm in chosen.values()),
             'The main-v6 read has plain C/F/B and stage arms')
@@ -53,15 +62,23 @@ def plan(base, arms, packages, *, bench, context, workers):
         for label in labels:
             arm = chosen[label]
             captured = []
+            def observe(shell, text):
+                metadata = {'keyword_hits': notes.keyword_summary(
+                    [row for entry in shell.notes for row in entry['dropped']])}
+                if p.is_v222(context.configuration):
+                    from . import v222_read
+                    metadata['cross_identity'] = v222_read.metadata(bench, arm.package, [shell.record()])
+                if searchqa:
+                    metadata['searchqa_fired'] = v220_read.fired_metadata(
+                        arm.package.step.split('/')[0], shell.route.to_json(), shell.notes)
+                captured.append((shell.route, metadata))
             factory = workers(arm.package, item) if arm.package.for_bench(bench) else nullcontext(None)
             with factory as worker:
                 identity = reuse.signature(bench, arm.package, view, worker,
                     card_text=(v219_read.card_text(context, bench, label) if cross else
                                '' if arm.kind == 'blank' else context.cards.get(bench, '')),
                     runtime=context.runtime[bench], configuration=context.configuration,
-                    note_observer=lambda shell, text: captured.append((shell.route, {
-                        'keyword_hits': notes.keyword_summary([row for entry in shell.notes
-                                                               for row in entry['dropped']])})))
+                    note_observer=observe)
             identities[label][item] = identity
             routes[label][item], planning_metadata[label][item] = captured[0]
         chosen_sources = representatives({label: identities[label][item] for label in labels}, labels, bench=bench)
@@ -89,7 +106,7 @@ def shareable(source, identity):
 
 
 def checked_match(configuration, bench, source, value):
-    require((configuration == p.MAIN_V6 or p.is_v219(configuration)) and isinstance(value, dict)
+    require(p.uses_request_reuse(configuration) and isinstance(value, dict)
             and reuse.interchangeable(value.get('identity'), value.get('source_identity'), bench=bench)
             and shareable(source, value['source_identity']),
             'main-v6 shares only a fault-free, interchangeable request that its source actually sent')
@@ -111,6 +128,7 @@ class Store:
         fallback = cell['id'] in self.fallback
         reason = ('source_not_reusable' if fallback else 'dispatched' if source is None else
                   'identical_to_C' if source == 'C' else 'identical_to_F' if source == 'F' else
+                  'identical_to_C0' if source == 'C0' else
                   'identical_to_cross' if source.startswith('X_') else 'identical_to_stage')
         identity = self.planned['identities'][label][item]
         fields = {key: found for key, found in value.items() if key not in ('version', 'evidence', p.RECORD_HASH)}

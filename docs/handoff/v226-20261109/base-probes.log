@@ -1,0 +1,1907 @@
+
+base-K1.log
+===========
+RESTORED skillopt/execskill/step.py:_previous
+CASE K1 base functions
+F..                                                                      [100%]
+=================================== FAILURES ===================================
+__ test_previous_executed_acceptance_shows_counts_only[faults0-formats0-2-1] ___
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-d57ly36q')
+faults = ['secret-item-a', 'secret-item-b'], formats = ['secret-item-c']
+expected_faults = 2, expected_formats = 1
+
+    @pytest.mark.parametrize('faults,formats,expected_faults,expected_formats', [
+        (['secret-item-a', 'secret-item-b'], ['secret-item-c'], 2, 1),
+        (7, 3, 7, 3), ({'timeout': 2, 'hook': {'exception': 1}}, {'shape': 0},
+                       {'timeout': 2, 'hook': {'exception': 1}}, {'shape': 0})])
+    def test_previous_executed_acceptance_shows_counts_only(tmp_path, faults, formats, expected_faults, expected_formats):
+        st, _ = authored_step(tmp_path, empty(step='G/s0', evidence='engineering_fixture'))
+        path = st.chain_root/'s3-zebralogic'/step.STEP_FILE
+        write_json(path, p.record('step', 'engineering_fixture',
+            {'decision': 'accept', 'fault_items': faults, 'violating_items': formats}))
+        previous = step._previous(st)
+>       assert previous == {'decision': 'accepted', 'faults': {'fault_items': expected_faults},
+                            'format': {'violating_items': expected_formats}}
+E       AssertionError: assert {'decision': ...ret-item-c']}} == {'decision': ...ng_items': 1}}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Differing items:
+E         {'format': {'violating_items': ['secret-item-c']}} != {'format': {'violating_items': 1}}
+E         {'faults': {'fault_items': ['secret-item-a', 'secret-item-b']}} != {'faults': {'fault_items': 2}}
+E         Use -v to get more diff
+
+tests/test_execskill_v226_diagnostics.py:45: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execskill_v226_diagnostics.py::test_previous_executed_acceptance_shows_counts_only[faults0-formats0-2-1]
+1 failed, 2 passed in 0.39s
+
+base-F1.log
+===========
+RESTORED skillopt/execskill/step.py:_Step.unit
+CASE F1 base functions
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+_ test_engineer_replay_in_sheet_unit_matches_zebra_value_hash_and_faults[None] _
+
+attempt = PosixPath('<repo-root>/.runtime-tmp/identity-d3qcz9rp/spreadsheetbench/G/s4-spreadsheetbench/engineer-r1/attempt-1')
+
+    def work(attempt):
+        actual = {}
+>       crash, values = replay.zero_crash(procedure, [entry()], st.services.workers,
+            configuration='main-v10', actual=actual)
+
+tests/test_execskill_v226_diagnostics.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/replay.py:614: in zero_crash
+    first = replay_many(procedure, entries, workers, hashseed=0, inputs_dirs=inputs_dirs,
+skillopt/execskill/replay.py:565: in replay_many
+    for entry, outcome in run_worker_pass(group, lambda entry: workers(
+skillopt/execskill/replay.py:537: in run_worker_pass
+    result = run(item, worker)
+skillopt/execskill/replay.py:561: in run
+    return replay(worker, procedure, entry, mutation=mutation,
+skillopt/execskill/replay.py:516: in replay
+    run.cell()
+skillopt/execskill/replay.py:442: in cell
+    found = self.hook(hook, [view, None] if hook == "before_call" else [view])
+skillopt/execskill/replay.py:369: in hook
+    ok, value = self.call(hook, args, step)
+skillopt/execskill/replay.py:347: in call
+    result = diagnostics_runtime.worker_call(self.worker, self.procedure.id, hook, list(args),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+worker = <tests.execskill_v226_fakes.DiagnosticsWorker object at 0x1088b23c0>
+procedure = 'p-zebralogic-3-1', hook = 'before_call'
+args = [{'columns': ['Name'], 'question': 'There are 2 houses, numbered 1 to 2 from left to right, as seen from across the street. Clue 6 compares their positions.'}, None]
+
+    def worker_call(worker, procedure, hook, args, *, timeout_s, configuration=None, bench='zebralogic'):
+        """Bind diagnostic processing before output limits; retain legacy authored fallbacks."""
+        child = diagnostics.enabled(configuration, bench) and hook == 'before_call'
+        method = getattr(worker, 'call_diagnostics', None) if child else None
+        if child and profiles.is_v226(configuration) and (not callable(method) or not diagnostics.enabled(
+                getattr(worker, 'diagnostics_configuration', None))):
+>           raise ConfigurationError('diagnostics_worker_unbound: Zebra before_call requires diagnostics_configuration')
+E           skillopt.coevo5.outcomes.ConfigurationError: diagnostics_worker_unbound: Zebra before_call requires diagnostics_configuration
+
+skillopt/execskill/diagnostics_runtime.py:18: ConfigurationError
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-d3qcz9rp')
+expression = None
+
+    @pytest.mark.parametrize('expression', [None, '{"facts": ["x" * 2000], "diagnostics": ["x" * 2000000]}',
+                                          '{"diagnostics": "not a list"}'])
+    def test_engineer_replay_in_sheet_unit_matches_zebra_value_hash_and_faults(tmp_path, expression):
+        procedure = zebra_procedure(expression=expression)
+        parent = replay.solo(procedure)
+        outcomes, opened = [], []
+        for bench, k in [('spreadsheetbench', 4), (p.ZEBRA, 3)]:
+            st, workers = authored_step(tmp_path/bench, parent, bench=bench, k=k)
+            def work(attempt):
+                actual = {}
+                crash, values = replay.zero_crash(procedure, [entry()], st.services.workers,
+                    configuration='main-v10', actual=actual)
+                with st.services.workers(parent, kind='cell') as worker:
+                    raw = diagnostics_runtime.worker_call(worker, procedure.id, 'before_call', [VIEW, None],
+                        timeout_s=1, configuration='main-v10', bench=p.ZEBRA)
+                    clean, _ = diagnostics_runtime.capture(raw, configuration='main-v10', bench=p.ZEBRA, procedure=procedure)
+                return {'crash': crash, 'replay': values[entry()['cell']].summary(), 'actual': actual,
+                        'value': clean.get('value'), 'value_sha256': clean.get('value_sha256'),
+                        'fault': clean.get('fault')}
+            # The same zero_crash entry point is used by engineer C6/C7 and repair rechecks.
+>           outcomes.append(st.unit('engineer-r1', work))
+
+tests/test_execskill_v226_diagnostics.py:92: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+e589b5b:skillopt/execskill/step.py:440: in unit
+    self.calls = []
+skillopt/execskill/units.py:347: in run_unit
+    return v221_recovery.run_unit(unit_root, execute=_run_unit, **options)
+skillopt/execskill/v221_recovery.py:188: in run_unit
+    return execute(root, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+unit_root = PosixPath('<repo-root>/.runtime-tmp/identity-d3qcz9rp/spreadsheetbench/G/s4-spreadsheetbench/engineer-r1')
+
+    def _run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=None, configuration=protocol.PILOT):
+        """Run ``work(attempt)`` -> result (a JSON-safe dict) in the unit's next attempt, unless the unit is complete.
+        The commit (module docstring; Codex finding #8): the result is persisted as the attempt's completion evidence
+        (``COMPLETED``) before ``settle(attempt, result)`` -- the unit's consumption settlement, idempotent -- runs; when an
+        earlier attempt holds that evidence, the next attempt (after the owner's recorded decision) is a commit attempt
+        that settles again, drains and writes ``unit.json`` naming the attempt whose work completed, without running
+        ``work``. ``drain`` (``drainer``): called once the work (and the settlement) has ended, completed or paused, before
+        the attempt's status or the unit's record is written; its CleanupUnconfirmed pauses the unit as a stop, so a unit
+        whose containers remain is never complete. Returns the unit's record; raises ``Pause`` after writing the attempt's
+        status."""
+        suffix = "-v2-3" if protocol.is_v23(configuration) else ""
+        unit_root = safe_path(unit_root)
+        unit_root.mkdir(parents=True, exist_ok=True)
+        name = identity["unit"]
+        with exclusive(unit_root / ".lock"):
+            done = complete(unit_root, run=run, identity=identity)
+            if done is not None:
+                return done
+            if protocol.is_v221(configuration):
+                from . import v221_recovery
+                attempt = v221_recovery.next_attempt(unit_root)
+            else:
+                attempt = _next_attempt(unit_root)
+            if attempt is None:
+                raise Pause("awaiting_owner_decision", attempts(unit_root)[-1].name, name)
+            finished = completed(unit_root, run=run, identity=identity)  # a commit attempt spends nothing: no redo limit
+            if finished is None and attempt_number(attempt) > 1 + MAX_REDOS:
+                raise Pause("redo_limit", "%s: at most %d redos of a unit (§3.4)" % (attempt.name, MAX_REDOS), name)
+            attempt.mkdir()
+            cleanup_events = getattr(drain, "cleanups", None) if protocol.is_v292(configuration) else None
+            start_events = getattr(drain, "starts", None) if protocol.is_v292(configuration) else None
+            if cleanup_events is not None:
+                cleanup_events.clear()
+            if start_events is not None:
+                start_events.clear()
+            def lifecycle():
+                events = {key: rows for key, rows in (("cleanups", cleanup_events), ("starts", start_events)) if rows}
+                fields = {"sandbox": events} if events else {}
+                if protocol.is_v226(configuration) and {'k', 'bench'} <= set(identity):
+                    from . import v226_candidates
+                    try:
+                        fields['candidate_errors'] = v226_candidates.counts(unit_root.parent)
+                    except (OSError, ValueError):
+                        # A broken journal must not mask the original pause or
+                        # prevent its status from being recorded.
+                        fields['candidate_errors_status'] = 'journal_unavailable'
+                return fields
+            write_json(attempt / "started.json", record("unit-started" + suffix, evidence, {
+                "run": run, "identity": identity, **({"commit_of": finished[0].name} if finished else {})}))
+            try:
+                try:
+                    if finished is None:
+                        result = work(attempt)
+                        write_json(attempt / COMPLETED, record("unit-completed" + suffix, evidence, {
+                            "run": run, "identity": identity, "attempt": attempt.name, "result": result}))
+                        worked = attempt
+                    else:
+                        worked, result = finished
+                    if settle is not None:
+                        settle(worked, result)
+                finally:
+                    try:
+                        if drain is not None:
+                            drain()
+                    finally:
+                        if cleanup_events:
+                            write_json(attempt / "sandbox-cleanups.json", {"cleanups": cleanup_events})
+                        if start_events:
+                            write_json(attempt / "sandbox-starts.json", {"starts": start_events})
+            except Pause as pause:
+                recovery = v221_recovery.exception_pause(pause) if protocol.is_v221(configuration) else None
+                write_json(attempt / "status.json", record("unit-status" + suffix, evidence, {
+                    "status": "paused", "kind": pause.kind, "reason": pause.reason, "cell": pause.cell,
+                    **({'auto_retry_eligible': recovery is not None, **(recovery or {})}
+                       if protocol.is_v221(configuration) else {}), **lifecycle()}))
+                raise
+            except Exception as error:  # a stop of the run, a configuration check or a crash: the unit pauses
+                (attempt / "diagnostics.log").write_text(traceback.format_exc(), encoding="utf-8")
+                kind = stop_kind(error) or ("configuration" if isinstance(error, ValueError) else "exception")
+                recovery = v221_recovery.exception_pause(error) if protocol.is_v221(configuration) else None
+                write_json(attempt / "status.json", record("unit-status" + suffix, evidence, {
+                    "status": "paused", "kind": kind, "reason": type(error).__name__, "cell": None,
+                    **({'auto_retry_eligible': recovery is not None, **(recovery or {})}
+                       if protocol.is_v221(configuration) else {}), **lifecycle()}))
+>               raise Pause(kind, type(error).__name__, name) from error
+E               skillopt.coevo5.cells.Pause: configuration: ConfigurationError (cell G/s4-spreadsheetbench/engineer-r1)
+
+skillopt/execskill/units.py:435: Pause
+_ test_engineer_replay_in_sheet_unit_matches_zebra_value_hash_and_faults[{"facts": ["x" * 2000], "diagnostics": ["x" * 2000000]}] _
+
+attempt = PosixPath('<repo-root>/.runtime-tmp/identity-no8tnxtm/spreadsheetbench/G/s4-spreadsheetbench/engineer-r1/attempt-1')
+
+    def work(attempt):
+        actual = {}
+>       crash, values = replay.zero_crash(procedure, [entry()], st.services.workers,
+            configuration='main-v10', actual=actual)
+
+tests/test_execskill_v226_diagnostics.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/replay.py:614: in zero_crash
+    first = replay_many(procedure, entries, workers, hashseed=0, inputs_dirs=inputs_dirs,
+skillopt/execskill/replay.py:565: in replay_many
+    for entry, outcome in run_worker_pass(group, lambda entry: workers(
+skillopt/execskill/replay.py:537: in run_worker_pass
+    result = run(item, worker)
+skillopt/execskill/replay.py:561: in run
+    return replay(worker, procedure, entry, mutation=mutation,
+skillopt/execskill/replay.py:516: in replay
+    run.cell()
+skillopt/execskill/replay.py:442: in cell
+    found = self.hook(hook, [view, None] if hook == "before_call" else [view])
+skillopt/execskill/replay.py:369: in hook
+    ok, value = self.call(hook, args, step)
+skillopt/execskill/replay.py:347: in call
+    result = diagnostics_runtime.worker_call(self.worker, self.procedure.id, hook, list(args),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+worker = <tests.execskill_v226_fakes.DiagnosticsWorker object at 0x109156490>
+procedure = 'p-zebralogic-3-1', hook = 'before_call'
+args = [{'columns': ['Name'], 'question': 'There are 2 houses, numbered 1 to 2 from left to right, as seen from across the street. Clue 6 compares their positions.'}, None]
+
+    def worker_call(worker, procedure, hook, args, *, timeout_s, configuration=None, bench='zebralogic'):
+        """Bind diagnostic processing before output limits; retain legacy authored fallbacks."""
+        child = diagnostics.enabled(configuration, bench) and hook == 'before_call'
+        method = getattr(worker, 'call_diagnostics', None) if child else None
+        if child and profiles.is_v226(configuration) and (not callable(method) or not diagnostics.enabled(
+                getattr(worker, 'diagnostics_configuration', None))):
+>           raise ConfigurationError('diagnostics_worker_unbound: Zebra before_call requires diagnostics_configuration')
+E           skillopt.coevo5.outcomes.ConfigurationError: diagnostics_worker_unbound: Zebra before_call requires diagnostics_configuration
+
+skillopt/execskill/diagnostics_runtime.py:18: ConfigurationError
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-no8tnxtm')
+expression = '{"facts": ["x" * 2000], "diagnostics": ["x" * 2000000]}'
+
+    @pytest.mark.parametrize('expression', [None, '{"facts": ["x" * 2000], "diagnostics": ["x" * 2000000]}',
+                                          '{"diagnostics": "not a list"}'])
+    def test_engineer_replay_in_sheet_unit_matches_zebra_value_hash_and_faults(tmp_path, expression):
+        procedure = zebra_procedure(expression=expression)
+        parent = replay.solo(procedure)
+        outcomes, opened = [], []
+        for bench, k in [('spreadsheetbench', 4), (p.ZEBRA, 3)]:
+            st, workers = authored_step(tmp_path/bench, parent, bench=bench, k=k)
+            def work(attempt):
+                actual = {}
+                crash, values = replay.zero_crash(procedure, [entry()], st.services.workers,
+                    configuration='main-v10', actual=actual)
+                with st.services.workers(parent, kind='cell') as worker:
+                    raw = diagnostics_runtime.worker_call(worker, procedure.id, 'before_call', [VIEW, None],
+                        timeout_s=1, configuration='main-v10', bench=p.ZEBRA)
+                    clean, _ = diagnostics_runtime.capture(raw, configuration='main-v10', bench=p.ZEBRA, procedure=procedure)
+                return {'crash': crash, 'replay': values[entry()['cell']].summary(), 'actual': actual,
+                        'value': clean.get('value'), 'value_sha256': clean.get('value_sha256'),
+                        'fault': clean.get('fault')}
+            # The same zero_crash entry point is used by engineer C6/C7 and repair rechecks.
+>           outcomes.append(st.unit('engineer-r1', work))
+
+tests/test_execskill_v226_diagnostics.py:92: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+e589b5b:skillopt/execskill/step.py:440: in unit
+    self.calls = []
+skillopt/execskill/units.py:347: in run_unit
+    return v221_recovery.run_unit(unit_root, execute=_run_unit, **options)
+skillopt/execskill/v221_recovery.py:188: in run_unit
+    return execute(root, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+unit_root = PosixPath('<repo-root>/.runtime-tmp/identity-no8tnxtm/spreadsheetbench/G/s4-spreadsheetbench/engineer-r1')
+
+    def _run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=None, configuration=protocol.PILOT):
+        """Run ``work(attempt)`` -> result (a JSON-safe dict) in the unit's next attempt, unless the unit is complete.
+        The commit (module docstring; Codex finding #8): the result is persisted as the attempt's completion evidence
+        (``COMPLETED``) before ``settle(attempt, result)`` -- the unit's consumption settlement, idempotent -- runs; when an
+        earlier attempt holds that evidence, the next attempt (after the owner's recorded decision) is a commit attempt
+        that settles again, drains and writes ``unit.json`` naming the attempt whose work completed, without running
+        ``work``. ``drain`` (``drainer``): called once the work (and the settlement) has ended, completed or paused, before
+        the attempt's status or the unit's record is written; its CleanupUnconfirmed pauses the unit as a stop, so a unit
+        whose containers remain is never complete. Returns the unit's record; raises ``Pause`` after writing the attempt's
+        status."""
+        suffix = "-v2-3" if protocol.is_v23(configuration) else ""
+        unit_root = safe_path(unit_root)
+        unit_root.mkdir(parents=True, exist_ok=True)
+        name = identity["unit"]
+        with exclusive(unit_root / ".lock"):
+            done = complete(unit_root, run=run, identity=identity)
+            if done is not None:
+                return done
+            if protocol.is_v221(configuration):
+                from . import v221_recovery
+                attempt = v221_recovery.next_attempt(unit_root)
+            else:
+                attempt = _next_attempt(unit_root)
+            if attempt is None:
+                raise Pause("awaiting_owner_decision", attempts(unit_root)[-1].name, name)
+            finished = completed(unit_root, run=run, identity=identity)  # a commit attempt spends nothing: no redo limit
+            if finished is None and attempt_number(attempt) > 1 + MAX_REDOS:
+                raise Pause("redo_limit", "%s: at most %d redos of a unit (§3.4)" % (attempt.name, MAX_REDOS), name)
+            attempt.mkdir()
+            cleanup_events = getattr(drain, "cleanups", None) if protocol.is_v292(configuration) else None
+            start_events = getattr(drain, "starts", None) if protocol.is_v292(configuration) else None
+            if cleanup_events is not None:
+                cleanup_events.clear()
+            if start_events is not None:
+                start_events.clear()
+            def lifecycle():
+                events = {key: rows for key, rows in (("cleanups", cleanup_events), ("starts", start_events)) if rows}
+                fields = {"sandbox": events} if events else {}
+                if protocol.is_v226(configuration) and {'k', 'bench'} <= set(identity):
+                    from . import v226_candidates
+                    try:
+                        fields['candidate_errors'] = v226_candidates.counts(unit_root.parent)
+                    except (OSError, ValueError):
+                        # A broken journal must not mask the original pause or
+                        # prevent its status from being recorded.
+                        fields['candidate_errors_status'] = 'journal_unavailable'
+                return fields
+            write_json(attempt / "started.json", record("unit-started" + suffix, evidence, {
+                "run": run, "identity": identity, **({"commit_of": finished[0].name} if finished else {})}))
+            try:
+                try:
+                    if finished is None:
+                        result = work(attempt)
+                        write_json(attempt / COMPLETED, record("unit-completed" + suffix, evidence, {
+                            "run": run, "identity": identity, "attempt": attempt.name, "result": result}))
+                        worked = attempt
+                    else:
+                        worked, result = finished
+                    if settle is not None:
+                        settle(worked, result)
+                finally:
+                    try:
+                        if drain is not None:
+                            drain()
+                    finally:
+                        if cleanup_events:
+                            write_json(attempt / "sandbox-cleanups.json", {"cleanups": cleanup_events})
+                        if start_events:
+                            write_json(attempt / "sandbox-starts.json", {"starts": start_events})
+            except Pause as pause:
+                recovery = v221_recovery.exception_pause(pause) if protocol.is_v221(configuration) else None
+                write_json(attempt / "status.json", record("unit-status" + suffix, evidence, {
+                    "status": "paused", "kind": pause.kind, "reason": pause.reason, "cell": pause.cell,
+                    **({'auto_retry_eligible': recovery is not None, **(recovery or {})}
+                       if protocol.is_v221(configuration) else {}), **lifecycle()}))
+                raise
+            except Exception as error:  # a stop of the run, a configuration check or a crash: the unit pauses
+                (attempt / "diagnostics.log").write_text(traceback.format_exc(), encoding="utf-8")
+                kind = stop_kind(error) or ("configuration" if isinstance(error, ValueError) else "exception")
+                recovery = v221_recovery.exception_pause(error) if protocol.is_v221(configuration) else None
+                write_json(attempt / "status.json", record("unit-status" + suffix, evidence, {
+                    "status": "paused", "kind": kind, "reason": type(error).__name__, "cell": None,
+                    **({'auto_retry_eligible': recovery is not None, **(recovery or {})}
+                       if protocol.is_v221(configuration) else {}), **lifecycle()}))
+>               raise Pause(kind, type(error).__name__, name) from error
+E               skillopt.coevo5.cells.Pause: configuration: ConfigurationError (cell G/s4-spreadsheetbench/engineer-r1)
+
+skillopt/execskill/units.py:435: Pause
+_ test_engineer_replay_in_sheet_unit_matches_zebra_value_hash_and_faults[{"diagnostics": "not a list"}] _
+
+attempt = PosixPath('<repo-root>/.runtime-tmp/identity-9rzrvse2/spreadsheetbench/G/s4-spreadsheetbench/engineer-r1/attempt-1')
+
+    def work(attempt):
+        actual = {}
+>       crash, values = replay.zero_crash(procedure, [entry()], st.services.workers,
+            configuration='main-v10', actual=actual)
+
+tests/test_execskill_v226_diagnostics.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/replay.py:614: in zero_crash
+    first = replay_many(procedure, entries, workers, hashseed=0, inputs_dirs=inputs_dirs,
+skillopt/execskill/replay.py:565: in replay_many
+    for entry, outcome in run_worker_pass(group, lambda entry: workers(
+skillopt/execskill/replay.py:537: in run_worker_pass
+    result = run(item, worker)
+skillopt/execskill/replay.py:561: in run
+    return replay(worker, procedure, entry, mutation=mutation,
+skillopt/execskill/replay.py:516: in replay
+    run.cell()
+skillopt/execskill/replay.py:442: in cell
+    found = self.hook(hook, [view, None] if hook == "before_call" else [view])
+skillopt/execskill/replay.py:369: in hook
+    ok, value = self.call(hook, args, step)
+skillopt/execskill/replay.py:347: in call
+    result = diagnostics_runtime.worker_call(self.worker, self.procedure.id, hook, list(args),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+worker = <tests.execskill_v226_fakes.DiagnosticsWorker object at 0x109157250>
+procedure = 'p-zebralogic-3-1', hook = 'before_call'
+args = [{'columns': ['Name'], 'question': 'There are 2 houses, numbered 1 to 2 from left to right, as seen from across the street. Clue 6 compares their positions.'}, None]
+
+    def worker_call(worker, procedure, hook, args, *, timeout_s, configuration=None, bench='zebralogic'):
+        """Bind diagnostic processing before output limits; retain legacy authored fallbacks."""
+        child = diagnostics.enabled(configuration, bench) and hook == 'before_call'
+        method = getattr(worker, 'call_diagnostics', None) if child else None
+        if child and profiles.is_v226(configuration) and (not callable(method) or not diagnostics.enabled(
+                getattr(worker, 'diagnostics_configuration', None))):
+>           raise ConfigurationError('diagnostics_worker_unbound: Zebra before_call requires diagnostics_configuration')
+E           skillopt.coevo5.outcomes.ConfigurationError: diagnostics_worker_unbound: Zebra before_call requires diagnostics_configuration
+
+skillopt/execskill/diagnostics_runtime.py:18: ConfigurationError
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-9rzrvse2')
+expression = '{"diagnostics": "not a list"}'
+
+    @pytest.mark.parametrize('expression', [None, '{"facts": ["x" * 2000], "diagnostics": ["x" * 2000000]}',
+                                          '{"diagnostics": "not a list"}'])
+    def test_engineer_replay_in_sheet_unit_matches_zebra_value_hash_and_faults(tmp_path, expression):
+        procedure = zebra_procedure(expression=expression)
+        parent = replay.solo(procedure)
+        outcomes, opened = [], []
+        for bench, k in [('spreadsheetbench', 4), (p.ZEBRA, 3)]:
+            st, workers = authored_step(tmp_path/bench, parent, bench=bench, k=k)
+            def work(attempt):
+                actual = {}
+                crash, values = replay.zero_crash(procedure, [entry()], st.services.workers,
+                    configuration='main-v10', actual=actual)
+                with st.services.workers(parent, kind='cell') as worker:
+                    raw = diagnostics_runtime.worker_call(worker, procedure.id, 'before_call', [VIEW, None],
+                        timeout_s=1, configuration='main-v10', bench=p.ZEBRA)
+                    clean, _ = diagnostics_runtime.capture(raw, configuration='main-v10', bench=p.ZEBRA, procedure=procedure)
+                return {'crash': crash, 'replay': values[entry()['cell']].summary(), 'actual': actual,
+                        'value': clean.get('value'), 'value_sha256': clean.get('value_sha256'),
+                        'fault': clean.get('fault')}
+            # The same zero_crash entry point is used by engineer C6/C7 and repair rechecks.
+>           outcomes.append(st.unit('engineer-r1', work))
+
+tests/test_execskill_v226_diagnostics.py:92: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+e589b5b:skillopt/execskill/step.py:440: in unit
+    self.calls = []
+skillopt/execskill/units.py:347: in run_unit
+    return v221_recovery.run_unit(unit_root, execute=_run_unit, **options)
+skillopt/execskill/v221_recovery.py:188: in run_unit
+    return execute(root, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+unit_root = PosixPath('<repo-root>/.runtime-tmp/identity-9rzrvse2/spreadsheetbench/G/s4-spreadsheetbench/engineer-r1')
+
+    def _run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=None, configuration=protocol.PILOT):
+        """Run ``work(attempt)`` -> result (a JSON-safe dict) in the unit's next attempt, unless the unit is complete.
+        The commit (module docstring; Codex finding #8): the result is persisted as the attempt's completion evidence
+        (``COMPLETED``) before ``settle(attempt, result)`` -- the unit's consumption settlement, idempotent -- runs; when an
+        earlier attempt holds that evidence, the next attempt (after the owner's recorded decision) is a commit attempt
+        that settles again, drains and writes ``unit.json`` naming the attempt whose work completed, without running
+        ``work``. ``drain`` (``drainer``): called once the work (and the settlement) has ended, completed or paused, before
+        the attempt's status or the unit's record is written; its CleanupUnconfirmed pauses the unit as a stop, so a unit
+        whose containers remain is never complete. Returns the unit's record; raises ``Pause`` after writing the attempt's
+        status."""
+        suffix = "-v2-3" if protocol.is_v23(configuration) else ""
+        unit_root = safe_path(unit_root)
+        unit_root.mkdir(parents=True, exist_ok=True)
+        name = identity["unit"]
+        with exclusive(unit_root / ".lock"):
+            done = complete(unit_root, run=run, identity=identity)
+            if done is not None:
+                return done
+            if protocol.is_v221(configuration):
+                from . import v221_recovery
+                attempt = v221_recovery.next_attempt(unit_root)
+            else:
+                attempt = _next_attempt(unit_root)
+            if attempt is None:
+                raise Pause("awaiting_owner_decision", attempts(unit_root)[-1].name, name)
+            finished = completed(unit_root, run=run, identity=identity)  # a commit attempt spends nothing: no redo limit
+            if finished is None and attempt_number(attempt) > 1 + MAX_REDOS:
+                raise Pause("redo_limit", "%s: at most %d redos of a unit (§3.4)" % (attempt.name, MAX_REDOS), name)
+            attempt.mkdir()
+            cleanup_events = getattr(drain, "cleanups", None) if protocol.is_v292(configuration) else None
+            start_events = getattr(drain, "starts", None) if protocol.is_v292(configuration) else None
+            if cleanup_events is not None:
+                cleanup_events.clear()
+            if start_events is not None:
+                start_events.clear()
+            def lifecycle():
+                events = {key: rows for key, rows in (("cleanups", cleanup_events), ("starts", start_events)) if rows}
+                fields = {"sandbox": events} if events else {}
+                if protocol.is_v226(configuration) and {'k', 'bench'} <= set(identity):
+                    from . import v226_candidates
+                    try:
+                        fields['candidate_errors'] = v226_candidates.counts(unit_root.parent)
+                    except (OSError, ValueError):
+                        # A broken journal must not mask the original pause or
+                        # prevent its status from being recorded.
+                        fields['candidate_errors_status'] = 'journal_unavailable'
+                return fields
+            write_json(attempt / "started.json", record("unit-started" + suffix, evidence, {
+                "run": run, "identity": identity, **({"commit_of": finished[0].name} if finished else {})}))
+            try:
+                try:
+                    if finished is None:
+                        result = work(attempt)
+                        write_json(attempt / COMPLETED, record("unit-completed" + suffix, evidence, {
+                            "run": run, "identity": identity, "attempt": attempt.name, "result": result}))
+                        worked = attempt
+                    else:
+                        worked, result = finished
+                    if settle is not None:
+                        settle(worked, result)
+                finally:
+                    try:
+                        if drain is not None:
+                            drain()
+                    finally:
+                        if cleanup_events:
+                            write_json(attempt / "sandbox-cleanups.json", {"cleanups": cleanup_events})
+                        if start_events:
+                            write_json(attempt / "sandbox-starts.json", {"starts": start_events})
+            except Pause as pause:
+                recovery = v221_recovery.exception_pause(pause) if protocol.is_v221(configuration) else None
+                write_json(attempt / "status.json", record("unit-status" + suffix, evidence, {
+                    "status": "paused", "kind": pause.kind, "reason": pause.reason, "cell": pause.cell,
+                    **({'auto_retry_eligible': recovery is not None, **(recovery or {})}
+                       if protocol.is_v221(configuration) else {}), **lifecycle()}))
+                raise
+            except Exception as error:  # a stop of the run, a configuration check or a crash: the unit pauses
+                (attempt / "diagnostics.log").write_text(traceback.format_exc(), encoding="utf-8")
+                kind = stop_kind(error) or ("configuration" if isinstance(error, ValueError) else "exception")
+                recovery = v221_recovery.exception_pause(error) if protocol.is_v221(configuration) else None
+                write_json(attempt / "status.json", record("unit-status" + suffix, evidence, {
+                    "status": "paused", "kind": kind, "reason": type(error).__name__, "cell": None,
+                    **({'auto_retry_eligible': recovery is not None, **(recovery or {})}
+                       if protocol.is_v221(configuration) else {}), **lifecycle()}))
+>               raise Pause(kind, type(error).__name__, name) from error
+E               skillopt.coevo5.cells.Pause: configuration: ConfigurationError (cell G/s4-spreadsheetbench/engineer-r1)
+
+skillopt/execskill/units.py:435: Pause
+=========================== short test summary info ============================
+FAILED tests/test_execskill_v226_diagnostics.py::test_engineer_replay_in_sheet_unit_matches_zebra_value_hash_and_faults[None]
+FAILED tests/test_execskill_v226_diagnostics.py::test_engineer_replay_in_sheet_unit_matches_zebra_value_hash_and_faults[{"facts": ["x" * 2000], "diagnostics": ["x" * 2000000]}]
+FAILED tests/test_execskill_v226_diagnostics.py::test_engineer_replay_in_sheet_unit_matches_zebra_value_hash_and_faults[{"diagnostics": "not a list"}]
+3 failed in 0.77s
+
+base-F2.log
+===========
+RESTORED skillopt/execskill/step.py:_pair_signatures
+RESTORED skillopt/execskill/acceptance.py:prepare
+CASE F2 base functions
+FF.FFFF.F                                                                [100%]
+=================================== FAILURES ===================================
+_ test_real_pair_signatures_card_full_touch_equals_solver_request_on_every_bench[searchqa] _
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-xtqjyw74')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x106cc7950>
+bench = 'searchqa'
+
+    @pytest.mark.parametrize('bench', p.MAIN_V5_ORDER)
+    def test_real_pair_signatures_card_full_touch_equals_solver_request_on_every_bench(tmp_path, monkeypatch, bench):
+        alf_sessions(monkeypatch)
+        st, task, parent, candidate, workers = fixture_step(tmp_path, bench)
+        key, public = task['task_id'], task['public']
+        view = solver.routing_view(bench, public, runtime=st.runtime())
+        identities = step._pair_signatures(st, candidate, parent, {key: public}, [(key, view)])
+>       assert v225_phase.request_changed(identities) == [key]
+E       AssertionError: assert [] == ['fx-searchqa-00']
+E         
+E         Right contains one more item: 'fx-searchqa-00'
+E         Use -v to get more diff
+
+tests/test_execskill_v226_identity.py:66: AssertionError
+_ test_real_pair_signatures_card_full_touch_equals_solver_request_on_every_bench[officeqa] _
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-_7efwvph')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10741bce0>
+bench = 'officeqa'
+
+    @pytest.mark.parametrize('bench', p.MAIN_V5_ORDER)
+    def test_real_pair_signatures_card_full_touch_equals_solver_request_on_every_bench(tmp_path, monkeypatch, bench):
+        alf_sessions(monkeypatch)
+        st, task, parent, candidate, workers = fixture_step(tmp_path, bench)
+        key, public = task['task_id'], task['public']
+        view = solver.routing_view(bench, public, runtime=st.runtime())
+        identities = step._pair_signatures(st, candidate, parent, {key: public}, [(key, view)])
+>       assert v225_phase.request_changed(identities) == [key]
+E       AssertionError: assert [] == ['fx-officeqa-00']
+E         
+E         Right contains one more item: 'fx-officeqa-00'
+E         Use -v to get more diff
+
+tests/test_execskill_v226_identity.py:66: AssertionError
+_ test_real_pair_signatures_card_full_touch_equals_solver_request_on_every_bench[spreadsheetbench] _
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-lkkaut6r')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1076e47c0>
+bench = 'spreadsheetbench'
+
+    @pytest.mark.parametrize('bench', p.MAIN_V5_ORDER)
+    def test_real_pair_signatures_card_full_touch_equals_solver_request_on_every_bench(tmp_path, monkeypatch, bench):
+        alf_sessions(monkeypatch)
+        st, task, parent, candidate, workers = fixture_step(tmp_path, bench)
+        key, public = task['task_id'], task['public']
+        view = solver.routing_view(bench, public, runtime=st.runtime())
+        identities = step._pair_signatures(st, candidate, parent, {key: public}, [(key, view)])
+>       assert v225_phase.request_changed(identities) == [key]
+E       AssertionError: assert [] == ['fx-spreadsheetbench-00']
+E         
+E         Right contains one more item: 'fx-spreadsheetbench-00'
+E         Use -v to get more diff
+
+tests/test_execskill_v226_identity.py:66: AssertionError
+_ test_real_pair_signatures_card_full_touch_equals_solver_request_on_every_bench[alfworld] _
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-2cetgrga')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1076e49e0>
+bench = 'alfworld'
+
+    @pytest.mark.parametrize('bench', p.MAIN_V5_ORDER)
+    def test_real_pair_signatures_card_full_touch_equals_solver_request_on_every_bench(tmp_path, monkeypatch, bench):
+        alf_sessions(monkeypatch)
+        st, task, parent, candidate, workers = fixture_step(tmp_path, bench)
+        key, public = task['task_id'], task['public']
+        view = solver.routing_view(bench, public, runtime=st.runtime())
+        identities = step._pair_signatures(st, candidate, parent, {key: public}, [(key, view)])
+>       assert v225_phase.request_changed(identities) == [key]
+E       AssertionError: assert [] == ['fx-alfworld-00']
+E         
+E         Right contains one more item: 'fx-alfworld-00'
+E         Use -v to get more diff
+
+tests/test_execskill_v226_identity.py:66: AssertionError
+___ test_acceptance_seals_composed_card_request_as_sent_by_solver[searchqa] ____
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-svej3t27')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107862250>
+bench = 'searchqa'
+
+    @pytest.mark.parametrize('bench', p.MAIN_V5_ORDER[:-1])
+    def test_acceptance_seals_composed_card_request_as_sent_by_solver(tmp_path, monkeypatch, bench):
+        st, task, parent, candidate, _ = fixture_step(tmp_path, bench)
+        key, public = task['task_id'], task['public']
+        view = solver.routing_view(bench, public, runtime=st.runtime())
+        sealed = acceptance.prepare(tmp_path/'decision', chain='G', bench=bench,
+            step='G/s1', unit='G/s1/accept-r1', candidate=candidate, parent=parent,
+            views={key: view}, blocks={key: 'block'}, workers=step._item_workers(st, {key: public}),
+            trajectories=[], configuration='main-v10', initial=parent,
+            rule=p.acceptance_rule('main-v10', bench),
+            reuse={'card_text': st.setting.cards[bench], 'runtime': st.runtime()})
+        pair = sealed['reuse']['signatures']['real'][key]
+>       assert pair["S'"]['request_sha256'] == sent_request(st, task, candidate)
+E       AssertionError: assert '28e3e53c0544...bb4a0188e1ad1' == '9f55817921fe...ea1366b9ac57b'
+E         
+E         - 9f55817921fe047e0528e76616ee0940c745020f378b07fad36ea1366b9ac57b
+E         + 28e3e53c0544a540fbaa10f1343ab56ef3ceb14f680283e23f3bb4a0188e1ad1
+
+tests/test_execskill_v226_identity.py:88: AssertionError
+___ test_acceptance_seals_composed_card_request_as_sent_by_solver[officeqa] ____
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-2px4_r70')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107862d50>
+bench = 'officeqa'
+
+    @pytest.mark.parametrize('bench', p.MAIN_V5_ORDER[:-1])
+    def test_acceptance_seals_composed_card_request_as_sent_by_solver(tmp_path, monkeypatch, bench):
+        st, task, parent, candidate, _ = fixture_step(tmp_path, bench)
+        key, public = task['task_id'], task['public']
+        view = solver.routing_view(bench, public, runtime=st.runtime())
+        sealed = acceptance.prepare(tmp_path/'decision', chain='G', bench=bench,
+            step='G/s1', unit='G/s1/accept-r1', candidate=candidate, parent=parent,
+            views={key: view}, blocks={key: 'block'}, workers=step._item_workers(st, {key: public}),
+            trajectories=[], configuration='main-v10', initial=parent,
+            rule=p.acceptance_rule('main-v10', bench),
+            reuse={'card_text': st.setting.cards[bench], 'runtime': st.runtime()})
+        pair = sealed['reuse']['signatures']['real'][key]
+>       assert pair["S'"]['request_sha256'] == sent_request(st, task, candidate)
+E       AssertionError: assert 'dd44e58528df...3d9c560a87e34' == '22b3a8ef6f96...a9b1a8acec931'
+E         
+E         - 22b3a8ef6f9671ae0aa5187378b161d06106e0c173f8fac9d4da9b1a8acec931
+E         + dd44e58528dfb7d2398b4c2d8594cd4d530f52774f990c8c50b3d9c560a87e34
+
+tests/test_execskill_v226_identity.py:88: AssertionError
+_ test_acceptance_seals_composed_card_request_as_sent_by_solver[spreadsheetbench] _
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-0hc_r3i6')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1077f5040>
+bench = 'spreadsheetbench'
+
+    @pytest.mark.parametrize('bench', p.MAIN_V5_ORDER[:-1])
+    def test_acceptance_seals_composed_card_request_as_sent_by_solver(tmp_path, monkeypatch, bench):
+        st, task, parent, candidate, _ = fixture_step(tmp_path, bench)
+        key, public = task['task_id'], task['public']
+        view = solver.routing_view(bench, public, runtime=st.runtime())
+        sealed = acceptance.prepare(tmp_path/'decision', chain='G', bench=bench,
+            step='G/s1', unit='G/s1/accept-r1', candidate=candidate, parent=parent,
+            views={key: view}, blocks={key: 'block'}, workers=step._item_workers(st, {key: public}),
+            trajectories=[], configuration='main-v10', initial=parent,
+            rule=p.acceptance_rule('main-v10', bench),
+            reuse={'card_text': st.setting.cards[bench], 'runtime': st.runtime()})
+        pair = sealed['reuse']['signatures']['real'][key]
+>       assert pair["S'"]['request_sha256'] == sent_request(st, task, candidate)
+E       AssertionError: assert '8dc94f5d422e...ae3b9d857b348' == '9e0d22edcbde...bf73123cbccb0'
+E         
+E         - 9e0d22edcbde91802599c631bfbd5c583e1f1277f66053d632ebf73123cbccb0
+E         + 8dc94f5d422eb596597564af3e8fe1a534619597347ef052dd3ae3b9d857b348
+
+tests/test_execskill_v226_identity.py:88: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execskill_v226_identity.py::test_real_pair_signatures_card_full_touch_equals_solver_request_on_every_bench[searchqa]
+FAILED tests/test_execskill_v226_identity.py::test_real_pair_signatures_card_full_touch_equals_solver_request_on_every_bench[officeqa]
+FAILED tests/test_execskill_v226_identity.py::test_real_pair_signatures_card_full_touch_equals_solver_request_on_every_bench[spreadsheetbench]
+FAILED tests/test_execskill_v226_identity.py::test_real_pair_signatures_card_full_touch_equals_solver_request_on_every_bench[alfworld]
+FAILED tests/test_execskill_v226_identity.py::test_acceptance_seals_composed_card_request_as_sent_by_solver[searchqa]
+FAILED tests/test_execskill_v226_identity.py::test_acceptance_seals_composed_card_request_as_sent_by_solver[officeqa]
+FAILED tests/test_execskill_v226_identity.py::test_acceptance_seals_composed_card_request_as_sent_by_solver[spreadsheetbench]
+7 failed, 2 passed in 0.57s
+
+base-F3.log
+===========
+RESTORED skillopt/execskill/v222_gate.py:inspect
+RESTORED skillopt/execskill/v222_gate.py:check
+CASE F3 base functions
+FFFFFF                                                                   [100%]
+=================================== FAILURES ===================================
+_ test_inherited_zebra_fault_does_not_reject_sheet_procedure_or_card[timeout-False] _
+
+card = False, fault = 'timeout'
+
+    @pytest.mark.parametrize('card', [False, True])
+    @pytest.mark.parametrize('fault', ['timeout', 'exception'])
+    def test_inherited_zebra_fault_does_not_reject_sheet_procedure_or_card(card, fault):
+        parent, candidate = packages(card)
+        seen = []
+        def run(bench, _before, _after, items):
+            seen.append(bench)
+            return paired(items)
+        found, record = gate.check(home='spreadsheetbench', parent=parent, candidate=candidate,
+            slices=slices(), inspector=inspector(parent, fault=fault), run_pairs=run,
+            phase='acceptance', configuration='main-v10')
+        zebra = record['benches']['zebralogic']
+>       assert found == candidate and record['passed']
+E       AssertionError: assert (None == Package(procedures=(Procedure(id='fx-inherited-zebra', origin='zebralogic', description='A fixture procedure fx-inheri...arent_sha256='367f7a0bc90f81f3da6b59a3f7378a9591da52198af006ba3bd2b08eaa7e73bf', retired=(), narrowed={}, describer={}))
+
+tests/test_execskill_v226_gate.py:71: AssertionError
+_ test_inherited_zebra_fault_does_not_reject_sheet_procedure_or_card[timeout-True] _
+
+card = True, fault = 'timeout'
+
+    @pytest.mark.parametrize('card', [False, True])
+    @pytest.mark.parametrize('fault', ['timeout', 'exception'])
+    def test_inherited_zebra_fault_does_not_reject_sheet_procedure_or_card(card, fault):
+        parent, candidate = packages(card)
+        seen = []
+        def run(bench, _before, _after, items):
+            seen.append(bench)
+            return paired(items)
+        found, record = gate.check(home='spreadsheetbench', parent=parent, candidate=candidate,
+            slices=slices(), inspector=inspector(parent, fault=fault), run_pairs=run,
+            phase='acceptance', configuration='main-v10')
+        zebra = record['benches']['zebralogic']
+>       assert found == candidate and record['passed']
+E       AssertionError: assert (None == Package(procedures=(Procedure(id='fx-inherited-zebra', origin='zebralogic', description='A fixture procedure fx-inheri...arent_sha256='367f7a0bc90f81f3da6b59a3f7378a9591da52198af006ba3bd2b08eaa7e73bf', retired=(), narrowed={}, describer={}))
+
+tests/test_execskill_v226_gate.py:71: AssertionError
+_ test_inherited_zebra_fault_does_not_reject_sheet_procedure_or_card[exception-False] _
+
+card = False, fault = 'exception'
+
+    @pytest.mark.parametrize('card', [False, True])
+    @pytest.mark.parametrize('fault', ['timeout', 'exception'])
+    def test_inherited_zebra_fault_does_not_reject_sheet_procedure_or_card(card, fault):
+        parent, candidate = packages(card)
+        seen = []
+        def run(bench, _before, _after, items):
+            seen.append(bench)
+            return paired(items)
+        found, record = gate.check(home='spreadsheetbench', parent=parent, candidate=candidate,
+            slices=slices(), inspector=inspector(parent, fault=fault), run_pairs=run,
+            phase='acceptance', configuration='main-v10')
+        zebra = record['benches']['zebralogic']
+>       assert found == candidate and record['passed']
+E       AssertionError: assert (None == Package(procedures=(Procedure(id='fx-inherited-zebra', origin='zebralogic', description='A fixture procedure fx-inheri...arent_sha256='367f7a0bc90f81f3da6b59a3f7378a9591da52198af006ba3bd2b08eaa7e73bf', retired=(), narrowed={}, describer={}))
+
+tests/test_execskill_v226_gate.py:71: AssertionError
+_ test_inherited_zebra_fault_does_not_reject_sheet_procedure_or_card[exception-True] _
+
+card = True, fault = 'exception'
+
+    @pytest.mark.parametrize('card', [False, True])
+    @pytest.mark.parametrize('fault', ['timeout', 'exception'])
+    def test_inherited_zebra_fault_does_not_reject_sheet_procedure_or_card(card, fault):
+        parent, candidate = packages(card)
+        seen = []
+        def run(bench, _before, _after, items):
+            seen.append(bench)
+            return paired(items)
+        found, record = gate.check(home='spreadsheetbench', parent=parent, candidate=candidate,
+            slices=slices(), inspector=inspector(parent, fault=fault), run_pairs=run,
+            phase='acceptance', configuration='main-v10')
+        zebra = record['benches']['zebralogic']
+>       assert found == candidate and record['passed']
+E       AssertionError: assert (None == Package(procedures=(Procedure(id='fx-inherited-zebra', origin='zebralogic', description='A fixture procedure fx-inheri...arent_sha256='367f7a0bc90f81f3da6b59a3f7378a9591da52198af006ba3bd2b08eaa7e73bf', retired=(), narrowed={}, describer={}))
+
+tests/test_execskill_v226_gate.py:71: AssertionError
+________ test_flaky_inherited_fault_with_a_changed_request_is_measured _________
+
+    def test_flaky_inherited_fault_with_a_changed_request_is_measured():
+        parent, candidate = packages()
+        seen = []
+        def run(bench, _before, _after, items):
+            seen.append((bench, [row['task_id'] for row in items]))
+            return paired(items)
+        found, record = gate.check(home='spreadsheetbench', parent=parent, candidate=candidate,
+            slices=slices(), inspector=inspector(parent, flaky=True), run_pairs=run,
+            phase='acceptance', configuration='main-v10')
+>       assert found == candidate and record['passed']
+E       AssertionError: assert (None == Package(procedures=(Procedure(id='fx-inherited-zebra', origin='zebralogic', description='A fixture procedure fx-inheri...arent_sha256='367f7a0bc90f81f3da6b59a3f7378a9591da52198af006ba3bd2b08eaa7e73bf', retired=(), narrowed={}, describer={}))
+
+tests/test_execskill_v226_gate.py:85: AssertionError
+__________ test_narrowing_recheck_ignores_identical_inherited_faults ___________
+
+    def test_narrowing_recheck_ignores_identical_inherited_faults():
+        parent, candidate = packages()
+        old = candidate.procedures[-1]
+        revised = replace(old, source="def applies(view):\n    return 'context' in view or 'instruction' in view\n\ndef before_call(view, state):\n    return {'facts': ['Check the supplied values.']}\n")
+        candidate = replace(candidate, procedures=candidate.procedures[:-1] + (revised,))
+        found, record = gate.check(home='spreadsheetbench', parent=parent, candidate=candidate,
+            slices=slices(), inspector=inspector(parent),
+            run_pairs=lambda bench, _p, _c, items: paired(items, harmful=bench == 'officeqa'),
+            phase='acceptance', configuration='main-v10')
+>       assert found is not None and found.sha256 != candidate.sha256 and record['passed']
+E       assert (None is not None)
+
+tests/test_execskill_v226_gate.py:125: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execskill_v226_gate.py::test_inherited_zebra_fault_does_not_reject_sheet_procedure_or_card[timeout-False]
+FAILED tests/test_execskill_v226_gate.py::test_inherited_zebra_fault_does_not_reject_sheet_procedure_or_card[timeout-True]
+FAILED tests/test_execskill_v226_gate.py::test_inherited_zebra_fault_does_not_reject_sheet_procedure_or_card[exception-False]
+FAILED tests/test_execskill_v226_gate.py::test_inherited_zebra_fault_does_not_reject_sheet_procedure_or_card[exception-True]
+FAILED tests/test_execskill_v226_gate.py::test_flaky_inherited_fault_with_a_changed_request_is_measured
+FAILED tests/test_execskill_v226_gate.py::test_narrowing_recheck_ignores_identical_inherited_faults
+6 failed in 0.86s
+
+base-F4.log
+===========
+USING unchanged v225_metrics.compute(configuration=main-v9)
+CASE F4 base functions
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_c0_reanchoring_removes_false_harm_and_exposes_masked_harm[0.8-0.2-0.3-4-0] _
+
+fast_statistics = None, c = 0.8, c0 = 0.2, s1 = 0.3, old_harm = 4, new_harm = 0
+
+    @pytest.mark.parametrize('c,c0,s1,old_harm,new_harm', [(.8, .2, .3, 4, 0), (.2, .8, .7, 0, 4)])
+    def test_c0_reanchoring_removes_false_harm_and_exposes_masked_harm(fast_statistics, c, c0, s1, old_harm, new_harm):
+        value = aggregate(c, c0, s1)
+        before = deepcopy(value)
+        historical = old.compute({**value, 'configuration': p.MAIN_V9}, 'G')
+        result = m.compute(value, 'G')
+        for side in ('P', 'S'):
+            assert historical['changed_only'][side]['harmed'] == old_harm
+>           assert result['changed_only'][side]['harmed'] == new_harm
+E           assert 4 == 0
+
+tests/test_execskill_v226_metrics.py:37: AssertionError
+_ test_c0_reanchoring_removes_false_harm_and_exposes_masked_harm[0.2-0.8-0.7-0-4] _
+
+fast_statistics = None, c = 0.2, c0 = 0.8, s1 = 0.7, old_harm = 0, new_harm = 4
+
+    @pytest.mark.parametrize('c,c0,s1,old_harm,new_harm', [(.8, .2, .3, 4, 0), (.2, .8, .7, 0, 4)])
+    def test_c0_reanchoring_removes_false_harm_and_exposes_masked_harm(fast_statistics, c, c0, s1, old_harm, new_harm):
+        value = aggregate(c, c0, s1)
+        before = deepcopy(value)
+        historical = old.compute({**value, 'configuration': p.MAIN_V9}, 'G')
+        result = m.compute(value, 'G')
+        for side in ('P', 'S'):
+            assert historical['changed_only'][side]['harmed'] == old_harm
+>           assert result['changed_only'][side]['harmed'] == new_harm
+E           assert 0 == 4
+
+tests/test_execskill_v226_metrics.py:37: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execskill_v226_metrics.py::test_c0_reanchoring_removes_false_harm_and_exposes_masked_harm[0.8-0.2-0.3-4-0]
+FAILED tests/test_execskill_v226_metrics.py::test_c0_reanchoring_removes_false_harm_and_exposes_masked_harm[0.2-0.8-0.7-0-4]
+2 failed in 7.73s
+
+base-F5.log
+===========
+RESTORED skillopt/execskill/engineer_v28.py:prepare
+RESTORED skillopt/execskill/engineer.py:_scope_entries
+RESTORED skillopt/execskill/engineer.py:_resolve_change
+CASE F5 base functions
+FFFFFFFF                                                                 [100%]
+=================================== FAILURES ===================================
+_ test_prepare_uses_built_procedure_scope_for_zebra_replays[excluded0-searchqa] _
+
+bench = 'searchqa', excluded = []
+
+    @pytest.mark.parametrize('bench', ['searchqa', 'officeqa', 'spreadsheetbench'])
+    @pytest.mark.parametrize('excluded', [[], ['zebralogic']])
+    def test_prepare_uses_built_procedure_scope_for_zebra_replays(bench, excluded):
+        ctx = context_after_zebra(bench)
+        proposed = change(ctx, tests=[claim(ctx)])
+        proposed.entry['excluded_benches'] = list(excluded)
+        dropped = engineer_v28.prepare(proposed, ctx)
+        assert proposed.entry['excluded_benches'] == excluded
+        before = e._scope_entries(ctx, set(excluded))
+        candidate = e._build(proposed, ctx)
+        assert procedure_benches(proposed.procedure) == p.SUPPORTED_BENCHES
+>       assert before == e._scope(ctx, candidate, proposed.procedure)
+E       AssertionError: assert {} == {'cell-0': {'...': None, ...}}
+E         
+E         Right contains 1 more item:
+E         {'cell-0': {'bench': 'zebralogic',
+E                     'cell': 'cell-0',
+E                     'item': 'zebralogic/run-0',
+E                     'report': None,
+E                     'request_view': {'columns': ['Name', 'Color'],...
+E         
+E         ...Full output truncated (20 lines hidden), use '-vv' to show
+
+tests/test_execskill_v226_scope.py:30: AssertionError
+_ test_prepare_uses_built_procedure_scope_for_zebra_replays[excluded0-officeqa] _
+
+bench = 'officeqa', excluded = []
+
+    @pytest.mark.parametrize('bench', ['searchqa', 'officeqa', 'spreadsheetbench'])
+    @pytest.mark.parametrize('excluded', [[], ['zebralogic']])
+    def test_prepare_uses_built_procedure_scope_for_zebra_replays(bench, excluded):
+        ctx = context_after_zebra(bench)
+        proposed = change(ctx, tests=[claim(ctx)])
+        proposed.entry['excluded_benches'] = list(excluded)
+        dropped = engineer_v28.prepare(proposed, ctx)
+        assert proposed.entry['excluded_benches'] == excluded
+        before = e._scope_entries(ctx, set(excluded))
+        candidate = e._build(proposed, ctx)
+        assert procedure_benches(proposed.procedure) == p.SUPPORTED_BENCHES
+>       assert before == e._scope(ctx, candidate, proposed.procedure)
+E       AssertionError: assert {} == {'cell-0': {'...': None, ...}}
+E         
+E         Right contains 1 more item:
+E         {'cell-0': {'bench': 'zebralogic',
+E                     'cell': 'cell-0',
+E                     'item': 'zebralogic/run-0',
+E                     'report': None,
+E                     'request_view': {'columns': ['Name', 'Color'],...
+E         
+E         ...Full output truncated (20 lines hidden), use '-vv' to show
+
+tests/test_execskill_v226_scope.py:30: AssertionError
+_ test_prepare_uses_built_procedure_scope_for_zebra_replays[excluded0-spreadsheetbench] _
+
+bench = 'spreadsheetbench', excluded = []
+
+    @pytest.mark.parametrize('bench', ['searchqa', 'officeqa', 'spreadsheetbench'])
+    @pytest.mark.parametrize('excluded', [[], ['zebralogic']])
+    def test_prepare_uses_built_procedure_scope_for_zebra_replays(bench, excluded):
+        ctx = context_after_zebra(bench)
+        proposed = change(ctx, tests=[claim(ctx)])
+        proposed.entry['excluded_benches'] = list(excluded)
+        dropped = engineer_v28.prepare(proposed, ctx)
+        assert proposed.entry['excluded_benches'] == excluded
+        before = e._scope_entries(ctx, set(excluded))
+        candidate = e._build(proposed, ctx)
+        assert procedure_benches(proposed.procedure) == p.SUPPORTED_BENCHES
+>       assert before == e._scope(ctx, candidate, proposed.procedure)
+E       AssertionError: assert {} == {'cell-0': {'...': None, ...}}
+E         
+E         Right contains 1 more item:
+E         {'cell-0': {'bench': 'zebralogic',
+E                     'cell': 'cell-0',
+E                     'item': 'zebralogic/run-0',
+E                     'report': None,
+E                     'request_view': {'columns': ['Name', 'Color'],...
+E         
+E         ...Full output truncated (20 lines hidden), use '-vv' to show
+
+tests/test_execskill_v226_scope.py:30: AssertionError
+_ test_prepare_uses_built_procedure_scope_for_zebra_replays[excluded1-searchqa] _
+
+bench = 'searchqa', excluded = ['zebralogic']
+
+    @pytest.mark.parametrize('bench', ['searchqa', 'officeqa', 'spreadsheetbench'])
+    @pytest.mark.parametrize('excluded', [[], ['zebralogic']])
+    def test_prepare_uses_built_procedure_scope_for_zebra_replays(bench, excluded):
+        ctx = context_after_zebra(bench)
+        proposed = change(ctx, tests=[claim(ctx)])
+        proposed.entry['excluded_benches'] = list(excluded)
+        dropped = engineer_v28.prepare(proposed, ctx)
+>       assert proposed.entry['excluded_benches'] == excluded
+E       AssertionError: assert [] == ['zebralogic']
+E         
+E         Right contains one more item: 'zebralogic'
+E         Use -v to get more diff
+
+tests/test_execskill_v226_scope.py:26: AssertionError
+_ test_prepare_uses_built_procedure_scope_for_zebra_replays[excluded1-officeqa] _
+
+bench = 'officeqa', excluded = ['zebralogic']
+
+    @pytest.mark.parametrize('bench', ['searchqa', 'officeqa', 'spreadsheetbench'])
+    @pytest.mark.parametrize('excluded', [[], ['zebralogic']])
+    def test_prepare_uses_built_procedure_scope_for_zebra_replays(bench, excluded):
+        ctx = context_after_zebra(bench)
+        proposed = change(ctx, tests=[claim(ctx)])
+        proposed.entry['excluded_benches'] = list(excluded)
+        dropped = engineer_v28.prepare(proposed, ctx)
+>       assert proposed.entry['excluded_benches'] == excluded
+E       AssertionError: assert [] == ['zebralogic']
+E         
+E         Right contains one more item: 'zebralogic'
+E         Use -v to get more diff
+
+tests/test_execskill_v226_scope.py:26: AssertionError
+_ test_prepare_uses_built_procedure_scope_for_zebra_replays[excluded1-spreadsheetbench] _
+
+bench = 'spreadsheetbench', excluded = ['zebralogic']
+
+    @pytest.mark.parametrize('bench', ['searchqa', 'officeqa', 'spreadsheetbench'])
+    @pytest.mark.parametrize('excluded', [[], ['zebralogic']])
+    def test_prepare_uses_built_procedure_scope_for_zebra_replays(bench, excluded):
+        ctx = context_after_zebra(bench)
+        proposed = change(ctx, tests=[claim(ctx)])
+        proposed.entry['excluded_benches'] = list(excluded)
+        dropped = engineer_v28.prepare(proposed, ctx)
+>       assert proposed.entry['excluded_benches'] == excluded
+E       AssertionError: assert [] == ['zebralogic']
+E         
+E         Right contains one more item: 'zebralogic'
+E         Use -v to get more diff
+
+tests/test_execskill_v226_scope.py:26: AssertionError
+_ test_reference_resolution_uses_policy_scope_before_procedure_hash[searchqa] __
+
+bench = 'searchqa'
+
+    @pytest.mark.parametrize('bench', ['searchqa', 'spreadsheetbench'])
+    def test_reference_resolution_uses_policy_scope_before_procedure_hash(bench):
+        ctx = context_after_zebra(bench)
+        test = {**claim(ctx), 'trajectory': ctx.trajectories[0]['task_id']}
+        proposed = change(ctx, tests=[test])
+        proposed.entry['excluded_benches'] = []
+        e._resolve_change(proposed, ctx)
+>       assert proposed.entry['replay_tests'][0]['trajectory'] == ctx.trajectories[0]['cell']
+E       AssertionError: assert 'zebralogic/run-0' == 'cell-0'
+E         
+E         - cell-0
+E         + zebralogic/run-0
+
+tests/test_execskill_v226_scope.py:46: AssertionError
+_ test_reference_resolution_uses_policy_scope_before_procedure_hash[spreadsheetbench] _
+
+bench = 'spreadsheetbench'
+
+    @pytest.mark.parametrize('bench', ['searchqa', 'spreadsheetbench'])
+    def test_reference_resolution_uses_policy_scope_before_procedure_hash(bench):
+        ctx = context_after_zebra(bench)
+        test = {**claim(ctx), 'trajectory': ctx.trajectories[0]['task_id']}
+        proposed = change(ctx, tests=[test])
+        proposed.entry['excluded_benches'] = []
+        e._resolve_change(proposed, ctx)
+>       assert proposed.entry['replay_tests'][0]['trajectory'] == ctx.trajectories[0]['cell']
+E       AssertionError: assert 'zebralogic/run-0' == 'cell-0'
+E         
+E         - cell-0
+E         + zebralogic/run-0
+
+tests/test_execskill_v226_scope.py:46: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execskill_v226_scope.py::test_prepare_uses_built_procedure_scope_for_zebra_replays[excluded0-searchqa]
+FAILED tests/test_execskill_v226_scope.py::test_prepare_uses_built_procedure_scope_for_zebra_replays[excluded0-officeqa]
+FAILED tests/test_execskill_v226_scope.py::test_prepare_uses_built_procedure_scope_for_zebra_replays[excluded0-spreadsheetbench]
+FAILED tests/test_execskill_v226_scope.py::test_prepare_uses_built_procedure_scope_for_zebra_replays[excluded1-searchqa]
+FAILED tests/test_execskill_v226_scope.py::test_prepare_uses_built_procedure_scope_for_zebra_replays[excluded1-officeqa]
+FAILED tests/test_execskill_v226_scope.py::test_prepare_uses_built_procedure_scope_for_zebra_replays[excluded1-spreadsheetbench]
+FAILED tests/test_execskill_v226_scope.py::test_reference_resolution_uses_policy_scope_before_procedure_hash[searchqa]
+FAILED tests/test_execskill_v226_scope.py::test_reference_resolution_uses_policy_scope_before_procedure_hash[spreadsheetbench]
+8 failed in 0.46s
+
+base-F6.log
+===========
+RESTORED skillopt/execskill/step.py:_confirm_eval
+RESTORED skillopt/execskill/v221_split.py:evaluate
+RESTORED skillopt/execskill/v221_split.py:_resume_cells
+CASE F6 base functions
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+________________________ test_probe_confirmation_resume ________________________
+
+unit_root = PosixPath('<repo-root>/.runtime-tmp/identity-g6ool2w7/G/s3-zebralogic/confirm-r1')
+
+    def _run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=None, configuration=protocol.PILOT):
+        """Run ``work(attempt)`` -> result (a JSON-safe dict) in the unit's next attempt, unless the unit is complete.
+        The commit (module docstring; Codex finding #8): the result is persisted as the attempt's completion evidence
+        (``COMPLETED``) before ``settle(attempt, result)`` -- the unit's consumption settlement, idempotent -- runs; when an
+        earlier attempt holds that evidence, the next attempt (after the owner's recorded decision) is a commit attempt
+        that settles again, drains and writes ``unit.json`` naming the attempt whose work completed, without running
+        ``work``. ``drain`` (``drainer``): called once the work (and the settlement) has ended, completed or paused, before
+        the attempt's status or the unit's record is written; its CleanupUnconfirmed pauses the unit as a stop, so a unit
+        whose containers remain is never complete. Returns the unit's record; raises ``Pause`` after writing the attempt's
+        status."""
+        suffix = "-v2-3" if protocol.is_v23(configuration) else ""
+        unit_root = safe_path(unit_root)
+        unit_root.mkdir(parents=True, exist_ok=True)
+        name = identity["unit"]
+        with exclusive(unit_root / ".lock"):
+            done = complete(unit_root, run=run, identity=identity)
+            if done is not None:
+                return done
+            if protocol.is_v221(configuration):
+                from . import v221_recovery
+                attempt = v221_recovery.next_attempt(unit_root)
+            else:
+                attempt = _next_attempt(unit_root)
+            if attempt is None:
+                raise Pause("awaiting_owner_decision", attempts(unit_root)[-1].name, name)
+            finished = completed(unit_root, run=run, identity=identity)  # a commit attempt spends nothing: no redo limit
+            if finished is None and attempt_number(attempt) > 1 + MAX_REDOS:
+                raise Pause("redo_limit", "%s: at most %d redos of a unit (§3.4)" % (attempt.name, MAX_REDOS), name)
+            attempt.mkdir()
+            cleanup_events = getattr(drain, "cleanups", None) if protocol.is_v292(configuration) else None
+            start_events = getattr(drain, "starts", None) if protocol.is_v292(configuration) else None
+            if cleanup_events is not None:
+                cleanup_events.clear()
+            if start_events is not None:
+                start_events.clear()
+            def lifecycle():
+                events = {key: rows for key, rows in (("cleanups", cleanup_events), ("starts", start_events)) if rows}
+                fields = {"sandbox": events} if events else {}
+                if protocol.is_v226(configuration) and {'k', 'bench'} <= set(identity):
+                    from . import v226_candidates
+                    try:
+                        fields['candidate_errors'] = v226_candidates.counts(unit_root.parent)
+                    except (OSError, ValueError):
+                        # A broken journal must not mask the original pause or
+                        # prevent its status from being recorded.
+                        fields['candidate_errors_status'] = 'journal_unavailable'
+                return fields
+            write_json(attempt / "started.json", record("unit-started" + suffix, evidence, {
+                "run": run, "identity": identity, **({"commit_of": finished[0].name} if finished else {})}))
+            try:
+                try:
+                    if finished is None:
+>                       result = work(attempt)
+
+skillopt/execskill/units.py:403: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/step.py:442: in logged
+    return work(attempt)
+e589b5b:skillopt/execskill/step.py:2155: in work
+    identities[key][arm] = {
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False
+message = 'Resume requires the same sealed confirmation request identities'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: Resume requires the same sealed confirmation request identities
+
+skillopt/continual_eval/core.py:32: ValueError
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-g6ool2w7')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x116c84fc0>
+
+    def test_probe_confirmation_resume(tmp_path, monkeypatch):
+        """Accept either envelope; fail only if changing hook faults prevents retry."""
+        from skillopt.continual_eval.core import read_json
+        from skillopt.execskill import step
+        from skillopt.execskill.cells import Pause
+        from tests.test_execskill_v226_resume import setup, redo, assert_faults_preserved
+        from tests.test_execskill_v226_card_units import zebra_pool
+        st, parent, candidate, state, _ = setup(tmp_path, monkeypatch)
+        cut = {'confirm': zebra_pool(2)}
+        with pytest.raises(Pause):
+            step._confirm_eval(st, cut, 1, parent, candidate, exercise=True)
+        path = st.root / 'confirm-selection-r1.json'
+        sealed = read_json(path)
+        assert_faults_preserved(sealed['request_signatures'])
+        redo(st, 'confirm-r1')
+        state['fault'] = False
+>       result = step._confirm_eval(st, cut, 1, parent, candidate, exercise=True)
+
+docs/handoff/v226-20261109/base_probe.py:104: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+e589b5b:skillopt/execskill/step.py:2214: in _confirm_eval
+    def _restore_routes(rows):
+skillopt/execskill/step.py:449: in unit
+    found = units.run_unit(root, run=base.run, identity=identity, work=logged, evidence=self.evidence,
+skillopt/execskill/units.py:347: in run_unit
+    return v221_recovery.run_unit(unit_root, execute=_run_unit, **options)
+skillopt/execskill/v221_recovery.py:188: in run_unit
+    return execute(root, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+unit_root = PosixPath('<repo-root>/.runtime-tmp/identity-g6ool2w7/G/s3-zebralogic/confirm-r1')
+
+    def _run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=None, configuration=protocol.PILOT):
+        """Run ``work(attempt)`` -> result (a JSON-safe dict) in the unit's next attempt, unless the unit is complete.
+        The commit (module docstring; Codex finding #8): the result is persisted as the attempt's completion evidence
+        (``COMPLETED``) before ``settle(attempt, result)`` -- the unit's consumption settlement, idempotent -- runs; when an
+        earlier attempt holds that evidence, the next attempt (after the owner's recorded decision) is a commit attempt
+        that settles again, drains and writes ``unit.json`` naming the attempt whose work completed, without running
+        ``work``. ``drain`` (``drainer``): called once the work (and the settlement) has ended, completed or paused, before
+        the attempt's status or the unit's record is written; its CleanupUnconfirmed pauses the unit as a stop, so a unit
+        whose containers remain is never complete. Returns the unit's record; raises ``Pause`` after writing the attempt's
+        status."""
+        suffix = "-v2-3" if protocol.is_v23(configuration) else ""
+        unit_root = safe_path(unit_root)
+        unit_root.mkdir(parents=True, exist_ok=True)
+        name = identity["unit"]
+        with exclusive(unit_root / ".lock"):
+            done = complete(unit_root, run=run, identity=identity)
+            if done is not None:
+                return done
+            if protocol.is_v221(configuration):
+                from . import v221_recovery
+                attempt = v221_recovery.next_attempt(unit_root)
+            else:
+                attempt = _next_attempt(unit_root)
+            if attempt is None:
+                raise Pause("awaiting_owner_decision", attempts(unit_root)[-1].name, name)
+            finished = completed(unit_root, run=run, identity=identity)  # a commit attempt spends nothing: no redo limit
+            if finished is None and attempt_number(attempt) > 1 + MAX_REDOS:
+                raise Pause("redo_limit", "%s: at most %d redos of a unit (§3.4)" % (attempt.name, MAX_REDOS), name)
+            attempt.mkdir()
+            cleanup_events = getattr(drain, "cleanups", None) if protocol.is_v292(configuration) else None
+            start_events = getattr(drain, "starts", None) if protocol.is_v292(configuration) else None
+            if cleanup_events is not None:
+                cleanup_events.clear()
+            if start_events is not None:
+                start_events.clear()
+            def lifecycle():
+                events = {key: rows for key, rows in (("cleanups", cleanup_events), ("starts", start_events)) if rows}
+                fields = {"sandbox": events} if events else {}
+                if protocol.is_v226(configuration) and {'k', 'bench'} <= set(identity):
+                    from . import v226_candidates
+                    try:
+                        fields['candidate_errors'] = v226_candidates.counts(unit_root.parent)
+                    except (OSError, ValueError):
+                        # A broken journal must not mask the original pause or
+                        # prevent its status from being recorded.
+                        fields['candidate_errors_status'] = 'journal_unavailable'
+                return fields
+            write_json(attempt / "started.json", record("unit-started" + suffix, evidence, {
+                "run": run, "identity": identity, **({"commit_of": finished[0].name} if finished else {})}))
+            try:
+                try:
+                    if finished is None:
+                        result = work(attempt)
+                        write_json(attempt / COMPLETED, record("unit-completed" + suffix, evidence, {
+                            "run": run, "identity": identity, "attempt": attempt.name, "result": result}))
+                        worked = attempt
+                    else:
+                        worked, result = finished
+                    if settle is not None:
+                        settle(worked, result)
+                finally:
+                    try:
+                        if drain is not None:
+                            drain()
+                    finally:
+                        if cleanup_events:
+                            write_json(attempt / "sandbox-cleanups.json", {"cleanups": cleanup_events})
+                        if start_events:
+                            write_json(attempt / "sandbox-starts.json", {"starts": start_events})
+            except Pause as pause:
+                recovery = v221_recovery.exception_pause(pause) if protocol.is_v221(configuration) else None
+                write_json(attempt / "status.json", record("unit-status" + suffix, evidence, {
+                    "status": "paused", "kind": pause.kind, "reason": pause.reason, "cell": pause.cell,
+                    **({'auto_retry_eligible': recovery is not None, **(recovery or {})}
+                       if protocol.is_v221(configuration) else {}), **lifecycle()}))
+                raise
+            except Exception as error:  # a stop of the run, a configuration check or a crash: the unit pauses
+                (attempt / "diagnostics.log").write_text(traceback.format_exc(), encoding="utf-8")
+                kind = stop_kind(error) or ("configuration" if isinstance(error, ValueError) else "exception")
+                recovery = v221_recovery.exception_pause(error) if protocol.is_v221(configuration) else None
+                write_json(attempt / "status.json", record("unit-status" + suffix, evidence, {
+                    "status": "paused", "kind": kind, "reason": type(error).__name__, "cell": None,
+                    **({'auto_retry_eligible': recovery is not None, **(recovery or {})}
+                       if protocol.is_v221(configuration) else {}), **lifecycle()}))
+>               raise Pause(kind, type(error).__name__, name) from error
+E               skillopt.coevo5.cells.Pause: configuration: ValueError (cell G/s3-zebralogic/confirm-r1)
+
+skillopt/execskill/units.py:435: Pause
+________________________ test_probe_split_resume[False] ________________________
+
+unit_root = PosixPath('<repo-root>/.runtime-tmp/identity-xjqlexeq/G/s3-zebralogic/train-r1-split-p1')
+
+    def _run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=None, configuration=protocol.PILOT):
+        """Run ``work(attempt)`` -> result (a JSON-safe dict) in the unit's next attempt, unless the unit is complete.
+        The commit (module docstring; Codex finding #8): the result is persisted as the attempt's completion evidence
+        (``COMPLETED``) before ``settle(attempt, result)`` -- the unit's consumption settlement, idempotent -- runs; when an
+        earlier attempt holds that evidence, the next attempt (after the owner's recorded decision) is a commit attempt
+        that settles again, drains and writes ``unit.json`` naming the attempt whose work completed, without running
+        ``work``. ``drain`` (``drainer``): called once the work (and the settlement) has ended, completed or paused, before
+        the attempt's status or the unit's record is written; its CleanupUnconfirmed pauses the unit as a stop, so a unit
+        whose containers remain is never complete. Returns the unit's record; raises ``Pause`` after writing the attempt's
+        status."""
+        suffix = "-v2-3" if protocol.is_v23(configuration) else ""
+        unit_root = safe_path(unit_root)
+        unit_root.mkdir(parents=True, exist_ok=True)
+        name = identity["unit"]
+        with exclusive(unit_root / ".lock"):
+            done = complete(unit_root, run=run, identity=identity)
+            if done is not None:
+                return done
+            if protocol.is_v221(configuration):
+                from . import v221_recovery
+                attempt = v221_recovery.next_attempt(unit_root)
+            else:
+                attempt = _next_attempt(unit_root)
+            if attempt is None:
+                raise Pause("awaiting_owner_decision", attempts(unit_root)[-1].name, name)
+            finished = completed(unit_root, run=run, identity=identity)  # a commit attempt spends nothing: no redo limit
+            if finished is None and attempt_number(attempt) > 1 + MAX_REDOS:
+                raise Pause("redo_limit", "%s: at most %d redos of a unit (§3.4)" % (attempt.name, MAX_REDOS), name)
+            attempt.mkdir()
+            cleanup_events = getattr(drain, "cleanups", None) if protocol.is_v292(configuration) else None
+            start_events = getattr(drain, "starts", None) if protocol.is_v292(configuration) else None
+            if cleanup_events is not None:
+                cleanup_events.clear()
+            if start_events is not None:
+                start_events.clear()
+            def lifecycle():
+                events = {key: rows for key, rows in (("cleanups", cleanup_events), ("starts", start_events)) if rows}
+                fields = {"sandbox": events} if events else {}
+                if protocol.is_v226(configuration) and {'k', 'bench'} <= set(identity):
+                    from . import v226_candidates
+                    try:
+                        fields['candidate_errors'] = v226_candidates.counts(unit_root.parent)
+                    except (OSError, ValueError):
+                        # A broken journal must not mask the original pause or
+                        # prevent its status from being recorded.
+                        fields['candidate_errors_status'] = 'journal_unavailable'
+                return fields
+            write_json(attempt / "started.json", record("unit-started" + suffix, evidence, {
+                "run": run, "identity": identity, **({"commit_of": finished[0].name} if finished else {})}))
+            try:
+                try:
+                    if finished is None:
+>                       result = work(attempt)
+
+skillopt/execskill/units.py:403: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/step.py:442: in logged
+    return work(attempt)
+e589b5b:skillopt/execskill/v221_split.py:179: in work
+    binding = profiles.verified(read_json(plan), 'v226-split-requests')
+e589b5b:skillopt/execskill/v221_split.py:112: in _resume_cells
+    previous = read_json(plan)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False
+message = 'A split restart requires the same immutable request plan'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A split restart requires the same immutable request plan
+
+skillopt/continual_eval/core.py:32: ValueError
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-xjqlexeq')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1171cad70>
+confirmation = False
+
+    @pytest.mark.parametrize('confirmation', [False, True])
+    def test_probe_split_resume(tmp_path, monkeypatch, confirmation):
+        from skillopt.continual_eval.core import read_json
+        from skillopt.execskill import v221_split
+        from skillopt.execskill.cells import Pause
+        from tests.test_execskill_v226_resume import setup, redo, assert_faults_preserved
+        from tests.test_execskill_v226_card_units import zebra_pool
+        st, parent, candidate, state, _ = setup(tmp_path, monkeypatch)
+        rows = zebra_pool(2)
+        cut, source = {'confirm': rows, 'run': rows}, {'slice_ids': [row['task_id'] for row in rows]}
+        unit = ('confirm' if confirmation else 'train') + '-r1-split-p1'
+        def run():
+            return v221_split.evaluate(st, cut, 1, 1, parent, candidate, candidate, source, None,
+                                       confirmation=confirmation)
+        with pytest.raises(Pause):
+            run()
+        path = st.root / unit / 'split-binding.json'
+        sealed = read_json(path)
+        assert_faults_preserved(sealed['request_signatures'])
+        redo(st, unit)
+        state['fault'] = False
+>       assert run()['request_signatures'] == sealed['request_signatures']
+
+docs/handoff/v226-20261109/base_probe.py:131: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+docs/handoff/v226-20261109/base_probe.py:122: in run
+    return v221_split.evaluate(st, cut, 1, 1, parent, candidate, candidate, source, None,
+e589b5b:skillopt/execskill/v221_split.py:262: in evaluate
+    coverage = {key: {'request_sha256': signatures[key]["S'"]['request_sha256'],
+skillopt/execskill/step.py:449: in unit
+    found = units.run_unit(root, run=base.run, identity=identity, work=logged, evidence=self.evidence,
+skillopt/execskill/units.py:347: in run_unit
+    return v221_recovery.run_unit(unit_root, execute=_run_unit, **options)
+skillopt/execskill/v221_recovery.py:188: in run_unit
+    return execute(root, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+unit_root = PosixPath('<repo-root>/.runtime-tmp/identity-xjqlexeq/G/s3-zebralogic/train-r1-split-p1')
+
+    def _run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=None, configuration=protocol.PILOT):
+        """Run ``work(attempt)`` -> result (a JSON-safe dict) in the unit's next attempt, unless the unit is complete.
+        The commit (module docstring; Codex finding #8): the result is persisted as the attempt's completion evidence
+        (``COMPLETED``) before ``settle(attempt, result)`` -- the unit's consumption settlement, idempotent -- runs; when an
+        earlier attempt holds that evidence, the next attempt (after the owner's recorded decision) is a commit attempt
+        that settles again, drains and writes ``unit.json`` naming the attempt whose work completed, without running
+        ``work``. ``drain`` (``drainer``): called once the work (and the settlement) has ended, completed or paused, before
+        the attempt's status or the unit's record is written; its CleanupUnconfirmed pauses the unit as a stop, so a unit
+        whose containers remain is never complete. Returns the unit's record; raises ``Pause`` after writing the attempt's
+        status."""
+        suffix = "-v2-3" if protocol.is_v23(configuration) else ""
+        unit_root = safe_path(unit_root)
+        unit_root.mkdir(parents=True, exist_ok=True)
+        name = identity["unit"]
+        with exclusive(unit_root / ".lock"):
+            done = complete(unit_root, run=run, identity=identity)
+            if done is not None:
+                return done
+            if protocol.is_v221(configuration):
+                from . import v221_recovery
+                attempt = v221_recovery.next_attempt(unit_root)
+            else:
+                attempt = _next_attempt(unit_root)
+            if attempt is None:
+                raise Pause("awaiting_owner_decision", attempts(unit_root)[-1].name, name)
+            finished = completed(unit_root, run=run, identity=identity)  # a commit attempt spends nothing: no redo limit
+            if finished is None and attempt_number(attempt) > 1 + MAX_REDOS:
+                raise Pause("redo_limit", "%s: at most %d redos of a unit (§3.4)" % (attempt.name, MAX_REDOS), name)
+            attempt.mkdir()
+            cleanup_events = getattr(drain, "cleanups", None) if protocol.is_v292(configuration) else None
+            start_events = getattr(drain, "starts", None) if protocol.is_v292(configuration) else None
+            if cleanup_events is not None:
+                cleanup_events.clear()
+            if start_events is not None:
+                start_events.clear()
+            def lifecycle():
+                events = {key: rows for key, rows in (("cleanups", cleanup_events), ("starts", start_events)) if rows}
+                fields = {"sandbox": events} if events else {}
+                if protocol.is_v226(configuration) and {'k', 'bench'} <= set(identity):
+                    from . import v226_candidates
+                    try:
+                        fields['candidate_errors'] = v226_candidates.counts(unit_root.parent)
+                    except (OSError, ValueError):
+                        # A broken journal must not mask the original pause or
+                        # prevent its status from being recorded.
+                        fields['candidate_errors_status'] = 'journal_unavailable'
+                return fields
+            write_json(attempt / "started.json", record("unit-started" + suffix, evidence, {
+                "run": run, "identity": identity, **({"commit_of": finished[0].name} if finished else {})}))
+            try:
+                try:
+                    if finished is None:
+                        result = work(attempt)
+                        write_json(attempt / COMPLETED, record("unit-completed" + suffix, evidence, {
+                            "run": run, "identity": identity, "attempt": attempt.name, "result": result}))
+                        worked = attempt
+                    else:
+                        worked, result = finished
+                    if settle is not None:
+                        settle(worked, result)
+                finally:
+                    try:
+                        if drain is not None:
+                            drain()
+                    finally:
+                        if cleanup_events:
+                            write_json(attempt / "sandbox-cleanups.json", {"cleanups": cleanup_events})
+                        if start_events:
+                            write_json(attempt / "sandbox-starts.json", {"starts": start_events})
+            except Pause as pause:
+                recovery = v221_recovery.exception_pause(pause) if protocol.is_v221(configuration) else None
+                write_json(attempt / "status.json", record("unit-status" + suffix, evidence, {
+                    "status": "paused", "kind": pause.kind, "reason": pause.reason, "cell": pause.cell,
+                    **({'auto_retry_eligible': recovery is not None, **(recovery or {})}
+                       if protocol.is_v221(configuration) else {}), **lifecycle()}))
+                raise
+            except Exception as error:  # a stop of the run, a configuration check or a crash: the unit pauses
+                (attempt / "diagnostics.log").write_text(traceback.format_exc(), encoding="utf-8")
+                kind = stop_kind(error) or ("configuration" if isinstance(error, ValueError) else "exception")
+                recovery = v221_recovery.exception_pause(error) if protocol.is_v221(configuration) else None
+                write_json(attempt / "status.json", record("unit-status" + suffix, evidence, {
+                    "status": "paused", "kind": kind, "reason": type(error).__name__, "cell": None,
+                    **({'auto_retry_eligible': recovery is not None, **(recovery or {})}
+                       if protocol.is_v221(configuration) else {}), **lifecycle()}))
+>               raise Pause(kind, type(error).__name__, name) from error
+E               skillopt.coevo5.cells.Pause: configuration: ValueError (cell G/s3-zebralogic/train-r1-split-p1)
+
+skillopt/execskill/units.py:435: Pause
+________________________ test_probe_split_resume[True] _________________________
+
+unit_root = PosixPath('<repo-root>/.runtime-tmp/identity-zpkowi1i/G/s3-zebralogic/confirm-r1-split-p1')
+
+    def _run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=None, configuration=protocol.PILOT):
+        """Run ``work(attempt)`` -> result (a JSON-safe dict) in the unit's next attempt, unless the unit is complete.
+        The commit (module docstring; Codex finding #8): the result is persisted as the attempt's completion evidence
+        (``COMPLETED``) before ``settle(attempt, result)`` -- the unit's consumption settlement, idempotent -- runs; when an
+        earlier attempt holds that evidence, the next attempt (after the owner's recorded decision) is a commit attempt
+        that settles again, drains and writes ``unit.json`` naming the attempt whose work completed, without running
+        ``work``. ``drain`` (``drainer``): called once the work (and the settlement) has ended, completed or paused, before
+        the attempt's status or the unit's record is written; its CleanupUnconfirmed pauses the unit as a stop, so a unit
+        whose containers remain is never complete. Returns the unit's record; raises ``Pause`` after writing the attempt's
+        status."""
+        suffix = "-v2-3" if protocol.is_v23(configuration) else ""
+        unit_root = safe_path(unit_root)
+        unit_root.mkdir(parents=True, exist_ok=True)
+        name = identity["unit"]
+        with exclusive(unit_root / ".lock"):
+            done = complete(unit_root, run=run, identity=identity)
+            if done is not None:
+                return done
+            if protocol.is_v221(configuration):
+                from . import v221_recovery
+                attempt = v221_recovery.next_attempt(unit_root)
+            else:
+                attempt = _next_attempt(unit_root)
+            if attempt is None:
+                raise Pause("awaiting_owner_decision", attempts(unit_root)[-1].name, name)
+            finished = completed(unit_root, run=run, identity=identity)  # a commit attempt spends nothing: no redo limit
+            if finished is None and attempt_number(attempt) > 1 + MAX_REDOS:
+                raise Pause("redo_limit", "%s: at most %d redos of a unit (§3.4)" % (attempt.name, MAX_REDOS), name)
+            attempt.mkdir()
+            cleanup_events = getattr(drain, "cleanups", None) if protocol.is_v292(configuration) else None
+            start_events = getattr(drain, "starts", None) if protocol.is_v292(configuration) else None
+            if cleanup_events is not None:
+                cleanup_events.clear()
+            if start_events is not None:
+                start_events.clear()
+            def lifecycle():
+                events = {key: rows for key, rows in (("cleanups", cleanup_events), ("starts", start_events)) if rows}
+                fields = {"sandbox": events} if events else {}
+                if protocol.is_v226(configuration) and {'k', 'bench'} <= set(identity):
+                    from . import v226_candidates
+                    try:
+                        fields['candidate_errors'] = v226_candidates.counts(unit_root.parent)
+                    except (OSError, ValueError):
+                        # A broken journal must not mask the original pause or
+                        # prevent its status from being recorded.
+                        fields['candidate_errors_status'] = 'journal_unavailable'
+                return fields
+            write_json(attempt / "started.json", record("unit-started" + suffix, evidence, {
+                "run": run, "identity": identity, **({"commit_of": finished[0].name} if finished else {})}))
+            try:
+                try:
+                    if finished is None:
+>                       result = work(attempt)
+
+skillopt/execskill/units.py:403: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/step.py:442: in logged
+    return work(attempt)
+e589b5b:skillopt/execskill/v221_split.py:179: in work
+    binding = profiles.verified(read_json(plan), 'v226-split-requests')
+e589b5b:skillopt/execskill/v221_split.py:112: in _resume_cells
+    previous = read_json(plan)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False
+message = 'A split restart requires the same immutable request plan'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A split restart requires the same immutable request plan
+
+skillopt/continual_eval/core.py:32: ValueError
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-zpkowi1i')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x116e127b0>
+confirmation = True
+
+    @pytest.mark.parametrize('confirmation', [False, True])
+    def test_probe_split_resume(tmp_path, monkeypatch, confirmation):
+        from skillopt.continual_eval.core import read_json
+        from skillopt.execskill import v221_split
+        from skillopt.execskill.cells import Pause
+        from tests.test_execskill_v226_resume import setup, redo, assert_faults_preserved
+        from tests.test_execskill_v226_card_units import zebra_pool
+        st, parent, candidate, state, _ = setup(tmp_path, monkeypatch)
+        rows = zebra_pool(2)
+        cut, source = {'confirm': rows, 'run': rows}, {'slice_ids': [row['task_id'] for row in rows]}
+        unit = ('confirm' if confirmation else 'train') + '-r1-split-p1'
+        def run():
+            return v221_split.evaluate(st, cut, 1, 1, parent, candidate, candidate, source, None,
+                                       confirmation=confirmation)
+        with pytest.raises(Pause):
+            run()
+        path = st.root / unit / 'split-binding.json'
+        sealed = read_json(path)
+        assert_faults_preserved(sealed['request_signatures'])
+        redo(st, unit)
+        state['fault'] = False
+>       assert run()['request_signatures'] == sealed['request_signatures']
+
+docs/handoff/v226-20261109/base_probe.py:131: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+docs/handoff/v226-20261109/base_probe.py:122: in run
+    return v221_split.evaluate(st, cut, 1, 1, parent, candidate, candidate, source, None,
+e589b5b:skillopt/execskill/v221_split.py:262: in evaluate
+    coverage = {key: {'request_sha256': signatures[key]["S'"]['request_sha256'],
+skillopt/execskill/step.py:449: in unit
+    found = units.run_unit(root, run=base.run, identity=identity, work=logged, evidence=self.evidence,
+skillopt/execskill/units.py:347: in run_unit
+    return v221_recovery.run_unit(unit_root, execute=_run_unit, **options)
+skillopt/execskill/v221_recovery.py:188: in run_unit
+    return execute(root, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+unit_root = PosixPath('<repo-root>/.runtime-tmp/identity-zpkowi1i/G/s3-zebralogic/confirm-r1-split-p1')
+
+    def _run_unit(unit_root, *, run, identity, work, evidence, drain=None, settle=None, configuration=protocol.PILOT):
+        """Run ``work(attempt)`` -> result (a JSON-safe dict) in the unit's next attempt, unless the unit is complete.
+        The commit (module docstring; Codex finding #8): the result is persisted as the attempt's completion evidence
+        (``COMPLETED``) before ``settle(attempt, result)`` -- the unit's consumption settlement, idempotent -- runs; when an
+        earlier attempt holds that evidence, the next attempt (after the owner's recorded decision) is a commit attempt
+        that settles again, drains and writes ``unit.json`` naming the attempt whose work completed, without running
+        ``work``. ``drain`` (``drainer``): called once the work (and the settlement) has ended, completed or paused, before
+        the attempt's status or the unit's record is written; its CleanupUnconfirmed pauses the unit as a stop, so a unit
+        whose containers remain is never complete. Returns the unit's record; raises ``Pause`` after writing the attempt's
+        status."""
+        suffix = "-v2-3" if protocol.is_v23(configuration) else ""
+        unit_root = safe_path(unit_root)
+        unit_root.mkdir(parents=True, exist_ok=True)
+        name = identity["unit"]
+        with exclusive(unit_root / ".lock"):
+            done = complete(unit_root, run=run, identity=identity)
+            if done is not None:
+                return done
+            if protocol.is_v221(configuration):
+                from . import v221_recovery
+                attempt = v221_recovery.next_attempt(unit_root)
+            else:
+                attempt = _next_attempt(unit_root)
+            if attempt is None:
+                raise Pause("awaiting_owner_decision", attempts(unit_root)[-1].name, name)
+            finished = completed(unit_root, run=run, identity=identity)  # a commit attempt spends nothing: no redo limit
+            if finished is None and attempt_number(attempt) > 1 + MAX_REDOS:
+                raise Pause("redo_limit", "%s: at most %d redos of a unit (§3.4)" % (attempt.name, MAX_REDOS), name)
+            attempt.mkdir()
+            cleanup_events = getattr(drain, "cleanups", None) if protocol.is_v292(configuration) else None
+            start_events = getattr(drain, "starts", None) if protocol.is_v292(configuration) else None
+            if cleanup_events is not None:
+                cleanup_events.clear()
+            if start_events is not None:
+                start_events.clear()
+            def lifecycle():
+                events = {key: rows for key, rows in (("cleanups", cleanup_events), ("starts", start_events)) if rows}
+                fields = {"sandbox": events} if events else {}
+                if protocol.is_v226(configuration) and {'k', 'bench'} <= set(identity):
+                    from . import v226_candidates
+                    try:
+                        fields['candidate_errors'] = v226_candidates.counts(unit_root.parent)
+                    except (OSError, ValueError):
+                        # A broken journal must not mask the original pause or
+                        # prevent its status from being recorded.
+                        fields['candidate_errors_status'] = 'journal_unavailable'
+                return fields
+            write_json(attempt / "started.json", record("unit-started" + suffix, evidence, {
+                "run": run, "identity": identity, **({"commit_of": finished[0].name} if finished else {})}))
+            try:
+                try:
+                    if finished is None:
+                        result = work(attempt)
+                        write_json(attempt / COMPLETED, record("unit-completed" + suffix, evidence, {
+                            "run": run, "identity": identity, "attempt": attempt.name, "result": result}))
+                        worked = attempt
+                    else:
+                        worked, result = finished
+                    if settle is not None:
+                        settle(worked, result)
+                finally:
+                    try:
+                        if drain is not None:
+                            drain()
+                    finally:
+                        if cleanup_events:
+                            write_json(attempt / "sandbox-cleanups.json", {"cleanups": cleanup_events})
+                        if start_events:
+                            write_json(attempt / "sandbox-starts.json", {"starts": start_events})
+            except Pause as pause:
+                recovery = v221_recovery.exception_pause(pause) if protocol.is_v221(configuration) else None
+                write_json(attempt / "status.json", record("unit-status" + suffix, evidence, {
+                    "status": "paused", "kind": pause.kind, "reason": pause.reason, "cell": pause.cell,
+                    **({'auto_retry_eligible': recovery is not None, **(recovery or {})}
+                       if protocol.is_v221(configuration) else {}), **lifecycle()}))
+                raise
+            except Exception as error:  # a stop of the run, a configuration check or a crash: the unit pauses
+                (attempt / "diagnostics.log").write_text(traceback.format_exc(), encoding="utf-8")
+                kind = stop_kind(error) or ("configuration" if isinstance(error, ValueError) else "exception")
+                recovery = v221_recovery.exception_pause(error) if protocol.is_v221(configuration) else None
+                write_json(attempt / "status.json", record("unit-status" + suffix, evidence, {
+                    "status": "paused", "kind": kind, "reason": type(error).__name__, "cell": None,
+                    **({'auto_retry_eligible': recovery is not None, **(recovery or {})}
+                       if protocol.is_v221(configuration) else {}), **lifecycle()}))
+>               raise Pause(kind, type(error).__name__, name) from error
+E               skillopt.coevo5.cells.Pause: configuration: ValueError (cell G/s3-zebralogic/confirm-r1-split-p1)
+
+skillopt/execskill/units.py:435: Pause
+=========================== short test summary info ============================
+FAILED docs/handoff/v226-20261109/base_probe.py::test_probe_confirmation_resume
+FAILED docs/handoff/v226-20261109/base_probe.py::test_probe_split_resume[False]
+FAILED docs/handoff/v226-20261109/base_probe.py::test_probe_split_resume[True]
+3 failed in 0.54s
+
+base-F7.log
+===========
+RESTORED skillopt/execskill/v225_read.py:evaluate_unit
+CASE F7 base functions
+.F                                                                       [100%]
+=================================== FAILURES ===================================
+____ test_officeqa_stage_read_halves_are_stable_only_in_main_v10[main-v10] _____
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-effzmb8h')
+configuration = 'main-v10'
+
+    @pytest.mark.parametrize('configuration', [p.MAIN_V9, p.MAIN_V10])
+    def test_officeqa_stage_read_halves_are_stable_only_in_main_v10(tmp_path, configuration):
+        root = tmp_path/'run'
+        blank = package.empty(step='D/s0', evidence='engineering_fixture')
+        fake = Solver()
+        endpoint = Endpoint(fake, model=p.CHAINS['D'], max_tokens=100,
+                            slots=Slots(root/'slots', 'deepseek', 2), sleep=lambda _: None)
+        write_json(root/'shared/consent.json', consent())
+        blocks = {}
+        for event in ('anchor', 's3', 's4'):
+            unit = root/'D/test'/event/'officeqa'
+            context = cells.Context(attempt=unit/'attempt-1', endpoint=endpoint, runtime=RUNTIME,
+                cards={'officeqa': v222_cards.format_text('officeqa')}, native=None, episodes=None,
+                worker=lambda _: FakeSandbox(), evidence='engineering_fixture', configuration=configuration)
+            r.evaluate_unit(unit, event=event, run='authored', shared=root/'shared', pinned=None,
+                chain='D', bench='officeqa', chosen=r.arms(blank, event, chain='D', evidence='engineering_fixture'),
+                context=context, workers=2, canaries=[], panel=panel)
+            rows = [read_json(path) for path in (unit/'attempt-1/cells').glob('*.json')]
+            blocks[event] = {row['cell']['task_id']: row['cell']['block'] for row in rows}
+            seed = 'D/test/officeqa' if p.is_v226(configuration) else 'D/test/' + event + '/officeqa'
+>           assert blocks[event] == evaluation._blocks(sorted(row['task_id'] for row in ITEMS), 'officeqa', seed)
+E           AssertionError: assert {'fx-officeqa...3': 'b1', ...} == {'fx-officeqa...3': 'b1', ...}
+E             
+E             Omitting 6 identical items, use -vv to show
+E             Differing items:
+E             {'fx-officeqa-07': 'b1'} != {'fx-officeqa-07': 'b2'}
+E             {'fx-officeqa-08': 'b1'} != {'fx-officeqa-08': 'b2'}
+E             {'fx-officeqa-06': 'b2'} != {'fx-officeqa-06': 'b1'}
+E             {'fx-officeqa-04': 'b2'} != {'fx-officeqa-04': 'b1'}...
+E             
+E             ...Full output truncated (3 lines hidden), use '-vv' to show
+
+tests/test_execskill_v226_blocks.py:36: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execskill_v226_blocks.py::test_officeqa_stage_read_halves_are_stable_only_in_main_v10[main-v10]
+1 failed, 1 passed in 1.39s
+
+base-F8.log
+===========
+RESTORED skillopt/execskill/sandbox/client.py:Worker.call
+RESTORED skillopt/execskill/sandbox/client.py:Worker.call_diagnostics
+CASE F8 base functions
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+___ test_first_diagnostics_exchange_loss_retries_once_inside_call_slot[gone] ___
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-n_vv3yfi')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111056520>
+cause = 'gone'
+
+    @pytest.mark.parametrize('cause', ['gone', 'oom'])
+    def test_first_diagnostics_exchange_loss_retries_once_inside_call_slot(tmp_path, monkeypatch, cause):
+        made, procedure, calls, starts = worker(tmp_path, monkeypatch, cause=cause)
+>       result = made.call_diagnostics(procedure.id, 'before_call', [VIEW, None], timeout_s=1)
+
+tests/test_execskill_v226_worker_recovery.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+e589b5b:skillopt/execskill/sandbox/client.py:526: in call_diagnostics
+    ???
+skillopt/execskill/sandbox/client.py:536: in _configure_diagnostics
+    reply = self._exchange({'op': 'diagnostics-v215', 'configuration': 'zebra-pc-v14',
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = {'bench': 'zebralogic', 'configuration': 'zebra-pc-v14', 'op': 'diagnostics-v215', 'screen': {'form': ['\\b(?:answer\\... ...], 'prefix': ['(?:^|[,;:]\\s*|\\b(?:please\\s*,?|must|should|remember\\s+to|need\\s+to|and|then)\\s+)$', 34], ...}}
+timeout = 10
+
+    def exchange(request, timeout):
+        calls.append((request['op'], made._container.name, slots['held']))
+        if request['op'] == 'diagnostics-v215':
+            if sum(op == 'diagnostics-v215' for op, _, _ in calls) <= losses:
+>               raise client._Lost('authored lost first diagnostics exchange')
+E               skillopt.execskill.sandbox.client._Lost: authored lost first diagnostics exchange
+
+tests/test_execskill_v226_worker_recovery.py:39: _Lost
+___ test_first_diagnostics_exchange_loss_retries_once_inside_call_slot[oom] ____
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-lbtzd3u5')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x113ee8770>
+cause = 'oom'
+
+    @pytest.mark.parametrize('cause', ['gone', 'oom'])
+    def test_first_diagnostics_exchange_loss_retries_once_inside_call_slot(tmp_path, monkeypatch, cause):
+        made, procedure, calls, starts = worker(tmp_path, monkeypatch, cause=cause)
+>       result = made.call_diagnostics(procedure.id, 'before_call', [VIEW, None], timeout_s=1)
+
+tests/test_execskill_v226_worker_recovery.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+e589b5b:skillopt/execskill/sandbox/client.py:526: in call_diagnostics
+    ???
+skillopt/execskill/sandbox/client.py:536: in _configure_diagnostics
+    reply = self._exchange({'op': 'diagnostics-v215', 'configuration': 'zebra-pc-v14',
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = {'bench': 'zebralogic', 'configuration': 'zebra-pc-v14', 'op': 'diagnostics-v215', 'screen': {'form': ['\\b(?:answer\\... ...], 'prefix': ['(?:^|[,;:]\\s*|\\b(?:please\\s*,?|must|should|remember\\s+to|need\\s+to|and|then)\\s+)$', 34], ...}}
+timeout = 10
+
+    def exchange(request, timeout):
+        calls.append((request['op'], made._container.name, slots['held']))
+        if request['op'] == 'diagnostics-v215':
+            if sum(op == 'diagnostics-v215' for op, _, _ in calls) <= losses:
+>               raise client._Lost('authored lost first diagnostics exchange')
+E               skillopt.execskill.sandbox.client._Lost: authored lost first diagnostics exchange
+
+tests/test_execskill_v226_worker_recovery.py:39: _Lost
+=========================== short test summary info ============================
+FAILED tests/test_execskill_v226_worker_recovery.py::test_first_diagnostics_exchange_loss_retries_once_inside_call_slot[gone]
+FAILED tests/test_execskill_v226_worker_recovery.py::test_first_diagnostics_exchange_loss_retries_once_inside_call_slot[oom]
+2 failed in 0.80s
+
+fixed-K1.log
+============
+CASE K1 fixed
+...                                                                      [100%]
+3 passed in 0.76s
+
+fixed-F1.log
+============
+CASE F1 fixed
+...                                                                      [100%]
+3 passed in 0.83s
+
+fixed-F2.log
+============
+CASE F2 fixed
+.........                                                                [100%]
+9 passed in 0.79s
+
+fixed-F3.log
+============
+CASE F3 fixed
+......                                                                   [100%]
+6 passed in 0.69s
+
+fixed-F4.log
+============
+CASE F4 fixed
+..                                                                       [100%]
+2 passed in 6.84s
+
+fixed-F5.log
+============
+CASE F5 fixed
+........                                                                 [100%]
+8 passed in 0.53s
+
+fixed-F6.log
+============
+CASE F6 fixed
+...                                                                      [100%]
+3 passed in 0.66s
+
+fixed-F7.log
+============
+CASE F7 fixed
+..                                                                       [100%]
+2 passed in 1.45s
+
+fixed-F8.log
+============
+CASE F8 fixed
+..                                                                       [100%]
+2 passed in 0.76s

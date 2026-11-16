@@ -31,7 +31,10 @@ checked on its "after dispatch" half: donor trajectories changed after sealing a
 (``donors.verify``); its "from acceptance items" half has no single mutation site, because the donor builder never
 receives an acceptance item (``donors.donor_corpus`` takes the run-slice trajectories only), and T-PLACEBO-6 scans the
 sealed text for acceptance-item text. (27) is checked on both halves: a changed archive file accepted on open, and a
-redirect to a non-frozen host followed. Offline; runs the copied tests with ``python -B`` and the launch environment."""
+redirect to a non-frozen host followed. Entries 137-140 cover later procedure and cross-bench gates;
+141-151 cover main-v9 card routing, static checks, gain floors, cross-card admission and occupancy, fresh stage
+reads after unchanged steps, writer isolation, independent card edit caps, pinned CL formulas, and the protected
+learner path boundary. Offline; runs the copied tests with ``python -B`` and the launch environment."""
 from __future__ import annotations
 
 import shutil
@@ -659,6 +662,74 @@ MUTATIONS = {
         '        if not done("C6b", *routed["C6b"]) or not done("C6c", *routed["C6c"]):\n',
         '        if not done("C6b", *routed["C6b"]):\n',
         [T + "v24_engineer.py::test_swallowed_heading_defect_fails_c6c_then_repair_passes_both_gates"]),
+    "139-v222-cross-harm-gate-disabled": (
+        PE + "v222_gate.py",
+        '    passed = net >= 0 and whole >= p.WHOLE_BATCH_FLOOR\n',
+        '    passed = True\n',
+        [T + "v222_gate.py::test_cross_gate_requires_nonnegative_net_and_inclusive_whole_floor",
+         T + "v222_gate.py::test_disabled_gate_is_detected_by_harmful_unnarrowable_deletion"]),
+    "140-v222-fired-items-treated-as-identity": (
+        PE + "v222_gate.py",
+        "        elif not found['fired_items']:\n",
+        "        elif True:\n",
+        [T + "v222_gate.py::test_only_fired_items_receive_one_pair_and_harm_narrows_then_rechecks_every_bench",
+         T + "v222_gate.py::test_disabled_gate_is_detected_by_harmful_unnarrowable_deletion"]),
+    '141-v225-card-routed-off-home': (
+        PE + 'v225_cards.py',
+        '    card = package.card_for(bench)\n',
+        '    card = next((p for p in package.procedures if is_card(p)), None)\n',
+        [T + 'v225_routing.py::test_card_routed_only_to_own_bench_request_byte_identity']),
+    '142-v225-card-static-check-skipped': (
+        PE + 'v225_cards.py',
+        '    """Ordered deterministic checks over caller-provided practice evidence only."""\n',
+        '    """Ordered deterministic checks over caller-provided practice evidence only."""\n    return None\n',
+        [T + 'v225_cards.py::test_each_static_rule', T + 'v225_cards.py::test_reference_number_and_phrase_are_rejected_without_public_exemption', T + 'v225_cards.py::test_shown_eightgram_rejected_but_public_template_allowed']),
+    '143-v225-card-floor-dropped': (
+        PE + 'v225_phase.py',
+        "    passed = old['net'] >= floor and broken <= p.HARM_RATIO * fixed and whole >= p.WHOLE_BATCH_FLOOR\n",
+        '    passed = broken <= p.HARM_RATIO * fixed and whole >= p.WHOLE_BATCH_FLOOR\n',
+        [T + 'v225_phase.py::test_overlay_five_percent_worked_decisions', T + 'v225_phase.py::test_card_floor_whole_batch_and_full_touch_contract']),
+    '144-v225-cross-card-without-gate': (
+        PE + 'v225_phase.py',
+        "    return candidate if gate['passed'] else parent\n",
+        '    return candidate\n',
+        [T + 'v225_cross_card.py::test_failed_cross_copy_leaves_package_byte_identical']),
+    '145-v225-cross-card-over-own-card': (
+        PE + 'v225_phase.py',
+        "    require(parent.card_for(target) is None, 'Cross cards require an empty target card slot')\n",
+        "    require(True, 'Cross cards require an empty target card slot')\n",
+        [T + 'v225_cross_card.py::test_cross_copy_never_overwrites_own_card_or_another_cross_copy']),
+    '146-v225-stage-read-shares-cells': (
+        PE + 'v225_read.py',
+        '                        run_cells(own, members, workers=workers, store=store)\n',
+        "                        run_cells(own, members if event == 'anchor' and label == next(iter(chosen)) else [], workers=workers, store=store)\n",
+        [T + 'v225_reads.py::test_production_dispatch_is_fresh_for_identical_arms_and_unchanged_stages',
+         T + 'v225_reads.py::test_fresh_authored_read_dispatches_all_cells_even_unchanged_package']),
+    '147-v225-unchanged-step-not-read': (
+        PE + 'v225_read.py',
+        "                pending.append(pool.submit(evaluate_event, setting, chain, package, label='s'+str(k), launch=launch))\n",
+        "                if package.procedures:\n                    pending.append(pool.submit(evaluate_event, setting, chain, package, label='s'+str(k), launch=launch))\n",
+        [T + 'v225_reads.py::test_stage_read_overlaps_next_step_and_unchanged_steps_all_read']),
+    '148-v225-writer-sees-acceptance-rows': (
+        PE + 'v225_writer.py',
+        '        _unit(row, chain=chain, bench=bench, k=k, c=c, smoke=smoke)\n',
+        "        if 'accept' not in row.get('unit', ''):\n            _unit(row, chain=chain, bench=bench, k=k, c=c, smoke=smoke)\n",
+        [T + 'v225_writer.py::test_writer_refuses_any_acceptance_confirmation_harm_or_test_row']),
+    '149-v225-card-counted-in-max-changes': (
+        PE + 'package.py',
+        '        ordinary = [edit for edit in changes if not card_edit(edit)]\n',
+        '        ordinary = list(changes)\n',
+        [T + 'v225_cards.py::test_cards_outside_procedure_count_source_bytes_and_change_bounds']),
+    '150-v225-metrics-anchor-not-cl': (
+        PE + 'v225_metrics.py',
+        '    anchor_C = _block(aggregates,chain,similar)\n',
+        "    anchor_C = _block(reanchor(aggregates,'B'),chain,similar)\n",
+        [T + 'v225_metrics.py::test_anchor_c_equals_vendored_reference_field_for_field']),
+    '151-v225-learner-opens-test-dir': (
+        PE + 'v225_read.py',
+        '    require(not any(token in part.lower() for part in Path(path).parts if part not in LEARNING_UNIT_NAMES for token in PROTECTED),\n',
+        '    require(True,\n',
+        [T + 'v225_isolation.py::test_learner_refuses_every_protected_path_component_before_open', T + 'v225_isolation.py::test_authored_next_step_does_not_open_prior_read']),
 }
 
 
@@ -668,14 +739,34 @@ def _pytest(root, tests):
                           timeout=900, check=False)
 
 
+def public_copy_ignore(directory, names):
+    """Do not open protected-name sources; tests contain authored fixtures/code.
+
+    This offline writer constraint changes no registered mutation or test node.
+    """
+    protected = ('test', 'holdout', 'held_out', 'final', 'sealed', 'reserve',
+                 'testaccess', 'test_panel', 'block_c', 'block_d')
+    path = Path(directory)
+    authored = 'tests' in path.parts
+    return {name for name in names if name == '__pycache__' or name.endswith('.pyc')
+            or name in ('.git', '.pytest_cache') or name.startswith('.env')
+            or (not authored and any(token in name.lower() for token in protected))
+            or (path / name).is_symlink()}
+
+
 @pytest.fixture(scope="module")
 def copy(tmp_path_factory):
     """A copy of the tree (no caches) whose named tests pass before any mutation."""
     root = tmp_path_factory.mktemp("mutations")
     for name in COPIED:
-        shutil.copytree(REPO / name, root / name, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        shutil.copytree(REPO / name, root / name, ignore=public_copy_ignore)
     if (REPO / "pyproject.toml").exists():  # the snapshot holds skillopt/, scripts/ and tests/ only (plan §10 step 1)
         shutil.copy2(REPO / "pyproject.toml", root / "pyproject.toml")
+    # Public zero-shot card source is part of the frozen snapshot identity.
+    public_card = Path('docs/handoff/v29-20261026/v210-instructions-coevo5-v1.json')
+    if (REPO / public_card).is_file():
+        (root / public_card).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(REPO / public_card, root / public_card)
     tests = sorted({test for *_, named in MUTATIONS.values() for test in named})
     done = _pytest(root, tests)
     assert done.returncode == 0, done.stdout.decode("utf-8", "replace")[-3000:]

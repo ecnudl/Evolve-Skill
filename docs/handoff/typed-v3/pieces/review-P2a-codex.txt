@@ -1,0 +1,24 @@
+Codex review of P2a (gpt-6-astra, effort ultra, read-only), 2026-11-15, on commit 685fa35.
+
+1. **BLOCKER — ALFWorld labels consistently failed types as guards.** [select_items.py:358](<repo-root>/skillopt/execskill/typed/items/select_items.py:358). With every learn outcome `[False, False, False]`, default quotas and sufficient candidates, the maker emits **12 judging guards**—six `pick_and_place_simple`, six `look_at_obj_in_light`—plus ten shown guards, with no shortfall. None qualifies as a type solved in all R runs. The two-highest fallback is specified for ZebraLogic only. **Smallest fix:** return no guard types and record the missing guard counts; handle that empty list at line 439.
+
+2. **MAJOR — malformed selector values crash the stage.** [select_items.py:223](<repo-root>/skillopt/execskill/typed/items/select_items.py:223). `{"matches":{"c01":[]}}` passes `read_matches`, then raises `TypeError` during dictionary membership. An object value does likewise. There is no format retry or completed unreadable-batch record. **Smallest fix:** validate values as strings or null before accepting the response; retry invalid schema once, then record the unreadable result.
+
+3. **BLOCKER — interruption after a recorded response repeats the model call and can change selection.** [select_items.py:238](<repo-root>/skillopt/execskill/typed/items/select_items.py:238). The call recorder persists its successful receipt before `ask()` returns, but the batch is persisted afterward. Killing between those writes makes resume call the model again. The documented `_keep_earlier_sends` adapter preserves receipts without replaying them. An in-memory reproduction changed `c01 → d1` into `c01 → null` after restart, with two calls instead of one. **Smallest fix:** replay recorded attempts by request hash and attempt before sending anything missing; test this exact interruption.
+
+4. **MAJOR — item files are not write-once.** [store.py:68](<repo-root>/skillopt/execskill/typed/items/store.py:68). `write_item(slot, itemA)` followed by `write_item(slot, itemB)` silently replaces the file, even when a slot record already binds itemA’s hash. `units.write_json` performs replacement, not write-once enforcement. **Smallest fix:** when the file exists, require identical contents and return; reject differing contents.
+
+5. **MAJOR — tests miss integrity-breaking mutations.** [test_typed3_items_core.py:220](<repo-root>/tests/test_typed3_items_core.py:220). Removing `public` from the ALFWorld digest at `items/__init__.py:264` survives the existing assertions: the dedicated test changes only private data, while other tests use the production digest or compare identical runs. The dedicated test also passed with this mutation in memory. Thus the game path and routing view could stop affecting the hash undetected. **Smallest fix:** independently change each solver-visible public field and require its digest to change.
+
+The full pytest run was blocked by the absence of a writable temporary directory; system Python also lacked pytest. **32 existing test invocations passed directly in memory**, alongside targeted reproductions and a real Zebra generation/certification check. No repository files were edited and no network was used.
+
+- **1 — Leakage:** No direct leak found in the traced analyst/revision payloads, experience projection, or selector public-text fields; selector labels hide item identities.
+- **2 — Certification/duplicates:** Fresh Zebra generation checks pool/run duplicates, certifies before writing, uses bank normalization, divides removal weights, enforces search-needed, and includes the required seed identity.
+- **3 — Counts/rules:** T5 literals, integer 20% calculations, weakness splits, evidence thresholds, canonical IDs, dropped spec fields and unreadable-plan validation are sound.
+- **4 — Selectors:** Learn/gate/prior-use exclusions, 25-item batches, deterministic selection, cross-side separation and ALFWorld largest-remainder allocation are sound, subject to findings above.
+- **5 — Records/resume:** Current digests cover solver/judge fields; completed batches are reused and conflicting slot records rejected. Receipt-gap replay and item-file immutability fail above.
+- **6 — Tests:** Quota and evidence expectations include independently calculated cases; integrity and interruption coverage remain insufficient.
+
+VERDICT: NOT ACCEPTABLE -- invalid ALFWorld guards and non-reproducible selector resume.
+
+Answer (2026-11-15 03:0x, by the builder on the engineer's instructions): all five fixed with tests; see report-P2a.md, "Round 2".

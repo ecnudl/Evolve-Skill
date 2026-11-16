@@ -515,16 +515,30 @@ def _windows(rows, start):
 windows = _windows  # the public name of the fixer-2 series (``acceptance.series``; ticket P2-A2-1)
 
 
-def arm_table(cells):
+def arm_table(cells, *, configuration=None):
     """§8.3 per arm of one bench: the accuracies (v2 the main reading, official, official completion, lenient), the
     unknown counts, the cell and format flags, the procedure faults, the enable rate, the short-answer reference and
-    the 15-minute series (``_windows``)."""
+    the 15-minute series (``_windows``). Main-v9 starts each arm's diagnostic clock
+    at its own first dispatch and reports absolute window bounds for alignment;
+    earlier configurations retain the common unit origin."""
     stamps = [_seconds(v["dispatch_ts"]) for v in cells.values() if v.get("dispatch_ts") is not None]
     start = min(stamps) if stamps else 0.0
     out = {}
     for arm in sorted({a for (a, _, _) in cells}):
         rows = [v for (a, _, _), v in cells.items() if a == arm]
-        reference, windows = _windows(rows, start)
+        diagnostic_start = start
+        alignment = {}
+        if profiles.is_v225(configuration):
+            dispatched = [v for v in rows if v["shared_with"] is None and v.get("dispatch_ts") is not None]
+            first = min(dispatched, key=lambda v: _seconds(v["dispatch_ts"])) if dispatched else None
+            diagnostic_start = _seconds(first["dispatch_ts"]) if first is not None else 0.0
+            alignment = {"diagnostic_origin": first["dispatch_ts"] if first is not None else None,
+                         "diagnostic_window_seconds": TIME_WINDOW_SECONDS}
+        reference, windows = _windows(rows, diagnostic_start)
+        if profiles.is_v225(configuration):
+            for window in windows:
+                window["start_unix_seconds"] = diagnostic_start + window["window"] * TIME_WINDOW_SECONDS
+                window["end_unix_seconds"] = window["start_unix_seconds"] + TIME_WINDOW_SECONDS
         out[arm] = {
             "period": PERIOD, "cells": len(rows), "shared": sum(v["shared_with"] is not None for v in rows),
             "v2": _share(rows, lambda v: v["v2"] == "pass"),
@@ -538,7 +552,7 @@ def arm_table(cells):
             "fault_cells": sum(bool(v.get("fault_kinds")) for v in rows),
             "faults": dict(sorted(sum((Counter(v.get("fault_kinds") or {}) for v in rows), Counter()).items())),
             "enable_rate": _share(rows, lambda v: v["enabled"]),
-            "short_answer_reference": reference, "windows": windows}
+            "short_answer_reference": reference, "windows": windows, **alignment}
     return out
 
 
@@ -611,6 +625,19 @@ def readout(units, *, learned, procedures, label, evidence, stages=None, configu
     unseal's read label (Codex F17); ``stages``: a stage read's rows (``stage_table``; F's readings are left out,
     None, only where F learned nothing and the stage arms carry the read)."""
     from . import profiles
+    if profiles.is_v225(configuration):
+        from . import v225_read
+        return v225_read.readout(units, learned=learned, procedures=procedures, label=label,
+                                 evidence=evidence, stages=stages,
+                                 **({'configuration': configuration} if profiles.is_v226(configuration) else {}))
+    if profiles.is_v222(configuration):
+        from . import v222_read
+        return v222_read.readout(units, learned=learned, procedures=procedures, label=label,
+                                 evidence=evidence, stages=stages)
+    if profiles.is_v220(configuration):
+        from . import v220_read
+        return v220_read.readout(units, learned=learned, procedures=procedures, label=label,
+                                 evidence=evidence, stages=stages)
     if profiles.is_v210(configuration) or profiles.is_zebra_fc(configuration):
         cross = profiles.is_v219(configuration)
         main_v5 = profiles.is_v214(configuration) and not cross
@@ -643,7 +670,7 @@ def readout(units, *, learned, procedures, label, evidence, stages=None, configu
                 cells, first, second, _items(cells, first, second), bootstrap=True, sensitivity=True)
                 for first, second in pairs}
         request_analysis = {}
-        if configuration == 'main-v6' or cross:
+        if profiles.is_v218(configuration) or cross:
             from . import v218_read
             request_analysis['identical_request_analysis'] = v218_read.secondary(units, ['C'] if cross else stages)
         if cross:
@@ -690,6 +717,9 @@ def report(manifest, *, out):
     is refused. ``evaluation.unseal`` refuses before every chain has ended and the owner's continuation file exists;
     nothing is written after a refusal. Returns {chain: the readout's record hash, or "not_read"}."""
     from . import profiles
+    if profiles.is_v225(manifest['configuration']):
+        from . import v225_read
+        return v225_read.report(manifest, out=out)
     out = safe_path(out)
     require(not out.exists(), "The readout goes to a new directory")
     root, run, evidence = safe_path(manifest["root"]), manifest[RECORD_HASH], manifest["evidence"]
@@ -714,8 +744,14 @@ def report(manifest, *, out):
         learned = [b for b in roster if b in procedures.values()
                    and not profiles.is_v213(manifest["configuration"])
                    and not profiles.is_implant_v5(manifest["configuration"])
-                   and not (manifest["configuration"] in (profiles.MAIN_V3, profiles.MAIN_V4, profiles.MAIN_V5, 'main-v6')
+                   and not profiles.is_v220(manifest["configuration"])
+                   and not (manifest["configuration"] in (profiles.MAIN_V3, profiles.MAIN_V4, profiles.MAIN_V5, 'main-v6', 'main-v7')
                             and b == "alfworld")]
+        if profiles.is_v222(manifest['configuration']):
+            from . import v222_cards, v222_read
+            initial = v222_cards.initial_package(evidence=evidence, step=chain + '/s0',
+                fallback=manifest['data'].get('v222_fallbacks', {}).get(chain, ()))
+            learned = v222_read.learned_benches(final, initial)
         units = [chain_root / "test" / b for b in roster if (chain_root / "test" / b / "unit.json").exists()]
         opened = evaluation.unseal(root, chain_root, chain, units, run=run, evidence=evidence,
                                    **({"configuration": manifest["configuration"]}

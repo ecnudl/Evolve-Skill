@@ -1,0 +1,92 @@
+Route B v2.26 review round 1: cross-gate regressions
+
+Scope: B3, B6, and the cross-gate recovery portion of A3.
+Production files: skillopt/execskill/v222_gate.py, skillopt/execskill/v222_runtime.py.
+Regression module: tests/test_execskill_v226_cross_recovery.py.
+No commits or branch mutations were made.
+
+B3: resumed cross-gate inspection and cross-card route scope
+Root cause: run_pairs pinned the fired item IDs, but every redo reran sandbox
+inspection. An inherited intermittent fault could move the fired item from
+zebralogic-00 to zebralogic-01 and then fail the unchanged-pair-binding check.
+The full-touch card gain rule also applied to every fired off-home benchmark,
+including a non-target slice with a single informational inherited fault.
+Fix: main-v10 records each inspection in a record-hashed
+v226-cross-inspection-<bench>.json. Its deterministic core binds configuration,
+phase, home, bench, unit, parent/candidate/proposed package hashes, slice IDs,
+harm registration, routing views, card text, runtime and full workbook hashes.
+Resumes verify the core and reuse signatures, fired items, request changes,
+potential changes, faults, attribution and observations. Narrowing rechecks use
+separate v226-cross-inspection-narrowed-<bench>.json records. Runtime/core drift
+still raises. Only the cross card's route target uses the card gain/full-touch
+rule; incidental inherited-fault items on other benches use the no-harm rule.
+Tests:
+  test_cross_gate_redo_reuses_sealed_inspection_before_pair_binding
+    [confirm-r1-confirmation, accept-r1-acceptance, card-accept-c1-acceptance]
+  test_cross_gate_redo_refuses_changed_runtime_before_reinspection
+  test_cross_gate_redo_reuses_sealed_narrowing_rechecks
+  test_cross_card_non_target_inherited_flake_uses_no_harm_rule
+Pre-fix evidence: all three phase/redo cases failed with
+"A cross-gate retry keeps its original packages and slice"; runtime drift did
+not raise; the non-target cross-card case raised "A cross card touches its
+entire route slice". These five failures were recorded before production edits.
+
+B6: unchanged inherited procedure fault only in S'
+Root cause: any S' fault absent from S was attributed to the candidate, even
+when the same procedure ID/hash was enabled in both arms. This randomly
+rejected a procedure or card because of an inherited timeout.
+Fix: main-v10 classifies independent faults of unchanged procedures enabled in
+both arms as inherited/informational. Changed requests are measured normally.
+Added/changed procedures and shell interactions (duplicate binding names,
+assembly/cap faults) retain candidate attribution. Narrowing uses this same
+inspection result and attribution rule.
+Tests:
+  test_candidate_arm_only_unchanged_inherited_timeout_is_measured[False, True]
+  test_candidate_arm_only_inherited_fault_is_informational_during_narrowing
+  test_inherited_shell_interaction_fault_still_belongs_to_candidate
+    [note_duplicate_name-bindings, note_over_declared_cap-notes]
+Pre-fix evidence: both procedure/card S'-only timeout cases returned no selected
+candidate and failed the acceptance assertion. They were written and run
+before changing production code, confirming B6 rather than assuming it.
+
+A3: corrupt cross-gate recovery records
+Root cause: JSON decoding happened before verified(), so truncated completed,
+pair-pin and cell records could be contained as candidate errors. Unreadable
+records also needed the configuration-pause classification.
+Fix: all cross-gate recovery reads use v226_candidates.read_record in main-v10;
+read, decode and verification occur in system scope. Package recovery loads
+also run in system scope. Legacy configurations retain the original reader.
+Tests:
+  test_cross_recovery_corrupt_records_pause_outside_containment
+    parameterized over truncated "{" and malformed-shape "[]", at:
+      v222-cross-completed.json
+      v222-cross-zebralogic.json
+      v226-cross-inspection-zebralogic.json
+      attempt-1/cells/broken.json
+All eight assert a configuration Pause and zero candidate-error counts.
+Pre-fix evidence: a focused subprocess temporarily used the read-only
+git-show contents of v226-wip-r1:skillopt/execskill/v222_runtime.py, restoring
+the fixed file in finally. Result: 5 failed, 3 passed, 7 deselected. Truncated
+completed/pair-pin/cell records produced no Pause; the old runtime did not
+recognize the new inspection files. The three pre-existing malformed-shape
+cases already paused and remain regression coverage. The branch was not
+checked out, modified, or moved.
+
+Verification
+Initial pre-fix B3/B6 module: 7 failed (five B3 cases, two B6 cases).
+Final new regression module: 19 passed in 1.61 s.
+Combined focused/legacy run: 163 passed in 5.82 s across:
+  tests/test_execskill_v226_cross_recovery.py
+  tests/test_execskill_v226_gate.py
+  tests/test_execskill_v222_gate.py
+  tests/test_execskill_v222_runtime.py
+  tests/test_execskill_v222_fix4_cross.py
+  tests/test_execskill_v225_cross_card.py
+  tests/test_execskill_v225_phase.py
+Legacy coverage includes test_frozen_main_v9_still_rejects_an_inherited_fault,
+the main-v8 runtime/retry/package-binding cases, and the main-v9 cross-card gain,
+scope and handoff cases. All new behavior is guarded by is_v226.
+Environment: TMPDIR=/private/tmp; PATH begins <python-bin>;
+PYTHONDONTWRITEBYTECODE=1; PYTEST_ADDOPTS='-p no:cacheprovider'.
+git diff --check passed after these changes.
+No Docker, Linux runtime, network, or real-model execution was attempted here.

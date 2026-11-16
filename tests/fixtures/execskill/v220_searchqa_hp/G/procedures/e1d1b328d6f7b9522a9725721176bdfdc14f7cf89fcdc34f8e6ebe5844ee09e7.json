@@ -1,0 +1,29 @@
+{
+  "id": "p-searchqa-1-2",
+  "origin": "searchqa",
+  "accepted_at": null,
+  "description": "Finds snippets that near-verbatim echo the question wording (flashcard/quiz pages) by content-word overlap, and reports the pipe-separated fragments that follow the echoed question in those snippets, which often carry the expected answer token.",
+  "hooks": [
+    "applies",
+    "before_call"
+  ],
+  "source": "# sqa_flashcard_echo\nimport re\n\n_STOP = frozenset((\"the\", \"a\", \"an\", \"of\", \"and\", \"or\", \"in\", \"on\", \"for\", \"to\", \"with\", \"by\", \"from\", \"as\", \"at\", \"is\", \"are\", \"was\", \"were\", \"be\", \"been\", \"it\", \"its\", \"his\", \"her\", \"their\", \"this\", \"that\", \"these\", \"those\", \"what\", \"which\", \"who\"))\n_WORD = re.compile(r\"[a-z][a-z\\-']+\")\n\n\ndef applies(view):\n    q = view.get(\"question\", \"\")\n    return len([w for w in _WORD.findall(q.lower()) if w not in _STOP]) >= 4\n\n\ndef before_call(view, state):\n    q = view.get(\"question\", \"\")\n    ctx = view.get(\"context\", \"\")\n    qwords = set(w for w in _WORD.findall(q.lower()) if w not in _STOP)\n    if not qwords:\n        return None\n    facts = []\n    candidates = []\n    for doc in ctx.split(\"[DOC]\"):\n        if not doc.strip():\n            continue\n        low = doc.lower()\n        hits = sum(1 for w in qwords if w in low)\n        if hits < max(3, int(0.5 * len(qwords))):\n            continue\n        if \"[TLE]\" in doc:\n            title = \" \".join(doc.split(\"[TLE]\", 1)[1].split(\"[PAR]\")[0].split())[:40]\n        else:\n            title = \" \".join(doc.split())[:40]\n        facts.append((\"Snippet '%s' echoes the question wording (%d/%d content words).\" % (title, hits, len(qwords)))[:200])\n        for frag in doc.split(\"|\")[1:]:\n            frag = \" \".join(frag.split())[:120]\n            if frag and frag.lower() not in q.lower() and frag not in candidates:\n                candidates.append(frag)\n    if not facts:\n        return None\n    return {\"facts\": facts[:5], \"candidates\": candidates[:6]}\n",
+  "header": "Detects near-verbatim question echoes in snippets; lists following answer-like fragments.",
+  "max_note_chars": 1200,
+  "requests_second_call": false,
+  "state_bytes": 0,
+  "excluded_benches": [
+    "spreadsheetbench",
+    "alfworld"
+  ],
+  "replay_tests": [],
+  "lineage": {
+    "parent": null,
+    "revises": null,
+    "engineer_call": "0fcd5e15b1602b244ba7fa0b6cafae4d830978d7e855b7438ffbe4bc61de5a46"
+  },
+  "policy_version": "fivebench-execskill-v2-9-policy",
+  "version": "fivebench-execskill-v1-procedure-v2-9",
+  "evidence": "main_v6_real_run",
+  "record_sha256": "e1d1b328d6f7b9522a9725721176bdfdc14f7cf89fcdc34f8e6ebe5844ee09e7"
+}

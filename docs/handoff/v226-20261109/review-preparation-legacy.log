@@ -1,0 +1,151 @@
+F.....................FF..........F...................F................. [ 46%]
+........................................................................ [ 92%]
+............                                                             [100%]
+=================================== FAILURES ===================================
+__ test_main_v5_s0_manifest_keeps_mixed_allocations_import_and_neutral_zebra ___
+
+tmp_path = PosixPath('<repo-root>/.review-scratch/identity-3kx6q_ch')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x12709e8b0>
+
+    def test_main_v5_s0_manifest_keeps_mixed_allocations_import_and_neutral_zebra(tmp_path, monkeypatch):
+>       checked, made, _ = setup(tmp_path, monkeypatch)
+
+tests/test_execskill_v214_smoke.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v214_smoke.py:19: in setup
+    _, source, zebra, old = prepared(root / 'inputs', monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+___ test_real_manifest_requires_both_readiness_and_checks_resealed_mismatch ____
+
+tmp_path = PosixPath('<repo-root>/.review-scratch/identity-ssab_ucw')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1246fbe10>
+
+    def test_real_manifest_requires_both_readiness_and_checks_resealed_mismatch(tmp_path, monkeypatch):
+>       checked, made, options = setup(tmp_path, monkeypatch)
+
+tests/test_execskill_v214_smoke.py:149: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v214_smoke.py:19: in setup
+    _, source, zebra, old = prepared(root / 'inputs', monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+____ test_manifest_check_rechecks_embedded_bounds_without_reloading_receipt ____
+
+tmp_path = PosixPath('<repo-root>/.review-scratch/identity-m9o3eqcs')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1075ff650>
+
+    def test_manifest_check_rechecks_embedded_bounds_without_reloading_receipt(tmp_path, monkeypatch):
+>       _, made, _ = setup(tmp_path, monkeypatch)
+
+tests/test_execskill_v214_smoke.py:169: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v214_smoke.py:19: in setup
+    _, source, zebra, old = prepared(root / 'inputs', monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+_________ test_real_manifest_accepts_both_consistent_measured_receipts _________
+
+tmp_path = PosixPath('<repo-root>/.review-scratch/identity-rbo05zo_')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x124666210>
+
+    def test_real_manifest_accepts_both_consistent_measured_receipts(tmp_path, monkeypatch):
+>       _, made, options = setup(tmp_path, monkeypatch)
+
+tests/test_execskill_v214_smoke.py:298: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v214_smoke.py:19: in setup
+    _, source, zebra, old = prepared(root / 'inputs', monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+__ test_s0_to_smoke_manifest_binds_qualified_task_cards_and_main_v9_identity ___
+
+tmp_path = PosixPath('<repo-root>/.review-scratch/identity-krvreurq')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1075d6cf0>
+
+    def test_s0_to_smoke_manifest_binds_qualified_task_cards_and_main_v9_identity(tmp_path, monkeypatch):
+>       inherited, source, kwargs, old = prepared(tmp_path/'inputs', monkeypatch)
+
+tests/test_execskill_v225_manifest.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v222_preparation.py:27: in prepared
+    source, path, kwargs, options = inherited_prepared(root, monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_execskill_v214_smoke.py::test_main_v5_s0_manifest_keeps_mixed_allocations_import_and_neutral_zebra
+FAILED tests/test_execskill_v214_smoke.py::test_real_manifest_requires_both_readiness_and_checks_resealed_mismatch
+FAILED tests/test_execskill_v214_smoke.py::test_manifest_check_rechecks_embedded_bounds_without_reloading_receipt
+FAILED tests/test_execskill_v214_smoke.py::test_real_manifest_accepts_both_consistent_measured_receipts
+FAILED tests/test_execskill_v225_manifest.py::test_s0_to_smoke_manifest_binds_qualified_task_cards_and_main_v9_identity
+5 failed, 151 passed in 17.55s

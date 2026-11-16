@@ -1,0 +1,69 @@
+{
+  "bench": "officeqa",
+  "format": {
+    "chars": 1149,
+    "line_indices": [
+      5,
+      8,
+      11,
+      12,
+      13
+    ],
+    "sha256": "e90334271cba043ba356a88d3c87f205b0151435f3039f4d46c17b81aa652216",
+    "text": "- Watch for **units and scaling**: tables may state \"millions of dollars\", \"percent\", or \"billions\" in headers or notes. If the answer must be in a specific unit, convert carefully; the normalization removes the words million/billion/dollars/nominal, so the *digits* you emit must already reflect the intended magnitude.\n- Be careful with **signs and negatives**: values in parentheses typically mean negative; the normalization keeps '-', so include it when the answer is negative.\n- Format the final answer to survive normalization: **emit the bare number (or short string) inside `<answer>...</answer>`**, without commas, currency symbols, or units if the reference is a pure number; keep '%' only if the answer is a percentage. Avoid thousand separators, since commas are stripped anyway but any extra words will break exact match.\n- If multiple `<answer>` tags appear, only the **last** one is scored — so place exactly one final tag at the end with your definitive answer.\n- Keep the answer **concise**: a number, a short label, or a date in the form most likely used by the reference (e.g., \"12345.6\" rather than \"12,345.6 million dollars\").\n"
+  },
+  "historical": {
+    "chars": 2926,
+    "sha256": "2e92500a832ee32e1dc2f27f70f6eadbf0ab78a142d9e2df39aa86aa02824ba2",
+    "text": "# Guidance for U.S. Treasury Bulletin Questions (OfficeQA, one-call)\n\n- Read the **question first** to identify the exact quantity sought (a date, a single value, a percentage change, a sum/ratio across line items, etc.) — this determines what to hunt for in the context and whether a calculation is needed.\n- Search the supplied **context** for the relevant table or passage. Treasury Bulletin pages mix running text with tables rendered as text; match on row/column labels, table titles, footnote markers, and period labels (e.g., fiscal-year vs. calendar-year, month, quarter) before trusting any number.\n- **Use only the supplied context.** Do not fill gaps from memory of Treasury data, and do not \"correct\" numbers that look odd — the reference answer is derived from these pages.\n- Watch for **units and scaling**: tables may state \"millions of dollars\", \"percent\", or \"billions\" in headers or notes. If the answer must be in a specific unit, convert carefully; the normalization removes the words million/billion/dollars/nominal, so the *digits* you emit must already reflect the intended magnitude.\n- Pay close attention to **row and column alignment** in flattened tables: parsed text can misalign headers, so verify a candidate value by checking neighboring values that you can cross-check against totals or subtotals in the same table.\n- If a computation is required (difference, sum, growth rate, share of total), show the work in your reasoning, then perform it **exactly** with the figures as printed — round only if the question or table conventions clearly imply it (e.g., \"percent change to one decimal\").\n- Be careful with **signs and negatives**: values in parentheses typically mean negative; the normalization keeps '-', so include it when the answer is negative.\n- Distinguish similar series that commonly appear together (e.g., fiscal year-to-date vs. monthly, assets vs. liabilities, holdings vs. transactions, different maturities or instrument types) — a one-word mismatch in the label usually means the wrong figure.\n- If the context is cut off or the needed figure is genuinely absent, pick the best-supported answer from what is present rather than guessing wildly; prefer a value from the same table over one inferred from text.\n- Format the final answer to survive normalization: **emit the bare number (or short string) inside `<answer>...</answer>`**, without commas, currency symbols, or units if the reference is a pure number; keep '%' only if the answer is a percentage. Avoid thousand separators, since commas are stripped anyway but any extra words will break exact match.\n- If multiple `<answer>` tags appear, only the **last** one is scored — so place exactly one final tag at the end with your definitive answer.\n- Keep the answer **concise**: a number, a short label, or a date in the form most likely used by the reference (e.g., \"12345.6\" rather than \"12,345.6 million dollars\").\n"
+  },
+  "segments": [
+    {
+      "chars": 608,
+      "id": "officeqa-1",
+      "line_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "max_note_chars": 1500,
+      "predicate": {
+        "kind": "quantity_context"
+      },
+      "sha256": "020da292bc5e0166ca58329ae9bfc9721373795698c0d634e9ca2550e1354bc4",
+      "text": "# Guidance for U.S. Treasury Bulletin Questions (OfficeQA, one-call)\n\n- Read the **question first** to identify the exact quantity sought (a date, a single value, a percentage change, a sum/ratio across line items, etc.) — this determines what to hunt for in the context and whether a calculation is needed.\n- Search the supplied **context** for the relevant table or passage. Treasury Bulletin pages mix running text with tables rendered as text; match on row/column labels, table titles, footnote markers, and period labels (e.g., fiscal-year vs. calendar-year, month, quarter) before trusting any number.\n"
+    },
+    {
+      "chars": 695,
+      "id": "officeqa-2",
+      "line_indices": [
+        4,
+        6,
+        7
+      ],
+      "max_note_chars": 1500,
+      "predicate": {
+        "kind": "quantity_context"
+      },
+      "sha256": "ae874c712aa45cc174a2eaef888bf9c2d6bb7b099b599d381a306b23b0ff2262",
+      "text": "- **Use only the supplied context.** Do not fill gaps from memory of Treasury data, and do not \"correct\" numbers that look odd — the reference answer is derived from these pages.\n- Pay close attention to **row and column alignment** in flattened tables: parsed text can misalign headers, so verify a candidate value by checking neighboring values that you can cross-check against totals or subtotals in the same table.\n- If a computation is required (difference, sum, growth rate, share of total), show the work in your reasoning, then perform it **exactly** with the figures as printed — round only if the question or table conventions clearly imply it (e.g., \"percent change to one decimal\").\n"
+    },
+    {
+      "chars": 474,
+      "id": "officeqa-3",
+      "line_indices": [
+        9,
+        10
+      ],
+      "max_note_chars": 1500,
+      "predicate": {
+        "kind": "quantity_context"
+      },
+      "sha256": "eb83d5fb419ab1cbb6774c08db8f067f449af94fadabc1f5b8cb4adad78caaf8",
+      "text": "- Distinguish similar series that commonly appear together (e.g., fiscal year-to-date vs. monthly, assets vs. liabilities, holdings vs. transactions, different maturities or instrument types) — a one-word mismatch in the label usually means the wrong figure.\n- If the context is cut off or the needed figure is genuinely absent, pick the best-supported answer from what is present rather than guessing wildly; prefer a value from the same table over one inferred from text.\n"
+    }
+  ],
+  "source_fixture_sha256": "175b0715909eeecb3fec356838b84566ade20b28f6a9b12cf985ad7de720ae5f",
+  "version": "instruction-decomposition-v2-22"
+}

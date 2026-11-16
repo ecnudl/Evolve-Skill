@@ -196,13 +196,17 @@ def pin(chain, route, *, env_path, solver_block, configuration=None):
     longest = found if solver_block.get("branch") == "N" else S1B_CEILING
     require(type(longest) is int and longest > 0, "The solver block's S1 longest reply (branch N)")
     model, provider, benches = protocol.CHAINS[chain], client.ROUTES[route], protocol.active_benches(configuration)
+    extra, source = {}, client.__file__
+    if protocol.is_v225(configuration):
+        from . import v225_client
+        extra, source = v225_client.options(configuration, chain), v225_client.__file__
     return {"route": route, "backend": provider.backend, "model": provider.model, "url_host": provider.host,
             "env_path": str(safe_path(env_path)), "proxy": protocol.GATEWAY,
             "reasoning_effort": protocol.REASONING_EFFORT, "M": {b: protocol.solver_tokens(model, b) for b in benches},
             "B": {b: protocol.ledger_bound(model, b, branch=BRANCH, longest=longest) for b in benches},
             "branch": BRANCH, "longest": longest, "read_timeout": {b: protocol.read_timeout(model, b) for b in benches},
             "slots": protocol.SLOTS[model], "response_model_ids": sorted(provider.response_model_ids),
-            "client_source_sha": _sha(client.__file__)}
+            "client_source_sha": _sha(source), **extra}
 
 
 def check_pins(clients, *, configuration=None):
@@ -222,11 +226,12 @@ def check_pins(clients, *, configuration=None):
         require(isinstance(blocks, dict) and blocks and set(blocks) <= set(PINNED[chain]),
                 "Chain %s pins only %s" % (chain, list(PINNED[chain])))
         for route, block in blocks.items():
-            require(isinstance(block, dict) and set(block) == FIELDS, "A route block holds the registered fields")
+            fields = FIELDS | ({'thinking'} if protocol.is_v225(configuration) else set())
+            require(isinstance(block, dict) and set(block) == fields, "A route block holds the registered fields")
             expected = pin(chain, route, env_path=block["env_path"], solver_block=clients["solver"][chain], configuration=configuration)
-            same = {key for key in FIELDS if block[key] == expected[key]}
-            require(same == FIELDS, "Chain %s's route %s block differs from the registration: %s"
-                    % (chain, route, sorted(FIELDS - same)))
+            same = {key for key in fields if block[key] == expected[key]}
+            require(same == fields, "Chain %s's route %s block differs from the registration: %s"
+                    % (chain, route, sorted(fields - same)))
 
 
 def block_of(manifest, chain, route):
@@ -244,4 +249,5 @@ def block_of(manifest, chain, route):
 def config(block, bench):
     """``client.solver_client``'s config of a route block on ``bench`` (route B: ``route`` named)."""
     return {client.ROUTE_KEY: block["route"], "env_path": block["env_path"], "proxy": block["proxy"],
-            "max_tokens": block["M"][bench], "read_timeout": block["read_timeout"][bench]}
+            "max_tokens": block["M"][bench], "read_timeout": block["read_timeout"][bench],
+            **({'thinking': dict(block['thinking'])} if 'thinking' in block else {})}

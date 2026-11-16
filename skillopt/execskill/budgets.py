@@ -113,14 +113,17 @@ def solver_scopes(chain, bench, k, kind, attempt=None):
     return ROOT, chain + ":solver", chain + ":redo", "%s:attempt-%d" % (scope, attempt)
 
 
-def glm_scopes(chain, role, bench, k):
+def glm_scopes(chain, role, bench, k, *, configuration=None):
     """The scopes of a method-role call (GLM-5.3, §4.2-4.3; module docstring); in the smoke, ``chain`` "smoke" with
     ``bench`` and ``k`` None."""
-    require(role in ROLES, "Unknown method role")
+    from . import profiles
+    card_writer = role == 'card_writer' and profiles.is_v225(configuration)
+    require(role in ROLES or card_writer, "Unknown method role")
     if chain == SMOKE:
         require(bench is None and k is None, "The smoke's role scope is its own")
         return ROOT, SMOKE + ":glm"
-    return ROOT, chain + ":glm", "%s:role:%s" % (_step(chain, bench, k), ROLES[role])
+    return ROOT, chain + ":glm", "%s:role:%s" % (
+        _step(chain, bench, k), 'card_writer' if card_writer else ROLES[role])
 
 
 def role_scope_caps(pilot=PILOT, bench=None):
@@ -128,7 +131,7 @@ def role_scope_caps(pilot=PILOT, bench=None):
     examiner 5M, examiner research 9.2M, registrar 17:0x)."""
     require(pilot in PILOTS, "Unknown run configuration")
     from . import profiles
-    if profiles.is_implant_v5(pilot):
+    if profiles.is_implant_v5(pilot) or profiles.is_v220(pilot):
         caps = CONFIG_ROLE_CAPS[pilot]
     elif profiles.is_v214(pilot) and bench == profiles.ZEBRA:
         caps = CONFIG_ROLE_CAPS[profiles.machinery_configuration(pilot, bench)]
@@ -141,6 +144,8 @@ def role_scope_caps(pilot=PILOT, bench=None):
     from . import profiles
     if profiles.is_v29(pilot):
         out.update({role: caps[role] for role in ("audit_g", "audit_d")})
+    if profiles.is_v225(pilot) and bench != 'alfworld':
+        out['card_writer'] = CONFIG_ROLE_CAPS[pilot]['card_writer']
     return out
 
 
@@ -166,7 +171,7 @@ def chain_caps(chain, pilot=PILOT):
     out = {ROOT: plan["solver_cap"] + glm, chain + ":solver": plan["solver_cap"],
            chain + ":test": plan["test_read_cap"], chain + ":redo": plan["redo_reserve"], chain + ":glm": glm}
     from . import profiles
-    if profiles.is_v219(pilot):
+    if profiles.is_v219(pilot) or profiles.is_v220(pilot):
         # The registered redo is a read-unit reserve, not an uncharged learning scope.
         out[chain + ":test"] += out.pop(chain + ":redo")
     out = {scope: cap for scope, cap in out.items() if cap > 0}
@@ -241,5 +246,11 @@ def endpoint(setting, scopes, *, client, max_tokens_bound, sleep=time.sleep):
     missing = sorted(set(scopes) - set(setting.budget.snapshot()))
     if missing:
         raise ConfigurationError("Undeclared ledger scopes: %s" % missing)
+    from . import profiles
+    if profiles.is_v221(profiles.configuration_of(setting)):
+        from .v221_recovery import Endpoint as RecoveryEndpoint
+        return RecoveryEndpoint(client, model=client.model, max_tokens=max_tokens_bound,
+                                slots=setting.slots[client.model], budget=setting.budget, scopes=scopes,
+                                cooldown=setting.cooldown, sleep=sleep)
     return Endpoint(client, model=client.model, max_tokens=max_tokens_bound, slots=setting.slots[client.model],
                     budget=setting.budget, scopes=scopes, cooldown=setting.cooldown, sleep=sleep)

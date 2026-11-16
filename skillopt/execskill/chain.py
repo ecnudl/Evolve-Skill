@@ -98,7 +98,7 @@ CONFIRM_ROUTE, CONFIRM_ROUTE_FAILED = "confirm-route-%s.json", "confirm-route-%s
 
 
 class Terminated(Exception):
-    """The protocol terminated the chain (§9.4); its marker is written."""
+    """The protocol stops the chain (§9.4); main-v9 defers its marker until reads join."""
 
 
 def chain_root(setting, chain):
@@ -377,12 +377,19 @@ def read_estimate_record(smoke_root, configuration=None):
             "%r, not %r (registrar 17:0x)" % (projected, configuration))
     value = estimate_test_read(per_cell, se6["ratio"], projected)
     terms = read_estimate_terms(per_cell, se6["ratio"], projected)  # ticket P2C-2: the read gate's per-bench terms
+    if p.is_v225(projected):
+        from . import v225_read
+        terms = v225_read.estimate_unit_terms(per_cell, se6['ratio'])
     require(math.ceil(sum(terms.values())) == value, "The estimate is the sum of its per-bench terms")
     return record("test-read-estimate", result["evidence"], {  # a rehearsal smoke's estimate is a fixture (15:0x)
         "smoke": {"root": str(root), "spec": spec[RECORD_HASH], "result": result[RECORD_HASH],
                   "se6": stage[RECORD_HASH]},
         "waiver": waived,  # registrar addendum 2026-10-23 05:3x: None, or {"sha256", "rows"} of the owner's waiver
         "pilot": projected, "formula": (
+            "ceil(ratio x sum_b n_b x (4 x card_b + 6 x proc_b)); main-v9 B/C0/C/C_end and S1-S5/I, fresh cells, no sharing discount"
+            if p.is_v225(projected) else
+            "ceil(ratio x sum_b n_b x (2 x card_b + 6 x proc_b)); main-v8 B/C0 and C/F plus four stage packages"
+            if p.is_v222(projected) else
             "ceil(ratio x sum_b n_b x (2 x card_b + (1 + 4 x f_b) x proc_b)); main-v5 F/C/B plus four stage packages"
             if p.is_v214(projected) else
             "ceil(ratio x sum_b n_b x (card_b + proc_b)); v2.12 registered F/C arms"
@@ -399,9 +406,9 @@ def read_estimate_record(smoke_root, configuration=None):
                              for bench in roster},
                    "arms": estimate_arms(projected),  # 4; with main-v2's stage arms 8
                    "procedure_factor": str(PROCEDURE_ARM_FACTOR[1]),
-                   **({"card_arms": 2, "procedure_arms": estimate_arms(projected)}
+                   **({"card_arms": 4 if p.is_v225(projected) else 2, "procedure_arms": estimate_arms(projected)}
                       if p.is_v210(projected) else {}),
-                   **({"stage_packages": p.stage_arms_max(projected), "base_procedure_arms": 1,
+                   **({"stage_packages": p.stage_arms_max(projected), "base_procedure_arms": 1 if p.is_v225(projected) else 2 if p.is_v222(projected) else 1,
                        "stage_sharing_discount": False, "zebra_blank_sharing_discount": False}
                       if p.is_v214(projected) else {})},
         "value": value, "test_read_estimate": {chain: value for chain in sorted(CHAINS)},
@@ -442,6 +449,9 @@ def read_budget(setting, chain):
     cell / the bench's high anchor, as ``step.cost_projection`` measured it); chain D's is the part. The need is
     ceil(1.3 x used) (15:3x). Returns the gate {"estimate", "units" (the read units still to run), "part", "factor",
     "cap_check", "used", "need"}; ``test-read.json`` records the gate of the launch that completed the read."""
+    if p.is_v225(configuration_of(setting)):
+        from . import v225_read
+        return v225_read.read_budget(setting, chain)
     estimate = setting.extra["test_read_estimate"][chain]
     require(type(estimate) is int and estimate > 0, "The S-E6-corrected test-read estimate, in tokens")
     roster = read_benches(configuration_of(setting))
@@ -453,7 +463,7 @@ def read_budget(setting, chain):
                 "estimate (data.test_read_terms; registrar addendum 15:3x, ticket P2C-2)")
         part = math.ceil(sum((Fraction(terms[bench]) for bench in units), Fraction(0)))
     factor, check, used = None, None, part
-    if chain == "G" and configuration_of(setting) != p.BASELINE_V210 and not p.is_v217(configuration_of(setting)) and not p.is_implant_v5(configuration_of(setting)):
+    if chain == "G" and configuration_of(setting) != p.BASELINE_V210 and not p.is_v217(configuration_of(setting)) and not p.is_implant_v5(configuration_of(setting)) and not p.is_v220(configuration_of(setting)):
         path, found = latest_cap_check(setting)
         factor = Fraction(found["per_cell"]) / found["anchor_high"]
         used = math.ceil(part * max(Fraction(1), factor))
@@ -468,7 +478,7 @@ def read_budget(setting, chain):
     return {"estimate": estimate, "units": units, "part": part, "factor": None if factor is None else float(factor),
             "cap_check": check, "used": used, "need": need,
             **({"cost_check": "not_applicable_no_learning_run", "factor": 1.0}
-               if configuration_of(setting) == p.BASELINE_V210 or p.is_v213(configuration_of(setting)) or p.is_implant_v5(configuration_of(setting)) else {})}
+               if configuration_of(setting) == p.BASELINE_V210 or p.is_v213(configuration_of(setting)) or p.is_implant_v5(configuration_of(setting)) or p.is_v220(configuration_of(setting)) else {})}
 
 
 def read_consent(setting, chain):
@@ -484,6 +494,10 @@ def read_consent(setting, chain):
         evaluation.consent(setting.shared, configuration_of(setting))  # a stage read's consent names its stage arms
     except ValueError:
         roots = [unit_root(setting, chain, bench) for bench in read_benches(configuration_of(setting))]
+        if p.is_v225(configuration_of(setting)):
+            from . import v225_read
+            roots = [v225_read.unit_root(setting, chain, row['label'], row['bench'])
+                     for row in v225_read.plan_events()]
         write_json(chain_root(setting, chain) / READ_WAITING, record("read-waiting", setting.evidence, {
             "identity": {"run": setting.run, "chain": chain}, "kind": "consent_missing", "read_units": len(roots),
             "read_attempts": sum(len(attempts(path)) for path in roots),
@@ -495,9 +509,12 @@ def read_consent(setting, chain):
 def evaluate(setting, chain, package, *, launch=launch_child):
     """The chain's one test read (§8.1): five units side by side, each a child under the memory lock. Returns {bench:
     unit root}; raises the first ``Pause`` once every child has ended."""
+    if p.is_v225(configuration_of(setting)):
+        from . import v225_read
+        return v225_read.evaluate_event(setting, chain, package, label='s5', launch=launch)
     roster = read_benches(configuration_of(setting))
     roots = {b: unit_root(setting, chain, b) for b in roster}
-    if p.is_v214(configuration_of(setting)):
+    if p.is_v214(configuration_of(setting)) and not p.is_v220(configuration_of(setting)):
         from . import evaluation
         # Both chains wait for the one shared qualification and its artifact cleanup before any read child starts.
         if p.uses_environment_lock(configuration_of(setting)):
@@ -512,13 +529,29 @@ def evaluate(setting, chain, package, *, launch=launch_child):
         name = "%s/test/%s" % (chain, bench)
         if not (root / "unit.json").exists():
             spec = {"chain": chain, "bench": bench, "package_sha256": package.sha256, "unit_root": str(root)}
-            before = len(attempts(root))
-            with nullcontext() if p.uses_environment_lock(configuration_of(setting)) else heavy(setting, bench):
-                code = launch(setting, spec)
-            if not (root / "unit.json").exists():
-                if code != EXIT_AWAITING and len(attempts(root)) == before:
-                    _failed_start(setting, root, code)
-                return _status(root, name, code)
+            def launch_attempt(root, **_identity):
+                before = len(attempts(root))
+                with nullcontext() if p.uses_environment_lock(configuration_of(setting)) else heavy(setting, bench):
+                    code = launch(setting, spec)
+                if not (root / "unit.json").exists():
+                    if code != EXIT_AWAITING and len(attempts(root)) == before:
+                        _failed_start(setting, root, code)
+                    raise _status(root, name, code)
+            if p.is_v221(configuration_of(setting)):
+                from . import v221_recovery
+                try:
+                    v221_recovery.run_unit(root, execute=launch_attempt, run=setting.run,
+                                           identity={'unit': name, 'chain': chain})
+                except Pause as pause:
+                    return pause
+            else:
+                before = len(attempts(root))
+                with nullcontext() if p.uses_environment_lock(configuration_of(setting)) else heavy(setting, bench):
+                    code = launch(setting, spec)
+                if not (root / "unit.json").exists():
+                    if code != EXIT_AWAITING and len(attempts(root)) == before:
+                        _failed_start(setting, root, code)
+                    return _status(root, name, code)
         found = verified(read_json(root / "unit.json"), "evaluation")
         require(found["run"] == setting.run and found["chain"] == chain
                 and (found["packages"].get("C") == package.sha256
@@ -551,19 +584,46 @@ def _terminal(root, identity):
 def _verified(setting, root, identity, verify):
     """The pinned files still match the manifest; otherwise the started chain is terminated (chain.py:251-258). Route
     B's check (``manifest.verify_unit``, plan §2.9, ticket A13-1 item 3) raises ConfigurationError, the frozen one
-    ValueError: either terminates."""
+    ValueError: either terminates. Main-v9 first records a nonterminal request;
+    its overlapping read runner publishes the terminal marker after joining."""
+    deferred = p.is_v225(configuration_of(setting))
+    pending = root / "chain-termination-pending.json"
+    if deferred and pending.exists():
+        require(verified(read_json(pending), "chain-termination-pending")["identity"] == identity,
+                "A termination request of another run")
+        raise Terminated("manifest_mismatch")
     try:
         verify()
     except (ValueError, ConfigurationError) as error:
-        write_json(root / "chain-terminated.json", record("chain-terminated", setting.evidence, {
+        kind = "chain-termination-pending" if deferred else "chain-terminated"
+        write_json(root / (kind + ".json"), record(kind, setting.evidence, {
             "identity": identity, "by": "protocol", "decision": "manifest_mismatch: %s" % str(error)[:300]}))
         raise Terminated("manifest_mismatch") from None
 
 
+def complete_deferred_termination(setting, root, identity):
+    """main-v9 publishes a protocol terminal marker only after all launched reads joined."""
+    require(p.is_v225(configuration_of(setting)), "Deferred termination belongs to main-v9")
+    pending = root / "chain-termination-pending.json"
+    if not pending.exists():
+        return False
+    value = verified(read_json(pending), "chain-termination-pending")
+    require(value["identity"] == identity, "A termination request of another run")
+    configuration = p.MAIN_V9
+    if p.is_v226(configuration_of(setting)):
+        configuration = configuration_of(setting)
+    busy = active_read_units(root, configuration)
+    require(not busy, "Test-read units are still running: %s" % busy[:3])
+    write_json(root / "chain-terminated.json", record("chain-terminated", setting.evidence, {
+        "identity": identity, "by": value["by"], "decision": value["decision"], "read_units_joined": True}))
+    return True
+
+
 def check_pins(setting, chain):
     """Before every unit (plan §2.9, ticket A13-1 item 3): the pinned files still match the manifest
-    (``setting.extra["verify"]``, none in fixtures); a mismatch writes ``chain-terminated.json`` and raises
-    ``Terminated``."""
+    (``setting.extra["verify"]``, none in fixtures); a mismatch raises ``Terminated``.
+    Main-v9 writes a pending request until its read children join; older versions
+    write ``chain-terminated.json`` immediately."""
     _verified(setting, chain_root(setting, chain), {"run": setting.run, "chain": chain},
               setting.extra.get("verify", lambda: None))
 
@@ -573,6 +633,9 @@ def run(setting, chain, *, learn, launch=launch_child):
     "paused" | "terminated", ...}. ``learn``: one step (``step.learn`` in a run). ``setting.budget`` is the chain's own
     ledger (``budgets.own_ledger``). The steps follow the order of the Setting's run configuration
     (``protocol.order_of``; registrar 17:0x), whose caps the ledger declares."""
+    if p.is_v225(configuration_of(setting)):
+        from . import v225_read
+        return v225_read.run(setting, chain, learn=learn, launch=launch)
     if is_alfworld(configuration_of(setting)):
         require(chain == "D", configuration_of(setting) + " launches chain D only")
     if is_zebra(configuration_of(setting)) and is_v27(configuration_of(setting)):
@@ -596,6 +659,13 @@ def run(setting, chain, *, learn, launch=launch_child):
     if p.is_v219(configuration):
         read_definition.update(evidence_kind='post_hoc_selected_upper_bound_transfer',
                                learned=[], imported=['zebralogic', 'alfworld'])
+    if p.is_v222(configuration):
+        from . import v222_cards
+        read_definition['instruction_start'] = v222_cards.START
+    if p.is_v220(configuration):
+        read_definition = {'arms': ['F', 'C'], 'learning': 'import',
+            'evidence_kind': 'post_hoc_selected_upper_bound',
+            'imported': list(p.SEARCHQA_HP_V6_ORDER), 'instruction_start': START}
     with exclusive(root / RUNNER_LOCK):
         ended = _terminal(root, identity)
         if ended is not None:
@@ -609,9 +679,15 @@ def run(setting, chain, *, learn, launch=launch_child):
         budgets.own_ledger(setting, chain).declare({**budgets.chain_caps(chain, configuration),
                                                     **budgets.first_call_caps(chain)})
         start = empty(step="%s/s0" % chain, evidence=setting.evidence)
+        if p.is_v222(configuration):
+            from . import v222_read, v222_runtime
+            v222_runtime.preflight(setting)  # exact practice supply, before the first solver call
+            start = v222_read.start_package(setting, chain)
+            from .package import save
+            save(root, start)
         package, steps, passed = start, [], []
         try:
-            if p.is_implant_v5(configuration):
+            if p.is_implant_v5(configuration) or p.is_v220(configuration):
                 read_consent(setting, chain)  # fixed imports reach the read immediately
             # registrar addendum 14:10, row 7: one confirmed reply before the first unit (a relaunch checks its pins)
             first_call(setting, chain, before=functools.partial(_verified, setting, root, identity, verify)
@@ -622,6 +698,10 @@ def run(setting, chain, *, learn, launch=launch_child):
                 steps.append(step_record["record_sha256"])
                 passed.append(package)
             _verified(setting, root, identity, verify)
+            if p.is_v220(configuration):
+                from . import v220_import
+                v220_import.check_read_package(chain, package, setting.extra[v220_import.PIN_KEY])
+                require(package.order and package.sha256 != start.sha256, 'F = C: the fixed SearchQA read refuses')
             if STAGE_READ[configuration] and not any(found.order for found in passed):
                 write_json(root / TEST_READ, record("test-read", setting.evidence, {
                     **read_definition, "identity": identity, "status": "not_read", "reason": "Every step's package is C: nothing was "
@@ -645,8 +725,12 @@ def run(setting, chain, *, learn, launch=launch_child):
             return {"status": "paused", "kind": pause.kind, "reason": pause.reason, "unit": pause.cell}
         except Terminated as ended_:
             return {"status": "terminated", "reason": str(ended_)}
+        if p.is_v221(configuration):
+            from . import v221_recovery
         write_json(root / "chain-complete.json", record("chain-complete", setting.evidence, {
-            "identity": identity, "package_sha256": package.sha256, "steps": steps}))
+            "identity": identity, "package_sha256": package.sha256, "steps": steps,
+            **({'automatic_retries': v221_recovery.records(root)}
+               if p.is_v221(configuration) else {})}))
         return {"status": "complete"}
 
 
@@ -658,6 +742,11 @@ def _owned(lock):
         return True
 
 
+def active_read_units(root, configuration):
+    pattern = "test/*/*/.lock" if p.is_v225(configuration) else "test/*/.lock"
+    return [str(lock.parent) for lock in sorted(root.glob(pattern)) if _owned(lock)]
+
+
 def terminate(setting, chain, *, decision):
     """§9.4: the owner ends the chain; its sealed scores may then be read (``evaluation.unseal``, which also needs the
     owner's continuation file). Only an idle chain can be terminated: no runner, no running read child."""
@@ -667,7 +756,7 @@ def terminate(setting, chain, *, decision):
     identity = {"run": setting.run, "chain": chain}
     with exclusive(root / RUNNER_LOCK):  # fails while the chain's runner runs
         require(_terminal(root, identity) is None, "The chain has ended")
-        busy = [str(lock.parent) for lock in sorted(root.glob("test/*/.lock")) if _owned(lock)]
+        busy = active_read_units(root, configuration_of(setting))
         require(not busy, "Test-read units are still running: %s" % busy[:3])
         write_json(root / "chain-terminated.json", record("chain-terminated", setting.evidence, {
             "identity": identity, "by": "owner", "decision": decision}))
@@ -683,7 +772,7 @@ def run_manifest(manifest, *, chain, path, docker=None, transport=None):
 
     require(manifest["evidence"] != "smoke", "A smoke manifest runs through its registered smoke command")
     setting = manifests.setting_of(manifest, chain, path=path, docker=docker, transport=transport)
-    services = (None if manifest["configuration"] == p.BASELINE_V210 or p.is_v213(manifest["configuration"]) or p.is_implant_v5(manifest["configuration"]) else
+    services = (None if manifest["configuration"] == p.BASELINE_V210 or p.is_v213(manifest["configuration"]) or p.is_implant_v5(manifest["configuration"]) or p.is_v220(manifest['configuration']) else
                 manifests.services_of(manifest, chain, setting=setting, transport=transport))
     return run(setting, chain, learn=functools.partial(step.learn, services=services))
 
@@ -694,5 +783,7 @@ def terminate_manifest(manifest, *, chain, decision):
     or client is touched). Returns the termination's identity."""
     require(chain in CHAINS, "Chain G or D")
     found = SimpleNamespace(root=safe_path(manifest["root"]), run=manifest[RECORD_HASH], evidence=manifest["evidence"])
+    if p.is_v225(manifest.get("configuration")):
+        found.extra = {"configuration": manifest["configuration"]}
     terminate(found, chain, decision=decision)
     return {"status": "terminated", "chain": chain, "run": found.run}

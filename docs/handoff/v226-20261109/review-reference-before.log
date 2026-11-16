@@ -1,0 +1,60 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+____________ test_accepted_candidate_final_selftest_is_system_work _____________
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-09mg13ag')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fb7e650>
+
+    def test_accepted_candidate_final_selftest_is_system_work(tmp_path, monkeypatch):
+        from tests.test_execskill_v226_procedure_errors import setup as faulty_setup
+        st, parent, candidates, rows, _ = faulty_setup(tmp_path, monkeypatch)
+        candidate = candidates[0]
+        monkeypatch.setattr(step, '_train', lambda *a: (candidate, [], candidate))
+        monkeypatch.setattr(step, '_audit_final', lambda *a: (candidate, {}))
+        monkeypatch.setattr(step, '_audit_summary', lambda *a: {})
+        monkeypatch.setattr(step, '_v221_final_acceptance', lambda *a:
+            (candidate, {'decision': 'accept'}, {'selected_round': 1}))
+        generated = {'g_self': [{**row, 'id': row['task_id']} for row in rows]}
+>       with pytest.raises(Pause):
+E       Failed: DID NOT RAISE <class 'skillopt.coevo5.cells.Pause'>
+
+tests/test_execskill_v226_review_safety.py:107: Failed
+_________ test_shared_acceptance_card_reference_failure_is_system_work _________
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-3oev7jku')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fb7efd0>
+
+    def test_shared_acceptance_card_reference_failure_is_system_work(tmp_path, monkeypatch):
+        from skillopt.execskill import acceptance, reuse, solver
+        from skillopt.execskill.package import with_
+        from tests.test_execskill_v226_identity import fixture_step
+        from skillopt.execskill.v225_cards import make_card
+        from tests.execskill_fakes_env import procedure
+        st, task, initial, candidate, _ = fixture_step(tmp_path, 'searchqa')
+        # P0 differs from the current incumbent, so package equality cannot identify its role.
+        parent = with_(initial, step='G/s1', add=[procedure('fx-parent-note', ('applies', 'before_call'),
+            source="def applies(view):\n    return True\n\ndef before_call(view, state):\n    return 'Read all supplied evidence.'\n")])
+        candidate = with_(parent, step='G/s1', add=[make_card('searchqa', 'Compare the evidence carefully.')])
+        st.root, st.evidence = tmp_path/'step', 'engineering_fixture'
+        original = reuse.signature
+        def signature(bench, package, *a, **kw):
+            if package.sha256 == initial.sha256:
+                raise KeyError('shared P0 renderer')
+            return original(bench, package, *a, **kw)
+        monkeypatch.setattr(reuse, 'signature', signature)
+        key, public = task['task_id'], task['public']
+        def work(_):
+            return acceptance.prepare(tmp_path/'accept', chain='G', bench=st.bench, step='G/s1',
+                unit='G/s1/accept-r1', candidate=candidate, parent=parent,
+                views={key: solver.routing_view(st.bench, public)}, blocks={key: 'block'},
+                workers=step._item_workers(st, {key: public}), trajectories=[], configuration=p.MAIN_V10,
+                initial=initial, rule=p.acceptance_rule(p.MAIN_V10, st.bench),
+                reuse={'card_text': st.setting.cards[st.bench], 'runtime': {}})
+>       with pytest.raises(KeyError):
+E       Failed: DID NOT RAISE <class 'KeyError'>
+
+tests/test_execskill_v226_review_safety.py:138: Failed
+=========================== short test summary info ============================
+FAILED tests/test_execskill_v226_review_safety.py::test_accepted_candidate_final_selftest_is_system_work
+FAILED tests/test_execskill_v226_review_safety.py::test_shared_acceptance_card_reference_failure_is_system_work
+2 failed, 14 deselected in 1.00s

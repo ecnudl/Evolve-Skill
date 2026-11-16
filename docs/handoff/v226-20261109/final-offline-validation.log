@@ -1,0 +1,211 @@
+Unique test files: 122
+Explicit workspace-incompatible exclusions:
+tests/test_execskill_v215_smoke.py::test_child_snapshot_contains_s0_public_fixture_and_collects_offline
+tests/test_execskill_v221_preparation.py::test_preparation_copies_main_v6_inputs_without_new_pool_reads
+tests/test_execskill_v221_preparation.py::test_s0_binds_new_rule_prompts_caps_capture_and_inherited_worker_shapes
+tests/test_execskill_v222_preparation.py::test_insufficient_original_practice_blocks_before_measurement_and_preserves_the_parent
+tests/test_execskill_v222_preparation.py::test_explicit_additional_practice_binds_exact_seeded_draws_and_reverifies_content
+tests/test_execskill_v222_preparation.py::test_additional_supply_is_never_enabled_for_an_older_configuration
+tests/test_execskill_v222_preparation.py::test_main_v8_s0_and_manifest_bind_worker_cards_supplies_consent_and_all_older_fingerprints
+tests/test_execskill_v222_preparation.py::test_snapshot_copies_every_pinned_decomposition_file_and_parent_capture
+tests/test_execskill_v225_manifest.py::test_s0_to_smoke_manifest_binds_qualified_task_cards_and_main_v9_identity
+tests/test_execskill_v225_ops.py::test_ops_are_self_contained_snapshot_with_optional_documentation[absent]
+tests/test_execskill_v225_ops.py::test_ops_are_self_contained_snapshot_with_optional_documentation[partial]
+tests/test_execskill_v225_ops.py::test_scratch_helper_creates_sticky_shared_directory_without_requiring_root
+tests/test_execskill_v225_ops.py::test_suite_removes_only_owned_cases_after_verified_success[passing_summary]
+tests/test_execskill_v292_profile.py::test_alf_v6_confirmation_preparation_is_distinct_and_s0_rejects_parent_identity
+tests/test_execskill_v293_profile.py::test_alf_v7_confirmation_preparation_is_distinct_and_s0_rejects_parent_identity
+tests/test_execskill_v294_profile.py::test_alf_v8_confirmation_preparation_is_distinct_and_s0_rejects_parent_identity
+tests/test_execskill_v295_profile.py::test_alf_v9_confirmation_preparation_is_distinct_and_s0_rejects_parent_identity
+tests/test_execskill_v296_profile.py::test_confirmation_preparation_rejects_parent_identity_both_directions
+tests/test_execskill_v297_profile.py::test_confirmation_preparation_rejects_parent_identity_both_directions
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  6%]
+........................................................................ [  8%]
+........................................................................ [ 10%]
+........................................................................ [ 12%]
+........................................................................ [ 14%]
+........................................................................ [ 16%]
+........................................................................ [ 18%]
+........................................................................ [ 20%]
+..................................FF.....................F.............. [ 23%]
+........................................................................ [ 25%]
+....FF.................................................................. [ 27%]
+.............FF.....................................FF.................. [ 29%]
+........................................................................ [ 31%]
+........................................................................ [ 33%]
+........................................................................ [ 35%]
+........................................................................ [ 37%]
+........................................................................ [ 39%]
+........................................................................ [ 41%]
+........................................................................ [ 44%]
+........................................................................ [ 46%]
+........................................................................ [ 48%]
+........................................................................ [ 50%]
+........................................................................ [ 52%]
+........................................................................ [ 54%]
+........................................................................ [ 56%]
+........................................................................ [ 58%]
+........................................................................ [ 60%]
+.........................................................s.............. [ 62%]
+........................................................................ [ 65%]
+........................................................................ [ 67%]
+........................................................................ [ 69%]
+........................................................................ [ 71%]
+........................................................................ [ 73%]
+........................................................................ [ 75%]
+........................................................................ [ 77%]
+........................................................................ [ 79%]
+........................................................................ [ 81%]
+........................................................................ [ 83%]
+........................................................................ [ 85%]
+........................................................................ [ 88%]
+........................................................................ [ 90%]
+........................................................................ [ 92%]
+........................................................................ [ 94%]
+........................................................................ [ 96%]
+........................................................................ [ 98%]
+.................................................                        [100%]
+=================================== FAILURES ===================================
+_ test_preparation_retains_main_v5_panels_sheet_and_practice_metadata_by_value _
+tests/test_execskill_v217i_smoke.py:81: in test_preparation_retains_main_v5_panels_sheet_and_practice_metadata_by_value
+    _, path, kwargs, _ = prepared(tmp_path, monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+skillopt/continual_eval/core.py:32: in require
+    raise ValueError(message)
+E   ValueError: A new S0 outside the checkout
+_ test_s0_writes_real_root_consent_and_preserves_snapshot_sheet_qualification __
+tests/test_execskill_v217i_smoke.py:93: in test_s0_writes_real_root_consent_and_preserves_snapshot_sheet_qualification
+    checked, made, options = setup(tmp_path, monkeypatch)
+tests/test_execskill_v217i_smoke.py:28: in setup
+    _, source, zebra, old = prepared(root / 'inputs', monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+skillopt/continual_eval/core.py:32: in require
+    raise ValueError(message)
+E   ValueError: A new S0 outside the checkout
+_______ test_real_manifest_requires_both_measured_chains_and_same_probe ________
+tests/test_execskill_v217i_smoke.py:251: in test_real_manifest_requires_both_measured_chains_and_same_probe
+    _, made, options = setup(tmp_path, monkeypatch)
+tests/test_execskill_v217i_smoke.py:28: in setup
+    _, source, zebra, old = prepared(root / 'inputs', monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+skillopt/continual_eval/core.py:32: in require
+    raise ValueError(message)
+E   ValueError: A new S0 outside the checkout
+_ test_preparation_keeps_parent_data_and_changes_only_zebra_machinery_and_freshness _
+tests/test_execskill_v218_smoke.py:38: in test_preparation_keeps_parent_data_and_changes_only_zebra_machinery_and_freshness
+    _, path, kwargs, _ = prepared(tmp_path, monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+skillopt/continual_eval/core.py:32: in require
+    raise ValueError(message)
+E   ValueError: A new S0 outside the checkout
+__________ test_s0_consent_runtime_worker_pins_and_real_manifest_gate __________
+tests/test_execskill_v218_smoke.py:55: in test_s0_consent_runtime_worker_pins_and_real_manifest_gate
+    checked, made, options = implant.setup(tmp_path, monkeypatch)
+tests/test_execskill_v217i_smoke.py:28: in setup
+    _, source, zebra, old = prepared(root / 'inputs', monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+skillopt/continual_eval/core.py:32: in require
+    raise ValueError(message)
+E   ValueError: A new S0 outside the checkout
+_ test_preparation_manifest_pins_cross_consent_caps_and_sheet_qualification[G] _
+tests/test_execskill_v219_smoke.py:94: in test_preparation_manifest_pins_cross_consent_caps_and_sheet_qualification
+    checked, made, options = setup(tmp_path, monkeypatch, chain)
+tests/test_execskill_v219_smoke.py:29: in setup
+    return parent.setup(root, monkeypatch, chain)
+tests/test_execskill_v217i_smoke.py:28: in setup
+    _, source, zebra, old = prepared(root / 'inputs', monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+skillopt/continual_eval/core.py:32: in require
+    raise ValueError(message)
+E   ValueError: A new S0 outside the checkout
+_ test_preparation_manifest_pins_cross_consent_caps_and_sheet_qualification[D] _
+tests/test_execskill_v219_smoke.py:94: in test_preparation_manifest_pins_cross_consent_caps_and_sheet_qualification
+    checked, made, options = setup(tmp_path, monkeypatch, chain)
+tests/test_execskill_v219_smoke.py:29: in setup
+    return parent.setup(root, monkeypatch, chain)
+tests/test_execskill_v217i_smoke.py:28: in setup
+    _, source, zebra, old = prepared(root / 'inputs', monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+skillopt/continual_eval/core.py:32: in require
+    raise ValueError(message)
+E   ValueError: A new S0 outside the checkout
+____________ test_real_manifest_needs_both_measured_cross_chains[G] ____________
+tests/test_execskill_v219_smoke.py:212: in test_real_manifest_needs_both_measured_cross_chains
+    _,made,options=setup(tmp_path,monkeypatch,chain)
+tests/test_execskill_v219_smoke.py:29: in setup
+    return parent.setup(root, monkeypatch, chain)
+tests/test_execskill_v217i_smoke.py:28: in setup
+    _, source, zebra, old = prepared(root / 'inputs', monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+skillopt/continual_eval/core.py:32: in require
+    raise ValueError(message)
+E   ValueError: A new S0 outside the checkout
+____________ test_real_manifest_needs_both_measured_cross_chains[D] ____________
+tests/test_execskill_v219_smoke.py:212: in test_real_manifest_needs_both_measured_cross_chains
+    _,made,options=setup(tmp_path,monkeypatch,chain)
+tests/test_execskill_v219_smoke.py:29: in setup
+    return parent.setup(root, monkeypatch, chain)
+tests/test_execskill_v217i_smoke.py:28: in setup
+    _, source, zebra, old = prepared(root / 'inputs', monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+skillopt/continual_eval/core.py:32: in require
+    raise ValueError(message)
+E   ValueError: A new S0 outside the checkout
+=========================== short test summary info ============================
+FAILED tests/test_execskill_v217i_smoke.py::test_preparation_retains_main_v5_panels_sheet_and_practice_metadata_by_value
+FAILED tests/test_execskill_v217i_smoke.py::test_s0_writes_real_root_consent_and_preserves_snapshot_sheet_qualification
+FAILED tests/test_execskill_v217i_smoke.py::test_real_manifest_requires_both_measured_chains_and_same_probe
+FAILED tests/test_execskill_v218_smoke.py::test_preparation_keeps_parent_data_and_changes_only_zebra_machinery_and_freshness
+FAILED tests/test_execskill_v218_smoke.py::test_s0_consent_runtime_worker_pins_and_real_manifest_gate
+FAILED tests/test_execskill_v219_smoke.py::test_preparation_manifest_pins_cross_consent_caps_and_sheet_qualification[G]
+FAILED tests/test_execskill_v219_smoke.py::test_preparation_manifest_pins_cross_consent_caps_and_sheet_qualification[D]
+FAILED tests/test_execskill_v219_smoke.py::test_real_manifest_needs_both_measured_cross_chains[G]
+FAILED tests/test_execskill_v219_smoke.py::test_real_manifest_needs_both_measured_cross_chains[D]
+9 failed, 3423 passed, 1 skipped, 19 deselected in 240.03s (0:04:00)

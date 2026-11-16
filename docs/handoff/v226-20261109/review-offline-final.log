@@ -1,0 +1,68 @@
+Final legacy offline modules: 90
+Excluded unchanged workspace-incompatible cases:
+tests/test_execskill_v214_preparation.py::test_bridge_reads_practice_only_and_retains_exact_parent_allocations
+tests/test_execskill_v214_preparation.py::test_bridge_refuses_resealed_parent_drift[allocation]
+tests/test_execskill_v214_preparation.py::test_bridge_refuses_resealed_parent_drift[protected]
+tests/test_execskill_v214_preparation.py::test_bridge_refuses_resealed_parent_drift[source_configuration]
+tests/test_execskill_v214_preparation.py::test_bridge_refuses_resealed_parent_drift[failed]
+tests/test_execskill_v214_preparation.py::test_verify_refuses_changed_source_or_mixed_identity
+tests/test_execskill_v214_smoke.py::test_main_v5_s0_manifest_keeps_mixed_allocations_import_and_neutral_zebra
+tests/test_execskill_v214_smoke.py::test_real_manifest_requires_both_readiness_and_checks_resealed_mismatch
+tests/test_execskill_v214_smoke.py::test_manifest_check_rechecks_embedded_bounds_without_reloading_receipt
+tests/test_execskill_v214_smoke.py::test_real_manifest_accepts_both_consistent_measured_receipts
+tests/test_execskill_v221_preparation.py::test_preparation_copies_main_v6_inputs_without_new_pool_reads
+tests/test_execskill_v221_preparation.py::test_s0_binds_new_rule_prompts_caps_capture_and_inherited_worker_shapes
+tests/test_execskill_v222_preparation.py::test_insufficient_original_practice_blocks_before_measurement_and_preserves_the_parent
+tests/test_execskill_v222_preparation.py::test_explicit_additional_practice_binds_exact_seeded_draws_and_reverifies_content
+tests/test_execskill_v222_preparation.py::test_additional_supply_is_never_enabled_for_an_older_configuration
+tests/test_execskill_v222_preparation.py::test_main_v8_s0_and_manifest_bind_worker_cards_supplies_consent_and_all_older_fingerprints
+tests/test_execskill_v222_preparation.py::test_snapshot_copies_every_pinned_decomposition_file_and_parent_capture
+tests/test_execskill_v225_manifest.py::test_s0_to_smoke_manifest_binds_qualified_task_cards_and_main_v9_identity
+tests/test_execskill_v225_ops.py::test_ops_are_self_contained_snapshot_with_optional_documentation[absent]
+tests/test_execskill_v225_ops.py::test_ops_are_self_contained_snapshot_with_optional_documentation[partial]
+tests/test_execskill_v225_ops.py::test_scratch_helper_creates_sticky_shared_directory_without_requiring_root
+tests/test_execskill_v225_ops.py::test_suite_removes_only_owned_cases_after_verified_success[passing_summary]
+tests/test_execskill_v292_profile.py::test_alf_v6_confirmation_preparation_is_distinct_and_s0_rejects_parent_identity
+tests/test_execskill_v293_profile.py::test_alf_v7_confirmation_preparation_is_distinct_and_s0_rejects_parent_identity
+tests/test_execskill_v294_profile.py::test_alf_v8_confirmation_preparation_is_distinct_and_s0_rejects_parent_identity
+tests/test_execskill_v295_profile.py::test_alf_v9_confirmation_preparation_is_distinct_and_s0_rejects_parent_identity
+tests/test_execskill_v296_profile.py::test_confirmation_preparation_rejects_parent_identity_both_directions
+tests/test_execskill_v297_profile.py::test_confirmation_preparation_rejects_parent_identity_both_directions
+........................................................................ [  2%]
+........................................................................ [  5%]
+........................................................................ [  8%]
+........................................................................ [ 10%]
+........................................................................ [ 13%]
+........................................................................ [ 16%]
+........................................................................ [ 19%]
+........................................................................ [ 21%]
+........................................................................ [ 24%]
+........................................................................ [ 27%]
+........................................................................ [ 29%]
+........................................................................ [ 32%]
+........................................................................ [ 35%]
+........................................................................ [ 38%]
+........................................................................ [ 40%]
+........................................................................ [ 43%]
+........................................................................ [ 46%]
+........................................................................ [ 48%]
+........................................................................ [ 51%]
+........................................................................ [ 54%]
+........................................................................ [ 57%]
+........................................................................ [ 59%]
+........................................................................ [ 62%]
+........................................................................ [ 65%]
+........................................................................ [ 67%]
+.........s.............................................................. [ 70%]
+........................................................................ [ 73%]
+........................................................................ [ 76%]
+........................................................................ [ 78%]
+........................................................................ [ 81%]
+........................................................................ [ 84%]
+........................................................................ [ 86%]
+........................................................................ [ 89%]
+........................................................................ [ 92%]
+........................................................................ [ 95%]
+........................................................................ [ 97%]
+.........................................................                [100%]
+2648 passed, 1 skipped, 28 deselected in 121.72s (0:02:01)

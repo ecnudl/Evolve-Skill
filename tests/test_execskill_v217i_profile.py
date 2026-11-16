@@ -26,7 +26,7 @@ def test_all_39_existing_configuration_identities_are_byte_identical(name, monke
 def test_capture_and_all_older_tables_are_exact():
     assert hashlib.sha256(CAPTURE.read_bytes()).hexdigest() == 'c8f7f8c37ac01ce40ffe3f4ec586bc99d3edcc1c4636ed753cfad76cb90940e0'
     assert len(SNAPSHOT['configurations']) == 39
-    assert {n for n in p.CONFIGURATIONS if not p.is_v218(n) and not p.is_v219(n)} - set(SNAPSHOT['configurations']) == {CHILD}
+    assert {n for n in p.CONFIGURATIONS if not p.is_v220(n) and not p.is_v218(n) and not p.is_v219(n)} - set(SNAPSHOT['configurations']) == {CHILD}
     for name, tables in SNAPSHOT['profile_tables'].items():
         actual = manifest._plain({key: getattr(p, key)[name] for key in tables})
         assert json.dumps(actual, sort_keys=True).encode() == json.dumps(tables, sort_keys=True).encode()

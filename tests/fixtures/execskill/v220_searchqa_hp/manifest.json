@@ -1,0 +1,146 @@
+{
+ "exported_at": "2026-11-02T12:36:22+0800",
+ "run_root": "/data/execskill-20261101-main-v6",
+ "chains": {
+  "G": {
+   "step": "G/s1-searchqa",
+   "decision": "reject",
+   "reason": "failed: J1",
+   "candidate_sha256": "846f3b522c962dfdc242a534cadc2fb79cbd3be97543f9e48012befa1cd3440f",
+   "candidate_file_sha256": "da73d027d5aed88852c9537ba0b346c25d208c98e493e9f2e439845aaebe0f64",
+   "parent_sha256": "af5bed0b471ecf5b9bbe2495cc17a7d7faeef9aaf06a6cfd3040c0b55bffc601",
+   "parent_file_sha256": null,
+   "rule": "practical-v2-11-pooled",
+   "A_star": 951,
+   "edits": [
+    {
+     "kind": "new",
+     "id": "p-searchqa-1-2",
+     "astar_items": 932
+    },
+    {
+     "kind": "new",
+     "id": "p-searchqa-1-3",
+     "astar_items": 405
+    }
+   ],
+   "contrasts": {
+    "S'-S": {
+     "n": 951,
+     "mean": -0.004206098843322818,
+     "ci95": [
+      -0.016824395373291272,
+      0.008412197686645636
+     ],
+     "p_t": 0.7416516003376957,
+     "up": 17,
+     "down": 21,
+     "tie": 913
+    },
+    "S'-C": {
+     "n": 951,
+     "mean": -0.008412197686645636,
+     "ci95": [
+      -0.02103049421661409,
+      0.004206098843322818
+     ],
+     "p_t": 0.9087184774235318,
+     "up": 14,
+     "down": 22,
+     "tie": 915
+    }
+   },
+   "procedures": [
+    {
+     "record_sha256": "e1d1b328d6f7b9522a9725721176bdfdc14f7cf89fcdc34f8e6ebe5844ee09e7",
+     "id": "p-searchqa-1-2",
+     "origin": "searchqa",
+     "source_bytes": 1538,
+     "source_sha256": "7fa83b8e3a7256eb3e47b138e3d0c2773c387b9ba9274bcf14219aaaba0ae113",
+     "file_sha256": "65769c2e697a2a5665ea3bae15f2110ee4d31f37cc5d1fe341dc7fd0ce56a050",
+     "description": "Finds snippets that near-verbatim echo the question wording (flashcard/quiz pages) by content-word overlap, and reports the pipe-separated fragments that follow the echoed question in those snippets, which often carry the expected answer token."
+    },
+    {
+     "record_sha256": "cb17af6ecf2dab654389cddddcb214d84f436719f2fdf0ac32eebf75a25cdefe",
+     "id": "p-searchqa-1-3",
+     "origin": "searchqa",
+     "source_bytes": 1716,
+     "source_sha256": "dd814e280231197f79513703c7ba020abad826b76848977f07acc332e0743c59",
+     "file_sha256": "8744b2f13f43dd4c18dc9ea3647d6c9c818875727f92aab38137da0361ce09f0",
+     "description": "Extracts a capitalized multi-word name-like phrase from the question, skipping phrases that begin with common function words (determiners, prepositions, question words) that are not names, and counts whole-word (word-boundary) occurrences of each surface form across the snippets, reporting only verb"
+    }
+   ],
+   "decision_record_sha256": "9518d948f17e530c477a2ed8a8a164aeb285e4f7d0c7ba485390dfeb8aebf26b"
+  },
+  "D": {
+   "step": "D/s1-searchqa",
+   "decision": "reject",
+   "reason": "failed: J1",
+   "candidate_sha256": "6796a8d412f4f91e9a1f0ffb63fe82bd5ca0d0aee3e6d3e51aa078d60a70e11c",
+   "candidate_file_sha256": "7d7642409bc14c21e239d866dcca1ee5878643b99c8730997b89d9dea3898798",
+   "parent_sha256": "15f04709d7b81db4a22af6c2639fa5a805e6f6ef4afea1a64c74b9ec952f1d65",
+   "parent_file_sha256": null,
+   "rule": "practical-v2-11-pooled",
+   "A_star": 1000,
+   "edits": [
+    {
+     "kind": "new",
+     "id": "p-searchqa-1-10",
+     "astar_items": 1000
+    },
+    {
+     "kind": "new",
+     "id": "p-searchqa-1-11",
+     "astar_items": 452
+    }
+   ],
+   "contrasts": {
+    "S'-S": {
+     "n": 1000,
+     "mean": 0.01,
+     "ci95": [
+      -0.001,
+      0.021
+     ],
+     "p_t": 0.03854523013383953,
+     "up": 21,
+     "down": 11,
+     "tie": 968
+    },
+    "S'-C": {
+     "n": 1000,
+     "mean": 0.011,
+     "ci95": [
+      -0.001,
+      0.023
+     ],
+     "p_t": 0.03526340286585964,
+     "up": 24,
+     "down": 13,
+     "tie": 963
+    }
+   },
+   "procedures": [
+    {
+     "record_sha256": "a5bb2ab29eed5aab5921b7b19663bf007f371fa7a88726916bec4494417880f7",
+     "id": "p-searchqa-1-10",
+     "origin": "searchqa",
+     "source_bytes": 2972,
+     "source_sha256": "c2cec7890da268feb6e15194d5fce52ec89d834656ee657eeb8d3d6ad113f0fd",
+     "file_sha256": "1d4c42501abba744e6e9f586138c9184bc294953359edf8b965cd63d31dc58d1",
+     "description": "Counts capitalized phrases of one to three words that occur in snippet bodies but not in the question text, ranks them by how many distinct snippets contain them, and reports the top phrases with their exact snippet counts as candidates. This targets clues whose answer is a different well-known enti"
+    },
+    {
+     "record_sha256": "7abdb4afe13d9e60d62c9ff5dff80113eca74765fa2540f8ab95e5f5d33b7c6d",
+     "id": "p-searchqa-1-11",
+     "origin": "searchqa",
+     "source_bytes": 1898,
+     "source_sha256": "364f638f99be5fb53411ddac879857644b25b3cb8cbdba9cf872eef912864746",
+     "file_sha256": "d448708d8cd4c0405eb20865ece49f2c003a3bc38e644049e269d9654d2aeac2",
+     "description": "For questions containing 'this' plus a noun, finds snippet sentences that contain at least half of the question's content words and reports capitalized phrases from those sentences that do not appear in the question, together with the number of matching sentences, as candidates."
+    }
+   ],
+   "decision_record_sha256": "fae0aece6b55435ec78a4ffe8df83b5e5f60b5b91ee96153195f4d938e627a18"
+  }
+ }
+}

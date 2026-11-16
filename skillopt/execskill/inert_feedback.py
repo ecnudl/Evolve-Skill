@@ -77,7 +77,8 @@ def _bound(evidence):
     return evidence
 
 
-def describe(change, ctx, report, *, effect_hooks, from_replay, from_routing, outcomes):
+def describe(change, ctx, report, *, effect_hooks, from_replay, from_routing, outcomes,
+             coverage_empty_notes=False):
     """Return ordered cause names and evidence for an already inert change."""
     procedure = change.procedure
     checks = {row['check']: row.get('detail') or {} for row in report['checks']}
@@ -98,7 +99,9 @@ def describe(change, ctx, report, *, effect_hooks, from_replay, from_routing, ou
         tasks = [row['task_id'] for row in routing.get('captures', ()) if row.get('applies') is False]
         evidence['never_fires'] = {'counts': _counts(routing), 'examples': _examples(ctx, tasks, procedure=procedure)}
     if (notes.get('status') != 'not_applicable' and notes.get('fired', 0) > 0
-            and notes.get('nonempty', 0) == 0):
+            and (notes.get('nonempty', 0) == 0 or (profiles.is_v225(ctx.configuration)
+                 and (coverage_empty_notes or notes.get('nonempty', 0) < profiles.GAIN_MIN_ITEMS)))):
+        # Changed-request coverage can be low even when every return has a note.
         examples = _examples(ctx, notes.get('empty_task_ids', ()), procedure=procedure)
         evidence['empty_notes'] = {'counts': _counts(notes),
                                    'task_ids': [row['task_id'] for row in examples], 'examples': examples}

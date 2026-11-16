@@ -1,0 +1,15 @@
+skillopt/execskill/step.py:_routes: frozen body AST-identical to e589b5b after removing v226 dispatch
+skillopt/execskill/step.py:_pair_signatures: frozen body AST-identical to e589b5b after removing v226 dispatch
+skillopt/execskill/v225_phase.py:select: frozen body AST-identical to e589b5b after removing v226 dispatch
+skillopt/execskill/v225_phase.py:measure: frozen body AST-identical to e589b5b after removing v226 dispatch
+skillopt/execskill/v225_metrics.py: byte-identical to e589b5b; SHA256 5c3fb6c3a23b53503e7ecfdc0569f01bda7a215b8b67e21a6db455feefe5aafd
+skillopt/execskill/stats_ext.py: byte-identical to e589b5b; SHA256 3bb7b49f65dcdb19d55eb1abf881579e3624002487a1a0e0aada2ec1139ac2dd
+skillopt/execskill/sandbox/worker.py: byte-identical to e589b5b; SHA256 bb1ccc0d90cafbda1f842569454ec676a8329d721a423246d92572632cf4ea0d
+tests/test_execskill_fivebench_step.py: byte-identical to e589b5b; SHA256 ef2acfaf4aad29010497194e20aa9423e612fba67b70425823ff21dedd5a4681
+tests/test_execskill_mutations.py: byte-identical to e589b5b; SHA256 448a790e2f29a3ee4dd37f0529006041479c29a0dbebd0d0954e4273e72a1f93
+All 152 registered mutation target strings still occur exactly once; mutation harness unchanged.
+All branch refs unchanged:
+e589b5b3136382c08cba0fc55afa13fc14b6fdc4 refs/heads/main
+645eac2837f7e5721e7c14725b53645ce6a8580b refs/heads/v226-wip-r1
+d638df7b979dd3663f7594c8b13f340f5a9ed61a refs/heads/v226-wip-r2
+git diff --check: clean

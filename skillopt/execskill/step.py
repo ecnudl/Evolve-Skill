@@ -204,8 +204,20 @@ UNITS_V29 = ("run", "diagnose", "generate",
 
 def training_units(configuration=None):
     """Configuration-bound training unit names; legacy tuples remain frozen."""
-    if configuration == protocol.BASELINE_V210 or protocol.is_v213(configuration) or protocol.is_implant_v5(configuration):
+    if protocol.is_v225(configuration):
+        from . import v225_phase
+        inherited = training_units(protocol.MAIN_V8)
+        return inherited[:3] + v225_phase.units() + inherited[3:]
+    if configuration == protocol.BASELINE_V210 or protocol.is_v213(configuration) or protocol.is_implant_v5(configuration) or protocol.is_v220(configuration):
         return ()
+    if protocol.is_v221(configuration):
+        return ("run", "diagnose", "generate",
+                *(name for r in range(1, protocol.train_rounds(configuration) + 1)
+                  for name in (["engineer-r%d" % r, "train-r%d" % r, "confirm-r%d" % r] +
+                    ["%s-r%d-split-p%d" % (kind, r, n) for n in range(1, protocol.MAX_CHANGES + 1)
+                     for kind in ("train", "confirm")] +
+                    ["%s-r%d-split-merge" % (kind, r) for kind in ("train", "confirm")] +
+                    ["accept-r%d" % r])), "audit-final", "selftest", "freeze")
     if protocol.is_v218(configuration):
         return ("run", "diagnose", "generate",
                 *(name for r in range(1, protocol.train_rounds(configuration) + 1)
@@ -374,6 +386,9 @@ class _Step:
         return self.setting.runtime.get(bench or self.bench)
 
     def card(self):
+        if protocol.is_v222(configuration_of(self.setting)):
+            from . import v222_runtime
+            return v222_runtime.initial_package(self)
         return empty(step=self.name, evidence=self.evidence)
 
     def unit(self, name, work, *, benches=(), settle=None):
@@ -400,7 +415,8 @@ class _Step:
         cleanup_options = ({key: self.setting.sandbox[key] for key in (
             "cleanup_grace_seconds", "cleanup_events", "ready_timeout_seconds", "start_events")}
                            if protocol.is_v292(configuration_of(self.setting)) else {})
-        if protocol.is_v218(configuration_of(self.setting)) and self.bench == protocol.ZEBRA:
+        if (protocol.is_v226(configuration_of(self.setting)) or
+                protocol.is_v218(configuration_of(self.setting)) and self.bench == protocol.ZEBRA):
             cleanup_options['diagnostics_configuration'] = protocol.ZEBRA_PC_V15
         self.services = replace(services, workers=functools.partial(services.workers,
                                                                     tag=self.setting.sandbox["tag"], **cleanup_options),
@@ -410,6 +426,14 @@ class _Step:
             self.services = replace(self.services,
                 workers=v218_lock.workers(self.services.workers, self.setting),
                 engine=v218_lock.engine(self.services.engine, self.setting))
+        if protocol.is_v226(configuration_of(self.setting)):
+            from . import v226_candidates
+            factory = self.services.workers
+            @contextmanager
+            def candidate_workers(package, **options):
+                with v226_candidates.package_arm(package), factory(package, **options) as worker:
+                    yield worker
+            self.services = replace(self.services, workers=candidate_workers)
         root = units.unit_path(self.chain_root, self.k, self.bench, name)
 
         def logged(attempt):  # registrar addendum 15:5x R5: the attempt's role calls, once, whatever its end
@@ -432,7 +456,8 @@ class _Step:
     def done(self, name):
         """The result of a completed unit of this step, else None."""
         path = units.unit_path(self.chain_root, self.k, self.bench, name) / "unit.json"
-        return verified(read_json(path), "unit")["result"] if path.exists() else None
+        return ((_read_record(self, path, "unit") if protocol.is_v226(configuration_of(self.setting))
+                 else verified(read_json(path), "unit"))["result"] if path.exists() else None)
 
 
 # --------------------------------------------------------------------------------------------------- helpers
@@ -493,7 +518,8 @@ def _tail(st):
     path = safe_path(pin["path"])
     require(hashlib.sha256(path.read_bytes()).hexdigest() == pin["sha256"], "The SearchQA tail supply differs from "
             "its pin")
-    tail = verified(read_json(path), supply.RECORD_KIND)
+    tail = (_read_record(st, path, supply.RECORD_KIND) if protocol.is_v226(configuration_of(st.setting))
+            else verified(read_json(path), supply.RECORD_KIND))
     require(tail["name"] == "searchqa-tail" and tail["bench"] == "searchqa", "Not the SearchQA tail supply")
     bound = safe_path(pin["exclusion"]["path"])
     root = bound.parents[2]  # <root>/shared/exclusion/<run>.json, where exclude-tests persisted it
@@ -578,7 +604,8 @@ def _slices(st):
     registrations do not shift its slices when it is resumed."""
     path = st.root / SLICES_FILE
     if path.exists():
-        value = verified(read_json(path), "step-slices")
+        value = (_read_record(st, path, "step-slices") if protocol.is_v226(configuration_of(st.setting))
+                 else verified(read_json(path), "step-slices"))
         require(value["chain"] == st.chain and value["k"] == st.k and value["bench"] == st.bench,
                 "The slices of another step")
         cut = {name: _items_of(st, ids) for name, ids in value["slices"].items()}
@@ -677,6 +704,9 @@ def _task(item):
 
 def _run_trajectories(st, k=None, bench=None, *, parent_only=False):
     root = units.unit_path(st.chain_root, k or st.k, bench or st.bench, "run")
+    if protocol.is_v225(configuration_of(st.setting)):
+        from .v225_read import assert_learning_path
+        assert_learning_path(root)
     found = trajectories.load_run(root)
     return [t for t in found if t["arm_kind"] == "parent"] if parent_only else found
 
@@ -688,7 +718,9 @@ def _earlier(st, unit):
         step_dir = path.parent.parent.name
         k, bench = step_dir[1:].split("-", 1)
         if int(k) < st.k:
-            out.append((int(k), bench, verified(read_json(path), "unit")["result"]))
+            out.append((int(k), bench, (_read_record(st, path, "unit")
+                                       if protocol.is_v226(configuration_of(st.setting))
+                                       else verified(read_json(path), "unit"))["result"]))
     return sorted(out, key=lambda entry: entry[0])
 
 
@@ -761,8 +793,13 @@ def _run(st, cut):
             schedule["C"] = [(key, 1) for key in sorted(tasks)]
         registry.dispatch(st.namespace, bench, items, unit=name, attempt=n)
         cells = rounds.run_round(st.setting, attempt, endpoint, name, arms, schedule, tasks, tag="run")
-        rounds.guard(cells, list(arms), name)
-        return {"items": len(items), "runs": runs, "cells": sum(len(found) for found in cells.values()),
+        diagnostic = None
+        if protocol.is_v221(configuration_of(st.setting)):
+            from . import v221_learning
+            diagnostic = v221_learning.infrastructure(cells, list(arms))
+        else:
+            rounds.guard(cells, list(arms), name)
+        return {**({'infrastructure': diagnostic} if diagnostic is not None else {}), "items": len(items), "runs": runs, "cells": sum(len(found) for found in cells.values()),
                 "firing_share": float(share), "entry_reading": _entry_reading(cells) if "C" in arms else None}
 
     def settle(attempt, result):  # Codex finding #8: after the completion evidence; again, idempotent, on a recovery
@@ -771,7 +808,8 @@ def _run(st, cut):
     result = st.unit("run", work, settle=settle)
     if st.chain == "G" and st.k == 1:  # the attempt that completed the unit: its spend and its cells (15:5x R6 (e))
         root = units.unit_path(st.chain_root, st.k, bench, "run")
-        done = verified(read_json(root / "unit.json"), "unit")
+        done = (_read_record(st, root / "unit.json", "unit") if protocol.is_v226(configuration_of(st.setting))
+                else verified(read_json(root / "unit.json"), "unit"))
         cap_check(st.setting, "G", 1, cost_projection(st.setting, st.chain, bench, st.k, result["cells"],
                                                       attempt=units.attempt_number(root / done["attempt"])))
     return result
@@ -1060,7 +1098,16 @@ def _previous(st):
     steps = sorted(st.chain_root.glob("s%d-*/%s" % (st.k - 1, STEP_FILE))) if st.k > 1 else []
     if not steps:
         return None
-    value = verified(read_json(steps[0]), "step")
+    value = (_read_record(st, steps[0], "step") if protocol.is_v226(configuration_of(st.setting))
+            else verified(read_json(steps[0]), "step"))
+    def count_only(count):
+        if isinstance(count, (list, tuple, set)):
+            return len(count)
+        require(engineer._counts(count), "Previous fault and format values must contain counts only")
+        return count
+    if protocol.is_v226(configuration_of(st.setting)):
+        value = {**value, "fault_items": count_only(value["fault_items"]),
+                 "violating_items": count_only(value["violating_items"])}
     return {"decision": "accepted" if value["decision"] == "accept" else "not_accepted",
             "faults": {"fault_items": value["fault_items"]}, "format": {"violating_items": value["violating_items"]}}
 
@@ -1070,7 +1117,9 @@ def _corpora(st, cut):
     A chain without repeated benchmarks retains exactly its historical keys, order and corpus contents."""
     out = {st.bench: Corpus(st.bench, cut["run"])}
     for k, bench, _ in _earlier(st, "run"):
-        value = verified(read_json(st.chain_root / ("s%d-%s" % (k, bench)) / SLICES_FILE), "step-slices")
+        value = (_read_record(st, st.chain_root / ("s%d-%s" % (k, bench)) / SLICES_FILE, "step-slices")
+                 if protocol.is_v226(configuration_of(st.setting)) else
+                 verified(read_json(st.chain_root / ("s%d-%s" % (k, bench)) / SLICES_FILE), "step-slices"))
         by_id = {item["task_id"]: item for item in st.setting.pools[bench]}
         corpus = Corpus(bench, [by_id[i] for i in value["slices"]["run"]])
         if bench in out:
@@ -1225,8 +1274,74 @@ def selftest_verdict(cells, sets, changed, *, identical=None, request_faults=Non
                                    if identical is not None else {})}
 
 
+def _candidate_guard(st, key, parent, work, rejected):
+    if not protocol.is_v226(configuration_of(st.setting)):
+        return work
+    from . import v226_candidates
+    return v226_candidates.guard(st, key, parent, work, rejected)
+
+
+def _candidate_error_fields(st):
+    if not protocol.is_v226(configuration_of(st.setting)):
+        return {}
+    from . import v226_candidates
+    return {'candidate_errors': v226_candidates.counts(st.root),
+            'candidate_error_events': v226_candidates.events(st.root)}
+
+
+def _evaluation_arm(st, role):
+    if not protocol.is_v226(configuration_of(st.setting)):
+        return nullcontext()
+    from . import v226_candidates
+    return v226_candidates.arm(role)
+
+
+def _read_record(st, path, kind=None):
+    if protocol.is_v226(configuration_of(st.setting)):
+        from .v226_candidates import read_record
+        from .errors import ConfigurationError
+        try:
+            return read_record(path, kind)
+        except (ValueError, ConfigurationError) as error:
+            raise Pause('configuration', 'sealed_record_invalid', str(path)) from error
+    value = read_json(path)
+    return verified(value, kind) if kind is not None else value
+
+
+def _system_cells(st, *args, **kwargs):
+    # Dispatch interleaves both arms and owns transport, budgets and scoring.
+    # A failure here cannot be attributed to one candidate's preparation.
+    with _evaluation_arm(st, 'system'):
+        return _cells(st, *args, **kwargs)
+
+
+def _candidate_training_error(st, r, incumbent, candidate, event):
+    verdict = train_verdict({}, [], [], set(), predicate_faults=0, routed=0, sign=False,
+                            configuration=configuration_of(st.setting), touched=[])
+    verdict.update(adopted=False, reason='candidate_error')
+    return {'learning': TRAIN, 'round': r, 'incumbent_sha256': incumbent.sha256,
+            'candidate_sha256': candidate.sha256, 'cells': 0, 'adopted': False,
+            'verdict': verdict, 'feedback': {}, 'candidate_error': event,
+            'incumbent_cells': {}, 'candidate_cells': {}, 'request_signatures': {}}
+
+
+def _candidate_confirmation_error(st, r, incumbent, candidate, event):
+    from . import v221_rule
+    rule = v221_rule.counts(touched=0, fixed=0, broken=0, batch=0)
+    return {'confirm': {'items': 0, 'evaluated': 0, 'fixed': 0, 'broken': 0, 'net': 0,
+                'format_cells': {'S': 0, "S'": 0}, 'format_margin': 2, 'candidate_cells': 0,
+                'passed': False, 'reason': 'candidate_error', 'rule': rule, 'touched': [],
+                'reused_cells': 0, 'tokens': practice_confirm.tokens([]), 'exercise': False},
+            'round': r, 'candidate_sha256': candidate.sha256, 'incumbent_sha256': incumbent.sha256,
+            'candidate_error': event, 'slice_ids': [], 'cells': 0, 'procedure_confirmation': {},
+            'incumbent_cells': {}, 'candidate_cells': {}, 'request_signatures': {}}
+
+
 def _pair_signatures(st, candidate, parent, publics, views, *, note_coverage=None, diagnostics_observer=None):
     """v2.3: the two exact requests and post-call identities on full public views, with zero model calls."""
+    if protocol.is_v226(configuration_of(st.setting)):
+        return _pair_signatures_v226(st, candidate, parent, publics, views,
+                                    note_coverage=note_coverage, diagnostics_observer=diagnostics_observer)
     if st.bench not in request_reuse.BENCHES:
         return {}
     workers, out = _item_workers(st, publics), {}
@@ -1252,7 +1367,49 @@ def _pair_signatures(st, candidate, parent, publics, views, *, note_coverage=Non
     return out
 
 
-def _selftest(st, unit, candidate, generated):
+def _pair_signatures_v226(st, candidate, parent, publics, views, *, note_coverage=None, diagnostics_observer=None):
+    """v2.3: the two exact requests and post-call identities on full public views, with zero model calls."""
+    configuration = configuration_of(st.setting)
+    alf_identity = protocol.is_v226(configuration) and st.bench == 'alfworld'
+    if st.bench not in request_reuse.BENCHES and not alf_identity:
+        return {}
+    workers, out = _item_workers(st, publics), {}
+    for item, view in views:
+        out[item] = {}
+        arms = (("S", parent), ("S'", candidate)) if protocol.is_v226(configuration) else (("S'", candidate), ("S", parent))
+        for arm, package in arms:
+            scope = nullcontext()
+            if protocol.is_v226(configuration):
+                from . import v226_candidates
+                # Counterfactual S can itself contain newly authored procedures.
+                # Attribute by the package relative to the guard's real parent.
+                scope = v226_candidates.package_arm(package)
+            with scope, workers(package, item) as worker:
+                if alf_identity:
+                    from .v222_gate import _alf_signature
+                    out[item][arm] = _alf_signature(package, view, worker,
+                        card_text=st.setting.cards.get(st.bench, ''), configuration=configuration)
+                    continue
+                observe = {}
+                if note_coverage is not None or diagnostics_observer is not None:
+                    def capture(shell, text):
+                        if note_coverage is not None:
+                            note_coverage.setdefault(item, {})[arm] = _shown_note_fields(
+                                st.bench, package, shell.notes, view, text, configuration=configuration_of(st.setting))
+                        if diagnostics_observer is not None and arm == "S'":
+                            diagnostics_observer[item] = {'records': list(shell.diagnostics),
+                                                          'no_note': not bool(text.strip())}
+                    observe = {"note_observer": capture}
+                out[item][arm] = request_reuse.signature(st.bench, package, view, worker,
+                                                       card_text=st.setting.cards.get(st.bench, ""), runtime=st.runtime(),
+                                                       **({'configuration': configuration_of(st.setting)}
+                                                          if (protocol.is_v226(configuration)
+                                                              or protocol.uses_v215(configuration, st.bench)) else {}),
+                                                       **observe)
+    return out
+
+
+def _selftest(st, unit, candidate, generated, *, candidate_key=None, contain=True):
     def work(attempt):
         sets = _sets(st, generated)
         if not sets:
@@ -1263,7 +1420,9 @@ def _selftest(st, unit, candidate, generated):
             identity = {"candidate": candidate.sha256, "parent": st.parent.sha256,
                         "sets": {b: [i["id"] for i in items] for b, items in sets.items()}, "sets_sha256": digest(sets)}
             if path.exists():
-                sealed = verified(read_json(path), "selftest-requests-v2-3")
+                sealed = (_read_record(st, path, "selftest-requests-v2-3")
+                          if protocol.is_v226(configuration_of(st.setting))
+                          else verified(read_json(path), "selftest-requests-v2-3"))
                 require(sealed["identity"] == identity, "A resumed self-test keeps its sealed requests")
             else:
                 signatures, identical = {}, {}
@@ -1285,7 +1444,10 @@ def _selftest(st, unit, candidate, generated):
         # Codex finding #4: each set's cells on its own bench's client, M, timeout and B, charged to this step's
         # ...:selftest scope, in the one seeded interleaving
         endpoints = {bench: st.solver("selftest", attempt, cell_bench=bench) for bench in sorted(sets)} if jobs else {}
-        cells = _cells(st, attempt, endpoints, st.label(unit), jobs, tag="selftest") if jobs else []
+        if protocol.is_v226(configuration_of(st.setting)):
+            cells = _system_cells(st, attempt, endpoints, st.label(unit), jobs, tag="selftest") if jobs else []
+        else:
+            cells = _cells(st, attempt, endpoints, st.label(unit), jobs, tag="selftest") if jobs else []
         changed = _changed_ids(st.parent, candidate)
         request_faults = (sorted({item for items in sealed["signatures"].values() for item, arms in items.items()
                                  if any(f.get("procedure") in changed for f in arms["S'"]["faults"])})
@@ -1300,6 +1462,10 @@ def _selftest(st, unit, candidate, generated):
                    if sealed is not None else {})}
 
     # Codex finding #5: the memory lock of every bench the self-test's cells run on (an earlier SpreadsheetBench set)
+    if protocol.is_v226(configuration_of(st.setting)) and contain:
+        work = _candidate_guard(st, candidate_key or 'selftest:' + candidate.sha256, st.parent, work,
+            lambda event: {'sets': {}, 'blocked': True, 'reason': 'selftest_candidate_error', 'cells': 0,
+                           'fault_cells': 0, 'candidate_error': event})
     return st.unit(unit, work, benches=tuple(sorted(_sets(st, generated))))
 
 
@@ -1328,12 +1494,21 @@ def _candidate(st, cut, generated):
 
 # ------------------------------------------------------------------------------------- v2: the training rounds
 def _unit_trajectories(st, name):
-    if protocol.is_v218(configuration_of(st.setting)) and "-split-p" in name:
+    if protocol.is_v225(configuration_of(st.setting)):
+        from .v225_read import assert_learning_path
+        assert_learning_path(units.unit_path(st.chain_root, st.k, st.bench, name))
+    if protocol.is_v218(configuration_of(st.setting)) and ("-split-p" in name or
+            (protocol.is_v221(configuration_of(st.setting)) and "-split-merge" in name)):
         from . import v218_split
         result = st.done(name)
         cells = {(arm, key): rows for arm, side in (("S", "incumbent"), ("S'", "candidate"))
                  for key, rows in result.get(side + "_cells", {}).items()}
         return list(v218_split.source_trajectories(st, cells, allow_confirmation=name.startswith("confirm-r")).values())
+    if protocol.is_v222(configuration_of(st.setting)) and name.startswith('confirm-r'):
+        # Cross-gate cells share the charged attempt directory, but their public
+        # situations are not the home's training/confirmation audit evidence.
+        return [row for row in trajectories.load_run(units.unit_path(st.chain_root, st.k, st.bench, name))
+                if row.get('unit') == st.label(name)]
     return trajectories.load_run(units.unit_path(st.chain_root, st.k, st.bench, name))
 
 
@@ -1348,6 +1523,10 @@ def _current(st, done):
     by_item = {}
     for trajectory in _run_trajectories(st, parent_only=True):
         by_item.setdefault(trajectory["task_id"], []).append(trajectory)
+    if protocol.is_v225(configuration_of(st.setting)):
+        card_unit = getattr(st, 'card_phase_record', {}).get('accepted_training_unit')
+        if card_unit:
+            done = [(card_unit, True), *done]
     for name, adopted in done:
         fresh = {}
         for trajectory in _unit_trajectories(st, name):
@@ -1388,7 +1567,17 @@ def _engineer_train(st, cut, r, incumbent, *, done, fed, history, training, lint
     unit = "engineer-r%d" % r
     name = st.label(unit)
 
+    def rejected(event):
+        return None, record('engineer-v2-9', st.evidence, {'changes': [], 'analysis': {'items': []},
+            'disclosed': [], 'lint': [], 'candidate_error': event})
+
     def work(attempt):
+        hygiene = None
+        if protocol.is_v222(configuration_of(st.setting)):
+            from . import v222_runtime
+            candidate, hygiene = v222_runtime.hygiene_candidate(st, cut, r, incumbent, _current(st, done))
+            if candidate is not None:
+                return v222_runtime.hygiene_engineered(st, r, incumbent, candidate, hygiene)
         stored = []
         for k, bench, _ in _earlier(st, "run"):
             stored += _run_trajectories(st, k, bench)
@@ -1425,16 +1614,50 @@ def _engineer_train(st, cut, r, incumbent, *, done, fed, history, training, lint
                                       if protocol.is_v29(configuration_of(st.setting)) else {}))
             if protocol.uses_v211(configuration_of(st.setting), getattr(st, "bench", None)):
                 ctx.sheet['v211_prompt_pins'] = st.setting.extra['v211_prompt_pins']
-            candidate, sealed = engineer.run_train(ctx)
+            if protocol.is_v226(configuration_of(st.setting)):
+                candidate, sealed = _candidate_guard(st, 'procedure-r%d' % r, incumbent,
+                    lambda _attempt: engineer.run_train(ctx), rejected)(attempt)
+            else:
+                candidate, sealed = engineer.run_train(ctx)
         if candidate is not None:
             save(st.chain_root, candidate)
         return {"engineer": sealed, "candidate_sha256": candidate.sha256 if candidate is not None else None,
-                "learning": TRAIN, "round": r}
+                "learning": TRAIN, "round": r,
+                **({'candidate_error': sealed['candidate_error']}
+                   if protocol.is_v226(configuration_of(st.setting)) and 'candidate_error' in sealed else {}),
+                **({'hygiene': hygiene} if hygiene is not None else {})}
 
     return st.unit(unit, work)
 
 
 def _routes(st, package, entries, publics):
+    """v2: {key: ``router.RouteLog``} of ``package`` on ``entries`` [(key, routing view)], zero calls: no worker when
+    no procedure of the package runs on the bench; on SpreadsheetBench one worker per item with its workbook mounted
+    (``_item_workers``, ``publics`` by key); else one worker holding the package for every item (a predicate is a pure
+    function of the view: C6 replayed every procedure in two orders and hash seeds). v2.8 reuses one healthy worker
+    per package pass with seed zero and fresh per-hook namespaces, reopening after a sticky worker fault.
+    Workbook mounts and custom item-worker factories retain their separate input boundaries."""
+    if protocol.is_v226(configuration_of(st.setting)):
+        from . import v226_candidates
+        with v226_candidates.package_arm(package):
+            return _routes_impl(st, package, entries, publics)
+    if not package.for_bench(st.bench):
+        return {key: router.route(package, st.bench, view, None) for key, view in entries}
+    if st.bench == "spreadsheetbench" or st.services.item_workers is not None:
+        factory, out = _item_workers(st, publics), {}
+        for key, view in entries:
+            with factory(package, key) as worker:
+                out[key] = router.route(package, st.bench, view, worker)
+        return out
+    if protocol.is_v28(configuration_of(st.setting)):
+        return {key: result for (key, _), result in replay.run_worker_pass(
+            entries, lambda entry: st.services.workers(package, kind="cell", inputs_dir=None, hashseed=0),
+            lambda entry, worker: router.route(package, st.bench, entry[1], worker))}
+    with st.services.workers(package, kind="cell", inputs_dir=None) as worker:
+        return {key: router.route(package, st.bench, view, worker) for key, view in entries}
+
+
+def _routes_impl(st, package, entries, publics):
     """v2: {key: ``router.RouteLog``} of ``package`` on ``entries`` [(key, routing view)], zero calls: no worker when
     no procedure of the package runs on the bench; on SpreadsheetBench one worker per item with its workbook mounted
     (``_item_workers``, ``publics`` by key); else one worker holding the package for every item (a predicate is a pure
@@ -1462,7 +1685,7 @@ def _token_share(found):
 
 
 def train_verdict(cells, items, generated, changed, *, predicate_faults, routed, sign=True, request_faults=None,
-                  identical=None, runs=1, configuration=None):
+                  identical=None, runs=1, configuration=None, touched=None):
     """v2: the adoption rule of one training round from its cell records (module docstring). ``cells``: {(arm, item):
     [cell records]} of arms S' (the candidate) and S (the incumbent); ``items`` / ``generated``: the run-slice and
     G_self items evaluated (those routed differently); ``changed``: the ids of the procedures the candidate adds or
@@ -1517,7 +1740,7 @@ def train_verdict(cells, items, generated, changed, *, predicate_faults, routed,
     if not adopted:
         failed = ["guard:" + k for k, ok in deciding.items() if not ok] + ["gain:" + k for k, ok in gain.items() if not ok]
         reason = failed[0] if evaluated else "no_item_routes_differently"
-    return {"adopted": adopted, "reason": reason, "items": len(items), "generated": len(generated),
+    result = {"adopted": adopted, "reason": reason, "items": len(items), "generated": len(generated),
             "fixed": fixed, "broken": broken, "net": "%d/%d" % (net.numerator, net.denominator), "need": need,
             "p_sign": p, "guards": guards, "gain": gain, "own_fault_cells": own, "candidate_cells": len(candidate),
             "predicate_faults": predicate_faults, "routed": routed, "format_cells": formats, "format_margin": margin,
@@ -1525,6 +1748,16 @@ def train_verdict(cells, items, generated, changed, *, predicate_faults, routed,
             **({} if sign else {"sign_required": False}),
             **({"identical": list(identical), "skipped_candidate_cells": skipped_cells,
                 "candidate_cells_denominator": candidate_denominator} if identical is not None else {})}
+    if protocol.is_v221(configuration):
+        from . import v221_rule
+        active = list(touched if touched is not None else [key for key in evaluated if key not in skipped])
+        rule = v221_rule.decide(cells, evaluated, touched=active)
+        fixes = [key for key in active if _token_share(cells[("S'", key)]) > _token_share(cells[("S", key)])]
+        breaks = [key for key in active if _token_share(cells[("S'", key)]) < _token_share(cells[("S", key)])]
+        result.update(adopted=rule['decision'] == 'accept', reason=None if rule['decision'] == 'accept' else 'gain_and_no_harm',
+                      fixed=sorted(fixes), broken=sorted(breaks), net='%d/1' % rule['net'],
+                      need=rule['gain_floor'], rule=rule, informational_guards=list(guards))
+    return result
 
 
 def prune_idle(candidate, incumbent, base, after):
@@ -1898,7 +2131,8 @@ def _train_eval(st, cut, r, incumbent, candidate, generated, *, current=None):
         changed = {pid for pid in trained.order if pid not in set(incumbent.order)}
         routed = {key: {"incumbent": list(before[key].enabled), "candidate": list(after[key].enabled)}
                   for key, _ in views}
-        differs = [key for key, _ in views if before[key].enabled != after[key].enabled]
+        differs = ([key for key, _ in views] if protocol.is_v221(configuration_of(st.setting)) else
+                   [key for key, _ in views if before[key].enabled != after[key].enabled])
         evaluated = list(differs)
         identical, signatures, captured = [], None, {}
         diagnostic_observations = {} if protocol.uses_v215(configuration_of(st.setting), st.bench) else None
@@ -1921,11 +2155,19 @@ def _train_eval(st, cut, r, incumbent, candidate, generated, *, current=None):
                     if source is not None else _task(made[key]))
             for arm, kind, package in (("S'", "candidate", trained), ("S", "parent", incumbent)):
                 jobs += [(arm, Arm(kind, package), key, run, task) for run in range(runs if source else 1)]
-        found = _cells(st, attempt, st.solver("selftest", attempt), name, jobs, tag="train") if jobs else []
+        if protocol.is_v226(configuration_of(st.setting)):
+            found = _system_cells(st, attempt, st.solver("selftest", attempt), name, jobs, tag="train") if jobs else []
+        else:
+            found = _cells(st, attempt, st.solver("selftest", attempt), name, jobs, tag="train") if jobs else []
         cells = {}
         for cell in found:
             cells.setdefault((cell["cell"]["arm"], cell["cell"]["task_id"]), []).append(cell)
-        rounds.guard(cells, ["S", "S'"], name)
+        touched = None
+        if protocol.is_v221(configuration_of(st.setting)):
+            from . import v221_learning, v221_rule
+            touched = v221_rule.identity_touched(signatures, bench=st.bench, trajectories=found)
+        else:
+            rounds.guard(cells, ["S", "S'"], name)
         verdict = train_verdict(cells, [k for k in evaluated if k in items], [k for k in evaluated if k in made],
                                 changed, predicate_faults=faults, routed=len(views),
                                 sign=TRAIN_SIGN[configuration_of(st.setting)],
@@ -1934,7 +2176,8 @@ def _train_eval(st, cut, r, incumbent, candidate, generated, *, current=None):
                                                 if signatures is not None else None),
                                 **({"configuration": configuration_of(st.setting)}
                                    if protocol.is_v28(configuration_of(st.setting)) else {}),
-                                **({"identical": identical, "runs": runs} if signatures is not None else {}))
+                                **({"identical": identical, "runs": runs} if signatures is not None else {}),
+                                **({'touched': touched} if touched is not None else {}))
         feedback_args = {}
         diagnostic_telemetry = {}
         if protocol.is_v24(configuration_of(st.setting)):
@@ -1964,8 +2207,13 @@ def _train_eval(st, cut, r, incumbent, candidate, generated, *, current=None):
         if protocol.is_v218(configuration_of(st.setting)):
             out.update(incumbent_cells={key: rows for (arm, key), rows in cells.items() if arm == "S"},
                        candidate_cells={key: rows for (arm, key), rows in cells.items() if arm == "S'"})
+        if protocol.is_v221(configuration_of(st.setting)):
+            v221_learning.attach_training(st, out, cells, publics, views, signatures, incumbent, trained)
         return out
 
+    if protocol.is_v226(configuration_of(st.setting)):
+        work = _candidate_guard(st, 'procedure-r%d' % r, incumbent, work,
+            lambda event: _candidate_training_error(st, r, incumbent, candidate, event))
     return st.unit(unit, work)
 
 
@@ -2038,6 +2286,27 @@ def _confirm_cached(st, r, package, identities):
     return cached
 
 
+
+def _request_core(st, *, round, ids, candidate, incumbent, views, publics=None, full=None, exercise=False):
+    """Deterministic replay inputs; executed hook faults belong only to the sealed plan."""
+    from .v226_bindings import workbook_digests
+    return {'configuration': configuration_of(st.setting), 'bench': st.bench, 'round': round,
+            'workbook_sha256': workbook_digests(st.bench, publics or {}),
+            'slice_ids': list(ids), 'candidate_sha256': candidate.sha256,
+            'incumbent_sha256': incumbent.sha256, 'full_candidate_sha256': (full or candidate).sha256,
+            'exercise': exercise, 'routing_views_sha256': digest(views),
+            'card_sha256': digest(st.setting.cards.get(st.bench, '')), 'runtime_sha256': digest(st.runtime())}
+
+
+def _restore_routes(rows):
+    """Rehydrate the sealed route without running predicates again."""
+    found = {}
+    for key, row in rows.items():
+        row = verified(row, 'route')
+        found[key] = router.RouteLog(row['bench'], row['package_sha256'], row['routing_view_sha256'],
+            {pid: row['per_procedure'][pid] for pid in row['order']}, tuple(row['faults']), row['evidence'])
+    return found
+
 def _confirm_eval(st, cut, r, incumbent, candidate, *, exercise=False):
     """Held-out practice unit, one run per pair, no engineer-visible content.
 
@@ -2045,8 +2314,18 @@ def _confirm_eval(st, cut, r, incumbent, candidate, *, exercise=False):
     ``exercise=True``; its measured verdict is explicitly unused for adoption.
     """
     require(protocol.is_v29(configuration_of(st.setting)), "Confirmation requires v2.9")
-    child = protocol.uses_v211(configuration_of(st.setting), getattr(st, "bench", None))
-    selected = list(cut[('confirm-r%d' % r) if child and (not exercise or ('confirm-r%d' % r) in cut) else 'confirm'])
+    allocated_rounds = protocol.uses_v211(configuration_of(st.setting), getattr(st, "bench", None))
+    child = allocated_rounds or protocol.is_v221(configuration_of(st.setting))
+    if protocol.is_v221(configuration_of(st.setting)) and not allocated_rounds:
+        from . import v221_learning
+        if protocol.is_v226(configuration_of(st.setting)):
+            prior_confirmations = [st.done('confirm-r%d' % prior) or {} for prior in range(1, r)]
+            if any(row.get('slice_ids') and not (row.get('candidate_error') and not row.get('registered'))
+                   for row in prior_confirmations):
+                return v221_learning.exhausted_confirmation(st, r, incumbent, candidate)
+        elif any((st.done('confirm-r%d' % prior) or {}).get('slice_ids') for prior in range(1, r)):
+            return v221_learning.exhausted_confirmation(st, r, incumbent, candidate)
+    selected = list(cut[('confirm-r%d' % r) if allocated_rounds and (not exercise or ('confirm-r%d' % r) in cut) else 'confirm'])
     required = protocol.confirm_spec(configuration_of(st.setting), st.bench, r)['items'] if child else practice_confirm.ITEMS
     require(len(selected) == (2 if exercise else required),
             "Confirmation has its registered per-round items (two authored exercise items in smoke)")
@@ -2064,35 +2343,61 @@ def _confirm_eval(st, cut, r, incumbent, candidate, *, exercise=False):
                 and prior['candidate_sha256'] == candidate.sha256 and prior['slice_ids'] == ids),
                 'Resume requires the same sealed confirmation candidate, incumbent and slice')
 
+    registered = False
     def work(attempt):
+        nonlocal registered
         items = {rounds.key(st.bench, item["task_id"]): item for item in selected}
         publics = {key: item["public"] for key, item in items.items()}
         views = [(key, solver.routing_view(st.bench, public, runtime=st.runtime()))
                  for key, public in publics.items()]
-        before, after = _routes(st, incumbent, views, publics), _routes(st, candidate, views, publics)
-        evaluated = [key for key, _ in views if before[key].enabled != after[key].enabled]
-        signatures = _pair_signatures(st, candidate, incumbent, publics,
-                                      [(key, view) for key, view in views if key in evaluated])
-        identical = [key for key, arms in signatures.items()
-                     if request_reuse.interchangeable(arms["S'"], arms["S"], bench=st.bench)]
-        identities = _confirm_identities(st, items, evaluated, incumbent, candidate, signatures)
-        cached = {} if child else _confirm_cached(st, r, incumbent, identities)
+        fixed = protocol.is_v226(configuration_of(st.setting))
+        path = st.root / ('confirm-selection-r%d.json' % r) if fixed else None
+        core = (_request_core(st, round=r, ids=ids, candidate=candidate, incumbent=incumbent,
+                              views=views, publics=publics, exercise=exercise) if fixed else None)
+        if fixed and path.exists():
+            binding = _read_record(st, path, 'v226-confirm-requests')
+            require(binding['core'] == core, 'Resume requires the same deterministic confirmation core')
+            before, after = _restore_routes(binding['before']), _restore_routes(binding['after'])
+            evaluated = binding['evaluated']
+            signatures, identities = binding['request_signatures'], binding['request_identities']
+            identical = binding['identical']
+            cached = {}
+        else:
+            before, after = _routes(st, incumbent, views, publics), _routes(st, candidate, views, publics)
+            evaluated = ([key for key, _ in views] if protocol.is_v221(configuration_of(st.setting)) else
+                         [key for key, _ in views if before[key].enabled != after[key].enabled])
+            signatures = _pair_signatures(st, candidate, incumbent, publics,
+                                          [(key, view) for key, view in views if key in evaluated])
+            identical = [key for key, arms in signatures.items()
+                         if request_reuse.interchangeable(arms["S'"], arms["S"], bench=st.bench)]
+            identities = _confirm_identities(st, items, evaluated, incumbent, candidate, signatures)
+            cached = {} if child else _confirm_cached(st, r, incumbent, identities)
         if child:
-            binding = {'configuration': configuration_of(st.setting), 'bench': st.bench, 'round': r,
-                       'slice_ids': ids, 'candidate_sha256': candidate.sha256,
-                       'incumbent_sha256': incumbent.sha256, 'request_identities': identities,
-                       'request_signatures': signatures, 'exercise': exercise}
-            path = st.root / ('confirm-selection-r%d.json' % r)
-            if path.exists():
-                require(read_json(path) == binding, 'Resume requires the same sealed confirmation request identities')
+            if fixed:
+                if not path.exists():
+                    binding = record('v226-confirm-requests', st.evidence, {'core': core,
+                        'request_identities': identities, 'request_signatures': signatures,
+                        'before': {key: row.to_json() for key, row in before.items()},
+                        'after': {key: row.to_json() for key, row in after.items()},
+                        'evaluated': evaluated, 'identical': identical})
+                    write_json(path, binding)
             else:
-                write_json(path, binding)
+                binding = {'configuration': configuration_of(st.setting), 'bench': st.bench, 'round': r,
+                           'slice_ids': ids, 'candidate_sha256': candidate.sha256,
+                           'incumbent_sha256': incumbent.sha256, 'request_identities': identities,
+                           'request_signatures': signatures, 'exercise': exercise}
+                path = st.root / ('confirm-selection-r%d.json' % r)
+                if path.exists():
+                    require(read_json(path) == binding, 'Resume requires the same sealed confirmation request identities')
+                else:
+                    write_json(path, binding)
             n = units.attempt_number(attempt)
             registry = st.services.registry
             # Consume the decision occasion even for exact-request zero differences.
             registry.register(st.namespace, st.bench, selected, unit=name,
                               purpose='smoke' if st.namespace == budgets.SMOKE else 'confirm', run_root=str(st.setting.root), attempt=n)
             registry.dispatch(st.namespace, st.bench, selected, unit=name, attempt=n)
+            registered = True
         jobs, cells, reused = [], {}, {}
         for key in evaluated:
             if key in identical:
@@ -2105,14 +2410,26 @@ def _confirm_eval(st, cut, r, incumbent, candidate, *, exercise=False):
                 reused[key] = cached[key]["cell"]["id"]
             else:
                 jobs.append(("S", Arm("parent", incumbent), key, 0, task))
-        found = _cells(st, attempt, st.solver("confirm", attempt), name, jobs, tag="confirm") if jobs else []
+        if protocol.is_v226(configuration_of(st.setting)):
+            found = _system_cells(st, attempt, st.solver("confirm", attempt), name, jobs, tag="confirm") if jobs else []
+        else:
+            found = _cells(st, attempt, st.solver("confirm", attempt), name, jobs, tag="confirm") if jobs else []
         for cell in found:
             cells[(cell["cell"]["arm"], cell["cell"]["task_id"])] = [cell]
-        rounds.guard(cells, ["S", "S'"], name)
-        result = practice_confirm.verdict(cells, evaluated, identical=identical, items=len(items))
+        if protocol.is_v221(configuration_of(st.setting)):
+            from . import v221_learning
+        else:
+            rounds.guard(cells, ["S", "S'"], name)
+        result = (v221_learning.confirmation_verdict(cells, evaluated, signatures, bench=st.bench, items=len(items),
+                                                    configuration=configuration_of(st.setting))
+                  if protocol.is_v221(configuration_of(st.setting)) else
+                  practice_confirm.verdict(cells, evaluated, identical=identical, items=len(items)))
         result.update(reused_cells=len(reused) + 2 * len(identical), tokens=practice_confirm.tokens(found),
                       exercise=exercise)
-        return {"confirm": result, "round": r, "incumbent_sha256": incumbent.sha256,
+        out = {**({'procedure_confirmation': v221_learning.confirmation_counts(
+                    st, cells, publics, views, signatures, incumbent, candidate)}
+                   if protocol.is_v221(configuration_of(st.setting)) else {}),
+                "confirm": result, "round": r, "incumbent_sha256": incumbent.sha256,
                 "candidate_sha256": candidate.sha256, "slice_ids": ids,
                 "freshness": (protocol.CONFIRM_FRESHNESS[configuration_of(st.setting)] if child
                               else practice_confirm.FRESHNESS[protocol.machinery_configuration(configuration_of(st.setting), st.bench)]),
@@ -2124,15 +2441,27 @@ def _confirm_eval(st, cut, r, incumbent, candidate, *, exercise=False):
                 "reused": reused, "cells": len(found),
                 "incumbent_cells": {key: rows[0] for (arm, key), rows in cells.items() if arm == "S"},
                 "candidate_cells": {key: rows[0] for (arm, key), rows in cells.items() if arm == "S'"}}
+        if protocol.is_v222(configuration_of(st.setting)):
+            from . import v222_runtime
+            out = v222_runtime.confirmation(st, attempt, unit=unit, parent=incumbent,
+                                            candidate=candidate, result=out)
+        return out
 
     def settle(attempt, result):
+        if (protocol.is_v226(configuration_of(st.setting))
+                and result.get('candidate_error') and not result.get('registered')):
+            return
         st.services.registry.decide(st.namespace, st.bench, selected, unit=name,
                                     attempt=units.attempt_number(attempt))
 
+    if protocol.is_v226(configuration_of(st.setting)):
+        work = _candidate_guard(st, 'procedure-r%d' % r, incumbent, work,
+            lambda event: {**_candidate_confirmation_error(st, r, incumbent, candidate, event),
+                           'slice_ids': ids, 'registered': registered})
     return st.unit(unit, work, **({'settle': settle} if child else {}))
 
 
-def _confirmed_training(evaluated, confirmation):
+def _confirmed_training(evaluated, confirmation, *, configuration=None):
     """Combine decisions while adding only safe counts to history/feedback."""
     result = dict(evaluated)
     counts = practice_confirm.counts_only(confirmation["confirm"])
@@ -2141,6 +2470,8 @@ def _confirmed_training(evaluated, confirmation):
     reason = evaluated["verdict"]["reason"] if adopted else "confirm:" + counts["reason"]
     result.update(adopted=adopted, verdict={**evaluated["verdict"], "adopted": adopted, "reason": reason},
                   feedback={**evaluated["feedback"], "adopted": adopted, "reason": reason, "confirm": counts})
+    if protocol.is_v226(configuration) and 'candidate_error' in confirmation:
+        result['candidate_error'] = confirmation['candidate_error']
     return result
 
 
@@ -2152,8 +2483,13 @@ def _line(r, engineered, evaluated, *, configuration=None):
     (``engineer._combined_train``), ``pruned_no_firing`` (v2.2, ``prune_idle``), or the round's verdict."""
     line = {"round": r, "candidate": engineered["candidate_sha256"] is not None, "adopted": False, "items": 0,
             "generated": 0, "fixed": 0, "broken": 0, "net": "0/1", "p_sign": None, "reason": "no_candidate"}
+    if protocol.is_v226(configuration) and engineered.get('candidate_error'):
+        line.update(candidate=True, reason='candidate_error')
     if protocol.is_v291(configuration):
         line.update(own_fault_cells=0, format_cells={"S": 0, "S'": 0})
+    if protocol.is_v221(configuration) and evaluated is None:
+        # No surviving proposal has no measured coverage; do not invent a zero.
+        line['coverage'] = None
     if evaluated is not None:
         verdict = evaluated["verdict"]
         line.update({"adopted": verdict["adopted"], "items": verdict["items"], "generated": verdict["generated"],
@@ -2163,6 +2499,9 @@ def _line(r, engineered, evaluated, *, configuration=None):
             line.update(own_fault_cells=verdict["own_fault_cells"], format_cells=dict(verdict["format_cells"]))
         if "confirm" in evaluated:
             line["confirm"] = practice_confirm.counts_only(evaluated["confirm"])
+        if protocol.is_v221(configuration):
+            line.update({key: evaluated[key] for key in ('coverage', 'early_acceptance') if key in evaluated})
+            line['rule'] = verdict['rule']
         if protocol.is_v218(configuration) and "split" in evaluated:
             from . import v218_split
             require(v218_split.counts_ok(evaluated["split"]), "Split history contains counts only")
@@ -2193,7 +2532,9 @@ def _line(r, engineered, evaluated, *, configuration=None):
             fate = "pruned_no_firing"
         elif protocol.is_v218(configuration) and evaluated is not None and "split" in evaluated:
             split = next((row for row in evaluated["split"] if row["procedure"] == change["id"]), None)
-            fate = ("adopted_by_split" if evaluated.get("split_winner") == change["id"] else
+            fate = ("adopted_by_split" if ((not protocol.is_v221(configuration) or line['adopted']) and
+                     (evaluated.get("split_winner") == change["id"] or
+                      change["id"] in evaluated.get("split_adopted", ()))) else
                     "not_adopted:split:" + ((split["reason"] or "not_selected") if split else "not_selected"))
         else:
             fate = "adopted" if line["adopted"] else "not_adopted:" + line["reason"]
@@ -2211,6 +2552,11 @@ def _train(st, cut, generated):
     """v2's training rounds (module docstring) -> ``(T_final, the rounds' records, the last evaluated candidate or
     None)``. Completed round units are read back, so a restarted step passes through finished rounds without a call."""
     incumbent, done, fed, history, training, lint, reserved = st.parent, [], None, [], None, [], frozenset()
+    if protocol.is_v225(configuration_of(st.setting)):
+        from . import v225_phase
+        incumbent, card_record = v225_phase.card_phase(st, cut)
+        if card_record['procedure_phase'] == 'skipped_pool_exhausted':
+            return incumbent, [], None
     out, last, misses, analysed, disclosed = [], None, 0, frozenset(), frozenset()
     for r in range(1, protocol.train_rounds(configuration_of(st.setting)) + 1):
         engineered = _engineer_train(st, cut, r, incumbent, done=done, fed=fed, history=history, training=training,
@@ -2232,15 +2578,38 @@ def _train(st, cut, generated):
             if protocol.is_v29(configuration_of(st.setting)) and evaluated["adopted"]:
                 confirmation = _confirm_eval(st, cut, r, incumbent, candidate,
                     **({"exercise": True} if protocol.uses_v211(configuration_of(st.setting), getattr(st, "bench", None)) and st.smoke is not None else {}))
-                if protocol.is_v218(configuration_of(st.setting)):
+                if protocol.is_v222(configuration_of(st.setting)) and 'cross_gate' in confirmation:
+                    from . import v222_runtime
+                    candidate = v222_runtime.confirmed_candidate(st, candidate, confirmation)
+                    evaluated = v222_runtime.bind_training(evaluated, candidate, confirmation)
+                if protocol.is_v226(configuration_of(st.setting)) and confirmation.get('candidate_error'):
+                    evaluated = _candidate_training_error(st, r, incumbent, candidate, confirmation['candidate_error'])
+                elif protocol.is_v221(configuration_of(st.setting)):
+                    from . import v221_split
+                    candidate, evaluated = v221_split.run(st, cut, r, incumbent, candidate, engineered,
+                        evaluated, confirmation, generated, current=_current(st, done))
+                elif protocol.is_v218(configuration_of(st.setting)):
                     from . import v218_split
                     candidate, evaluated = v218_split.run(st, cut, r, incumbent, candidate, engineered,
                         evaluated, confirmation, generated, current=_current(st, done))
                 else:
                     evaluated = _confirmed_training(evaluated, confirmation)
+            if protocol.is_v221(configuration_of(st.setting)) and evaluated['adopted']:
+                from . import v221_learning
+                immediate = v221_learning.immediate_acceptance(st, cut, r, incumbent, candidate, generated)
+                if protocol.is_v222(configuration_of(st.setting)) and immediate.get('accepted_candidate_sha256'):
+                    candidate = _package(st, immediate['accepted_candidate_sha256'])
+                    evaluated = {**evaluated, 'candidate_sha256': candidate.sha256,
+                                 'acceptance_cross_gate': immediate.get('cross_gate')}
+                selected, evaluated = v221_learning.apply_acceptance(incumbent, candidate, evaluated, immediate)
+                if protocol.is_v226(configuration_of(st.setting)) and immediate.get('candidate_error'):
+                    evaluated['candidate_error'] = immediate['candidate_error']
+                if evaluated['adopted']:
+                    incumbent = selected
             training_unit = evaluated.get("training_unit", "train-r%d" % r) if protocol.is_v218(configuration_of(st.setting)) else "train-r%d" % r
             done.append((training_unit, evaluated["adopted"]))
-            fed, training = training_unit, evaluated["feedback"]
+            fed, training = training_unit, (None if protocol.is_v226(configuration_of(st.setting))
+                                            and evaluated.get('candidate_error') else evaluated["feedback"])
             if evaluated["cells"]:
                 last = candidate
             if evaluated["adopted"]:
@@ -2253,9 +2622,19 @@ def _train(st, cut, generated):
         history.append(line)
         out.append({**line, "candidate_sha256": engineered["candidate_sha256"] if evaluated is None
                     else evaluated["candidate_sha256"],  # v2.2 (Codex review MINOR 2): the package the cells ran
+                    # Controller provenance stays in receipts, outside the exact engineer history schema.
+                    **({'hygiene': engineered['hygiene']}
+                       if protocol.is_v222(configuration_of(st.setting)) and 'hygiene' in engineered else {}),
                     **({key: evaluated[key] for key in ("proposed_sha256", "pruned")}
                        if evaluated is not None and "proposed_sha256" in evaluated else {}),
-                    "incumbent_sha256": incumbent.sha256})
+                    "incumbent_sha256": incumbent.sha256,
+                    **({'candidate_error': (evaluated or engineered)['candidate_error']}
+                       if protocol.is_v226(configuration_of(st.setting))
+                       and (evaluated or engineered).get('candidate_error') else {}),
+                    **({'confirmation_unit': evaluated.get('confirmation_unit', 'confirm-r%d' % r),
+                        **{key: evaluated[key] for key in ('split_adopted', 'split_merge', 'training_unit')
+                           if key in evaluated}}
+                       if protocol.is_v221(configuration_of(st.setting)) and evaluated is not None else {})})
         if protocol.is_v24(configuration_of(st.setting)):
             misses = 0 if line["adopted"] else misses + int(line["patience_counted"])
         else:
@@ -2283,6 +2662,8 @@ def _audit_final(st, candidate, rounds_done):
             if protocol.is_v218(configuration_of(st.setting)):
                 sources += [(kind, "%s-r%d-split-p%d" % (kind, r, n))
                             for n in range(1, protocol.MAX_CHANGES + 1) for kind in ("train", "confirm")]
+            if protocol.is_v221(configuration_of(st.setting)):
+                sources += [(kind, '%s-r%d-split-merge' % (kind, r)) for kind in ('train', 'confirm')]
             for source, name in sources:
                 if st.done(name):
                     for trajectory in _unit_trajectories(st, name):
@@ -2314,6 +2695,9 @@ def _audit_final(st, candidate, rounds_done):
                                       "reused_from_unit": earlier["_source_unit"]}
         changed = _changed_ids(st.parent, candidate)
         procedures = [p for p in candidate.procedures if p.id in changed]
+        if protocol.is_v225(configuration_of(st.setting)):
+            from .v225_cards import is_card
+            procedures = [proc for proc in procedures if not is_card(proc)]
         if not procedures:
             return {"audit_final": {"phase": 2, "decision": "not_applicable",
                     "reason": "no_added_or_revised_procedures", "audit_incomplete": False,
@@ -2325,7 +2709,15 @@ def _audit_final(st, candidate, rounds_done):
             configuration=configuration_of(st.setting), step=st.name, change_id="final", counts=counts,
             final=True, exclude=excluded, cache=cache, context_procedures=candidate.procedures,
             final_package_sha256=candidate.sha256)
-        removed = audit.removed_procedures(result, list(candidate.order))
+        confirmation_counts = None
+        if protocol.is_v221(configuration_of(st.setting)):
+            from . import v221_learning
+            confirmation_counts = v221_learning.audit_confirmation(st, rounds_done, candidate=candidate)
+            result = audit.v221_prior_truth(result, prior, candidate)
+            result['procedure_decisions'] = audit.v221_decisions(result, list(candidate.order), confirmation_counts)
+        removed = audit.removed_procedures(result, list(candidate.order),
+            **({'configuration': configuration_of(st.setting), 'confirmation': confirmation_counts}
+               if protocol.is_v221(configuration_of(st.setting)) else {}))
         final = withhold(candidate, removed) if removed else candidate
         validate(final, st.parent)
         if not edits(st.parent, final):
@@ -2359,6 +2751,66 @@ def _audit_summary(st, rounds_done, final=None):
     return summary
 
 
+def _v221_final_acceptance(st, candidate, rounds_done, final_audit):
+    """Keep only a package with its own fresh decision after final audit removals.
+
+    Roll back without another acceptance read. An earlier accepted package is
+    eligible only if it does not reintroduce an audit-removed procedure.
+    """
+    removed = set(final_audit.get('removed', ()))
+    binding = {'action': 'rollback_to_step_parent',
+               'audited_candidate_sha256': final_audit.get('candidate_sha256', candidate.sha256),
+               'audit_result_sha256': candidate.sha256, 'removed': sorted(removed),
+               'selected_package_sha256': st.parent.sha256, 'selected_round': None,
+               'decision_sha256': None, 'decision_candidate_sha256': None}
+    for line in reversed(rounds_done):
+        if not line.get('adopted'):
+            continue
+        package = _package(st, line['candidate_sha256'])
+        if (removed & set(package.order) or
+                (not removed and package.sha256 != candidate.sha256)):
+            continue
+        latest = st.done('accept-r%d' % line['round'])
+        if latest is None or latest['decision'] != 'accept':
+            continue
+        selection = (_read_record(st, st.root / ('accept-selection-r%d.json' % line['round']),
+                                  'immediate-acceptance-selection')
+                     if protocol.is_v226(configuration_of(st.setting)) else
+                     protocol.verified(read_json(st.root / ('accept-selection-r%d.json' % line['round'])),
+                              'immediate-acceptance-selection'))
+        contrast = replace(package, parent_sha256=selection['incumbent_sha256'])
+        selected_sha, contrast_sha = selection['candidate_sha256'], selection['contrast_candidate_sha256']
+        if protocol.is_v222(configuration_of(st.setting)):
+            accepted_binding = (_read_record(st, st.root / (
+                'v222-accepted-selection-r%d.json' % line['round']), 'v222-acceptance-binding')
+                if protocol.is_v226(configuration_of(st.setting)) else protocol.verified(read_json(st.root / (
+                'v222-accepted-selection-r%d.json' % line['round'])), 'v222-acceptance-binding'))
+            require(accepted_binding['selection_sha256'] == selection[RECORD_HASH]
+                    and accepted_binding['proposed_candidate_sha256'] == selection['candidate_sha256']
+                    and accepted_binding['incumbent_sha256'] == selection['incumbent_sha256'],
+                    'A narrowed acceptance binds the unchanged original fresh selection')
+            selected_sha = accepted_binding['accepted_candidate_sha256']
+            contrast_sha = accepted_binding['accepted_contrast_candidate_sha256']
+        require(selected_sha == package.sha256
+                and contrast_sha == contrast.sha256
+                and latest['candidate_sha256'] == contrast.sha256
+                and latest['incumbent_sha256'] == selection['incumbent_sha256'],
+                'A final accepted package requires its own immediate acceptance decision')
+        binding.update(action='rollback_to_accepted_package' if removed else 'unchanged',
+                       selected_package_sha256=package.sha256, selected_round=line['round'],
+                       decision_sha256=latest['decision_sha256'], decision_candidate_sha256=contrast.sha256)
+        return package, latest, binding
+    if protocol.is_v225(configuration_of(st.setting)) and getattr(st, 'card_phase_record', {}).get('final_card'):
+        card_parent = st.card_incumbent
+        if not removed & set(card_parent.order):
+            latest = st.done(st.card_phase_record['acceptance_unit'])
+            binding.update(action='rollback_to_accepted_card', selected_package_sha256=card_parent.sha256,
+                selected_round=0, decision_sha256=latest['decision_sha256'],
+                decision_candidate_sha256=latest['candidate_sha256'])
+            return card_parent, latest, binding
+    return st.parent, None, binding
+
+
 def _trained(st, cut, generated):
     """v2 (module docstring): the training rounds, then one self-test of the final package -> ``(S' or None, the
     not-run outcome or None, the training record)``. No edit against S: ``no_training_gain`` (SX only: the last
@@ -2378,10 +2830,29 @@ def _trained(st, cut, generated):
         candidate, final_audit = _audit_final(st, candidate, rounds_done)
         training.update(audit_final=final_audit, audit_summary=_audit_summary(st, rounds_done, final_audit),
                         final_sha256=candidate.sha256)
-        if final_audit["decision"] == "audit_emptied":
+        if protocol.is_v221(configuration_of(st.setting)):
+            candidate, latest, binding = _v221_final_acceptance(st, candidate, rounds_done, final_audit)
+            training.update(acceptance_binding=binding, final_sha256=candidate.sha256)
+            if latest is None:
+                return candidate, _release('audit_rollback_to_step_parent' if final_audit.get('removed')
+                                           else 'no_fresh_acceptance'), training
+        elif final_audit["decision"] == "audit_emptied":
             return candidate, _release("audit_emptied"), training
-    if _selftest(st, "selftest", candidate, generated)["blocked"]:
+    candidate_key = None
+    if protocol.is_v226(configuration_of(st.setting)):
+        selected_round = binding.get('selected_round')
+        candidate_key = ('procedure-r%d' % selected_round if selected_round else
+                         'card-c' + st.card_phase_record['acceptance_unit'].rsplit('c', 1)[1])
+    if _selftest(st, "selftest", candidate, generated,
+                 **({'candidate_key': candidate_key, 'contain': False} if candidate_key is not None else {}))["blocked"]:
         return candidate, _release("selftest_blocked"), training
+    if protocol.is_v221(configuration_of(st.setting)):
+        accepted = [line for line in rounds_done if line.get('adopted')]
+        outcome = {**latest, 'reason': ('audit_rollback_to_accepted_package' if final_audit.get('removed')
+                                       else 'immediate_acceptance_last_incumbent'),
+                   'accepted_rounds': [line['round'] for line in accepted
+                                       if line['round'] <= binding['selected_round']]}
+        return candidate, outcome, training
     return candidate, None, training
 
 
@@ -2437,13 +2908,33 @@ def _round_tasks(records, probe, acc):
             **{g["id"]: _task(g) for g in acc or []}}
 
 
-def _accept(st, cut, candidate, generated):
-    name = st.label("accept")
-    root = units.unit_path(st.chain_root, st.k, st.bench, "accept")
+def _accept(st, cut, candidate, generated, *, unit="accept", incumbent=None, select=None):
+    parent = st.parent if incumbent is None else incumbent
+    if protocol.is_v225(configuration_of(st.setting)) and unit.startswith('card-accept-c'):
+        from . import v225_phase
+        return v225_phase.acceptance(st, cut, candidate, unit=unit, incumbent=parent)
+    name = st.label(unit)
+    root = units.unit_path(st.chain_root, st.k, st.bench, unit)
     accept, probe = cut["accept"], cut.get("accept_probe", [])
     records = {item["task_id"]: item for item in accept + probe}
 
-    def work(attempt):
+    def work(attempt, candidate=candidate):
+        nonlocal cut, accept, probe, records
+        cross_gate = None
+        if protocol.is_v222(configuration_of(st.setting)):
+            from . import v222_runtime
+            candidate, cross_gate = v222_runtime.cross_gate(st, attempt, unit=unit, phase='acceptance',
+                                                           parent=parent, candidate=candidate)
+            if candidate is None:
+                return {**_release('cross_bench_harm'), 'cross_gate': cross_gate,
+                        'candidate_sha256': cross_gate['proposed_sha256'], 'incumbent_sha256': parent.sha256}
+        if protocol.is_v226(configuration_of(st.setting)) and select is not None:
+            selected, selection = select()
+            cut = {**cut, 'accept': selected, 'accept_probe': []}
+            accept, probe = selected, []
+            records = {item['task_id']: item for item in selected}
+            if not selected:
+                return {**_release('acceptance_pool_exhausted'), 'selection': selection, 'accepted': False}
         n = units.attempt_number(attempt)
         # all refused before anything is held: the blocks no earlier attempt started go to the kind's own scope; a
         # redo's one started block to its own sub-scope ...:accept:attempt-N and the redo reserve (§9.3, ticket C7c-2);
@@ -2452,11 +2943,12 @@ def _accept(st, cut, candidate, generated):
         endpoint = st.solver("accept", attempt) if n > 1 else first
         examining = st.solver("examiner", attempt, g_acc=True)
         registry = st.services.registry
-        registry.register(st.namespace, st.bench, accept, unit=name, purpose=st.purpose("accept"),
-                          run_root=str(st.setting.root), attempt=n)
-        if probe:
-            registry.register(st.namespace, st.bench, probe, unit=name, purpose="accept_probe",
+        if not protocol.is_v226(configuration_of(st.setting)):
+            registry.register(st.namespace, st.bench, accept, unit=name, purpose=st.purpose("accept"),
                               run_root=str(st.setting.root), attempt=n)
+            if probe:
+                registry.register(st.namespace, st.bench, probe, unit=name, purpose="accept_probe",
+                                  run_root=str(st.setting.root), attempt=n)
         no_placebo = not protocol.PLACEBO_ARMS[configuration_of(st.setting)]
         donors_ = [] if no_placebo else _run_trajectories(st, parent_only=True)
         acc = _g_acc(st, generated, attempt)
@@ -2467,7 +2959,9 @@ def _accept(st, cut, candidate, generated):
             publics.update({g["id"]: g["public"] for g in acc or []})
         workers = _item_workers(st, publics)
         if (root / "sealed.json").exists():
-            sealed = verified(read_json(root / "sealed.json"), "acceptance-sealed")
+            sealed = (_read_record(st, root / "sealed.json", "acceptance-sealed")
+                      if protocol.is_v226(configuration_of(st.setting))
+                      else verified(read_json(root / "sealed.json"), "acceptance-sealed"))
             if not no_placebo:
                 donors.verify(sealed["corpus"], donors_)
         else:
@@ -2485,10 +2979,10 @@ def _accept(st, cut, candidate, generated):
                          "views": {name: {key: solver.routing_view(st.bench, public, runtime=st.runtime())
                                           for key, public in entries.items()} for name, entries in extra.items()}}
             sealed = acceptance.prepare(  # the sealed "chain" is the namespace dispatch and settle register in
-                root, chain=st.namespace, bench=st.bench, step=st.name, unit=name, candidate=candidate, parent=st.parent,
+                root, chain=st.namespace, bench=st.bench, step=st.name, unit=name, candidate=candidate, parent=parent,
                 views=views, blocks=_blocks(st, accept), workers=workers, trajectories=donors_,
                 rooms={i["task_id"]: i["room"] for i in accept} if st.bench == "alfworld" else None,
-                generate=generate, dup=admitted and st.k > 1, probe=[item["task_id"] for item in probe],
+                generate=generate, dup=admitted and st.k > 1 and not protocol.is_v221(configuration_of(st.setting)), probe=[item["task_id"] for item in probe],
                 freshness=(protocol.accept_freshness(configuration_of(st.setting), st.bench)
                            if protocol.is_v214(configuration_of(st.setting))
                            else ACCEPT_FRESHNESS.get(configuration_of(st.setting), FRESHNESS)),
@@ -2496,10 +2990,12 @@ def _accept(st, cut, candidate, generated):
                 rule=protocol.acceptance_rule(configuration_of(st.setting), st.bench), reuse=reuse,
                 **({"configuration": configuration_of(st.setting)}
                    if protocol.is_v28(configuration_of(st.setting)) or protocol.is_v210(configuration_of(st.setting))
-                   else {}))
-        packages = acceptance.round_packages(candidate, st.parent, step=sealed["step"], twins=sealed["plan"]["twins"],
+                   else {}),
+                **({'initial': st.card()} if protocol.is_v222(configuration_of(st.setting)) else {}))
+        packages = acceptance.round_packages(candidate, parent, step=sealed["step"], twins=sealed["plan"]["twins"],
                     **({"configuration": configuration_of(st.setting)}
-                       if no_placebo else {}))
+                       if no_placebo else {}),
+                    **({'initial': st.card()} if protocol.is_v222(configuration_of(st.setting)) else {}))
         tasks = _round_tasks(records, probe, acc)  # §6.4 J7: the probe items options-only
         earlier = acceptance.earlier_blocks(sealed, root, attempt) if n > 1 else None  # §9.3, owner decision #15
         context = units.cell_context(st.setting, attempt, first)
@@ -2511,12 +3007,28 @@ def _accept(st, cut, candidate, generated):
                                 examiner=g_acc)
         redo = None if n == 1 else acceptance.runner(replace(context, endpoint=endpoint), sealed, packages, tasks,
                                                      workers=st.setting.workers, store=store, examiner=g_acc)
-        cells = acceptance.dispatch(sealed, registry, run, items=records, attempt=n, earlier=earlier, redo=redo,
-                                    clock=st.services.clock, sleep=st.services.sleep)
-        decision = acceptance.decide(cells, sealed)
-        acceptance.write(attempt, decision)
-        if decision["decision"] == "undetermined":  # pauses in the work: the owner's recovery redoes the round (§13)
-            acceptance.settle(decision, sealed, registry, records, attempt=n)
+        if protocol.is_v226(configuration_of(st.setting)):
+            with _evaluation_arm(st, 'system'):
+                registry.register(st.namespace, st.bench, accept, unit=name, purpose=st.purpose("accept"),
+                                  run_root=str(st.setting.root), attempt=n)
+                if probe:
+                    registry.register(st.namespace, st.bench, probe, unit=name, purpose="accept_probe",
+                                      run_root=str(st.setting.root), attempt=n)
+                cells = acceptance.dispatch(sealed, registry, run, items=records, attempt=n, earlier=earlier, redo=redo,
+                                            clock=st.services.clock, sleep=st.services.sleep)
+                decision = acceptance.decide(cells, sealed, **({'cross_gate': cross_gate}
+                    if protocol.is_v222(configuration_of(st.setting)) else {}))
+                acceptance.write(attempt, decision)
+                if decision["decision"] == "undetermined":  # the owner's recovery redoes the round (§13)
+                    acceptance.settle(decision, sealed, registry, records, attempt=n)
+        else:
+            cells = acceptance.dispatch(sealed, registry, run, items=records, attempt=n, earlier=earlier, redo=redo,
+                                        clock=st.services.clock, sleep=st.services.sleep)
+            decision = acceptance.decide(cells, sealed, **({'cross_gate': cross_gate}
+                if protocol.is_v222(configuration_of(st.setting)) else {}))
+            acceptance.write(attempt, decision)
+            if decision["decision"] == "undetermined":  # the owner's recovery redoes the round (§13)
+                acceptance.settle(decision, sealed, registry, records, attempt=n)
         provenance = decision.get("provenance") or {}
         return {"decision": decision["decision"], "reason": decision["reason"],
                 "decision_sha256": decision[RECORD_HASH], "sealed_sha256": sealed[RECORD_HASH], "cells": len(cells),
@@ -2526,14 +3038,31 @@ def _accept(st, cut, candidate, generated):
                 "validity": SHEET_VALIDITY if st.bench == "spreadsheetbench" else None,
                 "provenance": {block: entry["attempt"] for block, entry in provenance.items()},
                 "reused": dict(earlier["reused"]) if earlier else {},
-                "redone": list(earlier["redone"]) if earlier else []}
+                "redone": list(earlier["redone"]) if earlier else [],
+                **({'cross_gate': cross_gate} if protocol.is_v222(configuration_of(st.setting)) else {}),
+                **({'rule': decision['gain_and_no_harm'], 'candidate_sha256': candidate.sha256,
+                    'incumbent_sha256': parent.sha256} if protocol.is_v221(configuration_of(st.setting)) else {})}
 
     def settle(attempt, result):  # Codex finding #8: the round's items are decided once the unit's completion evidence
         # is persisted, and again (nothing written) by the commit attempt of a recovery -- never before it
-        acceptance.settle(read_json(attempt / "decision" / "decision.json"), read_json(root / "sealed.json"),
-                          st.services.registry, records, attempt=units.attempt_number(attempt))
+        if (protocol.is_v222(configuration_of(st.setting)) and (result.get('cross_gate') or {}).get('passed') is False
+                or protocol.is_v226(configuration_of(st.setting)) and (result.get('candidate_error')
+                    or select is not None and result.get('reason') == 'acceptance_pool_exhausted')):
+            return  # No home acceptance item was registered or dispatched.
+        if protocol.is_v226(configuration_of(st.setting)):
+            acceptance.settle(_read_record(st, attempt / "decision" / "decision.json", "decision"),
+                              _read_record(st, root / "sealed.json", "acceptance-sealed"),
+                              st.services.registry, records, attempt=units.attempt_number(attempt))
+        else:
+            acceptance.settle(read_json(attempt / "decision" / "decision.json"), read_json(root / "sealed.json"),
+                              st.services.registry, records, attempt=units.attempt_number(attempt))
 
-    return st.unit("accept", work, settle=settle)
+    if protocol.is_v226(configuration_of(st.setting)):
+        key = 'procedure-r' + unit.split('-r', 1)[1] if unit.startswith('accept-r') else unit + ':' + candidate.sha256
+        work = _candidate_guard(st, key, parent, work, lambda event: {
+            **_release('candidate_error'), 'decision': 'reject', 'candidate_error': event,
+            'candidate_sha256': candidate.sha256, 'incumbent_sha256': parent.sha256})
+    return st.unit(unit, work, settle=settle)
 
 
 def _drilled_worker(st, bench):
@@ -2566,6 +3095,10 @@ def _freeze(st, cut, candidate, accepted):
         records = []
         with _inputs_dirs(st, stored, cut) as inputs:
             for procedure in [p for p in candidate.procedures if p.id in _changed_ids(st.parent, candidate)]:
+                if protocol.is_v225(configuration_of(st.setting)):
+                    from .v225_cards import is_card
+                    if is_card(procedure):
+                        continue
                 runs_here = st.bench not in candidate.excluded(procedure.id)
                 if protocol.is_v214(configuration_of(st.setting)):
                     from .package import procedure_input_benches
@@ -2597,6 +3130,12 @@ def run_step(setting, chain, bench, k, parent, *, services, chain_root=None, smo
     require(smoke is None or protocol.is_v211(configuration_of(setting)) or not protocol.is_v27(configuration_of(setting)),
             "The v2.7 benchmark profiles require their dedicated smoke stages")
     require(configuration_of(setting) != protocol.BASELINE_V210, "The baseline-v210 configuration has no learning steps")
+    if protocol.is_v220(configuration_of(setting)):
+        from . import v220_import
+        require(smoke is None, 'The fixed SearchQA imports have no learning smoke')
+        package, value = v220_import.run_step(setting, chain_root or Path(setting.root) / chain,
+                                             chain, k, bench, parent)
+        return StepRecord(package, value)
     if protocol.is_implant_v5(configuration_of(setting)):
         from . import v217_implant
         require(smoke is None, "The implant configuration has no learning smoke")
@@ -2609,12 +3148,12 @@ def run_step(setting, chain, bench, k, parent, *, services, chain_root=None, smo
         package, value = fixed_import.import_step(setting, chain_root or Path(setting.root) / chain,
                                                 chain, k, bench, parent)
         return StepRecord(package, value)
-    if configuration_of(setting) in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6) and bench == "alfworld":
+    if configuration_of(setting) in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9, protocol.MAIN_V10) and bench == "alfworld":
         from . import v210_import
         package, value = v210_import.import_step(setting, chain_root or Path(setting.root) / chain,
                                                  chain, k, bench, parent)
         return StepRecord(package, value)
-    if configuration_of(setting) in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6):
+    if configuration_of(setting) in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9, protocol.MAIN_V10):
         from .v210_import import check_learning_capacity
         check_learning_capacity(parent)
     if smoke is None:
@@ -2637,7 +3176,14 @@ def run_step(setting, chain, bench, k, parent, *, services, chain_root=None, smo
     st = _Step(setting, services, chain, bench, k, parent, safe_path(chain_root or Path(setting.root) / chain), smoke)
     final = st.root / STEP_FILE
     if final.exists():
-        value = verified(read_json(final), "step")
+        if protocol.is_v226(configuration_of(setting)):
+            from . import v226_candidates
+            try:
+                v226_candidates.snapshot(st.root)
+            except (ValueError, v226_candidates.ConfigurationError) as error:
+                raise Pause('configuration', 'candidate_error_journal_invalid', st.name) from error
+        value = (_read_record(st, final, "step") if protocol.is_v226(configuration_of(st.setting))
+                 else verified(read_json(final), "step"))
         require(value["parent_sha256"] == parent.sha256, "A finished step of another parent")
         return StepRecord(_package(st, value["package_sha256"]) if value["package_sha256"] != parent.sha256
                           else parent, value)
@@ -2659,6 +3205,10 @@ def run_step(setting, chain, bench, k, parent, *, services, chain_root=None, smo
     accepted = outcome["decision"] == "accept"
     frozen = _freeze(st, cut, candidate, accepted)
     package = _package(st, frozen["package_sha256"]) if accepted else parent
+    automatic_retries = None
+    if protocol.is_v221(configuration_of(setting)):
+        from . import v221_recovery
+        automatic_retries = v221_recovery.records(st.root)
     value = record("step-v2-3" if IDENTICAL_REQUEST_REUSE[configuration_of(setting)] else "step", st.evidence, {
         "chain": chain, "k": k, "bench": bench, "step": st.name, "parent_sha256": parent.sha256,
         "candidate_sha256": candidate.sha256 if candidate is not None else None,
@@ -2668,6 +3218,12 @@ def run_step(setting, chain, bench, k, parent, *, services, chain_root=None, smo
         "units": {name: _unit_hash(st, name) for name in st.units if (units.unit_path(
             st.chain_root, k, bench, name) / "unit.json").exists()},
         "evidence_kind": "selection", **({"learning": TRAIN, "training": training} if st.learning == TRAIN else {}),
+        **(_candidate_error_fields(st) if protocol.is_v226(configuration_of(setting)) else {}),
+        **({'card_phase': st.card_phase_record[RECORD_HASH],
+            'procedure_phase': st.card_phase_record['procedure_phase']}
+           if protocol.is_v225(configuration_of(setting)) and hasattr(st, 'card_phase_record') else {}),
+        **({'automatic_retries': automatic_retries}
+           if protocol.is_v221(configuration_of(setting)) else {}),
         **({"audit_final": (training or {}).get("audit_final"),
             "audit_summary": (training or {}).get("audit_summary")}
            if protocol.is_v29(configuration_of(setting)) else {})})
@@ -2677,7 +3233,8 @@ def run_step(setting, chain, bench, k, parent, *, services, chain_root=None, smo
 
 def _unit_hash(st, name):
     path = units.unit_path(st.chain_root, st.k, st.bench, name) / "unit.json"
-    return verified(read_json(path), "unit")[RECORD_HASH]
+    return (_read_record(st, path, "unit") if protocol.is_v226(configuration_of(st.setting))
+            else verified(read_json(path), "unit"))[RECORD_HASH]
 
 
 def learn(setting, chain_root, chain, k, bench, parent, *, services):
@@ -2727,7 +3284,7 @@ def run_unit_spec(manifest, *, spec):
     setting = manifests.setting_of(manifest, chain)
     budgets.own_ledger(setting, chain).declare({**budgets.chain_caps(chain, configuration),
                                                 **budgets.first_call_caps(chain)})
-    services = (None if protocol.is_implant_v5(configuration) or protocol.is_v213(configuration) or (configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6) and bench == "alfworld") else
+    services = (None if protocol.is_v220(configuration) or protocol.is_implant_v5(configuration) or protocol.is_v213(configuration) or (configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9, protocol.MAIN_V10) and bench == "alfworld") else
                 manifests.services_of(manifest, chain, setting=setting))
     chain_root = safe_path(setting.root) / chain
     try:

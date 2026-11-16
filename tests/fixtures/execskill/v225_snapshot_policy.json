@@ -1,0 +1,114 @@
+{
+  "version": "v225-snapshot-documentary-paths-v1",
+  "scope": "v225 test modules and v225 fixtures; literal and ordinary joined paths only",
+  "live_documentation_inputs_allowed": false,
+  "snapshot_kept_paths": [
+    [
+      "docs",
+      "handoff",
+      "v29-20261026",
+      "v210-instructions-coevo5-v1.json"
+    ]
+  ],
+  "documentary_exceptions": {
+    "tests/fixtures/execskill/v225_cl_metrics_reference.py": {
+      "category": "vendored_reference",
+      "reason": "Byte-pinned upstream reference; documentary CLI defaults are never used by imported pure metric functions.",
+      "proof_tests": [
+        "test_pinned_cl_import_and_actual_compute_never_access_documentation",
+        "test_reference_sha_and_secondary_copy_are_pinned"
+      ],
+      "live_input": false,
+      "sha256": "587883bf35392fd3d7739fce98407519515c2090fa4eef705d4b5f59bfb0a994",
+      "findings": [
+        "30c572c39afe0946516040939a5c67b01f0b115221da3a90d8ca5a3d352d6297",
+        "715be0bce3675b755eb74f29a2c66c875c1d55de570acbb5fa3870fda4ff95ac",
+        "8673e7c7c5eee532686d6a56d47cff9b3794c4e6616632260585fec2c5682a6f",
+        "d7803a8dda4a66a64239ea4db8e22f1827e011cf73e9f37383af029b58524d2f",
+        "f9e6da7e3244ad938ba9fbb763321335401b0a1efa9b0b5aa0f5f4918a3c0462",
+        "835a19c31d0bbe7075ad7ef0674b6fbbf952941771d4dc71552a96e1085f41d7",
+        "63d27217490df11ecf9622e2cccb0da5fe17d517102c1674ba6cbc1f5d7ecd3c",
+        "545db61580920d6489181f1ca5ee43a9f1aa6aa3649fc72c07b615af9b4d5aa8",
+        "b0bc430dfc3acb1913d0267c175424b23c8a368301878d36db6aafd600c61e9c"
+      ]
+    },
+    "tests/fixtures/execskill/v225_metrics/cl_metrics.py": {
+      "category": "vendored_reference",
+      "reason": "Byte-identical secondary reference copy; its upstream CLI is not executed by the test suite.",
+      "proof_tests": [
+        "test_reference_sha_and_secondary_copy_are_pinned",
+        "test_pinned_cl_import_and_actual_compute_never_access_documentation"
+      ],
+      "live_input": false,
+      "sha256": "587883bf35392fd3d7739fce98407519515c2090fa4eef705d4b5f59bfb0a994",
+      "findings": [
+        "e5a5aa8345d37733f5a387be5ba6b9ddf6d67d5df45486faaa83e319ff4735a1",
+        "ef485fdbfe62a3b584c5f5d203f1d965619d430001656a16fb0d2a8b4e2b3803",
+        "c7dc13ff82d6176c2b91a90d5d917e25bc0f6617ddad9cac40f0a1c5cb692259",
+        "48ef04556aff1a79c7439dc5af3d6452248679ec94b614dedb2915002af3c695",
+        "a937ec1df93a30f22acee102abd63cfdcb49a7ccd88dcf6ddad9b57323098bd9",
+        "af3ec5c4f3a64907789dda00bd43a186deb452676a1fc27ed982762ae81bf377",
+        "10d6d44d5c43d97589afe5e32ac15f16daeb33fb0dce81dc79e383cb35f6c45d",
+        "bd050f14a8f4f09f5b23fea49ac809f41e48de3f02f38e2cf55eeba61e0e5979",
+        "76c41528b1a1a0e2f398ed6a8efe26d5f4408aaec89ee7ae767f393fbb6d7875"
+      ]
+    },
+    "tests/fixtures/execskill/v225_ops/commit-v225.sh": {
+      "category": "operator_template",
+      "reason": "Pinned operator template inspected and syntax checked only; commit operations are never executed by tests.",
+      "proof_tests": [
+        "test_operator_fixture_is_pinned_independently_of_documentary_deliverables",
+        "test_operator_shell_templates_parse_without_executing"
+      ],
+      "live_input": false,
+      "sha256": "45da3e08cdf288ca9c79c70ca3b7e5dfbf3fee0b64ee01c6e94d27ef904156c3",
+      "findings": [
+        "6bc72c9d1bdce4010e44ef14920c05a9fabeeb6e034d30085d2fa4a74016f954"
+      ]
+    },
+    "tests/fixtures/execskill/v225_ops/manifest.json": {
+      "category": "optional_deliverable_mirror",
+      "reason": "Optional documentary source-deliverable location; fixture hashes and registered values are checked without that tree.",
+      "proof_tests": [
+        "test_ops_are_self_contained_snapshot_with_optional_documentation",
+        "test_operator_fixture_is_pinned_independently_of_documentary_deliverables",
+        "test_optional_documentary_source_mirror_matches_available_deliverables"
+      ],
+      "live_input": false,
+      "sha256": "b210767b7e1737ff825e58290a091670596bcdede420ad018eaf6782502b1a44",
+      "findings": [
+        "8cec0b3e660d4fd6e5c303de395dea29621be45e8a05f9a837b874b7d68c3a17"
+      ]
+    },
+    "tests/fixtures/execskill/v225_snapshot_examples.json": {
+      "category": "authored_negative_input",
+      "reason": "Authored negative scanner strings are parsed as data only, never executed or opened as paths.",
+      "proof_tests": [
+        "test_guard_rejects_hidden_provenance_literals_joined_paths_and_unregistered_prose"
+      ],
+      "live_input": false,
+      "sha256": "6590c023145f3d96812e257fd7ff61b72caef1614b244df3806609a461625fc9",
+      "findings": [
+        "15926b40bac2f1c02424ed8a26bede322fb21166598d2e56017c120e40262d7c",
+        "af7af6e371847fab83081f83174cd52ad6e9fd3f5b062d2733955ec17d5cfc64",
+        "834dc6fa0641e4a7b2688adf206be5952b0dca8f23d8fde82b83f19d3d9671f9"
+      ]
+    },
+    "tests/test_execskill_v225_ops.py": {
+      "category": "optional_deliverable_mirror",
+      "reason": "Only the optional documentary mirror and its authored absence/partial/mismatch fixtures use the declared external directory; pinned source-snapshot fixture assertions always run.",
+      "proof_tests": [
+        "test_operator_fixture_is_pinned_independently_of_documentary_deliverables",
+        "test_optional_documentary_source_mirror_matches_available_deliverables",
+        "test_ops_are_self_contained_snapshot_with_optional_documentation"
+      ],
+      "live_input": false,
+      "sha256": "5336876c68ff354247f8803a01eb8f0851e829efadac94a2d065c1442d2ebf9b",
+      "findings": [
+        "59c865abe11bc74f3e8950db085a5bd05777c3d1916ded2556685ce8b5edecdd",
+        "3725a6cda62b2c8a1abc9bb508ae76d7e1f99ed88ed275ee574ee4d82d344aa8",
+        "316c9e60c6998f45bd7f7e6cc78c3c7be60b020250af415ca6b0f001651a7e56"
+      ]
+    }
+  }
+}

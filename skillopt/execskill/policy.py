@@ -56,6 +56,9 @@ POLICY_VERSION_V28 = POLICY_VERSION_V23.replace("v2-3", "v2-8")
 POLICY_PATH_V28 = POLICY_PATH.with_name("policy-v2-8.json")
 POLICY_VERSION_V29 = POLICY_VERSION_V23.replace("v2-3", "v2-9")
 POLICY_PATH_V29 = POLICY_PATH.with_name("policy-v2-9.json")
+POLICY_VERSION_V222 = POLICY_VERSION_V23.replace("v2-3", "v2-22")
+POLICY_VERSION_V225 = POLICY_VERSION_V23.replace("v2-3", "v2-25")
+POLICY_PATH_V222 = POLICY_PATH.with_name("policy-v2-22.json")
 MAX_SOURCE_BYTES_V28 = 24_000
 MAX_SOURCE_BYTES_V29 = MAX_SOURCE_BYTES_V28
 POLICY_PATH_V23 = POLICY_PATH.with_name("policy-v2-3.json")
@@ -169,8 +172,18 @@ POLICY_V28 = {**POLICY_V25, "version": POLICY_VERSION_V28,
               "max_source_bytes": MAX_SOURCE_BYTES_V28}
 POLICY_V29 = {**POLICY_V28, "version": POLICY_VERSION_V29,
               "registration": "Route B v2.9 audited notes 2026-10-26"}
+FROZEN_INSTRUCTION_SOURCE_SHA256_V222 = ('03e77509f70a55c4b642d7f80302305400b9ca0c55112a344a8b07c36b007b89', '1e90468ee17d37c9e2c4e6b35d46552a8d3fc1e58d58424f1ec54f0b904f135b', '3004c0126f46c05806c0035860673e0935c61eeaf59839a943b7252fc5f51994', '433eaabab0c39f6ab1093c498f444a73f724d9d0aaaaa6fb5a37ba546127fc21', '444cf6a7f5c9674689d2a17ff44a8a66665d688d07bd39bd231a17d6a35e760a', '45114614b6fc0b989a5da4a7abcd580f9de85a15929b3be7713bc27d16fbace2', '4618a90d0d8e4b6fd97fdb1d379442b0312958f5c20b79d433b0fe4d0bd50e02', '888040192b5ed9b335f488e8a494fda610333e37b2b28d616862e37f03afa4de', '8b899ce3325a2b6a7d671c2b8364bb8ed5012fa239341b125447bce1c5f19d82', '9d013539c4a03b0b871b9126f6f88b61e47915dd9e05fc9a04effdc0cf8c1e53', 'a168f233474fb4aeba460690d5f7b4985e85e1905ba63b57a4a69596ffe0860f', 'a4fe6448bedea33cf07845a0a23b482c1da34fa74062aee133241007f09b3f36', 'd0114926962b0ff3aee2585f843c5e4d702de974fd562ec73d95a6be88829210', 'ddc62fe2160d4ee7305722076ab70a35d20084ca1b874c1b4af19be524b2d7b8')
+POLICY_V222 = {**POLICY_V29, "version": POLICY_VERSION_V222,
+                "registration": "Route B v2.22 structurally routed instruction segments 2026-11-03",
+                "scope": "all registered input structures; main-v8 procedure identity only",
+                "frozen_instruction_exception": "exact pinned seed source only: public ALFWorld numbered-command examples",
+                "frozen_instruction_source_sha256": list(FROZEN_INSTRUCTION_SOURCE_SHA256_V222)}
+POLICY_V225 = {'version': POLICY_VERSION_V225,
+               'registration': 'Route B v2.25 learned instruction cards 2026-11-04',
+               'scope': 'constants-only card template; never executed', 'max_source_bytes': 16_000}
 POLICIES = {POLICY_VERSION: POLICY, POLICY_VERSION_V23: POLICY_V23, POLICY_VERSION_V24: POLICY_V24,
-            POLICY_VERSION_V25: POLICY_V25, POLICY_VERSION_V28: POLICY_V28, POLICY_VERSION_V29: POLICY_V29}
+            POLICY_VERSION_V25: POLICY_V25, POLICY_VERSION_V28: POLICY_V28, POLICY_VERSION_V29: POLICY_V29, POLICY_VERSION_V222: POLICY_V222,
+            POLICY_VERSION_V225: POLICY_V225}
 
 BULLETIN = re.compile("|".join("(?:%s)" % p for p in BULLETIN_PATTERNS), re.I)
 RECEPTACLE = re.compile(RECEPTACLE_PATTERN, re.I)
@@ -218,7 +231,8 @@ def write_policy_json(path=None, *, version=POLICY_VERSION):
     same bytes: a changed policy is a new protocol version, never an overwrite."""
     paths = {POLICY_VERSION: POLICY_PATH, POLICY_VERSION_V23: POLICY_PATH_V23,
              POLICY_VERSION_V24: POLICY_PATH_V24, POLICY_VERSION_V25: POLICY_PATH_V25,
-             POLICY_VERSION_V28: POLICY_PATH_V28, POLICY_VERSION_V29: POLICY_PATH_V29}
+             POLICY_VERSION_V28: POLICY_PATH_V28, POLICY_VERSION_V29: POLICY_PATH_V29,
+             POLICY_VERSION_V222: POLICY_PATH_V222}
     path = Path(path) if path is not None else paths[version]
     data = _canonical(POLICIES[version])
     if path.exists():
@@ -499,6 +513,25 @@ def _node(node, parents, numpy_names):
     return []
 
 
+def _card_template(source):
+    """Check main-v9's inert literals without importing package or model code."""
+    names = ('V225_CARD', 'CARD_HOME', 'CARD_ROUTE', 'CARD_TEXT')
+    benches = ('searchqa', 'officeqa', 'zebralogic', 'spreadsheetbench', 'alfworld')
+    try:
+        nodes = ast.parse(source).body
+        if len(nodes) != len(names) or any(not isinstance(node, ast.Assign) or len(node.targets) != 1
+                or not isinstance(node.targets[0], ast.Name) or node.targets[0].id != name
+                for node, name in zip(nodes, names)):
+            return False
+        version, home, route, text = (ast.literal_eval(node.value) for node in nodes)
+        if version != 'learned-card-v2-25' or home not in benches or route not in benches or not isinstance(text, str):
+            return False
+        return source == ("V225_CARD = 'learned-card-v2-25'\nCARD_HOME = %r\nCARD_ROUTE = %r\nCARD_TEXT = %r\n"
+                          % (home, route, text))
+    except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
+        return False
+
+
 def check(source, *, bench=None, version=POLICY_VERSION):
     """The violations of one procedure module, sorted (empty: the module passes). ``bench`` restricts the static bans
     of §5.4 C4 to that bench's; ``None`` applies every bench's, as for a procedure whose scope is every bench."""
@@ -511,13 +544,15 @@ def check(source, *, bench=None, version=POLICY_VERSION):
     size = len(source.encode("utf-8"))
     if size > source_limit(version):
         return [Violation("size", "%d bytes" % size)]
+    if version == POLICY_VERSION_V225:
+        return [] if _card_template(source) else [Violation('card_template', 'Exact constants-only card template required')]
     try:
         tree = ast.parse(source)
     except (SyntaxError, ValueError, MemoryError, RecursionError) as error:
         return [Violation("syntax", type(error).__name__, getattr(error, "lineno", 0) or 0)]
     parents = {child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)}
     numpy_names = _numpy_names(tree)
-    out = (_module_level_v23 if version in (POLICY_VERSION_V23, POLICY_VERSION_V24, POLICY_VERSION_V25, POLICY_VERSION_V28, POLICY_VERSION_V29)
+    out = (_module_level_v23 if version in (POLICY_VERSION_V23, POLICY_VERSION_V24, POLICY_VERSION_V25, POLICY_VERSION_V28, POLICY_VERSION_V29, POLICY_VERSION_V222)
            else _module_level)(source, tree)
     for node in ast.walk(tree):
         out.extend(_node(node, parents, numpy_names))
@@ -526,4 +561,7 @@ def check(source, *, bench=None, version=POLICY_VERSION):
     banned = {None: ("bulletin_literal", "receptacle_literal"), "officeqa": ("bulletin_literal",),
               "alfworld": ("receptacle_literal",)}.get(bench, ())
     out = [v for v in out if v.rule not in ("bulletin_literal", "receptacle_literal") or v.rule in banned]
+    if version == POLICY_VERSION_V222 and any(v.rule == "receptacle_literal" for v in out):
+        if hashlib.sha256(source.encode()).hexdigest() in FROZEN_INSTRUCTION_SOURCE_SHA256_V222:
+            out = [v for v in out if v.rule != "receptacle_literal"]
     return sorted(set(out), key=lambda v: (v.line, v.rule, v.detail))

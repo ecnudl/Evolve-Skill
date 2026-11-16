@@ -1,0 +1,67 @@
+{
+  "bench": "spreadsheetbench",
+  "format": {
+    "chars": 627,
+    "line_indices": [
+      0,
+      1,
+      11
+    ],
+    "sha256": "5914c4dd72688212509bf781310a476a73d460dec6f38f31e1db5108d77fbef8",
+    "text": "- Write a single, self-contained Python program in exactly one ```python code block; use openpyxl (the standard tool for this benchmark) and nothing requiring network access.\n- The program must read `input.xlsx` (hardcode this path or read it from the supplied JSON's `input_path`) and save to `output.xlsx`; do not rename sheets or move data unless the instruction explicitly says so — only the cells named in `required_answer_position` are compared.\n- After writing the required cells, save the workbook with `wb.save(\"output.xlsx\")` and ensure the program exits cleanly; verify the save path matches `required_output_path`.\n"
+  },
+  "historical": {
+    "chars": 2907,
+    "sha256": "48a5df7f745606ba179816a9464b725ab33387741050117a856fc9527e0e8559",
+    "text": "- Write a single, self-contained Python program in exactly one ```python code block; use openpyxl (the standard tool for this benchmark) and nothing requiring network access.\n- The program must read `input.xlsx` (hardcode this path or read it from the supplied JSON's `input_path`) and save to `output.xlsx`; do not rename sheets or move data unless the instruction explicitly says so — only the cells named in `required_answer_position` are compared.\n- Inspect the `workbook_preview` carefully: note sheet names (including exact spelling, spaces, and capitalization), dimensions, and the first rows/columns. Formulas appear as formulas in the preview, so the stored cell values may differ from what is shown; if the preview shows formulas, expect the real workbook to contain them and handle them via openpyxl's formula-preserving mode (`load_workbook(path, data_only=False)` is the default).\n- Decide whether the answer position should contain literal values (computed in Python) or formulas. Safest: write literal values that equal the recalculated reference result, unless the instruction explicitly asks for formulas. If you do write formulas, they must recalculate to the correct values when the grader recalculates the workbook.\n- When reading values, remember `data_only=True` returns cached results (None if the file was never recalculated by Excel) and `data_only=False` returns formula strings. Load twice (once each way) if you need both formulas and cached values.\n- Match data types exactly where the comparison is value-based: numbers as numbers (not strings), dates as datetimes, and beware of text that looks like numbers. Preserve number formats only if the instruction concerns formatting; otherwise prefer writing plain values.\n- Locate the target cells robustly: the answer may span a range (e.g. `Sheet1!B2:D5`) or multiple sheets. Ensure every cell in the range is written, including empty strings/None where the reference is empty, if that's plausible from the instruction.\n- Handle merged cells, hidden sheets, and sheets beyond the 20-sheet preview limit — the actual workbook may be larger than the preview, so iterate dynamically rather than assuming preview bounds.\n- Avoid operations that depend on Excel itself (no xlwings/win32com); openpyxl cannot evaluate formulas, so compute any derived results in Python rather than relying on cached formula values unless verified present.\n- Keep runtime well under the 300-second limit: avoid O(n²) scans over huge ranges; operate only on the relevant sheets and columns.\n- Wrap risky operations defensively: if a sheet or column mentioned in the instruction might not exist, check and fall back sensibly rather than raising. A raised error means zero credit.\n- After writing the required cells, save the workbook with `wb.save(\"output.xlsx\")` and ensure the program exits cleanly; verify the save path matches `required_output_path`.\n"
+  },
+  "segments": [
+    {
+      "chars": 784,
+      "id": "spreadsheetbench-1",
+      "line_indices": [
+        2,
+        3
+      ],
+      "max_note_chars": 1500,
+      "predicate": {
+        "kind": "workbook_preview"
+      },
+      "sha256": "9c67cb9082d47c3239a8d385aecad335fb72247193685c52728a8fc3aa5f397a",
+      "text": "- Inspect the `workbook_preview` carefully: note sheet names (including exact spelling, spaces, and capitalization), dimensions, and the first rows/columns. Formulas appear as formulas in the preview, so the stored cell values may differ from what is shown; if the preview shows formulas, expect the real workbook to contain them and handle them via openpyxl's formula-preserving mode (`load_workbook(path, data_only=False)` is the default).\n- Decide whether the answer position should contain literal values (computed in Python) or formulas. Safest: write literal values that equal the recalculated reference result, unless the instruction explicitly asks for formulas. If you do write formulas, they must recalculate to the correct values when the grader recalculates the workbook.\n"
+    },
+    {
+      "chars": 762,
+      "id": "spreadsheetbench-2",
+      "line_indices": [
+        4,
+        5,
+        6
+      ],
+      "max_note_chars": 1500,
+      "predicate": {
+        "kind": "workbook_preview"
+      },
+      "sha256": "954988420907d481e3882ca4279566c0388f32bd6cea5e722d864916888fafc6",
+      "text": "- When reading values, remember `data_only=True` returns cached results (None if the file was never recalculated by Excel) and `data_only=False` returns formula strings. Load twice (once each way) if you need both formulas and cached values.\n- Match data types exactly where the comparison is value-based: numbers as numbers (not strings), dates as datetimes, and beware of text that looks like numbers. Preserve number formats only if the instruction concerns formatting; otherwise prefer writing plain values.\n- Locate the target cells robustly: the answer may span a range (e.g. `Sheet1!B2:D5`) or multiple sheets. Ensure every cell in the range is written, including empty strings/None where the reference is empty, if that's plausible from the instruction.\n"
+    },
+    {
+      "chars": 734,
+      "id": "spreadsheetbench-3",
+      "line_indices": [
+        7,
+        8,
+        9,
+        10
+      ],
+      "max_note_chars": 1500,
+      "predicate": {
+        "kind": "workbook_preview"
+      },
+      "sha256": "ffc70663880eb731485a46d6739ecd2b3dfbfa0e9713782157515dbc59b52e83",
+      "text": "- Handle merged cells, hidden sheets, and sheets beyond the 20-sheet preview limit — the actual workbook may be larger than the preview, so iterate dynamically rather than assuming preview bounds.\n- Avoid operations that depend on Excel itself (no xlwings/win32com); openpyxl cannot evaluate formulas, so compute any derived results in Python rather than relying on cached formula values unless verified present.\n- Keep runtime well under the 300-second limit: avoid O(n²) scans over huge ranges; operate only on the relevant sheets and columns.\n- Wrap risky operations defensively: if a sheet or column mentioned in the instruction might not exist, check and fall back sensibly rather than raising. A raised error means zero credit.\n"
+    }
+  ],
+  "source_fixture_sha256": "175b0715909eeecb3fec356838b84566ade20b28f6a9b12cf985ad7de720ae5f",
+  "version": "instruction-decomposition-v2-22"
+}

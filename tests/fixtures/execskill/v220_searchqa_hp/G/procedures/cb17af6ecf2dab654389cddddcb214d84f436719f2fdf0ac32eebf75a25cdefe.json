@@ -1,0 +1,29 @@
+{
+  "id": "p-searchqa-1-3",
+  "origin": "searchqa",
+  "accepted_at": null,
+  "description": "Extracts a capitalized multi-word name-like phrase from the question, skipping phrases that begin with common function words (determiners, prepositions, question words) that are not names, and counts whole-word (word-boundary) occurrences of each surface form across the snippets, reporting only verbatim standalone matches.",
+  "hooks": [
+    "applies",
+    "before_call"
+  ],
+  "source": "# sqa_name_surface_forms\nimport re\n\n_CAP = re.compile(r\"\\b([A-Z][a-z]+)\\s+([A-Z][a-z]+)(?:\\s+([A-Z][a-z]+))?\\b\")\n_STOP = frozenset([\n    \"The\", \"A\", \"An\", \"This\", \"That\", \"These\", \"Those\", \"His\", \"Her\",\n    \"Its\", \"Their\", \"Our\", \"My\", \"Your\", \"Which\", \"What\", \"Who\", \"Whom\",\n    \"Whose\", \"Where\", \"When\", \"Why\", \"How\", \"In\", \"On\", \"At\", \"To\", \"For\",\n    \"From\", \"Of\", \"With\", \"By\", \"As\", \"And\", \"But\", \"Or\", \"Not\", \"No\",\n    \"All\", \"Both\", \"Each\", \"Few\", \"More\", \"Most\", \"Some\", \"Such\", \"Only\",\n    \"First\", \"Last\", \"New\", \"Old\", \"North\", \"South\", \"East\", \"West\"\n])\n\n\ndef _count_whole(ctx, form):\n    pat = re.compile(r\"\\b\" + re.escape(form) + r\"\\b\")\n    return len(pat.findall(ctx))\n\n\ndef _find_name(q):\n    for m in _CAP.finditer(q):\n        words = [w for w in m.groups() if w]\n        if words and words[0] not in _STOP:\n            return words\n    return None\n\n\ndef applies(view):\n    q = view.get(\"question\", \"\")\n    return _find_name(q) is not None\n\n\ndef before_call(view, state):\n    q = view.get(\"question\", \"\")\n    ctx = view.get(\"context\", \"\")\n    words = _find_name(q)\n    if not words:\n        return None\n    full = \" \".join(words)\n    forms = set([full])\n    if len(words) >= 2:\n        forms.add(words[0])\n        forms.add(words[-1])\n        if len(words) == 3:\n            forms.add(words[0] + \" \" + words[1])\n    table = []\n    for f in sorted(forms):\n        c = _count_whole(ctx, f)\n        if c:\n            table.append([f[:40], str(c)])\n    if not table:\n        return None\n    facts = [(\"Question contains the capitalized phrase '%s'; whole-word (word-boundary) occurrence counts of its surface forms in the snippets:\" % full[:100])[:200]]\n    return {\"facts\": facts, \"table\": table[:8]}\n",
+  "header": "Counts whole-word occurrences of a question-named entity's surface forms across snippets.",
+  "max_note_chars": 1000,
+  "requests_second_call": false,
+  "state_bytes": 0,
+  "excluded_benches": [
+    "spreadsheetbench",
+    "alfworld"
+  ],
+  "replay_tests": [],
+  "lineage": {
+    "parent": null,
+    "revises": null,
+    "engineer_call": "d29846a8d516487d7f4d23fef34c7e0d4cfb2df03bae0eaec9a78f2aa0ed9108"
+  },
+  "policy_version": "fivebench-execskill-v2-9-policy",
+  "version": "fivebench-execskill-v1-procedure-v2-9",
+  "evidence": "main_v6_real_run",
+  "record_sha256": "cb17af6ecf2dab654389cddddcb214d84f436719f2fdf0ac32eebf75a25cdefe"
+}

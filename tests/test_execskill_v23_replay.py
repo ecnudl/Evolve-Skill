@@ -23,7 +23,7 @@ from tests.test_execskill_acceptance import N, make_cells, packages, seal
 @pytest.fixture
 def root():
     # pytest's own temporary folder contains the prohibited substring "test"; the reader correctly refuses it.
-    with tempfile.TemporaryDirectory(prefix="execskill-v23-replay-", dir=os.path.realpath("/tmp")) as folder:
+    with tempfile.TemporaryDirectory(prefix="execskill-v23-replay-", dir=os.path.realpath(os.environ.get('TMPDIR') or '/tmp')) as folder:
         yield Path(folder)
 
 

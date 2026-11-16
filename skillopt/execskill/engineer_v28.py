@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from skillopt.validator_pilot.api import digest
 
 from . import engineer_reader as reader, policy, profiles as p, replay
-from .package import MAX_STATE_BYTES
+from .package import MAX_STATE_BYTES, procedure_benches
 
 FIX_SYSTEM = "Correct the named change using the fatal check's evidence. Keep its kind and incumbent target."
 FORMAT_RETRY_SYSTEM = "Only fix the format. Preserve the program's intended behavior. Return the requested change using the supplied schema."
@@ -136,7 +136,8 @@ def prepare(change, ctx):
     if entry["requests_second_call"] and not any(h in ("bindings", "sheet_feedback") for h in hooks):
         entry["requests_second_call"] = False
         log.append({"rule": "derived", "path": "$.requests_second_call"})
-    benches = p.SUPPORTED_BENCHES if ctx.bench == "zebralogic" else p.BENCHES
+    benches = (procedure_benches(e._declared_procedure(ctx)) if p.is_v226(ctx.configuration)
+               else p.SUPPORTED_BENCHES if ctx.bench == "zebralogic" else p.BENCHES)
     excluded = [b for b in benches if b in entry["excluded_benches"]]
     if excluded != entry["excluded_benches"]:
         log.append({"rule": "registered_values", "path": "$.excluded_benches"})
@@ -299,6 +300,10 @@ def run(ctx):
         outcomes.append({**failure, "kind": None, "id": None, "target": None, "survived": False,
                          "attempts": [], "fix_calls": 0, "fix_replies": [], "summary": {"description": ""}})
     for change in changes:
+        if p.is_v221(ctx.configuration):
+            # Every repair of this change is checked in the complete package
+            # made by the preceding surviving changes, within the same call cap.
+            ctx.sheet['v221_survivors'] = tuple(survivors)
         attempts, final, replies = [e.check(change, ctx, taken)], change, []
         while not attempts[-1]["passed"] and not attempts[-1].get("unfixable") and len(replies) < (p.TRAIN_FIXES if train else 1):
             fixed, why = fix(ctx, final, attempts[-1], attempt=len(replies) + 1)
@@ -433,4 +438,7 @@ def run(ctx):
     if p.uses_v215(ctx.configuration, ctx.bench):
         from . import diagnostics_feedback
         fields.update(diagnostics_feedback.telemetry(ctx.sheet))
+    if p.is_v221(ctx.configuration):
+        from . import audit, engineer_v221
+        fields['prompt_sha256'] = audit.text_sha256(engineer_v221.dispatch(ctx, user))
     return package, p.record(p.ENGINEER_RECORDS[p.machinery_configuration(ctx.configuration, ctx.bench)], ctx.evidence, fields)

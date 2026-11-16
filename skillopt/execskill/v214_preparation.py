@@ -6,6 +6,7 @@ historical read result is consulted. All active maps remove LiveMath.
 """
 from copy import deepcopy
 import hashlib
+from pathlib import Path
 from types import SimpleNamespace
 
 from skillopt.continual_eval.core import read_json, require, safe_path
@@ -15,6 +16,21 @@ from . import (confirm, manifest, profiles as p, step, v211_allocation,
 
 RETAINED = ('searchqa', 'officeqa', 'spreadsheetbench', 'alfworld')
 LEARNED = RETAINED[:-1]
+
+
+def _check_frozen_inputs(configuration, value):
+    """Check nested path pins before any preparation reader follows them."""
+    if not p.is_v226(configuration):
+        return
+    if isinstance(value, dict):
+        for key, item in value.items():
+            _check_frozen_inputs(configuration, key)
+            _check_frozen_inputs(configuration, item)
+    elif isinstance(value, (list, tuple)):
+        for item in value:
+            _check_frozen_inputs(configuration, item)
+    elif isinstance(value, (str, Path)) and Path(value).is_absolute():
+        manifest._check_frozen_paths(configuration, value)
 
 
 def _sha(path):
@@ -66,17 +82,24 @@ def _allocations(source):
 
 
 def preparation(main_v4_s0_file, *, zebra_pool=z.POOL_PATH,
-                zebra_split_manifest=z.SPLIT_MANIFEST_PATH, configuration=p.MAIN_V5):
+                zebra_split_manifest=z.SPLIT_MANIFEST_PATH, configuration=p.MAIN_V5,
+                v222_practice_supply=None, v222_alf_views=None):
     """Return a mixed preparation; only the source S0 and practice files are read.
 
     Source identities and active mappings are copied by value. The original
     main-v4 S0 is never rewritten, and its LiveMath inputs are never opened.
     ``zebra_split_manifest`` is the public hash inventory, not the sealed panel.
     """
+    if p.is_v226(configuration):
+        manifest._check_frozen_paths(configuration, main_v4_s0_file, zebra_pool,
+                                     zebra_split_manifest, v222_practice_supply)
+        _check_frozen_inputs(configuration, v222_alf_views)
     path = safe_path(main_v4_s0_file)
     raw = path.read_bytes()
     import json
     source = p.verified(json.loads(raw), 'v211-s0')
+    if p.is_v226(configuration):
+        _check_frozen_inputs(configuration, source)
     require(source.get('configuration') == p.MAIN_V4 and source.get('passed') is True
             and source.get('sealed_reads') == 0 and source.get('pytest', {}).get('passed') is True,
             'main-v5 requires a passing frozen main-v4 S0 with no sealed reads')
@@ -106,7 +129,7 @@ def preparation(main_v4_s0_file, *, zebra_pool=z.POOL_PATH,
         data['research'].pop('livemath', None)
     data.update(zebra_pc=z.identity(), split_manifest=split, confirm=confirmed,
                 zebra_slice_ids={key: [item['task_id'] for item in rows] for key, rows in cuts.items()})
-    return {
+    value = {
         'registration': {'configuration': configuration,
             'source_main_v4_s0': {'path': str(path), 'sha256': hashlib.sha256(raw).hexdigest(),
                                  'record_sha256': source[p.RECORD_HASH]},
@@ -128,17 +151,31 @@ def preparation(main_v4_s0_file, *, zebra_pool=z.POOL_PATH,
         'zebra_slices': {key: {'items': len(rows), 'ids_sha256': digest([item['task_id'] for item in rows])}
                          for key, rows in cuts.items()},
     }
+    if p.is_v222(configuration):
+        from . import v222_smoke
+        value['data']['v222_practice'] = v222_smoke.prepare_practice(
+            value, supply_file=v222_practice_supply, alf_views=v222_alf_views)
+        value['data']['v222_practice_supply'] = deepcopy(value['data']['v222_practice']['v222_practice_supply'])
+    else:
+        require(v222_practice_supply is None, 'Additional v2.22 practice is main-v8 only')
+        require(v222_alf_views is None, 'The v2.22 routing overlay is main-v8 only')
+    return value
 
 
 def verify(value):
     """Reopen only the declared S0/practice inputs and compare the complete bridge."""
     registration = value['registration']
+    if p.is_v226(registration['configuration']):
+        _check_frozen_inputs(registration['configuration'], value)
     source = registration['source_main_v4_s0']
     require(_sha(source['path']) == source['sha256'], 'Frozen main-v4 S0 bytes changed')
     found = preparation(source['path'], zebra_pool=registration['zebra_pool']['path'],
                         zebra_split_manifest=registration['zebra_split_manifest']['path'],
                         **({'configuration': registration['configuration']}
-                           if p.is_implant_v5(registration['configuration']) or p.is_v218(registration['configuration']) else {}))
+                           if p.is_implant_v5(registration['configuration']) or p.is_v218(registration['configuration']) else {}),
+                        **({'v222_practice_supply': (value['data']['v222_practice'].get('supply_manifest') or {}).get('path'),
+                            'v222_alf_views': value['data']['v222_practice']['alfworld_routing_overlay']}
+                           if p.is_v222(registration['configuration']) else {}))
     require(found == value, 'The mixed preparation differs from its source identities')
     return found
 

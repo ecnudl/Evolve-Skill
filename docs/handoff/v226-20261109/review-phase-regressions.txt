@@ -1,0 +1,85 @@
+Review round 1 execution evidence: A2, A3 (split/card sites), B1, B2, B5, B8
+Workspace: <repo-root>
+No commits or branch changes made.
+
+All pytest commands used:
+TMPDIR=/private/tmp PATH=<python-bin>:$PATH
+PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider'
+python3 -m pytest -q <modules / selection below>
+
+Before implementation, tests/test_execskill_v226_review_phase.py: 10 failed in 1.22s.
+- test_split_delivered_notes_seal_json_and_resume_identically[1|merge-zebralogic|searchqa]:
+  4 failures; the unit paused with kind exception before reaching the authored
+  infrastructure interruption. Sealing the delivered-field sets raised TypeError.
+- test_sheet_resume_rejects_change_outside_preview[confirmation|split|card|card_selection]:
+  4 failures; resume did not raise after A20 changed while routing preview stayed equal.
+- test_card_cross_rejection_preserves_procedure_pool[officeqa|spreadsheetbench]:
+  2 failures; procedure_phase was skipped_pool_exhausted instead of run.
+  B5 was reproduced before any production change for that item.
+After those fixes, the same initial set: 10 passed in 1.19s.
+
+Before B2 implementation, review_phase -k real_split: 2 failed in 0.56s.
+Both real v221_split.run/evaluate paths raised ValueError outside the unit:
+'main-v8 confirmation requires its own candidate-bound cross gate'.
+After B2 fix: 2 passed in 0.61s. The cases prove completed-unit restart and
+systematic repetition on the next subcandidate respectively.
+
+Before split/card A3 wrapper changes, review_phase -k corruption:
+4 failed, 4 passed, 12 deselected in 0.64s.
+The truncated '{' and malformed '{"broken": NaN}' cases were contained for
+split_plan and card_phase. card_plan/card_selection were already system-scoped
+controls. All four sites now use the shared system-scope loader.
+
+Focused combined regression after implementation:
+  tests/test_execskill_v226_review_phase.py
+  tests/test_execskill_v226_card_units.py
+  tests/test_execskill_v226_resume.py
+  tests/test_execskill_v225_phase.py
+  tests/test_execskill_v221_rule.py
+  tests/test_execskill_v221_learning.py
+Result: 209 passed in 16.84s (before the last three review tests were added).
+
+Final owned review module: 23 passed in 1.92s.
+A2 tests now additionally execute a real before_call using public_workbook() to
+read A20 and establish that changed full content changes rendered request hashes
+while the five-row preview remains identical. Every public input workbook is
+hashed. B1 tests compare fresh/resumed outputs and retain main-v9's old binding.
+
+Files:
+- skillopt/execskill/v226_bindings.py: full public workbook hashes and recursive
+  JSON canonicalisation for delivered-note observation sets.
+- skillopt/execskill/step.py: authorised narrow edits to _request_core and its
+  confirmation caller to include public workbook content.
+- skillopt/execskill/v221_split.py: canonical fresh/resumed observations, full
+  workbook core, system record loads, and guarded-result shape checks at both
+  out-of-unit confirmation consumers (main-v10 only).
+- skillopt/execskill/v225_phase.py: full workbook selection/request cores,
+  system record loads, cross gate before acceptance selection, and exact
+  configuration equality in cross_bindings with both controller callers bound.
+- tests/test_execskill_v226_review_phase.py: regressions above and legacy controls.
+
+B8 mismatch reproductions were owned by preparation agent; cross_bindings was
+changed only after that agent reported the failing pre-fix tests.
+
+Additional verification and reviewed gaps closed:
+- Card-related combined suite (card_errors, card_units, review_phase, v225_phase,
+  v225_cross_card, v225_evidence): 117 passed in 20.02s.
+- Direct card_phase completed-receipt corruption (outside a unit) initially:
+  2 failed, 23 deselected in 0.82s, with JSONDecodeError / ValueError escaping.
+  The main-v10 phase reader now raises Pause(configuration, sealed_record_invalid).
+- Nested preparation source review found main-v10 still followed frozen main-v9
+  paths via v214_preparation.preparation/verify and v222_smoke.prepare_practice.
+  tests/test_execskill_v226_preparation_inputs.py initially: 7 failed in 0.66s.
+  These prove source-S0/verification source access, pool/tail pins before allocation,
+  supply-manifest access, a nested supply pin and an imported practice pool.
+  Added main-v10-only recursive path checks before source reads/allocations and
+  before additional-supply readers; decoded public asset paths are checked too.
+- Latest combined run: review_phase + preparation_inputs + v214_preparation +
+  v222_preparation: 51 passed in 14.39s. Review phase now contains 25 tests.
+
+Additional changed files:
+- skillopt/execskill/v214_preparation.py: main-v10 source and nested preparation
+  path exclusions, including the verify() pre-hash boundary.
+- skillopt/execskill/v222_smoke.py: main-v10 practice source/supply/item asset
+  exclusions; load_supply_pins accepts an optional explicit configuration.
+- tests/test_execskill_v226_preparation_inputs.py: seven nested-source regressions.

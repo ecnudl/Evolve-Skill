@@ -1,0 +1,16 @@
+Platform: macOS-26.6.2-arm64-arm-64bit-Mach-O
+Python: <python>
+CWD/TMPDIR: /tmp/execskill-r2-hybcy4wk
+PYTHONPATH: <repo-root>
+Command: <python> -B -m pytest -q -p no:cacheprovider <repo-root>/tests/test_execskill_cells.py <repo-root>/tests/test_execskill_acceptance.py <repo-root>/tests/test_execskill_v221_learning.py <repo-root>/tests/test_execskill_v221_recovery.py <repo-root>/tests/test_execskill_v221_fix1.py <repo-root>/tests/test_execskill_v222_runtime.py <repo-root>/tests/test_execskill_v225_phase.py <repo-root>/tests/test_execskill_v225_cross_card.py <repo-root>/tests/test_execskill_v225_small_confirmation.py <repo-root>/tests/test_execskill_v225_ops.py <repo-root>/tests/test_execskill_v226_legacy_boundaries.py
+
+........................................................................ [ 15%]
+........................................................................ [ 31%]
+........................................................................ [ 46%]
+...............................................................s........ [ 62%]
+........................................................................ [ 77%]
+........................................................................ [ 93%]
+................................                                         [100%]
+463 passed, 1 skipped in 34.97s
+
+Exit code: 0

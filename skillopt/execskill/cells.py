@@ -48,7 +48,7 @@ import json
 import time
 from collections import Counter
 from contextlib import nullcontext
-from copy import deepcopy
+from copy import copy, deepcopy
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
@@ -128,13 +128,15 @@ class Context:
     endpoints: dict = field(default_factory=dict)
     configuration: str | None = None
     environment: object = None
+    searchqa_import: dict | None = None
 
     def __post_init__(self):
         self.attempt = safe_path(self.attempt)
         if profiles.is_v210(self.configuration):
             from .instruction_start import active_cards
             self.cards = active_cards(self.cards, self.configuration)
-        require(self.evidence in EVIDENCE and set(self.nominal) <= set(BENCHES), "Invalid cell context")
+        require((self.evidence in EVIDENCE or self.evidence in ('main_v9_real_run', 'main_v10_real_run'))
+                and set(self.nominal) <= set(BENCHES), "Invalid cell context")
         require(set(self.endpoints) <= set(BENCHES) and all(
             getattr(found, "model", None) == getattr(self.endpoint, "model", None)
             for found in self.endpoints.values()), "Per-bench endpoints of the unit's one solver model")
@@ -164,6 +166,9 @@ def _worker(context, bench, package):
 
 def _shell(context, cell, task, arm, call, **extra):
     bench = cell["benchmark"]
+    if profiles.is_v220(context.configuration):
+        from . import v220_read
+        v220_read.check_cell(context, cell)
     if profiles.is_v219(context.configuration) and cell['arm'].startswith('X_'):
         require(bench in profiles.read_benches(context.configuration) and cell['unit'] in {
             chain + scope + bench for chain in profiles.CHAINS
@@ -175,15 +180,24 @@ def _shell(context, cell, task, arm, call, **extra):
     if profiles.is_v211(context.configuration) or profiles.is_v215(context.configuration):
         extra['configuration'] = context.configuration
     card = context.cards[bench]
+    runtime = deepcopy(context.runtime[bench])
     if profiles.is_v219(context.configuration):
         from . import v219_read
         card = v219_read.card_text(context, bench, cell['arm'])
+    if profiles.is_v222(context.configuration) and cell['arm'] == 'C_hist':
+        from . import v222_cards
+        require(cell['unit'] == cell['unit'].split('/')[0] + '/v222-smoke/decomposition/' + bench
+                and cell['unit'].split('/')[0] in profiles.CHAINS and arm.kind == 'card'
+                and not arm.package.procedures, 'C_hist exists only in the one-time practice decomposition check')
+        card = v222_cards.historical_text(bench)
+        if bench == 'zebralogic':
+            runtime = v222_cards.historical_runtime(runtime)
     if arm.kind == "blank":
         require(profiles.is_v210(context.configuration) and not arm.package.procedures,
                 "B has empty guidance and no procedure in v2.10 only")
         card = ""
     return context.solve(bench, deepcopy(task["public"]), card, arm.package, call,
-                         runtime=deepcopy(context.runtime[bench]), worker=_worker(context, bench, arm.package),
+                         runtime=runtime, worker=_worker(context, bench, arm.package),
                          withhold=arm.withhold, restore=arm.restore, placebo=arm.placebo, text=arm.text,
                          native=context.native, nominal_tokens=context.nominal.get(bench), **extra)
 
@@ -297,6 +311,13 @@ def _solve(context, cell, task, arm, recorders, logs):
         logs.append(log)
         prediction = _shell(context, cell, task, arm, log)
     log.label(prediction)
+    if profiles.is_v221(context.configuration):
+        from . import v221_recovery
+        # The frozen shell turns call exceptions into unknown predictions. Restore
+        # only a positively identified pure infrastructure pause at the unit layer.
+        for entry in log.entries:
+            if entry['error'] is not None and v221_recovery.exception_pause(entry['error']) is not None:
+                raise entry['error']
     return recorder, log, prediction
 
 
@@ -397,7 +418,7 @@ def _shared_audited_fields(context, source, route, request_reuse=None):
     if not is_v29(context.configuration):
         return {}
     keyword_hits = source.get("keyword_hits", {"count": 0, "sentences": []})
-    if (profiles.is_v218(context.configuration) or profiles.is_v219(context.configuration)) and request_reuse is not None:
+    if profiles.uses_request_reuse(context.configuration) and request_reuse is not None:
         # Silent procedures can change audit hits without changing the shared request.
         keyword_hits = request_reuse['planning_metadata']['keyword_hits']
     return {"configuration": context.configuration,
@@ -414,6 +435,13 @@ def run_cell(context, cell, task, arm, *, store):
     storing it when the run must stop."""
     if (profiles.is_v218(context.configuration) or profiles.is_v219(context.configuration)) and context.environment is not None:
         with context.environment(cell['benchmark'], cell['unit']):
+            if profiles.is_v225(context.configuration):
+                # The context was validated before v225_read.context_for applied
+                # its per-arm card/runtime overrides (including B's empty card).
+                # Clearing only the lock must not re-run chain-card validation.
+                own = copy(context)
+                own.environment = None
+                return run_cell(own, cell, task, arm, store=store)
             return run_cell(replace(context, environment=None), cell, task, arm, store=store)
     _check_cell(cell)
     require(isinstance(arm, Arm), "A cell runs one Arm")
@@ -476,6 +504,12 @@ def run_cell(context, cell, task, arm, *, store):
         kind = stop_kind(exc)
         stop = {"kind": kind, "reason": str(exc)} if kind is not None else {"kind": "exception",
                                                                              "reason": type(exc).__name__}
+        if profiles.is_v221(context.configuration):
+            from . import v221_recovery
+            recovery = v221_recovery.exception_pause(exc)
+            if recovery is not None:
+                stop = recovery
+            stop['auto_retry_eligible'] = recovery is not None
     finished = context.clock()
     final = attempts[-1]["verdict"] if attempts and stop is None else None
     scored = attempts[-1]["score"] if final is not None else None
@@ -503,6 +537,27 @@ def run_cell(context, cell, task, arm, *, store):
         "solver_route": _solver_route(context, recorders, cell["benchmark"]),
         "dispatch_ts": dispatched, "finish_ts": finished, "stop": stop}
     fields.update(_audited_fields(context, runs, recorders, route))
+    if profiles.is_v221(context.configuration):
+        from . import v221_rule
+        effects = {}
+        for _, prediction in runs:
+            observed = v221_rule.post_call_effects(prediction.get('shell') or {},
+                [entry for log in logs for entry in log.entries], package=arm.package)
+            for pid, value in observed.items():
+                row = effects.setdefault(pid, dict(value))
+                row['note_emitted'] |= value['note_emitted']
+                row['repair_requested'] |= value['repair_requested']
+        fields['post_call_effects'] = effects
+    if profiles.is_v222(context.configuration):
+        from . import v222_read
+        fields['cross_identity'] = v222_read.metadata(bench, arm.package,
+            [prediction.get('shell') or {} for _, prediction in runs],
+            post_call_effects=fields.get('post_call_effects'))
+    if profiles.is_v220(context.configuration):
+        from . import v220_read
+        fields['searchqa_fired'] = v220_read.fired_metadata(
+            cell['unit'].split('/')[0], route,
+            [entry for _, prediction in runs for entry in (prediction.get('shell') or {}).get('notes', [])])
     if profiles.is_v219(context.configuration):
         from . import v219_read
         fields['card_source'] = v219_read.card_source(bench, cell['arm'])
@@ -518,7 +573,10 @@ def run_cell(context, cell, task, arm, *, store):
                 "keyword_hits": fields["keyword_hits"]} if is_v29(context.configuration) else {}))
     stored = store.save(sealed, trajectory)
     if stop is not None:
-        raise Pause(stop["kind"], stop["reason"], cell["id"])
+        pause = Pause(stop["kind"], stop["reason"], cell["id"])
+        if profiles.is_v221(context.configuration):
+            pause.auto_retry_eligible = stop.get('auto_retry_eligible', False)
+        raise pause
     return stored
 
 
@@ -562,6 +620,18 @@ def share_cell(context, cell, task, arm, source, route, *, store, request_reuse=
         "shared_with": source["cell"]["id"], "sandbox": _sandbox([]), "dispatch_ts": now, "finish_ts": now,
         "solver_route": source.get("solver_route"), "stop": None}
     fields.update(_shared_audited_fields(context, source, route, request_reuse))
+    if profiles.is_v221(context.configuration):
+        fields['post_call_effects'] = deepcopy(source.get('post_call_effects', {}))
+    if profiles.is_v222(context.configuration):
+        require(request_reuse is not None, 'main-v8 shares only measured request identities')
+        from . import v222_read
+        fields['cross_identity'] = v222_read.shared_metadata(bench, arm.package,
+            request_reuse['planning_metadata']['cross_identity'], fields.get('post_call_effects', {}))
+    if profiles.is_v220(context.configuration):
+        from . import v220_read
+        v220_read.check_cell(context, cell)
+        require(request_reuse is not None, 'The SearchQA import read shares by registered request identity')
+        fields['searchqa_fired'] = deepcopy(request_reuse['planning_metadata']['searchqa_fired'])
     if profiles.is_v219(context.configuration):
         from . import v219_read
         fields['card_source'] = v219_read.card_source(bench, cell['arm'])
@@ -579,7 +649,8 @@ def share_same(context, cell, task, arm, source, route, source_route, source_pac
     runs and nothing is sent; the route's predicate faults are the cell's. Returns the stored record."""
     _check_cell(cell)
     require(isinstance(arm, Arm) and isinstance(source_package, Package), "A cell runs one Arm of a package")
-    require((arm.kind == "candidate" or (request_reuse is not None and arm.kind == 'blank'))
+    require((arm.kind == "candidate" or (request_reuse is not None and arm.kind == 'blank')
+             or (profiles.is_v222(context.configuration) and request_reuse is not None and arm.kind == 'card'))
             and not (arm.withhold or arm.restore) and arm.placebo is None and arm.text is None,
             "Only a plain package arm shares another arm's cell")
     source, route, source_route = verified(source, "cell"), verified(route, "route"), verified(source_route, "route")
@@ -588,7 +659,9 @@ def share_same(context, cell, task, arm, source, route, source_route, source_pac
     require(not source["faults"], "Share a cell that ran without a fault (Codex stage review #1)")
     require(all(source["cell"][name] == cell[name] for name in ("unit", "benchmark", "task_id", "run")),
             "Share a cell of the same unit, item and run")
-    require(source["arm_kind"] == "candidate" and not source["withheld"] and not source["restored"]
+    require((source["arm_kind"] == "candidate" or
+             (profiles.is_v222(context.configuration) and request_reuse is not None and source["arm_kind"] == 'card'))
+            and not source["withheld"] and not source["restored"]
             and source["package_sha256"] == source_package.sha256 == source_route["package_sha256"],
             "The source cell ran its plain package arm")
     bench = cell["benchmark"]
@@ -623,6 +696,13 @@ def share_same(context, cell, task, arm, source, route, source_route, source_pac
         "shared_with": source["cell"]["id"], "sandbox": _sandbox([]), "dispatch_ts": now, "finish_ts": now,
         "solver_route": source.get("solver_route"), "stop": None}
     fields.update(_shared_audited_fields(context, source, route, request_reuse))
+    if profiles.is_v221(context.configuration):
+        fields['post_call_effects'] = deepcopy(source.get('post_call_effects', {}))
+    if profiles.is_v222(context.configuration):
+        require(request_reuse is not None, 'main-v8 shares only measured request identities')
+        from . import v222_read
+        fields['cross_identity'] = v222_read.shared_metadata(bench, arm.package,
+            request_reuse['planning_metadata']['cross_identity'], fields.get('post_call_effects', {}))
     if profiles.is_v219(context.configuration):
         from . import v219_read
         fields['card_source'] = v219_read.card_source(bench, cell['arm'])

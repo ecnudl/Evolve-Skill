@@ -1,0 +1,20 @@
+{
+  "configuration": "main-v8",
+  "executed_operations": false,
+  "files": {
+    "commit-v222.sh": "5bcde1e7c2fe81f4a5c832121c89f2f7c922523d317ba6a431acce0748864d59",
+    "m8-env.sh": "1f91adb4e136afe42af62251710a9bb370a8de7bf595d3246156e26f37796145",
+    "m8-launch.sh": "8e11e82bad3cc54e9f0d9c1d555f5d58e71ffe80a4c25acc6f3eb47b46c19361",
+    "m8-prep.sh": "9238bb8929319d8210b74dee9db8ef002318c0dda70c1c433265984703303237",
+    "m8-run.sh": "09d0b75d0b78b25e6ca793d8ff14554ec25fed9e893291e914f88cbd73ff29e7",
+    "m8-smoke.sh": "848e63eec0674940ab43d8a96fb73f4f09bbd64d316aa823c61bd1d8490da828",
+    "patch-consent-v222.py": "cc8c519a92196586616813f1abd5c455766c05236003bc45667d09d51d62bd77",
+    "run-v222-pre.sh": "5043c94f02cc25583f4df399642334fea933b718ad3be0c30901eb69f6651416"
+  },
+  "kind": "authored_operator_template_snapshot_fixture",
+  "source_directory": [
+    "docs",
+    "handoff",
+    "v29-20261026"
+  ]
+}

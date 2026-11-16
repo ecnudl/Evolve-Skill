@@ -1,0 +1,118 @@
+Changed files and reasons (relative to e589b5b; 116 files)
+
+docs/current-workflow.md — Fix round 3: document metadata-only frozen-root exclusion and unchanged reader/root symlink restrictions.
+docs/project-status.md — Fix round 3: update local prelaunch repair status and remote verification boundary.
+docs/handoff/v226-20261109/audit.txt — Record implementation decisions, root causes, regression coverage, verification and remaining limits. Fix round 3: append prelaunch correction, test counts and scope limits.
+docs/handoff/v226-20261109/base-probes.log — Preserve all nine base/fixed probe outputs and expected failure evidence.
+docs/handoff/v226-20261109/base_probe.py — Reproduce each defect using exact e589b5b function bodies in memory and fixed positive controls.
+docs/handoff/v226-20261109/collection-errors.log — Name all 45 collection failures and missing snapshot dependencies/assets.
+docs/handoff/v226-20261109/files.txt — Inventory every changed file with its review purpose. Fix round 3: identify all eight touched files and add four cumulative paths.
+docs/handoff/v226-20261109/final-offline-validation.log — Preserve the merged offline regression result and exact workspace-incompatible exclusions.
+docs/handoff/v226-20261109/final-v226.log — Preserve the complete 152-test main-v10 regression result.
+docs/handoff/v226-20261109/full-suite.log — Preserve the requested full pytest command's missing-module collection failure.
+docs/handoff/v226-20261109/generate-parents.py — Rebuild the 46-parent fixture deterministically from isolated git-show e589b5b source, with an optional comparison output.
+docs/handoff/v226-20261109/legacy-suite-attempt.log — Preserve the unfiltered legacy attempt, worker wait interruption and environment failures.
+docs/handoff/v226-20261109/review-cross-regressions.txt — Record B3/B6 and cross-recovery A3 root causes, pre-fix failures, fixes and focused/legacy counts.
+docs/handoff/v226-20261109/review-full-suite.log — Preserve the review-round unfiltered pytest attempt and its collection/environment failures.
+docs/handoff/v226-20261109/review-offline-files.txt — List the modules selected for the broader offline review regression run.
+docs/handoff/v226-20261109/review-offline-final.log — Preserve the final 90-module legacy regression: 2,648 passed, 1 skipped, 28 named workspace-incompatible cases deselected.
+docs/handoff/v226-20261109/review-offline.log — Preserve the broader offline review regression run and any intermediate failures.
+docs/handoff/v226-20261109/review-parent-generation.log — Record the initial deterministic 46-parent capture count and SHA-256.
+docs/handoff/v226-20261109/review-parent-regeneration.log — Record the independent second baseline generation and byte-identity comparison.
+docs/handoff/v226-20261109/review-phase-regressions.txt — Record workbook, split, card-supply, handoff and nested-preparation regressions with their pre-fix and passing evidence.
+docs/handoff/v226-20261109/review-preparation-additional-before.log — Preserve four pre-fix failures for raw manifest, snapshot, structural smoke and consent-target entry fences.
+docs/handoff/v226-20261109/review-preparation-after.log — Preserve the 50-test passing preparation, profile and read-registration review result.
+docs/handoff/v226-20261109/review-preparation-before.log — Preserve 27 initial preparation, smoke-validator, scratch, handoff and baseline-capture failures before fixes.
+docs/handoff/v226-20261109/review-preparation-embedded-before.log — Preserve four pre-fix failures for frozen input pointers embedded in S0 before consent copying.
+docs/handoff/v226-20261109/review-preparation-legacy.log — Preserve 151 focused legacy passes and five unchanged outside-checkout S0 restrictions under local TMPDIR.
+docs/handoff/v226-20261109/review-preparation-setting-before.log — Preserve the pre-fix failure for nested frozen inputs entering manifest setup.
+docs/handoff/v226-20261109/review-reference-before.log — Preserve the shared-reference candidate-attribution regression before its fix.
+docs/handoff/v226-20261109/review-safety-after.log — Preserve the passing containment and recovery-safety regression result.
+docs/handoff/v226-20261109/review-safety-before.log — Preserve pre-fix sealed-record corruption, systematic-error and journal-anchoring failures.
+docs/handoff/v226-20261109/review-v226-initial.log — Preserve the initial integrated main-v10 review run and intermediate failures.
+docs/handoff/v226-20261109/review-v226.log — Preserve the final complete main-v10 result: all 256 tests passed.
+docs/handoff/v226-20261109/round2-fivebench.log — Record the complete frozen five-bench module: 7 passed, including the reported J7 regression.
+docs/handoff/v226-20261109/round2-focused-initial.log — Preserve the intermediate focused result and four scratch-ancestor permission failures before chmod of the owned temporary root.
+docs/handoff/v226-20261109/round2-focused.log — Record final focused recovery/card/operator/boundary validation: 463 passed, 1 optional-documentation skip.
+docs/handoff/v226-20261109/round2-frozen-files.txt — List all 117 frozen regression modules exercised in round 2.
+docs/handoff/v226-20261109/round2-frozen-final.log — Record the complete final frozen suite: 3536 passed, 5 baseline-reproduced worker failures, 1 skipped; corrected scratch/CWD issues, no actual deselections.
+docs/handoff/v226-20261109/round2-frozen.log — Preserve the initial broad result: 3529 passed, 12 failed, 1 skipped; includes five worker restrictions and seven corrected scratch/CWD issues.
+docs/handoff/v226-20261109/round2-integrity.log — Verify frozen function bodies, worker/statistics/test byte identity, all 152 mutation sites, unchanged branch refs and clean diff whitespace.
+docs/handoff/v226-20261109/round2-mutations.log — Preserve all 152 mutation setup errors caused by the unchanged detector worker failure before mutation bodies execute.
+docs/handoff/v226-20261109/round2-platform-baseline.log — Reproduce detector/sandbox and five step failures on untouched e589b5b; capture killpg PermissionError and independent process-group control.
+docs/handoff/v226-20261109/round2-sandbox.log — Preserve the sandbox platform probe: 1 passed, 1 worker-dependent failure, stopped with -x.
+docs/handoff/v226-20261109/round2-v226.log — Record every v226 regression module including the 65 added legacy-boundary cases: 321 passed.
+docs/handoff/v226-20261109/round3-before.log — Fix round 3: preserve the pre-fix symlink regressions and disclose fixture setup corrections.
+docs/handoff/v226-20261109/round3-validation.log — Fix round 3: record all v226 modules and the explicit frozen-parent fingerprint selection.
+scripts/run_execskill.py — Admit main-v10 in the existing snapshot/prelaunch/smoke CLI choices.
+skillopt/execskill/acceptance.py — Seal dispatched main-v10 card identities and keep shared reference-arm failures outside candidate containment. Round 2: Gate signature scopes and recovery readers before any legacy call.
+skillopt/execskill/cells.py — Admit main_v10_real_run at the cell context evidence boundary.
+skillopt/execskill/chain.py — Pass the registered configuration into v225-family stage aggregates. Round 2: Retain frozen active-read configuration unless v226.
+skillopt/execskill/diagnostics.py — Enable the inherited Zebra diagnostic channel for main-v10.
+skillopt/execskill/diagnostics_runtime.py — Refuse unbound main-v10 diagnostic workers with a named ConfigurationError. Round 2: Defer the new error import to main-v10 diagnostics.
+skillopt/execskill/engineer.py — Admit v10 dispatch and use policy-aware built-procedure scope for replay/reference checks.
+skillopt/execskill/engineer_v28.py — Normalize v10 excluded benches against actual procedure scope, including Zebra.
+skillopt/execskill/engines.py — Admit main_v10_real_run at the engine evidence boundary.
+skillopt/execskill/evaluation.py — Admit main-v10 in inherited read-canary/evaluation dispatch.
+skillopt/execskill/manifest.py — Register main-v10 identities and diagnostics; fence run/preparation roots and nested inputs before setup while preserving legacy paths. Round 2: Gate run-root helper arguments and calls. Fix round 3: compare lexical and resolved paths without imposing reader symlink policy on metadata.
+skillopt/execskill/package.py — Admit main_v10_real_run for both procedure and package validation.
+skillopt/execskill/precheck.py — Admit main_v10_real_run at the precheck evidence boundary.
+skillopt/execskill/profiles.py — Register is_v226, inherited tables and isolated roots; pin corrected metrics, recovery bindings and systematic-error rules.
+skillopt/execskill/protocol.py — Admit v10 evidence and route it through the inherited experiment/read families.
+skillopt/execskill/readout.py — Forward the registered v10 configuration to the fresh-read implementation. Round 2: Preserve the original legacy report call signature.
+skillopt/execskill/registry.py — Admit main_v10_real_run at the registry evidence boundary.
+skillopt/execskill/sandbox/client.py — Admit v10's unchanged worker source and put diagnostic setup inside loss recovery. Round 2: Remove eager profiles imports from frozen worker call paths.
+skillopt/execskill/step.py — Correct counts, diagnostics and request identities; bind complete workbooks, reject corrupt recovery records and enforce candidate/system error boundaries. Round 2: Gate candidate keys/guards, protected readers and system scopes; restore original confirmation short-circuit, dispatch and raw acceptance settlement.
+skillopt/execskill/units.py — Bind diagnostics in unit workers and anchor candidate-journal revisions in lifecycle and completion records. Round 2: Retain frozen card-writer registration/budget configuration.
+skillopt/execskill/v210_import.py — Admit main-v10's unchanged ALF import and record explicit empty candidate-error fields.
+skillopt/execskill/v214_preparation.py — Reject main-v10 frozen-root source, nested pool/tail and public-asset paths before reading or revalidating preparation. Round 2: Gate frozen-root/input helper calls.
+skillopt/execskill/v214_smoke.py — Fence every main-v10 preparation entry point and consent source, require matching real S0 roots and select the 46-parent capture. Round 2: Supply new helper keywords only for v226.
+skillopt/execskill/v214_stages.py — Preserve the registered v10 configuration through inherited smoke stage dispatch. Round 2: Preserve original structural-smoke call arguments for older configurations.
+skillopt/execskill/v221_learning.py — Move immediate selection inside acceptance work and propagate contained selection failures safely. Round 2: Restore direct legacy immediate-selection flow and reads.
+skillopt/execskill/v221_split.py — Bind workbook content, canonicalize delivered observations, load sealed recovery records in system scope and handle rejected confirmation shapes. Round 2: Gate split paths/keys/guards/readers and restore single signature lookup and direct dispatch.
+skillopt/execskill/v222_gate.py — Classify unchanged inherited faults as informational, preserve candidate shell-fault attribution and limit full-touch card checks to the route target. Round 2: Gate procedure metadata reads and worker arm contexts.
+skillopt/execskill/v222_runtime.py — Seal deterministic cross inspections and narrowing rechecks for reuse; keep recovery loads and paired dispatch outside containment. Round 2: Gate protected loaders, package/system contexts, digest imports and cross-cell wrappers.
+skillopt/execskill/v222_smoke.py — Preserve main-v10 smoke identity and reject frozen preparation, additional-supply and decoded public-asset paths. Round 2: Gate preparation-helper imports and calls.
+skillopt/execskill/v225_phase.py — Bind full workbook inputs and safe recovery; gate before acceptance selection, preserve procedure supply and require exact handoff configuration. Round 2: Restore original legacy selection/measurement bodies and gate candidate fields, scopes and configuration forwarding.
+skillopt/execskill/v225_read.py — Register v10 reads/metrics, stabilize OfficeQA blocks, reject block mismatches and aggregate error counts. Round 2: Retain frozen reader defaults, call signatures and metrics imports.
+skillopt/execskill/v225_smoke.py — Register main-v10 smoke identities and scratch roots; restore explicit configuration requirements in frozen main-v9 validators. Round 2: Retain frozen main-v9 defaults and helper call signatures.
+skillopt/execskill/v225_writer.py — Admit safe v10 candidate_error/cross_bench_harm feedback clauses for the next card round. Round 2: Forward new configuration keywords only for v226.
+skillopt/execskill/v226_bindings.py — Hash every complete mounted public workbook and canonicalize observations into identical fresh/resumed JSON shapes.
+skillopt/execskill/v226_candidates.py — Load sealed records in system scope, anchor durable candidate events and escalate repeated signatures across any earlier candidate or step.
+skillopt/execskill/v226_metrics.py — Reanchor changed-step metrics to C0 and add incremental harm and TS/TD from registered pairs.
+tests/execskill_v226_fakes.py — Provide a real-shaped diagnostic worker executing worker_v222 and real unit-bound test services.
+tests/execskill_v293_fakes.py — Allow arbitrary neutral scratch directory names while rejecting test/final/holdout/reserve/sealed names.
+tests/execskill_zpc_fakes.py — Honor TMPDIR so authored fixtures stay inside the permitted working copy.
+tests/fixtures/execskill/v226_parents_before.json — Capture all 46 e589b5b configurations including main-v9, with exact fingerprints and profile tables.
+tests/test_execskill_v214_fix1_effects.py — Extend the additive successor roster without changing older effect expectations.
+tests/test_execskill_v217i_smoke.py — Add main-v10 to the CLI admission roster; retain frozen smoke checks.
+tests/test_execskill_v218_smoke.py — Add main-v10 to the CLI admission roster; retain frozen smoke checks.
+tests/test_execskill_v219_smoke.py — Add main-v10 to the CLI admission roster; retain frozen smoke checks.
+tests/test_execskill_v221_profile.py — Extend only additive profile/CLI rosters, leaving historical fingerprints intact.
+tests/test_execskill_v222_profile.py — Extend only the additive configuration roster, leaving historical fingerprints intact.
+tests/test_execskill_v225_evidence.py — Advance the unknown-future-evidence sentinel to main-v11 after registering main-v10.
+tests/test_execskill_v225_literals.py — Audit exact reviewed v10 membership additions against the unchanged frozen literal fixture.
+tests/test_execskill_v225_profile.py — Extend the additive roster and future sentinel while keeping all parent identity assertions.
+tests/test_execskill_v226_blocks.py — Regress shared OfficeQA read partitions and refusal of mismatched arm blocks.
+tests/test_execskill_v226_candidates.py — Regress containment exclusions, durable safe events, nonconsecutive repetition, resume deduplication and systematic pauses.
+tests/test_execskill_v226_card_errors.py — Regress card continuation, parent/dispatch exclusions, feedback and readout counters.
+tests/test_execskill_v226_card_units.py — Regress real card diagnostic/identity paths, contradiction pauses and cross-gate rejection.
+tests/test_execskill_v226_chain.py — Run the authored five-step controller and 40 fresh reads in normal/isolated/systematic scenarios.
+tests/test_execskill_v226_cross_recovery.py — Regress sealed cross inspection reuse, core drift, narrowing, inherited S-prime-only faults, target-only card rules and corrupt recovery records.
+tests/test_execskill_v226_diagnostics.py — Regress K1 counts and real replay/cross-gate/immediate-selection diagnostic identity equality.
+tests/test_execskill_v226_gate.py — Regress inherited, flaky, added/changed-procedure and shell-interaction fault attribution with frozen main-v9 controls.
+tests/test_execskill_v226_identity.py — Compare real pair/acceptance identities with actual solver requests on all relevant benches.
+tests/test_execskill_v226_import.py — Regress v10-only imported-step error fields and unchanged v9 import/resume records.
+tests/test_execskill_v226_legacy_boundaries.py — Regress all 46 older configurations bypassing v226 adapters, opaque candidate laziness, frozen reads/settlement, confirmation short-circuit and original worker order (65 cases).
+tests/test_execskill_v226_metrics.py — Regress false/masked C-anchor harm, incremental transfer/uncertainty and frozen source bytes.
+tests/test_execskill_v226_preparation_inputs.py — Reject frozen source-S0, verification, nested pool/tail, practice-supply and imported practice input paths before access. Fix round 3: add 15 symlink cases, including inherited-S0 preparation and unchanged reader/root restrictions.
+tests/test_execskill_v226_preparation_review.py — Regress CLI/function root fences, consent and embedded inputs, explicit smoke configuration, scratch names, handoff equality and all 46 parent fingerprints.
+tests/test_execskill_v226_procedure_errors.py — Regress real train/confirm/accept/self-test containment, resume and parent attribution.
+tests/test_execskill_v226_profile.py — Check registered real/smoke/scratch roots, inherited tables/families, identity, route thinking, CLI and evidence boundaries.
+tests/test_execskill_v226_read_registration.py — Check v10 aggregate/readout identity and the full structural smoke using an explicitly registered authored scratch root.
+tests/test_execskill_v226_resume.py — Regress flaky-hook confirmation/split resume and refusal of deterministic-core drift.
+tests/test_execskill_v226_review_phase.py — Regress workbook changes beyond previews, split observation sealing/resume, contained confirmation consumers, recovery corruption and preserved acceptance supply.
+tests/test_execskill_v226_review_safety.py — Regress sealed-record corruption, systematic signatures across candidates/steps, journal truncation and shared-reference/final-selftest exclusions.
+tests/test_execskill_v226_scope.py — Regress declared scope/reference resolution and frozen v9 behavior.
+tests/test_execskill_v226_worker_recovery.py — Regress diagnostic exchange retry/fault mapping and unchanged v9/configuration errors.
+tests/test_execskill_v23_replay.py — Honor TMPDIR for replay fixtures instead of hardcoding /tmp.

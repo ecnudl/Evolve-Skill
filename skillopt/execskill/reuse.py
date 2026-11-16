@@ -29,6 +29,9 @@ def signature(bench, package, view, worker, *, card_text="", runtime=None, withh
               note_observer=None, configuration=None):
     """The exact first request hash, post-call identity and faults using an already started item worker."""
     require(bench in BENCHES, "ALFWorld has no zero-call request identity")
+    if profiles.is_v225(configuration):
+        from .v225_cards import compose
+        card_text = compose(bench, card_text, package)
 
     def no_call(*args, **kwargs):
         raise AssertionError("Request identity never calls a model")
@@ -54,7 +57,8 @@ def signature(bench, package, view, worker, *, card_text="", runtime=None, withh
     elif names is not None:
         post.append({"hook": "second", "bindings": names,
                      "sham": any(p.id in shell.shams for p in shell.enabled(("bindings",)))})
-    return {"request_sha256": _request_hash(solver._system(bench, card_text, runtime or {}),
+    return {"request_sha256": _request_hash(solver._system(bench, card_text, runtime or {},
+                                            **({"configuration": configuration} if profiles.is_v222(configuration) else {})),
                                             solver._user(bench, view, text)),
             "post_call": post, "faults": [dict(f) for f in shell.faults], "enabled": list(shell.route.enabled)}
 

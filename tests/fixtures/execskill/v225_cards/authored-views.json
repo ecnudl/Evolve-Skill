@@ -1,0 +1,27 @@
+{
+  "alfworld": {
+    "admissible_commands_at_reset": [
+      "look"
+    ],
+    "initial_observation": "An authored room."
+  },
+  "officeqa": {
+    "context": "Supplied table.",
+    "question": "How many units?"
+  },
+  "searchqa": {
+    "context": "Supplied evidence.",
+    "question": "Find the author."
+  },
+  "spreadsheetbench": {
+    "instruction": "Update the supplied workbook.",
+    "workbook_preview": {}
+  },
+  "zebralogic": {
+    "columns": [
+      "Name",
+      "Color"
+    ],
+    "question": "There are 5 houses, numbered 1 to 5 from left to right, as seen from across the street. An authored grid puzzle."
+  }
+}

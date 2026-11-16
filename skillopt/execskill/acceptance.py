@@ -235,7 +235,7 @@ def minimum_astar(rule, size, blocks, *, alfworld=False):
 
 
 def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks, workers, trajectories, rooms=None,
-            generate=None, dup=False, probe=(), freshness=None, mde=None, rule=None, reuse=None, configuration=None):
+            generate=None, dup=False, probe=(), freshness=None, mde=None, rule=None, reuse=None, configuration=None, initial=None):
     """Seal one acceptance round (module docstring) and write it once to ``<root>/sealed.json``. ``views``: {item:
     routing view} of the acceptance slice A in slice order (``solver.routing_view``); ``blocks``: {item: block} for A
     (ALFWorld blocks are whole rooms); ``workers(package, item)``: a context manager yielding a started sandbox worker
@@ -256,12 +256,24 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
     corpus = None if no_placebo else donors.donor_corpus(candidate, parent, trajectories, workers)
     minimum = None if rule is None else minimum_astar(rule, len(views), len(set(blocks.values())),
                                                       alfworld=bench == "alfworld")
+    if profiles.is_v221(configuration):
+        minimum = {'items': 0, 'rooms': 0 if bench == 'alfworld' else None}
     plan = router.plan(candidate, parent, bench, views, workers, unit=unit, rooms=rooms, donors=() if no_placebo else corpus["donors"],
                        minimum=minimum, placebo_enabled=not no_placebo)
+    if profiles.is_v221(configuration):
+        # The caller's routing-only sampler has already selected a fresh prefix.
+        # Evaluate that exact batch, including same-predicate changed requests;
+        # no twins/placebo or whole-batch A* threshold decide this child.
+        plan = record('firing-plan', evidence, {**{key: value for key, value in plan.items()
+                      if key not in ('version', 'evidence', RECORD_HASH)},
+            'astar': list(views), 'astar_rooms': len(set(rooms.values())) if rooms else None,
+            'twin_priority': [], 'twin_kinds': {}, 'twins': {}, 'not_withheld': {}, 'twin_only': [],
+            'decision': router.RUN})
     astar = plan["astar"]
     changed = donors.changed(parent, candidate)
     shams = [p.id for _, p, _ in changed] if no_placebo else placebo.placebo_package(candidate, parent)[1]
-    packages = round_packages(candidate, parent, step=step, twins=plan["twins"], configuration=configuration)
+    packages = round_packages(candidate, parent, step=step, twins=plan["twins"], configuration=configuration,
+                              **({"initial": initial} if profiles.is_v222(configuration) else {}))
     placebo_y = placebo_i = g_acc = None
     if plan["decision"] != SMALL:
         if not no_placebo:
@@ -307,12 +319,21 @@ def prepare(root, *, chain, bench, step, unit, candidate, parent, views, blocks,
                         continue
                     key, _, keywords = cell_arm(sealed, job, cell=cell_id(unit, arm, item, job["run"]))
                     require(item in all_views.get(cell_set, {}), "Every reuse item has its exact shell view")
-                    with workers(packages[key], item) as worker:
-                        rows[arm] = request_reuse.signature(bench, packages[key], all_views[cell_set][item], worker,
-                                                           card_text=reuse.get("card_text", ""),
-                                                           runtime=reuse.get("runtime"), **keywords,
-                                                           **({'configuration': configuration}
-                                                              if profiles.uses_v215(configuration, bench) else {}))
+                    if profiles.is_v226(configuration) and key == 'card':
+                        from .v226_candidates import arm as evaluation_arm
+                        with evaluation_arm('system'), workers(packages[key], item) as worker:
+                            rows[arm] = request_reuse.signature(bench, packages[key], all_views[cell_set][item], worker,
+                                                               card_text=reuse.get("card_text", ""),
+                                                               runtime=reuse.get("runtime"), **keywords,
+                                                               configuration=configuration)
+                    else:
+                        with workers(packages[key], item) as worker:
+                            rows[arm] = request_reuse.signature(bench, packages[key], all_views[cell_set][item], worker,
+                                                               card_text=reuse.get("card_text", ""),
+                                                               runtime=reuse.get("runtime"), **keywords,
+                                                               **({'configuration': configuration}
+                                                                  if (profiles.is_v226(configuration)
+                                                                      or profiles.uses_v215(configuration, bench)) else {}))
         sealed = with_reuse(sealed, request_reuse.from_signatures(sealed, signatures))
     write_json(safe_path(root) / "sealed.json", sealed)
     return sealed
@@ -328,12 +349,17 @@ def with_reuse(sealed, plan):
     return record("acceptance-sealed-v2-3", sealed["evidence"], fields)
 
 
-def round_packages(candidate, parent, *, step, twins, configuration=None):
+def round_packages(candidate, parent, *, step, twins, configuration=None, initial=None):
     """{key: Package} of a round's arms, keyed as ``cell_arm`` names them: the candidate, the parent, the card (the
     step's empty package), the placebo package of P_y and P_i (``placebo.placebo_package``) and one ``restore:<id>``
     package per restoration twin (``twins``: the plan's {item: [twin]}). ``prepare`` seals their hashes; the dispatch
     driver rebuilds them with the sealed ``step`` and ``plan["twins"]`` (integration B3)."""
     found = {"candidate": candidate, "parent": parent, "card": empty(step=step, evidence=candidate.evidence)}
+    if profiles.is_v222(configuration):
+        from . import v222_cards
+        require(initial is not None and all(v222_cards.is_segment(proc) for proc in initial.procedures),
+                'main-v8 acceptance C binds the original instruction package P0')
+        found['card'] = initial
     if not _no_placebo(configuration):
         found["placebo"] = placebo.placebo_package(candidate, parent)[0]
     for item_twins in twins.values():
@@ -560,6 +586,13 @@ def _finished(record, sealed, job, attempt):
             and inner.get("block") == str(job["block"]) and _cell_key(record) == _job_key(job))
 
 
+def _read_recovery(path, kind, sealed):
+    if profiles.is_v226(sealed.get('configuration')):
+        from .v226_candidates import read_record
+        return read_record(path, kind)
+    return verified(read_json(path), kind)
+
+
 def earlier_blocks(sealed, unit_root, attempt):
     """What the earlier attempts of the accept unit at ``unit_root`` leave to ``attempt`` (an ``attempt-N``
     directory; §9.3, owner decision #15): {"reused": {block: attempt name}, "cells": {block: [its records in the
@@ -576,7 +609,10 @@ def earlier_blocks(sealed, unit_root, attempt):
         names = [cell_id(sealed["unit"], job["arm"], job["item"], job["run"]) for job in jobs]
         for past in earlier:
             paths = [past / "cells" / (name + ".json") for name in names]
-            records = [verified(read_json(path), "cell") if path.exists() else None for path in paths]
+            if profiles.is_v226(sealed.get('configuration')):
+                records = [_read_recovery(path, "cell", sealed) if path.exists() else None for path in paths]
+            else:
+                records = [verified(read_json(path), "cell") if path.exists() else None for path in paths]
             if all(_finished(record, sealed, job, past.name) for record, job in zip(records, jobs)):
                 found["reused"][str(block)], found["cells"][str(block)] = past.name, records
                 break
@@ -1041,10 +1077,59 @@ def _header(sealed):
                       for e in sealed["plan"]["edits"]]}
 
 
-def decide(cells, sealed):
+def _v221_contrast(d, *, design=None, whole=None, sensitivity=False):
+    """A small child sample has unavailable descriptive statistics, never a pause."""
+    design = design or {}
+    units = set(design.get('clusters') or range(len(d)))
+    blocks = set(design.get('strata') or [None])
+    if d and len(units) > len(blocks):
+        return contrast(d, design=design, whole=whole, sensitivity=sensitivity)
+    return {'n': len(d), 'mean': float(sum(d) / len(d)) if d else 0.0,
+            'se': None, 'df': max(0, len(units) - len(blocks)), 'p_t': None,
+            'p_two_sided': None, 'ci95': None, 'up': sum(x > 0 for x in d),
+            'down': sum(x < 0 for x in d), 'tie': sum(x == 0 for x in d),
+            **({'whole_batch': float(sum(d) / whole)} if whole else {}),
+            **({'sensitivity': {'p_signflip': None, 'p_wilcoxon': None}} if sensitivity else {}),
+            'unavailable': 'too_few_answered_units_for_descriptive_t_test'}
+
+
+def _v221_duplicate(cells_table, sealed, items, design):
+    if _too_few_units(sealed, items) is None:
+        return _duplicate(cells_table, sealed, items, design)
+    pairs = ([(CARD, PARENT)] if sealed['card_is_parent'] else []) + ([(DUP, PARENT)] if sealed['dup'] else [])
+    if not pairs:
+        return None
+    return {'pairs': [{'pair': '%s-%s' % pair, 'p_two_sided': None, 'ok': False,
+                       'unavailable': 'too_few_answered_units_for_descriptive_t_test'} for pair in pairs],
+            'ok': False}
+
+
+def decide(cells, sealed, *, cross_gate=None):
+    """Keep the frozen decision, with the main-v8 cross-bench prerequisite."""
+    if not profiles.is_v222(sealed.get('configuration')):
+        return _decide(cells, sealed)
+    sealed = verified(sealed, 'acceptance-sealed')
+    cross_gate = verified(cross_gate, 'v222-cross-gate')
+    require(isinstance(cross_gate, dict) and cross_gate.get('passed') is True
+            and cross_gate.get('configuration') == sealed.get('configuration')
+            and cross_gate.get('home') == sealed['bench']
+            and cross_gate.get('unit') == sealed['unit']
+            and cross_gate.get('phase') == 'acceptance'
+            and cross_gate.get('parent_sha256') == sealed['seals']['parent']
+            and cross_gate.get('candidate_sha256') == sealed['seals']['candidate'],
+            'main-v8 acceptance requires its bound, passing cross-bench gate')
+    result = _decide(cells, sealed)
+    return record('decision-v2-3' if sealed.get('reuse') is not None else 'decision', result['evidence'],
+        {**{key: value for key, value in result.items() if key not in ('version', 'evidence', RECORD_HASH)},
+         'cross_gate': cross_gate})
+
+
+def _decide(cells, sealed):
     """The round's ``fivebench-execskill-v1-decision`` record from the cell records and the sealed record alone
     (module docstring; plan §2.6)."""
     sealed = verified(sealed, "acceptance-sealed")
+    child = profiles.is_v221(sealed.get('configuration'))
+    contrast_of = _v221_contrast if child else contrast
     pooled_rule = _pooled_rule(sealed.get("configuration"), sealed["bench"], sealed.get("rule"))
     no_placebo = _no_placebo(sealed.get("configuration"))
     pooled = pooled_rule and sealed["card_is_parent"]
@@ -1065,9 +1150,9 @@ def decide(cells, sealed):
                        if job["set"] == "real" and not job["arm"].startswith(("withhold:", "restore:"))})
     unanswered = shared_unanswered(physical, astar)
     items = [i for i in astar if i not in set(unanswered)]
-    if sealed.get("rule") is None:
+    if not child and sealed.get("rule") is None:
         require(len(items) > len(set(sealed["blocks"][i] for i in items)), "Too few answered items for the t-test")
-    else:  # v2.2 (Codex review MAJOR 1): the smaller floor can leave the t-test no degree of freedom
+    elif not child:  # v2.2 (Codex review MAJOR 1): the smaller floor can leave the t-test no degree of freedom
         short = _too_few_units(sealed, items)
         if short is not None:
             return record("decision-v2-3" if sealed.get("reuse") is not None else "decision", plan["evidence"], {
@@ -1086,22 +1171,22 @@ def decide(cells, sealed):
                        [] if no_placebo else differences(cells_table, CANDIDATE, PLACEBO_Y, items))
     sample = (sealed.get("reuse") or {}).get("card_sample")
     card_items = [i for i in items if i in sample["items"]] if sample is not None else items
-    if sample is not None and _too_few_units(sealed, card_items) is not None:
+    if not child and sample is not None and _too_few_units(sealed, card_items) is not None:
         return record("decision-v2-3", plan["evidence"], {
             **_header(sealed), "A_star": len(astar), "A_star_rooms": plan["astar_rooms"], "analysed": len(items),
             "shared_unanswered": unanswered, "provenance": provenance, "decision": "undetermined",
             "reason": "too few answered C instrument sample items for the t-test; the run pauses"})
     card_design = _design(sealed, card_items)
     contrasts = {
-        "S'-S": contrast(gain, design=design, whole=size_a, sensitivity=True),
-        **({"S'-P_y": contrast(over_sham, design=design, whole=size_a, sensitivity=True)}
+        "S'-S": contrast_of(gain, design=design, whole=size_a, sensitivity=True),
+        **({"S'-P_y": contrast_of(over_sham, design=design, whole=size_a, sensitivity=True)}
            if not no_placebo else {}),
-        "S'-C": contrast(differences(cells_table, CANDIDATE, CARD, card_items), design=card_design, whole=size_a),
-        "S-C": contrast(differences(cells_table, PARENT, CARD, card_items), design=card_design, whole=size_a)}
+        "S'-C": contrast_of(differences(cells_table, CANDIDATE, CARD, card_items), design=card_design, whole=size_a),
+        "S-C": contrast_of(differences(cells_table, PARENT, CARD, card_items), design=card_design, whole=size_a)}
     if pooled:
         require(card_items == items, "The pooled baseline needs C on every analysed item")
         gain = pooled_differences(cells_table, items)
-        contrasts["S'-(S+C)/2"] = contrast(gain, design=design, whole=size_a, sensitivity=True)
+        contrasts["S'-(S+C)/2"] = contrast_of(gain, design=design, whole=size_a, sensitivity=True)
         for name in ("S'-S", "S'-C"):
             contrasts[name]["decides"] = False
     if sample is not None:
@@ -1114,10 +1199,10 @@ def decide(cells, sealed):
     rule = "removed"
     if not no_placebo:
         sham = differences(cells_table, PLACEBO_Y, PARENT, items)
-        contrasts["P_y-S"] = {**contrast(sham, whole=size_a), "ci95": list(stats_ext.bootstrap_ci(
+        contrasts["P_y-S"] = {**contrast_of(sham, whole=size_a), "ci95": list(stats_ext.bootstrap_ci(
             sham, clusters=[pairs[i] for i in items])), "by_donor": _by_donor(sham, items, pairs)}
         if PLACEBO_I in arms:
-            contrasts["P_i-S"] = contrast(differences(cells_table, PLACEBO_I, PARENT, items), design=design, whole=size_a)
+            contrasts["P_i-S"] = contrast_of(differences(cells_table, PLACEBO_I, PARENT, items), design=design, whole=size_a)
         lo, hi = contrasts["P_y-S"]["ci95"]
         rule = ("harmful_sham_parent_only_2.5pct" if hi < 0 else "helpful_sham_reported" if lo > 0 else "informative")
         if hi < 0 and sealed.get("rule") is not None:  # v2.2 (Codex review MINOR 3): J1 tightens no alpha any more
@@ -1127,11 +1212,11 @@ def decide(cells, sealed):
     if pooled:
         first = contrasts["S'-(S+C)/2"]
     j1 = {"p_t": first["p_t"], "alpha": alpha1, "whole_batch": first["whole_batch"],
-          "ok": first["p_t"] <= alpha1 and first["whole_batch"] >= float(MIN_WHOLE_BATCH)}
+          "ok": first["p_t"] is not None and first["p_t"] <= alpha1 and first["whole_batch"] >= float(MIN_WHOLE_BATCH)}
     j2 = ({"removed": True} if no_placebo else
           {"p_t": second["p_t"], "alpha": ALPHA, "informative": hi >= 0, "ok": hi < 0 or second["p_t"] <= ALPHA})
     gate = sealed.get("rule")
-    if gate is not None:  # v2.2: the sealed practical rule replaces J1 and J2 (``rule`` is the placebo reading)
+    if gate is not None and not child:  # v2.2: the sealed practical rule replaces J1 and J2 (``rule`` is the placebo reading)
         j1, j2 = _practical(gate, sealed["bench"], gain, over_sham, size_a, first, second)
     if pooled_rule:
         j1.update(baseline="(S+C)/2" if pooled else "S", pooled=pooled)
@@ -1169,11 +1254,13 @@ def decide(cells, sealed):
           and len(unanswered) * SHARED_UNANSWERED_MAX.denominator <= SHARED_UNANSWERED_MAX.numerator * len(astar)
           and balance["ok"] and gap["ok"]}
     j5["pause"] = not j5["ok"]  # §13: every broken-instrument case pauses (statistics review 4)
-    j6 = _duplicate(cells_table, sealed, items, design)
+    j6 = (_v221_duplicate if child else _duplicate)(cells_table, sealed, items, design)
     j7 = _probe(cells, identical=identical.get("probe", []))
     failed = [name for name, check in (("J1", j1), ("J2", j2), ("J3", j3), ("J4", j4), ("J7", j7))
               if check is not None and not check.get("informational") and not check.get("removed") and not check["ok"]]
-    if not j5["ok"] or (j6 is not None and not j6["ok"]):
+    if child:
+        verdict, reason = None, None  # The single count rule below is the only decision.
+    elif not j5["ok"] or (j6 is not None and not j6["ok"]):
         verdict = "undetermined"
         reason = "instrument guard failed (%s); the run pauses, the batch is consumed but undecided" % (
             ", ".join(n for n, c in (("J5", j5), ("J6", j6)) if c is not None and not c["ok"]))
@@ -1190,6 +1277,43 @@ def decide(cells, sealed):
         if j3.get("informational"):
             reason = reason.replace("J1-J7 hold", "J1, J2 and J4-J7 hold; J3 reported")
             reason = reason.replace("and J3-J7 hold", "and J4-J7 hold; J3 reported")
+    child_fields = {}
+    if child:
+        from . import v221_rule
+        if sealed['bench'] in request_reuse.BENCHES:
+            signatures = (sealed.get('reuse') or {}).get('signatures', {}).get('real', {})
+            require(set(signatures) >= set(sealed['A']), 'The sampled batch has complete request identities')
+            touches = v221_rule.identity_report({key: signatures[key] for key in sealed['A']},
+                bench=sealed['bench'], trajectories=[cell for cell in cells if cell['set'] == 'real'])
+            touched = touches['touched']
+        else:
+            touched = v221_rule.alfworld_touched(cells, sealed['shams'])
+        scored = {}
+        for cell in cells:
+            if cell['set'] == 'real' and cell['arm'] in (CANDIDATE, PARENT):
+                scored.setdefault((cell['arm'], cell['task_id']), []).append(cell)
+        whole = None
+        if sealed['bench'] == 'alfworld':
+            all_changes = v221_rule.item_changes(scored, sealed['A'], touched=sealed['A'])
+            whole = sum(all_changes['deltas'].values(), Fraction(0)) / len(sealed['A'])
+        common = v221_rule.decide(scored, sealed['A'], touched=touched, whole_batch=whole)
+        j1 = {'rule': v221_rule.NAME, 'replaced': True, 'ok': common['decision'] == 'accept',
+              'gain_and_no_harm': common}
+        j2, j7 = {'removed': True}, {'not_applicable': True}
+        warnings = []
+        for name, guard in (('J3', j3), ('J4', j4), ('J5', j5), ('J6', j6)):
+            if guard is not None:
+                guard['informational'] = True
+                if not guard['ok']:
+                    warnings.append(name)
+        j5['pause'] = False
+        verdict = common['decision']
+        reason = 'gain_and_no_harm:' + verdict
+        child_fields = {'gain_and_no_harm': common, 'touched_items': touched,
+                        'untouched_items': [key for key in sealed['A'] if key not in set(touched)],
+                        'untouched_contribution': 0, 'diagnostic_warnings': warnings}
+        if sealed['bench'] in request_reuse.BENCHES:
+            child_fields['touch_evidence'] = touches
     calls = (CANDIDATE,) if no_placebo else (CANDIDATE, PLACEBO_Y) + ((PLACEBO_I,) if PLACEBO_I in arms else ())
     return record("decision-v2-3" if sealed.get("reuse") is not None else "decision", plan["evidence"], {
         **_header(sealed), "A_star": len(astar), "A_star_rooms": plan["astar_rooms"], "analysed": len(items),
@@ -1222,7 +1346,7 @@ def decide(cells, sealed):
                                          "set": c["set"], "reused_from": c["reused_from"]}
                                         for c in cells if c.get("reused_from")]}}
            if sealed.get("reuse") is not None else {}),
-        "decision": verdict, "reason": reason})
+        **child_fields, "decision": verdict, "reason": reason})
 
 
 def _practical(rule, bench, gain, over_sham, size_a, first, second):
@@ -1300,7 +1424,11 @@ def round_cells(unit_root, sealed, decision):
         require(isinstance(entry, dict) and type(entry.get("attempt")) is str,
                 "The decision names the unit attempt of block %s" % block)
         folder = safe_path(unit_root) / entry["attempt"] / "cells"
-        out += [verified(read_json(folder / (cell_id(sealed["unit"], job["arm"], job["item"], job["run"]) + ".json")),
-                         "cell") for job in jobs]
+        if profiles.is_v226(sealed.get('configuration')):
+            out += [_read_recovery(folder / (cell_id(sealed["unit"], job["arm"], job["item"], job["run"]) + ".json"),
+                                  "cell", sealed) for job in jobs]
+        else:
+            out += [verified(read_json(folder / (cell_id(sealed["unit"], job["arm"], job["item"], job["run"]) + ".json")),
+                             "cell") for job in jobs]
     return out
 

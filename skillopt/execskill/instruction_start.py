@@ -27,7 +27,12 @@ def pins():
 
 
 def active_cards(cards, configuration):
-    from .profiles import is_v210, is_v214
+    from .profiles import is_v210, is_v214, is_v222
+    if is_v222(configuration):
+        from .v222_cards import format_text, historical_text
+        require(all(text in (format_text(bench), historical_text(bench)) for bench, text in cards.items()),
+                "main-v8 active cards are fixed format blocks or pinned whole historical fallbacks")
+        return dict(cards)
     if not is_v210(configuration):
         return dict(cards)
     instructions = pins()
@@ -53,6 +58,11 @@ def original_card(bench, active_text):
 
 
 def original_cards(cards, configuration):
+    from .profiles import is_v222
+    if is_v222(configuration):
+        from .v222_cards import historical_text
+        active_cards(cards, configuration)
+        return {bench: historical_text(bench) for bench in cards}
     return active_cards(cards, configuration)
 
 

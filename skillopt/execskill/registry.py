@@ -110,7 +110,7 @@ class Registry:
     this instance names (``bound``; Codex finding #7), None for an unbound registry."""
 
     def __init__(self, root=HISTORY_ROOT, *, evidence, clock=_utc_now, run_root=None):
-        require(evidence in EVIDENCE, "Unknown evidence label")
+        require(evidence in EVIDENCE or evidence in ('main_v9_real_run', 'main_v10_real_run'), "Unknown evidence label")
         self.root = safe_path(root)
         self.evidence = evidence
         self.clock = clock

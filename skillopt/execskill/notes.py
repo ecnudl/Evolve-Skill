@@ -131,14 +131,14 @@ def v28_screen_sha256():
 
 def outcome_judged(procedure):
     """A procedure's immutable policy identity scopes the new runtime behavior."""
-    from .policy import POLICY_VERSION_V28, POLICY_VERSION_V29
-    return getattr(procedure, "policy_version", None) in (POLICY_VERSION_V28, POLICY_VERSION_V29)
+    from .policy import POLICY_VERSION_V28, POLICY_VERSION_V29, POLICY_VERSION_V222
+    return getattr(procedure, "policy_version", None) in (POLICY_VERSION_V28, POLICY_VERSION_V29, POLICY_VERSION_V222)
 
 
 def audited(procedure):
     """Only v2.9's immutable procedure policy enables log-only keyword checks."""
-    from .policy import POLICY_VERSION_V29
-    return getattr(procedure, "policy_version", None) == POLICY_VERSION_V29
+    from .policy import POLICY_VERSION_V29, POLICY_VERSION_V222
+    return getattr(procedure, "policy_version", None) in (POLICY_VERSION_V29, POLICY_VERSION_V222)
 
 
 def sentence_elements(text):

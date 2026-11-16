@@ -1,0 +1,54 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______ test_manifest_setting_refuses_nested_frozen_inputs_before_setup ________
+
+roots = (PosixPath('<repo-root>/.review-scratch/identity-n4xqhy25/main-v9'), PosixPath('<repo-root>/.review-scratch/identity-n4xqhy25/main-v10'))
+
+    def test_manifest_setting_refuses_nested_frozen_inputs_before_setup(roots):
+        frozen, fresh = roots
+        value = {'configuration': p.MAIN_V10, 'root': str(fresh), 'evidence': 'smoke',
+                 'data': {'pools': {'searchqa': {'path': str(frozen/'pool.json')}}}}
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+>           manifest.setting_of(value, 'G')
+
+tests/test_execskill_v226_preparation_review.py:146: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+m = {'configuration': 'main-v10', 'data': {'pools': {'searchqa': {'path': '<repo-root>/.re... 'evidence': 'smoke', 'root': '<repo-root>/.review-scratch/identity-n4xqhy25/main-v10'}
+chain = 'G'
+
+    def setting_of(m, chain, *, path=None, docker=None, transport=None):
+        """The ``units.Setting`` of ``chain`` (``RUNS``) from the verified manifest ``m`` (module docstring; ticket C2-1
+        §1). Chains G and D run on their own ledgers (``budgets.ledger_root``; ``chain.run`` declares their caps), the
+        smoke on ``<root>/shared/ledger`` with ``budgets.smoke_caps()`` declared here; the solver is the chain's (the smoke:
+        its specification's, ``smoke.solver_of``: chain D's elucid model, or GLM-5.3 in a chain-G smoke, registrar
+        addendum 2026-10-23 02:3x), every role GLM-5.3; ``branch`` / ``longest`` are the verified solver block's (fixer-6
+        item 5). ``extra``: ``verify`` (``verify_unit`` before every unit), ``drain`` (the unit drain,
+        ``sandbox.client.drain_unit``), ``slot_root``, ``configuration`` (the manifest's run configuration, which every
+        consumer follows: ``protocol.configuration_of``), ``manifest`` (``path``, the file the read children are started
+        with) and, for G and D, ``test_read_estimate`` and ``test_read_terms`` (ticket P2C-2) and, when the
+        configuration's order has SearchQA, ``searchqa_tail`` (``data.searchqa_tail`` with the bound SearchQA exclusion
+        record as ``exclusion``; M round 18:2x). Chain D runs on the route its history names now (``routes.current``; the
+        smoke always on route A): that route's client, and ``branch`` / ``longest`` / B of its block (route B: the pin,
+        branch N), with ``extra["route"]`` its id (registrar row "deepseek route B"). ``docker``: the docker CLI
+        of the workers, the drain and the image check (a fake in tests); ``transport``: the clients' httpx transport
+        (tests)."""
+        require(chain in RUNS, "Chain G, chain D or the smoke")
+        if protocol.is_v226(m["configuration"]):
+            _check_run_root(m["root"], m["configuration"], m["evidence"])
+        if protocol.is_zebra(m["configuration"]) and protocol.is_v27(m["configuration"]):
+            require(chain in protocol.launchable_chains(m["configuration"]), "zebra-pc-v5 launches chain D only")
+        if protocol.is_alfworld_v2(m["configuration"]):
+            require(chain in protocol.launchable_chains(m["configuration"]), "ALFWorld v2 launches only chain D")
+        require((m["evidence"] == SMOKE_EVIDENCE) == (chain == budgets.SMOKE)
+                or ((protocol.is_zebra(m["configuration"]) or protocol.is_alfworld(m["configuration"]) or protocol.is_v210(m["configuration"]))
+                    and m["evidence"] == SMOKE_EVIDENCE),
+                "The smoke runs on a smoke manifest and the chains on a pilot manifest")
+>       require(m["lexicon_sha"] == notes.lexicon_sha256() and m["prompt_sha"] == prompt_sha(m["configuration"]),
+                "The lexicon or a pinned prompt differs from the manifest")
+E       KeyError: 'lexicon_sha'
+
+skillopt/execskill/manifest.py:1062: KeyError
+=========================== short test summary info ============================
+FAILED tests/test_execskill_v226_preparation_review.py::test_manifest_setting_refuses_nested_frozen_inputs_before_setup
+1 failed, 36 deselected in 0.76s

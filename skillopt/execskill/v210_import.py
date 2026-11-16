@@ -61,12 +61,14 @@ def pins(*, fixture=None):
 
 def learning_capacity(package):
     """Reserve the immutable import inside the inherited package cap, before any adoption."""
-    used_bytes = sum(len(procedure.source.encode()) for procedure in package.procedures)
+    from .v225_cards import is_card
+    procedures = [proc for proc in package.procedures if not is_card(proc)]
+    used_bytes = sum(len(procedure.source.encode()) for procedure in procedures)
     return {"package_source_bytes": LEARNED_SOURCE_BYTES, "package_procedures": LEARNED_PROCEDURES,
             "reserved_import_source_bytes": IMPORT_SOURCE_BYTES, "reserved_import_procedures": IMPORT_PROCEDURES,
-            "used_source_bytes": used_bytes, "used_procedures": len(package.procedures),
+            "used_source_bytes": used_bytes, "used_procedures": len(procedures),
             "remaining_source_bytes": LEARNED_SOURCE_BYTES - used_bytes,
-            "remaining_procedures": LEARNED_PROCEDURES - len(package.procedures)}
+            "remaining_procedures": LEARNED_PROCEDURES - len(procedures)}
 
 
 def check_learning_capacity(package):
@@ -84,7 +86,7 @@ def import_step(setting, chain_root, chain, k, bench, parent):
     the final package retains the chain's learned procedures in their existing order.
     Source procedure fields are unchanged except evidence and its resulting record hash.
     """
-    require(p.configuration_of(setting) in (p.MAIN_V3, p.MAIN_V4, p.MAIN_V5, p.MAIN_V6, p.IMPLANT_V5, p.CROSS_V5) and chain in p.CHAINS and k == 5 and bench == "alfworld",
+    require(p.configuration_of(setting) in (p.MAIN_V3, p.MAIN_V4, p.MAIN_V5, p.MAIN_V6, p.MAIN_V7, p.MAIN_V8, p.MAIN_V9, p.MAIN_V10, p.IMPLANT_V5, p.CROSS_V5) and chain in p.CHAINS and k == 5 and bench == "alfworld",
             "The registered main-v3 ALFWorld import is step 5")
     source = pins()
     require(setting.extra.get("alfworld_v11_import") == source,
@@ -112,7 +114,9 @@ def import_step(setting, chain_root, chain, k, bench, parent):
         "source_package_sha256": PACKAGE_SHA256, "candidate_sha256": None,
         "package_sha256": package.sha256, "decision": "import", "reason": "preregistered_alfworld_v11_import",
         "decision_sha256": None, "fault_items": [], "violating_items": [], "units": {},
-        "evidence_kind": "import", "import_sha256": provenance[p.RECORD_HASH]})
+        "evidence_kind": "import", "import_sha256": provenance[p.RECORD_HASH],
+        **({"candidate_errors": {}, "candidate_error_events": []}
+           if p.is_v226(p.configuration_of(setting)) else {})})
     final = root / "s5-alfworld" / "step.json"
     if final.exists():
         require(p.verified(read_json(final), "step") == value, "A finished import step has different pins or parents")

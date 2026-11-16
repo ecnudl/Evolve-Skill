@@ -734,8 +734,7 @@ def switch_route(args):
     found = manifest.load(args.manifest, verify=False)
     block = routes.block_of(found, args.chain, args.to)
     model = protocol.CHAINS[args.chain]
-    probe_client = client.solver_client(model, config=manifest.solver_config(found, args.chain, protocol.BENCHES[0],
-                                                                             args.to))
+    probe_client = manifest.make_solver(found, args.chain, protocol.BENCHES[0], args.to)
     probe_client.http.close()  # constructed only: the credential file's checks, no request
     done = routes.switch(safe_path(found["root"]) / args.chain, to=args.to, run=found[protocol.RECORD_HASH],
                          evidence=found["evidence"], chain=args.chain, reason=args.reason)
@@ -948,9 +947,14 @@ def v214_command(args):
     elif action in ('selftest', 's0'):
         options = dict(preparation_file=args.preparation, zebra_pool=args.zebra_pool,
                        zebra_split_manifest=args.zebra_split_manifest, **selected)
+        if getattr(args, 'v222_practice_supply', None) is not None:
+            require(protocol.is_v222(configuration), 'Additional v2.22 practice requires main-v8, main-v9 or main-v10')
+            options['v222_practice_supply'] = args.v222_practice_supply
         if action == 's0':
             options.update(root=args.root, snapshot_root=args.snapshot, selftest=args.selftest,
                            sheet_runtime=args.sheet_runtime)
+            if configuration == protocol.SEARCHQA_HP_V6:
+                options['main_v6_root'] = args.main_v6_root
             if configuration != protocol.MAIN_V5 and getattr(args, 'consent', None) is not None:
                 options['consent_file'] = args.consent
         value = getattr(v214_smoke, 'collect_s0' if action == 's0' else 'selftest')(args.out, **options)
@@ -970,8 +974,29 @@ def v214_command(args):
     return 0 if passed else 3
 
 
+class _ConfigurationParser(argparse.ArgumentParser):
+    """Only the SearchQA child may omit the older commands' environment inputs."""
+    def parse_known_args(self, args=None, namespace=None):
+        supplied = list(sys.argv[1:] if args is None else args)
+        selected = next((arg.split('=', 1)[1] for arg in supplied if arg.startswith('--configuration=')), None)
+        if '--configuration' in supplied:
+            index = supplied.index('--configuration')
+            selected = supplied[index + 1] if index + 1 < len(supplied) else None
+        relaxed = []
+        if selected == protocol.SEARCHQA_HP_V6:
+            for action in self._actions:
+                if action.dest in ('zebra_pool', 'zebra_split_manifest', 'sheet_runtime') and action.required:
+                    action.required = False
+                    relaxed.append(action)
+        try:
+            return super().parse_known_args(supplied, namespace)
+        finally:
+            for action in relaxed:
+                action.required = True
+
+
 def parser():
-    top = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    top = _ConfigurationParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = top.add_subparsers(dest="command", required=True)
     command = sub.add_parser("verify-snapshot")
     command.add_argument("--list", required=True)
@@ -1230,7 +1255,7 @@ def parser():
             command.add_argument('--stage', choices=('S0', 'S2', 'S3', 'SE6', 'SX'), required=True)
     for name in ('snapshot', 'selftest', 's0', 'manifest', 'structural-smoke', 'smoke-run', 'smoke-summary'):
         command = sub.add_parser('v214-' + name)
-        command.add_argument('--configuration', choices=(protocol.MAIN_V5, protocol.IMPLANT_V5, protocol.MAIN_V6, protocol.CROSS_V5),
+        command.add_argument('--configuration', choices=(protocol.MAIN_V5, protocol.IMPLANT_V5, protocol.MAIN_V6, protocol.CROSS_V5, protocol.SEARCHQA_HP_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9, protocol.MAIN_V10),
                              default=protocol.MAIN_V5)
         if name not in ('smoke-run', 'smoke-summary'):
             command.add_argument('--out', required=True)
@@ -1238,14 +1263,17 @@ def parser():
             command.add_argument('--source', default=str(PROJECT_ROOT))
             command.add_argument('--git-head', required=True)
         elif name in ('selftest', 's0'):
-            command.add_argument('--preparation', required=True, help='Passing frozen main-v4 S0, not a result file')
+            command.add_argument('--preparation', required=True, help='Frozen main-v4 S0; searchqa-hp-v6 uses its main-v6 manifest metadata')
             command.add_argument('--zebra-pool', required=True)
             command.add_argument('--zebra-split-manifest', required=True)
+            command.add_argument('--v222-practice-supply', help='main-v8/main-v9/main-v10: reviewed SHA-pinned additional practice supply')
             if name == 's0':
                 for flag in ('root', 'selftest', 'sheet-runtime'):
                     command.add_argument('--' + flag, required=True)
                 command.add_argument('--snapshot', default=str(PROJECT_ROOT))
                 command.add_argument('--consent', help='main-v6/implant-v5/cross-v5 owner consent copied into the root before launch')
+                command.add_argument('--main-v6-root', default=protocol.MAIN_V6_ROOT,
+                                     help='searchqa-hp-v6 only: completed source root pinned at S0')
         elif name == 'manifest':
             for flag in ('root', 's0', 'provenance', 'roles-repo', 'route-b-env', 'sheet-runtime'):
                 command.add_argument('--' + flag, required=True)

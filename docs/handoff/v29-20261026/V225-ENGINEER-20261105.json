@@ -1,0 +1,1897 @@
+{
+  "additional_failure_baseline": {
+    "command": [
+      "<python>",
+      "-B",
+      "-m",
+      "pytest",
+      "-q",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp=<repo-root>/.v225-engineer-20261105/cases-baseline",
+      "--junitxml=<repo-root>/.v225-engineer-20261105/baseline.xml",
+      "tests/test_execskill_engineer.py::test_the_pipeline_runs_c1_to_c9_and_gives_one_fix_per_failed_change",
+      "tests/test_execskill_glm_smoke.py::test_cli_rehearsal_runs_the_chain_g_smoke_end_to_end_as_an_engineering_fixture",
+      "tests/test_execskill_v211_selftest.py::test_real_selftest_cli_receipt_is_accepted_by_s0_cli",
+      "tests/test_execskill_v215_fix1_runtime.py::test_actual_child_process_preserves_accepted_outcome_after_diagnostic_deadline[False]"
+    ],
+    "failed": 4,
+    "limits": "These four categories were reproduced. Other legacy state/assertion cases were not individually isolated; loopback binds were not retried. No unrelated code was edited.",
+    "passed": 0,
+    "procedure": "Restored the three changed production files and both changed main-v9 fixtures in disposable copy; ran four representative failures; restored fixed bytes afterward.",
+    "results": [
+      {
+        "message": "PermissionError: [Errno 1] Operation not permitted",
+        "reproduced": true,
+        "test": "tests/test_execskill_engineer.py::test_the_pipeline_runs_c1_to_c9_and_gives_one_fix_per_failed_change"
+      },
+      {
+        "message": "ValueError: A fixture formula cell without its cache slot: D2",
+        "reproduced": true,
+        "test": "tests/test_execskill_glm_smoke.py::test_cli_rehearsal_runs_the_chain_g_smoke_end_to_end_as_an_engineering_fixture"
+      },
+      {
+        "message": "AssertionError: assert b'PK\\x03\\x04\\...0\\x00\\x00\\x00' == b'PK\\x03\\x04\\...0\\x00\\x00\\x00'\n  \n  At index 2095 diff: b'b' != b'5'\n  Use -v to get more diff",
+        "reproduced": true,
+        "test": "tests/test_execskill_v211_selftest.py::test_real_selftest_cli_receipt_is_accepted_by_s0_cli"
+      },
+      {
+        "message": "AttributeError: module 'os' has no attribute 'waitid'. Did you mean: 'waitpid'?",
+        "reproduced": true,
+        "test": "tests/test_execskill_v215_fix1_runtime.py::test_actual_child_process_preserves_accepted_outcome_after_diagnostic_deadline[False]"
+      }
+    ]
+  },
+  "authority_and_provenance": {
+    "authority": "Operator under the owner's standing mandate to fix defects and improve the method, not an owner sentence about this prompt text.",
+    "effect_measured": false,
+    "held_out_influence": "Written knowing a learned ZebraLogic solver helped on the held-out panel in main-v6. Main-v9 ZebraLogic results must disclose this prior-result influence.",
+    "main_v9_has_run": false,
+    "main_v9_numbers_existed": false,
+    "post_hoc": true,
+    "sections": [
+      "4.3",
+      "7"
+    ],
+    "source": "<docs-repo>/docs/paper/zebra-candidates-v6-v7-20261105.md"
+  },
+  "changes": [
+    "Append the supplied complete-solution priority paragraph verbatim to the main-v9 engineer sentence.",
+    "Correct main-v9 low-coverage inert cause/evidence without changing inert decisions or gates."
+  ],
+  "configuration": "main-v9",
+  "date": "2026-11-05",
+  "evidence": "engineering_fixture",
+  "exact_never_fires_condition": "protocol.is_v225(ctx.configuration) and coverage['candidate']['touched'] < protocol.GAIN_MIN_ITEMS, then routed['C6b'][1]['fires_on'] == 0",
+  "focused": {
+    "command": [
+      "<python>",
+      "-B",
+      "-m",
+      "pytest",
+      "-q",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp=<repo-root>/.v225-engineer-20261105/cases-new",
+      "--junitxml=<repo-root>/.v225-engineer-20261105/new.xml",
+      "tests/test_execskill_v225_engineer_prompt.py"
+    ],
+    "cwd": "<repo-root>",
+    "errors": 0,
+    "failed": 0,
+    "passed": 28,
+    "path": "Real engineer.check with executed authored hooks and real engineer_v294.repair/_ask serialization, captured by WireRoles; no source-check substitute."
+  },
+  "full_selection": {
+    "command": [
+      "<python>",
+      "-B",
+      "-m",
+      "pytest",
+      "-q",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp=<repo-root>/.v225-engineer-20261105/cases-all",
+      "--junitxml=<repo-root>/.v225-engineer-20261105/validation.xml",
+      "tests/test_execskill_alf_v1_engineer.py",
+      "tests/test_execskill_alf_v1_frozen.py",
+      "tests/test_execskill_alf_v1_pipeline.py",
+      "tests/test_execskill_alf_v1_profile.py",
+      "tests/test_execskill_alf_v1_readout.py",
+      "tests/test_execskill_alf_v1_smoke.py",
+      "tests/test_execskill_alf_v1_smoke_review.py",
+      "tests/test_execskill_budgets.py",
+      "tests/test_execskill_canaries.py",
+      "tests/test_execskill_chain.py",
+      "tests/test_execskill_cli.py",
+      "tests/test_execskill_client.py",
+      "tests/test_execskill_describer.py",
+      "tests/test_execskill_detectors.py",
+      "tests/test_execskill_e2e.py",
+      "tests/test_execskill_e2e_main.py",
+      "tests/test_execskill_engineer.py",
+      "tests/test_execskill_examiner.py",
+      "tests/test_execskill_glm_smoke.py",
+      "tests/test_execskill_integration_b1.py",
+      "tests/test_execskill_integration_b2.py",
+      "tests/test_execskill_integration_b4.py",
+      "tests/test_execskill_integration_b5.py",
+      "tests/test_execskill_manifest.py",
+      "tests/test_execskill_mutations.py",
+      "tests/test_execskill_outcomes_ext.py",
+      "tests/test_execskill_package.py",
+      "tests/test_execskill_protocol.py",
+      "tests/test_execskill_replay.py",
+      "tests/test_execskill_research.py",
+      "tests/test_execskill_routes.py",
+      "tests/test_execskill_runcli.py",
+      "tests/test_execskill_smoke.py",
+      "tests/test_execskill_smoke_rehearsal.py",
+      "tests/test_execskill_smoke_roles.py",
+      "tests/test_execskill_smoke_waiver.py",
+      "tests/test_execskill_stage_read.py",
+      "tests/test_execskill_step.py",
+      "tests/test_execskill_sx_rehearsal.py",
+      "tests/test_execskill_v2.py",
+      "tests/test_execskill_v21.py",
+      "tests/test_execskill_v210_capacity.py",
+      "tests/test_execskill_v210_import.py",
+      "tests/test_execskill_v210_manifest.py",
+      "tests/test_execskill_v210_profile.py",
+      "tests/test_execskill_v210_snapshot.py",
+      "tests/test_execskill_v211_allocation.py",
+      "tests/test_execskill_v211_audit.py",
+      "tests/test_execskill_v211_budgets.py",
+      "tests/test_execskill_v211_manifest.py",
+      "tests/test_execskill_v211_profile.py",
+      "tests/test_execskill_v211_prompts.py",
+      "tests/test_execskill_v211_protection.py",
+      "tests/test_execskill_v211_rehearsal.py",
+      "tests/test_execskill_v211_routing.py",
+      "tests/test_execskill_v211_s2.py",
+      "tests/test_execskill_v211_selftest.py",
+      "tests/test_execskill_v211_sheet_runtime.py",
+      "tests/test_execskill_v211_smoke.py",
+      "tests/test_execskill_v211_views.py",
+      "tests/test_execskill_v212_acceptance.py",
+      "tests/test_execskill_v212_evaluation.py",
+      "tests/test_execskill_v212_pipeline.py",
+      "tests/test_execskill_v212_profile.py",
+      "tests/test_execskill_v212_smoke.py",
+      "tests/test_execskill_v213_evaluation.py",
+      "tests/test_execskill_v213_import.py",
+      "tests/test_execskill_v213_profile.py",
+      "tests/test_execskill_v213_smoke.py",
+      "tests/test_execskill_v214_evaluation.py",
+      "tests/test_execskill_v214_fix1_effects.py",
+      "tests/test_execskill_v214_fix1_scope.py",
+      "tests/test_execskill_v214_learning.py",
+      "tests/test_execskill_v214_preparation.py",
+      "tests/test_execskill_v214_profile.py",
+      "tests/test_execskill_v214_smoke.py",
+      "tests/test_execskill_v215_diagnostics_runtime.py",
+      "tests/test_execskill_v215_feedback.py",
+      "tests/test_execskill_v215_fix1_feedback.py",
+      "tests/test_execskill_v215_fix1_runtime.py",
+      "tests/test_execskill_v215_profile.py",
+      "tests/test_execskill_v215_smoke.py",
+      "tests/test_execskill_v216_cycle.py",
+      "tests/test_execskill_v216_profile.py",
+      "tests/test_execskill_v216_runtime.py",
+      "tests/test_execskill_v216_smoke.py",
+      "tests/test_execskill_v217_evaluation.py",
+      "tests/test_execskill_v217_import.py",
+      "tests/test_execskill_v217_profile.py",
+      "tests/test_execskill_v217_smoke.py",
+      "tests/test_execskill_v217i_evaluation.py",
+      "tests/test_execskill_v217i_fix1_budget.py",
+      "tests/test_execskill_v217i_profile.py",
+      "tests/test_execskill_v217i_smoke.py",
+      "tests/test_execskill_v218_fix1_budget.py",
+      "tests/test_execskill_v218_fix1_metadata.py",
+      "tests/test_execskill_v218_fix1_split.py",
+      "tests/test_execskill_v218_profile.py",
+      "tests/test_execskill_v218_read.py",
+      "tests/test_execskill_v218_smoke.py",
+      "tests/test_execskill_v218_split.py",
+      "tests/test_execskill_v218_zebra.py",
+      "tests/test_execskill_v219_fix1_scope.py",
+      "tests/test_execskill_v219_profile.py",
+      "tests/test_execskill_v219_read.py",
+      "tests/test_execskill_v219_smoke.py",
+      "tests/test_execskill_v22.py",
+      "tests/test_execskill_v220_chain.py",
+      "tests/test_execskill_v220_import.py",
+      "tests/test_execskill_v220_profile.py",
+      "tests/test_execskill_v220_read.py",
+      "tests/test_execskill_v220_readout.py",
+      "tests/test_execskill_v220_smoke.py",
+      "tests/test_execskill_v221_fix1.py",
+      "tests/test_execskill_v221_learning.py",
+      "tests/test_execskill_v221_preparation.py",
+      "tests/test_execskill_v221_profile.py",
+      "tests/test_execskill_v221_recovery.py",
+      "tests/test_execskill_v221_rule.py",
+      "tests/test_execskill_v221_smoke.py",
+      "tests/test_execskill_v222_capacity.py",
+      "tests/test_execskill_v222_cards.py",
+      "tests/test_execskill_v222_feedback.py",
+      "tests/test_execskill_v222_fix1_cards.py",
+      "tests/test_execskill_v222_fix1_hygiene.py",
+      "tests/test_execskill_v222_fix2_history.py",
+      "tests/test_execskill_v222_fix2_paths.py",
+      "tests/test_execskill_v222_isolation.py",
+      "tests/test_execskill_v222_preparation.py",
+      "tests/test_execskill_v222_profile.py",
+      "tests/test_execskill_v222_runtime.py",
+      "tests/test_execskill_v225_cards.py",
+      "tests/test_execskill_v225_cli_templates.py",
+      "tests/test_execskill_v225_cross_card.py",
+      "tests/test_execskill_v225_engineer_prompt.py",
+      "tests/test_execskill_v225_evidence.py",
+      "tests/test_execskill_v225_isolation.py",
+      "tests/test_execskill_v225_limits.py",
+      "tests/test_execskill_v225_literals.py",
+      "tests/test_execskill_v225_manifest.py",
+      "tests/test_execskill_v225_metrics.py",
+      "tests/test_execskill_v225_ops.py",
+      "tests/test_execskill_v225_phase.py",
+      "tests/test_execskill_v225_profile.py",
+      "tests/test_execskill_v225_read.py",
+      "tests/test_execskill_v225_reads.py",
+      "tests/test_execskill_v225_routing.py",
+      "tests/test_execskill_v225_small_confirmation.py",
+      "tests/test_execskill_v225_smoke.py",
+      "tests/test_execskill_v225_snapshot.py",
+      "tests/test_execskill_v225_writer.py",
+      "tests/test_execskill_v23.py",
+      "tests/test_execskill_v23_delivery.py",
+      "tests/test_execskill_v23_engineer.py",
+      "tests/test_execskill_v23_firing_amendment.py",
+      "tests/test_execskill_v23_firing_check.py",
+      "tests/test_execskill_v23_prompt_review.py",
+      "tests/test_execskill_v24_engineer.py",
+      "tests/test_execskill_v24_feedback_isolation.py",
+      "tests/test_execskill_v24_orchestration.py",
+      "tests/test_execskill_v24_profile.py",
+      "tests/test_execskill_v24_routing_review.py",
+      "tests/test_execskill_v24_training.py",
+      "tests/test_execskill_v25_engineer.py",
+      "tests/test_execskill_v25_frozen.py",
+      "tests/test_execskill_v25_profile.py",
+      "tests/test_execskill_v25_training.py",
+      "tests/test_execskill_v26_determinism.py",
+      "tests/test_execskill_v26_frozen.py",
+      "tests/test_execskill_v26_profile.py",
+      "tests/test_execskill_v26_references.py",
+      "tests/test_execskill_v27_alf_engineer.py",
+      "tests/test_execskill_v27_alf_profile.py",
+      "tests/test_execskill_v27_engineer.py",
+      "tests/test_execskill_v27_fix_replies.py",
+      "tests/test_execskill_v27_frozen.py",
+      "tests/test_execskill_v27_profile.py",
+      "tests/test_execskill_v27_replay_feedback.py",
+      "tests/test_execskill_v27_tracker_review.py",
+      "tests/test_execskill_v27_validation.py",
+      "tests/test_execskill_v27_zebra_smoke_review.py",
+      "tests/test_execskill_v28_engineer.py",
+      "tests/test_execskill_v28_execution.py",
+      "tests/test_execskill_v28_fix_notes.py",
+      "tests/test_execskill_v28_fix_reader.py",
+      "tests/test_execskill_v28_fix_replay.py",
+      "tests/test_execskill_v28_fix_smoke.py",
+      "tests/test_execskill_v28_frozen.py",
+      "tests/test_execskill_v28_profile.py",
+      "tests/test_execskill_v28_reader.py",
+      "tests/test_execskill_v28_reader_review.py",
+      "tests/test_execskill_v28_training.py",
+      "tests/test_execskill_v291_diagnostic_bounds.py",
+      "tests/test_execskill_v291_engineer.py",
+      "tests/test_execskill_v291_faults.py",
+      "tests/test_execskill_v291_feedback.py",
+      "tests/test_execskill_v291_note_caps.py",
+      "tests/test_execskill_v291_profile.py",
+      "tests/test_execskill_v291_smoke.py",
+      "tests/test_execskill_v292_cleanup.py",
+      "tests/test_execskill_v292_cleanup_plumbing.py",
+      "tests/test_execskill_v292_engineer.py",
+      "tests/test_execskill_v292_faults.py",
+      "tests/test_execskill_v292_inline_fences.py",
+      "tests/test_execskill_v292_owner_agreement.py",
+      "tests/test_execskill_v292_profile.py",
+      "tests/test_execskill_v292_reader.py",
+      "tests/test_execskill_v292_ready.py",
+      "tests/test_execskill_v292_ready_plumbing.py",
+      "tests/test_execskill_v292_smoke.py",
+      "tests/test_execskill_v293_profile.py",
+      "tests/test_execskill_v293_retry.py",
+      "tests/test_execskill_v294_feedback.py",
+      "tests/test_execskill_v294_profile.py",
+      "tests/test_execskill_v294_real.py",
+      "tests/test_execskill_v294_repair.py",
+      "tests/test_execskill_v295_engineer.py",
+      "tests/test_execskill_v295_profile.py",
+      "tests/test_execskill_v295_reader.py",
+      "tests/test_execskill_v295_rounds.py",
+      "tests/test_execskill_v296_binding.py",
+      "tests/test_execskill_v296_profile.py",
+      "tests/test_execskill_v297_audit.py",
+      "tests/test_execskill_v297_binding.py",
+      "tests/test_execskill_v297_profile.py",
+      "tests/test_execskill_v29_audit.py",
+      "tests/test_execskill_v29_confirm.py",
+      "tests/test_execskill_v29_confirm_views.py",
+      "tests/test_execskill_v29_engineer.py",
+      "tests/test_execskill_v29_frozen.py",
+      "tests/test_execskill_v29_manifest_smoke.py",
+      "tests/test_execskill_v29_profile.py",
+      "tests/test_execskill_v29_reply_parts.py",
+      "tests/test_execskill_v29_runtime.py",
+      "tests/test_execskill_v2_step.py",
+      "tests/test_execskill_zpc_orchestration.py",
+      "tests/test_execskill_zpc_pipeline.py",
+      "tests/test_execskill_zpc_reference_isolation.py",
+      "tests/test_execskill_zpc_regression.py",
+      "tests/test_execskill_zpc_regressions.py",
+      "tests/test_execskill_zpc_review1.py"
+    ],
+    "cwd": "<repo-root>/.v225-engineer-20261105/source",
+    "environment": {
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHONPATH": "<repo-root>/.v225-engineer-20261105/source",
+      "TMPDIR": "<repo-root>/.v225-engineer-20261105/runtime"
+    },
+    "errors": 193,
+    "failed": 75,
+    "issue_groups": [
+      {
+        "count": 4,
+        "description": "Existing ops helpers require scratch below /tmp; incompatible with original-tree-only writes.",
+        "group": "known_tmp_requirement"
+      },
+      {
+        "count": 25,
+        "description": "Legacy sealed-read, continuation-pause, missing receipt/status, lock-order or exception-class assertions; not individually baseline-isolated.",
+        "group": "legacy_pipeline_state_or_assertion"
+      },
+      {
+        "count": 3,
+        "description": "Three existing stalling-proxy fixtures attempted loopback bind and were denied by the sandbox; no connection established and not retried.",
+        "group": "loopback_bind_denied"
+      },
+      {
+        "count": 2,
+        "description": "The current macOS Python lacks os.waitid; no version-dependent workaround added.",
+        "group": "macos_missing_waitid"
+      },
+      {
+        "count": 27,
+        "description": "Legacy workbook fixture cache-slot D2 errors or byte-comparison mismatches.",
+        "group": "workbook_fixture_cache_or_bytes"
+      },
+      {
+        "count": 207,
+        "description": "Worker exits and os.killpg PermissionError, including the failed shared baseline that prevents all152 mutation cases from starting.",
+        "group": "worker_cleanup_or_mutation_setup"
+      }
+    ],
+    "issues": [
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "failure",
+        "test": "tests/test_execskill_cli.py::test_cli_rehearsal_runs_the_trimmed_smoke_end_to_end_as_an_engineering_fixture[default]"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "failure",
+        "test": "tests/test_execskill_cli.py::test_cli_rehearsal_runs_the_trimmed_smoke_end_to_end_as_an_engineering_fixture[main]"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "failure",
+        "test": "tests/test_execskill_cli.py::test_make_fixtures_is_wired"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_detectors.py::test_det1_masked_views_hide_answers_run_status_and_step_count"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_detectors.py::test_det2_det3_residual_metrics_and_jaccard_on_the_full_hold_half"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_detectors.py::test_det4_all_failures_run_50_steps_yet_a_landmark_detector_can_be_accepted"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_detectors.py::test_det5_landmark_task_excludes_early_ends_and_hides_terminal_text"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_detectors.py::test_det6_room_split_sealing_holm_faults_and_determinism"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "error",
+        "test": "tests/test_execskill_e2e.py::test_both_chains_complete_the_pilot_and_accept_the_same_procedures"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "error",
+        "test": "tests/test_execskill_e2e.py::test_step_one_spreadsheetbench_runs_every_sub_step_and_its_generator_is_not_admitted"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "error",
+        "test": "tests/test_execskill_e2e.py::test_step_two_officeqa_researches_generates_and_keeps_only_the_valid_change"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "error",
+        "test": "tests/test_execskill_e2e.py::test_the_acceptance_rounds_seal_every_registered_arm"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "error",
+        "test": "tests/test_execskill_e2e.py::test_every_decision_again_from_its_cell_records_and_sealed_record_alone"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "error",
+        "test": "tests/test_execskill_e2e.py::test_every_record_is_versioned_labelled_and_stamped_with_its_chain"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "error",
+        "test": "tests/test_execskill_e2e.py::test_both_chains_consume_the_same_slice_items_in_their_own_namespaces"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "error",
+        "test": "tests/test_execskill_e2e.py::test_each_chain_ledger_settles_every_reservation_on_its_own_scopes"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "error",
+        "test": "tests/test_execskill_e2e.py::test_no_test_text_in_any_training_side_artifact"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "error",
+        "test": "tests/test_execskill_e2e.py::test_the_read_shares_structural_zeros_and_seals_hashes_only"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "error",
+        "test": "tests/test_execskill_e2e.py::test_the_owner_continuation_unseals_and_the_readout_tables"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "error",
+        "test": "tests/test_execskill_e2e_main.py::test_both_chains_run_mains_five_steps_and_accept_four_procedures"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "error",
+        "test": "tests/test_execskill_e2e_main.py::test_searchqa_runs_on_its_pool_and_accepts_on_the_kept_tail"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "error",
+        "test": "tests/test_execskill_e2e_main.py::test_livemath_cuts_its_j7_probe_and_runs_it_options_only"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "error",
+        "test": "tests/test_execskill_e2e_main.py::test_the_self_tests_of_steps_three_and_four_run_officeqas_set_on_its_own_endpoint"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "error",
+        "test": "tests/test_execskill_e2e_main.py::test_alfworld_runs_whole_room_slices_of_the_fresh_supply_on_the_pinned_views"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "error",
+        "test": "tests/test_execskill_e2e_main.py::test_chain_g_cost_check_records_its_breach_and_never_pauses_and_the_read_gate_applies_the_factor"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "error",
+        "test": "tests/test_execskill_e2e_main.py::test_chain_d_pauses_on_balance_exhaustion_switches_to_route_b_and_redoes_the_unit_there"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "error",
+        "test": "tests/test_execskill_e2e_main.py::test_both_chains_read_all_five_units_and_the_sealed_cells_keep_the_solver_route"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "error",
+        "test": "tests/test_execskill_e2e_main.py::test_every_ledger_settled_every_reservation"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_engineer.py::test_the_pipeline_runs_c1_to_c9_and_gives_one_fix_per_failed_change"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_engineer.py::test_r7a_engineer_calls_are_counted_per_step_across_both_engineer_units"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_engineer.py::test_leakage_counts_only_content_absent_from_the_items_public_view"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_engineer.py::test_revision_deletion_and_narrowing_build_the_candidate"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_engineer.py::test_codex_2_a_copied_reference_in_a_source_literal_is_adjudicated_with_the_values"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_engineer.py::test_codex_2_a_copied_reference_in_a_rendered_note_is_adjudicated_not_dropped_mechanically"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_engineer.py::test_codex_2_public_and_trivial_values_need_no_adjudication"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_examiner.py::test_exam1_the_detector_payload_shows_the_masked_write_half_only"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_examiner.py::test_exam2_detector_manifest_parsed_and_each_source_policy_checked"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "failure",
+        "test": "tests/test_execskill_glm_smoke.py::test_cli_rehearsal_runs_the_chain_g_smoke_end_to_end_as_an_engineering_fixture"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_integration_b2.py::test_gate_i_empty_package_equals_the_frozen_solver_with_the_real_worker_on_five_benches"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "failure",
+        "test": "tests/test_execskill_integration_b2.py::test_outcomes_and_judge_read_the_records_of_the_real_shell"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_integration_b2.py::test_every_alfworld_prediction_carries_the_step_log_the_judge_reads"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "failure",
+        "test": "tests/test_execskill_integration_b2.py::test_procedures_run_in_the_real_worker_behind_the_shell"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "failure",
+        "test": "tests/test_execskill_integration_b2.py::test_the_worker_shell_and_model_slots_keep_the_registered_lock_order"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_integration_b2.py::test_router_plan_routes_the_candidate_and_its_parent_in_real_workers"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_integration_b2.py::test_t_id_1_b2_stops_reach_the_caller_with_their_kind"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_integration_b4.py::test_b4_examiner_engineer_and_describer_on_real_run_slice_trajectories"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[01-shell-appends-to-the-reply]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[02-router-reads-private]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[03-placebo-forgets-the-header]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[04-registry-allows-re-dispatch]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[05-replay-serves-only-the-last-call]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[06-endpoint-built-with-m]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[07-canonicaliser-searches-the-reply]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[08-detector-view-shows-the-step-count]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[09-v2-turns-a-pass-into-a-fail]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[10-consent-accepts-extra-keys]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[100-insufficient-set-still-probed]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[101-finding-counter-restarts-at-every-build]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[102-searchqa-acceptance-skips-its-test-exclusion]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[103-searchqa-tail-takes-any-persisted-exclusion]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[104-j7-probe-cells-keep-the-stem]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[105-alfworld-step-takes-views-of-another-runtime]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[106-alfworld-pool-ignores-the-views-runtime]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[107-alfworld-pool-keeps-only-the-viewed-games]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[108-route-balance-exhaustion-retried-as-a-rate-limit]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[109-route-switches-under-a-running-process]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[11-worker-child-keeps-stdout]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[110-route-switch-without-a-balance-pause-or-reason]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[111-s0-supply-row-demands-the-full-selection-slice]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[112-chain-g-spec-may-list-s1]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[113-chain-g-spec-names-a-probe-root]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[114-s2-demands-s1e-on-a-chain-g-spec]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[115-smoke-endpoint-ignores-the-specs-chain]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[116-smoke-confirmation-takes-the-elucid-echo-set]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[117-s1-probe-runs-on-a-chain-g-spec]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[118-chain-g-spec-records-s1]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[119-smoke-manifest-takes-chain-ds-block-for-a-chain-g-smoke]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[12-alfworld-view-keeps-infos-extra]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[120-smoke-mini-step-ignores-its-model]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[121-chain-g-smoke-takes-the-elucid-credential]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[122-cli-probe-takes-a-chain-g-spec]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[123-research-agent-drops-its-contact]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[124-wikipedia-client-sends-no-agent]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[125-waiver-beside-a-passed-smoke-accepted]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[126-waiver-takes-another-smoke-result]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[127-waiver-rows-may-leave-a-failing-row-out]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[128-waiver-takes-a-row-outside-the-allowlist]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[129-waiver-skips-se6]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[13-residual-uses-full-episode-categories]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[130-waiver-takes-another-key-set]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[131-waiver-takes-a-missing-stage]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[132-waiver-takes-a-failing-stage-without-a-failing-row]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[133-estimate-skips-the-owner-waiver-check]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[134-estimate-drops-the-waiver]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[135-cli-smoke-waiver-skips-the-check]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[136-waiver-path-may-be-a-symlink]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[137-v24-claimed-tests-do-not-gate]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[138-v24-empty-output-does-not-gate]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[139-v222-cross-harm-gate-disabled]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[14-episode-slot-wait-maps-to-p4]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[140-v222-fired-items-treated-as-identity]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[141-v225-card-routed-off-home]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[142-v225-card-static-check-skipped]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[143-v225-card-floor-dropped]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[144-v225-cross-card-without-gate]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[145-v225-cross-card-over-own-card]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[146-v225-stage-read-shares-cells]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[147-v225-unchanged-step-not-read]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[148-v225-writer-sees-acceptance-rows]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[149-v225-card-counted-in-max-changes]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[15-exclusion-accepts-the-test-read-consent]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[150-v225-metrics-anchor-not-cl]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[151-v225-learner-opens-test-dir]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[16-v2-reads-the-json-beside-a-usable-tag]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[17-preflight-reads-the-last-receipt]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[18-every-close-checks-the-whole-prefix]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[19-evaluation-store-keeps-raw-replies]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[20-qualify-stamps-v3]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[21-placebo-donors-changed-after-sealing-accepted]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[22-landmark-view-keeps-the-terminal-observation]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[23-replay-serves-a-resent-transport-reply]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[24-j1-decided-by-the-sign-flip-p]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[25-s1e-counted-as-production]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[26-router-plans-a-third-twin]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[27a-research-archive-accepts-a-changed-file]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[27b-research-follows-a-redirect-to-another-host]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[28-family-builds-items-without-a-finding]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[29-chains-share-one-consumption-namespace]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[30-glm-solver-client-adds-a-route]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[31-unseal-skips-the-run-root-scan]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[32-no-workbook-view-shows-the-preview]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[33-cell-runner-drops-the-probe-mode]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[34-read-canaries-skip-nothing-on-the-training-side]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[35-a-release-of-any-record-is-accepted]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[36-a-release-covers-any-hits]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[37-chain-starts-without-its-first-call-confirmation]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[38-first-call-takes-an-undelivered-reply]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[39-first-call-takes-any-echoed-model]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[40-first-call-passes-with-nothing-settled]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[41-first-call-skips-chain-ds-reasoning-check]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[42-a-relaunch-calls-again-despite-confirm-json]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[43-first-call-charged-without-its-sub-scope]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[44-estimate-prices-five-arms-per-fired-item]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[45-estimate-prices-a-missing-procedure-cell-low]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[46-estimate-from-a-smoke-that-did-not-pass]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[47-test-read-estimate-file-rewritten]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[48-chain-g-read-gate-ignores-its-cost-factor]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[49-chain-g-read-gate-reads-its-first-cost-check]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[50-cost-projection-projects-the-spent-confirm-scope]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[51-chain-reads-without-checking-the-consent]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[52-finished-round-ignores-a-block-still-to-run]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[53-finished-round-misses-an-undetermined-decision]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[54-finished-round-takes-any-error-for-decides]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[55-recover-redoes-a-finished-acceptance-round]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[56-step-unit-starts-without-a-confirmed-first-call]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[57-step-unit-takes-another-runs-confirmation]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[58-a-relaunched-read-gate-prices-the-whole-estimate]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[59-setting-takes-terms-of-another-estimate]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[60-manual-smoke-stage-records-any-stage]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[61-probe-fake-takes-a-credential]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[62-probe-fake-runs-on-the-registered-probe-root]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[63-s1-probe-runs-on-another-probe-root]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[64-spreadsheetbench-references-left-out]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[65-sheet-reference-reads-an-uncached-formula-as-blank]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[66-later-step-mounts-no-earlier-spreadsheet-workbook]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[67-bindings-hook-runs-on-spreadsheetbench]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[68-c1-takes-bindings-in-a-bench-without-calc]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[69-role-calls-left-unlogged]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[70-doubled-multiplication-sign-makes-a-power]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[71-probe-gates-count-the-final-token]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[72-make-manifest-without-the-s0-pins]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[73-cost-projection-reads-the-first-attempts-scope]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[74-engineer-2-gets-a-fresh-call-count]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[75-engineer-ignores-the-steps-earlier-calls]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[76-engineer-context-takes-any-earlier-count]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[77-engineer-glm-floor-without-its-system-prompt]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[78-test-routing-mounts-no-workbook]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[79-placebo-lengths-mount-no-workbook]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[80-failed-test-qualification-keeps-its-artifacts]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[81-call-writable-dir-not-removed]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[82-call-child-does-not-enter-its-private-dir]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[83-policy-allows-attrgetter-reflection]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[84-detector-recall-judged-on-the-rounded-float]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[85-inherited-twin-firings-counted-inside-astar]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[86-engineer-skips-the-disclosed-sheet-references]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[87-adjudicator-not-shown-the-disclosed-values]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[88-main-cost-check-pauses-on-a-breach]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[89-chain-runs-the-pilots-order-under-main]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[90-s0-counts-an-unexecuted-frozen-run-as-same]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[91-manifest-takes-any-real-run-label]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[92-export-pools-takes-v3s-alfworld-pool]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[93-main-projection-prices-caps-at-the-pilots-factor]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[94-registry-ownership-ignores-the-run-root]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[95-slices-exempt-the-same-labels-of-any-run-root]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[96-selftest-endpoint-takes-the-steps-client-and-bound]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[97-mixed-unit-cells-sent-by-the-units-one-endpoint]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[98-memory-lock-ignores-the-units-other-benches]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "error",
+        "test": "tests/test_execskill_mutations.py::test_mutation_makes_its_named_test_fail[99-recovery-reruns-the-completed-work]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_replay.py::test_zero_crash_passes_a_deterministic_procedure_and_returns_its_outcomes"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_replay.py::test_zero_crash_fails_on_a_crash_and_on_hash_seed_dependence"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_replay.py::test_a_property_true_without_the_procedure_is_vacuous"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_replay.py::test_a_predicate_test_is_judged_by_its_mutation_only"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_replay.py::test_note_and_binding_properties_hold_with_the_procedure_and_fail_without"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_replay.py::test_negative_tests_refuse_a_discouraged_winning_action_and_a_repair_on_a_passed_sheet"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_replay.py::test_an_undeclared_repair_request_is_a_crash_fault"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_replay.py::test_reference_tracker_agreement_is_computed_and_gates_state_procedures"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_replay.py::test_format_guard_and_output_screen_report_their_faults"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "error",
+        "test": "tests/test_execskill_smoke_rehearsal.py::test_every_built_stage_is_recorded_and_judged"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "error",
+        "test": "tests/test_execskill_smoke_rehearsal.py::test_s2_classes_production_receipts_and_settles_every_reservation"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "error",
+        "test": "tests/test_execskill_smoke_rehearsal.py::test_s2_units_ran_the_registered_arms_and_the_confirmation_cell_first"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "error",
+        "test": "tests/test_execskill_smoke_rehearsal.py::test_sn1_pairs_two_identical_card_arms"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "error",
+        "test": "tests/test_execskill_smoke_rehearsal.py::test_a_real_stage_needs_both_credentials_named_and_a_recorded_stage_is_not_rerun"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "error",
+        "test": "tests/test_execskill_smoke_rehearsal.py::test_s4_pauses_on_the_drill_and_the_operator_recovery_redoes_the_round"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "error",
+        "test": "tests/test_execskill_smoke_rehearsal.py::test_the_drill_recovery_is_written_only_into_a_paused_s4_attempt"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "error",
+        "test": "tests/test_execskill_smoke_rehearsal.py::test_se6_projects_every_solver_scope_of_both_chains_at_the_maximum_schedule"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "error",
+        "test": "tests/test_execskill_smoke_rehearsal.py::test_se6_projects_every_glm_scope_from_s3s_measured_role_calls"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "error",
+        "test": "tests/test_execskill_smoke_rehearsal.py::test_m1_se6_projects_the_smoke_manifests_configuration_main_on_the_same_recorded_stages"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "error",
+        "test": "tests/test_execskill_smoke_roles.py::test_run_stage_s3_runs_every_role_and_records_the_stage_once"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "error",
+        "test": "tests/test_execskill_smoke_roles.py::test_the_six_pieces_run_in_order_through_the_sandbox"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "error",
+        "test": "tests/test_execskill_smoke_roles.py::test_s3_runs_its_own_run_unit_first_and_needs_no_other_stage"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "error",
+        "test": "tests/test_execskill_smoke_roles.py::test_the_first_reply_is_confirmed_before_any_further_call"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "error",
+        "test": "tests/test_execskill_smoke_roles.py::test_the_glm_cap_refuses_a_call_before_anything_is_reserved"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "error",
+        "test": "tests/test_execskill_smoke_roles.py::test_credentials_and_the_money_guard"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "error",
+        "test": "tests/test_execskill_smoke_roles.py::test_a_piece_that_does_not_run_through_fails_its_row"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "error",
+        "test": "tests/test_execskill_smoke_roles.py::test_mutation_skipping_the_research_request_fails_loudly"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_smoke_roles.py::test_worker_checker_runs_the_registered_checker_in_a_generator_sandbox"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_step.py::test_step1_one_fake_officeqa_step_through_the_eight_sub_steps"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_step.py::test_a_step_ending_before_the_acceptance_consumes_no_acceptance_item[no_change]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_step.py::test_a_step_ending_before_the_acceptance_consumes_no_acceptance_item[blocked_twice]"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "failure",
+        "test": "tests/test_execskill_step.py::test_c7e_a_paused_acceptance_redoes_one_block_on_its_own_sub_scope"
+      },
+      {
+        "group": "legacy_pipeline_state_or_assertion",
+        "kind": "failure",
+        "test": "tests/test_execskill_step.py::test_c7e_1_the_g_acc_cells_are_charged_to_the_examiners_scope_in_a_redone_block_too"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_step.py::test_codex8_an_accept_unit_killed_before_its_completion_evidence_settles_only_in_its_redo"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "failure",
+        "test": "tests/test_execskill_sx_rehearsal.py::test_cli_rehearsal_runs_the_v2_example_smoke_end_to_end_as_an_engineering_fixture"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v2.py::test_a_training_round_analyses_the_failures_then_proposes_with_cut_description_and_no_tests"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v2.py::test_a_failing_change_gets_up_to_three_fix_calls_then_is_dropped"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v2.py::test_an_unusable_fix_reply_is_named_in_the_next_fix_call"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v2.py::test_rounds_rebase_on_s_keep_ids_unique_and_stop_at_the_edit_budget"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v2.py::test_codex_v2_3_c4_counts_the_table_references_earlier_rounds_disclosed"
+      },
+      {
+        "group": "loopback_bind_denied",
+        "kind": "error",
+        "test": "tests/test_execskill_v21.py::test_the_installed_httpcore_keeps_every_timed_out_tunnel_in_its_pool"
+      },
+      {
+        "group": "loopback_bind_denied",
+        "kind": "error",
+        "test": "tests/test_execskill_v21.py::test_the_shared_http_client_has_no_connection_limit_so_timeouts_never_exhaust_it"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v21.py::test_main_v2s_crashing_replay_test_is_an_invalid_test_in_the_lint"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v21.py::test_a_fix_call_shows_a_failed_c9_with_or_without_the_matched_term[True]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v21.py::test_a_fix_call_shows_a_failed_c9_with_or_without_the_matched_term[False]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v21.py::test_a_fix_call_shows_a_failed_leakage_check_with_or_without_texts_and_reason[True]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v21.py::test_a_fix_call_shows_a_failed_leakage_check_with_or_without_texts_and_reason[False]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v21.py::test_a_fix_call_shows_a_static_ban_by_its_rule_and_line_only"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v21.py::test_the_counterfactual_flags_a_procedure_keyed_on_the_meta_option_and_no_other"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v21.py::test_c4_fails_a_keyed_procedure_only_with_the_counterfactual[False]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v21.py::test_c4_fails_a_keyed_procedure_only_with_the_counterfactual[True]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v21.py::test_a_training_round_of_main_v2_1_redacts_the_counterfactual_and_takes_the_fix"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v21.py::test_a_screened_meta_option_note_reaches_the_fix_call_without_its_matched_phrase[True]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v21.py::test_a_screened_meta_option_note_reaches_the_fix_call_without_its_matched_phrase[False]"
+      },
+      {
+        "group": "loopback_bind_denied",
+        "kind": "error",
+        "test": "tests/test_execskill_v21.py::test_the_research_wikipedia_client_has_no_connection_limit_either"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v21.py::test_the_proposal_and_analyst_calls_show_the_screens_matches_only_with_echo[True]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v21.py::test_the_proposal_and_analyst_calls_show_the_screens_matches_only_with_echo[False]"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "failure",
+        "test": "tests/test_execskill_v211_selftest.py::test_real_selftest_cli_receipt_is_accepted_by_s0_cli"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "failure",
+        "test": "tests/test_execskill_v211_selftest.py::test_failed_or_missing_native_measurement_cannot_produce_child_receipt[native_result0]"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "failure",
+        "test": "tests/test_execskill_v211_selftest.py::test_failed_or_missing_native_measurement_cannot_produce_child_receipt[native_result1]"
+      },
+      {
+        "group": "workbook_fixture_cache_or_bytes",
+        "kind": "failure",
+        "test": "tests/test_execskill_v211_selftest.py::test_failed_or_missing_native_measurement_cannot_produce_child_receipt[native_result2]"
+      },
+      {
+        "group": "macos_missing_waitid",
+        "kind": "failure",
+        "test": "tests/test_execskill_v215_fix1_runtime.py::test_actual_child_process_preserves_accepted_outcome_after_diagnostic_deadline[False]"
+      },
+      {
+        "group": "macos_missing_waitid",
+        "kind": "failure",
+        "test": "tests/test_execskill_v215_fix1_runtime.py::test_actual_child_process_preserves_accepted_outcome_after_diagnostic_deadline[True]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v22.py::test_step_v2_2_trains_without_the_sign_test_and_accepts_under_the_practical_rule"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v22.py::test_step_v2_2_prunes_a_procedure_that_fires_on_no_evaluated_item"
+      },
+      {
+        "group": "known_tmp_requirement",
+        "kind": "failure",
+        "test": "tests/test_execskill_v225_ops.py::test_ops_are_self_contained_snapshot_with_optional_documentation[absent]"
+      },
+      {
+        "group": "known_tmp_requirement",
+        "kind": "failure",
+        "test": "tests/test_execskill_v225_ops.py::test_ops_are_self_contained_snapshot_with_optional_documentation[partial]"
+      },
+      {
+        "group": "known_tmp_requirement",
+        "kind": "failure",
+        "test": "tests/test_execskill_v225_ops.py::test_scratch_helper_creates_sticky_shared_directory_without_requiring_root"
+      },
+      {
+        "group": "known_tmp_requirement",
+        "kind": "failure",
+        "test": "tests/test_execskill_v225_ops.py::test_suite_removes_only_owned_cases_after_verified_success[passing_summary]"
+      },
+      {
+        "group": "worker_cleanup_or_mutation_setup",
+        "kind": "failure",
+        "test": "tests/test_execskill_v2_step.py::test_step_v2_trains_adopts_then_accepts"
+      }
+    ],
+    "issues_outside_known_tmp_and_zip_set": 264,
+    "mandatory_v225_v221_snapshot_subset": {
+      "errors": 0,
+      "failed": 4,
+      "failures": "Only the four known /tmp ops cases.",
+      "passed": 865,
+      "tests": 869
+    },
+    "passed": 6535,
+    "registered_source_sha256_list_sha256": "0f9c50effc2691a88399706ed688887e7dcec49a15fa7d845b9e01299cdd6667",
+    "selected_files": 241,
+    "selection_method": "\\bengineer\\b|inert_feedback|prompt_pins|prompt_sha256|ENGINEER_PROMPT|ENGINEER_SENTENCE; reverse imports among test/helper modules; mandatory v225/v221/v210 snapshot union",
+    "skipped": 0,
+    "snapshot": "Registered source/tests copied byte-identically within original tree, with indexed public documentation; scratch is a sibling inside original tree.",
+    "tests": 6803,
+    "zip_timestamp_issue_observed": false
+  },
+  "gate_preservation": {
+    "causes_unchanged": true,
+    "inert_predicate_unchanged": true,
+    "repairable_causes_unchanged": true,
+    "thresholds_unchanged": true
+  },
+  "latest_validation": {
+    "broad_selection_rerun": false,
+    "command": [
+      "<python>",
+      "-B",
+      "-m",
+      "pytest",
+      "-q",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp=<repo-root>/.v225-engineer-review-20261105/cases-selected",
+      "--junitxml=<repo-root>/.v225-engineer-review-20261105/selected.xml",
+      "tests/test_execskill_v225_engineer_prompt.py",
+      "tests/test_execskill_v225_small_confirmation.py",
+      "tests/test_execskill_v225_literals.py",
+      "tests/test_execskill_v225_cards.py",
+      "tests/test_execskill_v225_profile.py::test_all_forty_five_parent_fingerprints_stay_byte_identical"
+    ],
+    "counts_by_file": {
+      "tests.test_execskill_v225_cards": 40,
+      "tests.test_execskill_v225_engineer_prompt": 41,
+      "tests.test_execskill_v225_literals": 2,
+      "tests.test_execskill_v225_profile": 45,
+      "tests.test_execskill_v225_small_confirmation": 70
+    },
+    "cwd": "<repo-root>",
+    "date": "2026-11-05",
+    "environment": {
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "TMPDIR": "<repo-root>/.v225-engineer-review-20261105"
+    },
+    "errors": 0,
+    "failed": 0,
+    "issues_outside_known_tmp_and_zip_set": 0,
+    "new_cases": 13,
+    "passed": 198,
+    "platform": "Darwin",
+    "python": "3.10.20",
+    "scope": "review_followup",
+    "skipped": 0,
+    "tests": 198
+  },
+  "limitations": [
+    "Broad requested selection is not all passing; complete issues are recorded above.",
+    "Only Mac Python3.10.20 exercised; Linux3.11 and Mac3.13 not rerun.",
+    "No model, external network, measured smoke, main-v9 chain, commit, or outside-tree edit.",
+    "Disposable source copies and scratch removed after validation."
+  ],
+  "pins": {
+    "changed_fixtures": {
+      "tests/fixtures/execskill/v225_cards/engineer_sentence_v225.txt": {
+        "after": "21a5362230a9e768839a0a0764fc4cc0e32373b6d523fc10e5dd89e486dbb5f8",
+        "before": "aee4160826aef1cfee7081fccd2f5a8710c6dd9db827094f7ad0c6a0e3c311d8"
+      },
+      "tests/fixtures/execskill/v225_cards/pins.json": {
+        "after": "4ee48e6e4409b4080e354e931e832b4f354606b9205bfac94579f19a96714911",
+        "before": "d1482089d6608269ef852f24b575f1b27bc2ee3775990aaa99be44096a242ace"
+      }
+    },
+    "changed_prompt_pin": "ENGINEER_SENTENCE_V225",
+    "older_pins_changed": false,
+    "parent_fingerprints_passed": 45,
+    "prior_fixture_files_unchanged": 111,
+    "prompt_sha256": "21a5362230a9e768839a0a0764fc4cc0e32373b6d523fc10e5dd89e486dbb5f8"
+  },
+  "prechange_regression_control": {
+    "expected_main_v9_failures": 7,
+    "passed": 21,
+    "restored": [
+      "skillopt/execskill/engineer.py",
+      "skillopt/execskill/inert_feedback.py",
+      "skillopt/execskill/v225_cards.py"
+    ],
+    "unexpected_failures": 0,
+    "where": "Disposable in-tree copy only; fixed source restored before full run."
+  },
+  "review_followup": {
+    "changes": [
+      "Only the newly added coverage-only inert_feedback.describe call passes from_replay=False; the original call retains its crash classification.",
+      "When coverage chooses empty_notes, pass coverage_empty_notes=True to explicitly collect the existing bounded evidence block with actual C6c counts; only main-v9 honors this flag."
+    ],
+    "configuration": "main-v9",
+    "date": "2026-11-05",
+    "evidence": "engineering_fixture",
+    "limits": [
+      "Only the requested restricted selection rerun; prior broad-selection failures remain historical and were not revalidated.",
+      "Mac Python 3.10.20 only; Linux S0 was not run locally.",
+      "Scripted roles and authored in-process workers; no external model, network, real smoke, chain launch or method-effect measurement.",
+      "No commit, outside-tree edit or execution; disposable in-tree control and scratch removed after verification."
+    ],
+    "preservation": {
+      "cause_vocabulary_unchanged": true,
+      "existing_fixture_files_unchanged": 113,
+      "gate_constants_unchanged": true,
+      "inert_predicate_unchanged": true,
+      "older_pins_changed": false,
+      "parent_fingerprints_passed": 45,
+      "parent_fixture_sha256": "9ebcdb4d169f0314a2cd3685ac01c089db14140b1dae6e7a168f2136f544a751",
+      "prompt_pins_changed": false,
+      "repairable_causes_unchanged": true
+    },
+    "production_paths": [
+      "SearchQA engineer.run_train -> engineer_v28.run -> real check, fault repair (no_improvement), inert repair (one call, fixed), audit and candidate construction, with identical scripted replies for main-v7/main-v8/main-v9.",
+      "Real engineer.check of revisions changing one/two requests out of four notes; actual fired=4, empty=0, nonempty=4; serialized request preserves these counts and diagnostics, while main-v7/main-v8 retain coverage-only evidence.",
+      "Zebra engineer.run_train -> engineer_v28.run -> engineer_v216.repair_cycle: one inert repair, one audit, candidate survives; repair_request helper also dispatches through uses_v216.",
+      "Original all-stored-inputs-crashed inert classification retains crashed and excludes inert repair for main-v7/main-v8/main-v9."
+    ],
+    "regression_control": {
+      "command": [
+        "<python>",
+        "-B",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--basetemp=<repo-root>/.v225-engineer-review-20261105/cases-control",
+        "--junitxml=<repo-root>/.v225-engineer-review-20261105/control.xml",
+        "tests/test_execskill_v225_engineer_prompt.py"
+      ],
+      "cwd": "<repo-root>/.v225-engineer-review-20261105/control",
+      "errors": 0,
+      "expected_main_v9_failures": 3,
+      "failures": [
+        "tests.test_execskill_v225_engineer_prompt::test_coverage_only_stored_crashes_do_not_block_inert_repair_in_run_train[main-v9]",
+        "tests.test_execskill_v225_engineer_prompt::test_low_revision_coverage_keeps_truthful_four_nonempty_note_evidence[1-main-v9]",
+        "tests.test_execskill_v225_engineer_prompt::test_low_revision_coverage_keeps_truthful_four_nonempty_note_evidence[2-main-v9]"
+      ],
+      "passed": 38,
+      "procedure": "In-tree disposable source copy with only engineer.py and inert_feedback.py restored to their pre-fix bytes; same 41-test engineer file.",
+      "unexpected_failures": 0
+    },
+    "source_changes": {
+      "skillopt/execskill/engineer.py": {
+        "after": "a17785920fe7ef0666a0e5b9a784bd590449f383e169e07b950c6c254dee9806",
+        "before": "52f874d8e0ad0e47cfffa5a9ab20330c292506787bb839b692cf695aa8dd37dd"
+      },
+      "skillopt/execskill/inert_feedback.py": {
+        "after": "3fe005074ad8e9b3ca502e7fab653ecd0a3e6d57d34989d99b0f694dec0478df",
+        "before": "4e98597c99b9467f2dd3d5a089afaf455172f4f51bb550e4a91ba08b9d822baa"
+      },
+      "tests/test_execskill_v225_engineer_prompt.py": {
+        "after": "dfa7f3c4d70deea850752372f3425b271c092cd2a49213e24a08279c8dc7b3f3",
+        "before": "e3e2e3b217eed22323bef0bb5d0d78c621fe381f9d1b1ec42fefa65638e3c5a0"
+      }
+    }
+  },
+  "runtime": {
+    "external_network_calls": 0,
+    "loopback_fixture_binds_denied": 3,
+    "model_calls": 0,
+    "platform": "darwin",
+    "python": "3.10.20"
+  }
+}

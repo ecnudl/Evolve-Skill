@@ -1,0 +1,226 @@
+......................................................................FF [  0%]
+FF...................................................................... [  1%]
+........................................................................ [  2%]
+...........FF............F.............................................. [  3%]
+........................................................................ [  3%]
+.............................F.FFFF...
+=================================== FAILURES ===================================
+______ test_s0_refuses_bad_card_pin_view_or_sealed_alias[card-task card] _______
+tests/test_execskill_alf_v1_smoke.py:109: in test_s0_refuses_bad_card_pin_view_or_sealed_alias
+    a.collect_s0(tmp_path / "s0", preparation_file=source, selftest="must-not-read", checks={"passed": True})
+skillopt/execskill/alf_smoke.py:223: in collect_s0
+    require(not out.is_relative_to(manifest.REPO), "Preparation artifacts live outside the repository")
+skillopt/continual_eval/core.py:32: in require
+    raise ValueError(message)
+E   ValueError: Preparation artifacts live outside the repository
+
+During handling of the above exception, another exception occurred:
+tests/test_execskill_alf_v1_smoke.py:108: in test_s0_refuses_bad_card_pin_view_or_sealed_alias
+    with pytest.raises(ValueError, match=reason):
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'task card'
+E    Input: 'Preparation artifacts live outside the repository'
+______ test_s0_refuses_bad_card_pin_view_or_sealed_alias[views-pre-reset] ______
+tests/test_execskill_alf_v1_smoke.py:109: in test_s0_refuses_bad_card_pin_view_or_sealed_alias
+    a.collect_s0(tmp_path / "s0", preparation_file=source, selftest="must-not-read", checks={"passed": True})
+skillopt/execskill/alf_smoke.py:223: in collect_s0
+    require(not out.is_relative_to(manifest.REPO), "Preparation artifacts live outside the repository")
+skillopt/continual_eval/core.py:32: in require
+    raise ValueError(message)
+E   ValueError: Preparation artifacts live outside the repository
+
+During handling of the above exception, another exception occurred:
+tests/test_execskill_alf_v1_smoke.py:108: in test_s0_refuses_bad_card_pin_view_or_sealed_alias
+    with pytest.raises(ValueError, match=reason):
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'pre-reset'
+E    Input: 'Preparation artifacts live outside the repository'
+_ test_s0_refuses_bad_card_pin_view_or_sealed_alias[pool_pin-differs from its pin] _
+tests/test_execskill_alf_v1_smoke.py:109: in test_s0_refuses_bad_card_pin_view_or_sealed_alias
+    a.collect_s0(tmp_path / "s0", preparation_file=source, selftest="must-not-read", checks={"passed": True})
+skillopt/execskill/alf_smoke.py:223: in collect_s0
+    require(not out.is_relative_to(manifest.REPO), "Preparation artifacts live outside the repository")
+skillopt/continual_eval/core.py:32: in require
+    raise ValueError(message)
+E   ValueError: Preparation artifacts live outside the repository
+
+During handling of the above exception, another exception occurred:
+tests/test_execskill_alf_v1_smoke.py:108: in test_s0_refuses_bad_card_pin_view_or_sealed_alias
+    with pytest.raises(ValueError, match=reason):
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'differs from its pin'
+E    Input: 'Preparation artifacts live outside the repository'
+______ test_s0_refuses_bad_card_pin_view_or_sealed_alias[alias-separate] _______
+tests/test_execskill_alf_v1_smoke.py:109: in test_s0_refuses_bad_card_pin_view_or_sealed_alias
+    a.collect_s0(tmp_path / "s0", preparation_file=source, selftest="must-not-read", checks={"passed": True})
+skillopt/execskill/alf_smoke.py:223: in collect_s0
+    require(not out.is_relative_to(manifest.REPO), "Preparation artifacts live outside the repository")
+skillopt/continual_eval/core.py:32: in require
+    raise ValueError(message)
+E   ValueError: Preparation artifacts live outside the repository
+
+During handling of the above exception, another exception occurred:
+tests/test_execskill_alf_v1_smoke.py:108: in test_s0_refuses_bad_card_pin_view_or_sealed_alias
+    with pytest.raises(ValueError, match=reason):
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'separate'
+E    Input: 'Preparation artifacts live outside the repository'
+_ test_cli_rehearsal_runs_the_trimmed_smoke_end_to_end_as_an_engineering_fixture[default] _
+tests/test_execskill_cli.py:502: in test_cli_rehearsal_runs_the_trimmed_smoke_end_to_end_as_an_engineering_fixture
+    fixtures.make_fixtures(tmp_path / "fixtures")
+skillopt/execskill/fixtures.py:422: in make_fixtures
+    "spreadsheetbench": spreadsheetbench_items(root, p99_workbook_bytes=p99_workbook_bytes)}
+skillopt/execskill/fixtures.py:352: in spreadsheetbench_items
+    raw_input, raw_answer = xlsx_bytes(data, {}), xlsx_bytes(data, cells)
+skillopt/execskill/fixtures.py:308: in xlsx_bytes
+    require(found == 1, "A fixture formula cell without its cache slot: " + coordinate)
+skillopt/continual_eval/core.py:32: in require
+    raise ValueError(message)
+E   ValueError: A fixture formula cell without its cache slot: D2
+----------------------------- Captured stdout call -----------------------------
+{
+ "canaries": {
+  "counts": {
+   "alfworld": 2,
+   "searchqa": 2
+  },
+  "record_sha256": "5277e0912fdae0c63b458cb23927918ba33cf1d99ddcfcc58e8a0c69156e2aa7"
+ },
+ "records": {
+  "alfworld_test_identity_check": {
+   "counts": {
+    "overlap_games": 0,
+    "overlap_rooms": 0,
+    "supply_games": 3,
+    "test_games": 2,
+    "test_rooms": 2
+   },
+   "exclusion_sha256": "42d7883b590f0da687676f0fe9ddc2e1cf0b4dc7cc094b75d84cbaed42499c27",
+   "record_sha256": "43c99faa8e407b24324bec4ef89ec1c459af4b7513f7ec260bd1d56ef5226dd2"
+  },
+  "searchqa_test_exclusion": {
+   "counts": {
+    "dropped_by_id": 1,
+    "dropped_by_question": 1,
+    "kept": 1,
+    "supply": 3,
+    "test_items": 3
+   },
+   "exclusion_sha256": "25691224a34425f80c158100ad41d18103696c436168d092745c4590678987e3",
+   "record_sha256": "53d86623cb17b54d96033b2ffd2e87673802c853792e1b764d66c4d39fdd7a8b"
+  }
+ }
+}
+_ test_cli_rehearsal_runs_the_trimmed_smoke_end_to_end_as_an_engineering_fixture[main] _
+tests/test_execskill_cli.py:502: in test_cli_rehearsal_runs_the_trimmed_smoke_end_to_end_as_an_engineering_fixture
+    fixtures.make_fixtures(tmp_path / "fixtures")
+skillopt/execskill/fixtures.py:422: in make_fixtures
+    "spreadsheetbench": spreadsheetbench_items(root, p99_workbook_bytes=p99_workbook_bytes)}
+skillopt/execskill/fixtures.py:352: in spreadsheetbench_items
+    raw_input, raw_answer = xlsx_bytes(data, {}), xlsx_bytes(data, cells)
+skillopt/execskill/fixtures.py:308: in xlsx_bytes
+    require(found == 1, "A fixture formula cell without its cache slot: " + coordinate)
+skillopt/continual_eval/core.py:32: in require
+    raise ValueError(message)
+E   ValueError: A fixture formula cell without its cache slot: D2
+----------------------------- Captured stdout call -----------------------------
+{
+ "canaries": {
+  "counts": {
+   "alfworld": 2,
+   "searchqa": 2
+  },
+  "record_sha256": "5277e0912fdae0c63b458cb23927918ba33cf1d99ddcfcc58e8a0c69156e2aa7"
+ },
+ "records": {
+  "alfworld_test_identity_check": {
+   "counts": {
+    "overlap_games": 0,
+    "overlap_rooms": 0,
+    "supply_games": 3,
+    "test_games": 2,
+    "test_rooms": 2
+   },
+   "exclusion_sha256": "42d7883b590f0da687676f0fe9ddc2e1cf0b4dc7cc094b75d84cbaed42499c27",
+   "record_sha256": "43c99faa8e407b24324bec4ef89ec1c459af4b7513f7ec260bd1d56ef5226dd2"
+  },
+  "searchqa_test_exclusion": {
+   "counts": {
+    "dropped_by_id": 1,
+    "dropped_by_question": 1,
+    "kept": 1,
+    "supply": 3,
+    "test_items": 3
+   },
+   "exclusion_sha256": "25691224a34425f80c158100ad41d18103696c436168d092745c4590678987e3",
+   "record_sha256": "53d86623cb17b54d96033b2ffd2e87673802c853792e1b764d66c4d39fdd7a8b"
+  }
+ }
+}
+_________________________ test_make_fixtures_is_wired __________________________
+tests/test_execskill_cli.py:1006: in test_make_fixtures_is_wired
+    assert cli.main(["make-fixtures", "--out", str(tmp_path / "fx")]) == 0
+scripts/run_execskill.py:1328: in main
+    code = HANDLERS[args.command](args)
+skillopt/execskill/fixtures.py:982: in make_fixtures_cli
+    found = make_fixtures(args.out, p99_workbook_bytes=args.p99_workbook_bytes)
+skillopt/execskill/fixtures.py:422: in make_fixtures
+    "spreadsheetbench": spreadsheetbench_items(root, p99_workbook_bytes=p99_workbook_bytes)}
+skillopt/execskill/fixtures.py:352: in spreadsheetbench_items
+    raw_input, raw_answer = xlsx_bytes(data, {}), xlsx_bytes(data, cells)
+skillopt/execskill/fixtures.py:308: in xlsx_bytes
+    require(found == 1, "A fixture formula cell without its cache slot: " + coordinate)
+skillopt/continual_eval/core.py:32: in require
+    raise ValueError(message)
+E   ValueError: A fixture formula cell without its cache slot: D2
+________ test_det1_masked_views_hide_answers_run_status_and_step_count _________
+tests/test_execskill_detectors.py:161: in test_det1_masked_views_hide_answers_run_status_and_step_count
+    assert found["fx-answer-text"] == {"fired": [], "faults": {}}
+E   AssertionError: assert {'faults': {'..., 'fired': []} == {'faults': {}, 'fired': []}
+E     
+E     Omitting 1 identical items, use -vv to show
+E     Differing items:
+E     {'faults': {'s1': 'worker'}} != {'faults': {}}
+E     Use -v to get more diff
+______ test_det2_det3_residual_metrics_and_jaccard_on_the_full_hold_half _______
+tests/test_execskill_detectors.py:209: in test_det2_det3_residual_metrics_and_jaccard_on_the_full_hold_half
+    assert validation["library"] == {"fx-zzz": {"fired": 60, "faults": 0}}
+E   AssertionError: assert {'fx-zzz': {'..., 'fired': 0}} == {'fx-zzz': {'... 'fired': 60}}
+E     
+E     Differing items:
+E     {'fx-zzz': {'faults': 90, 'fired': 0}} != {'fx-zzz': {'faults': 0, 'fired': 60}}
+E     Use -v to get more diff
+_ test_det4_all_failures_run_50_steps_yet_a_landmark_detector_can_be_accepted __
+tests/test_execskill_detectors.py:245: in test_det4_all_failures_run_50_steps_yet_a_landmark_detector_can_be_accepted
+    assert landmark["n_fired"] == 16 and landmark["n_rooms"] == 8 and landmark["precision"] == 1.0
+E   assert (0 == 16)
+_____ test_det5_landmark_task_excludes_early_ends_and_hides_terminal_text ______
+tests/test_execskill_detectors.py:263: in test_det5_landmark_task_excludes_early_ends_and_hides_terminal_text
+    assert found["fx-you-won"] == {"fired": [], "faults": {}} and found["fx-longer"] == {"fired": [], "faults": {}}
+E   AssertionError: assert ({'faults': {'..., 'fired': []} == {'faults': {}, 'fired': []}
+E     
+E     Omitting 1 identical items, use -vv to show
+E     Differing items:
+E     {'faults': {'c-fail30': 'worker', 'c-win11': 'not_loaded'}} != {'faults': {}}
+E     Use -v to get more diff)
+___________ test_det6_room_split_sealing_holm_faults_and_determinism ___________
+tests/test_execskill_detectors.py:302: in test_det6_room_split_sealing_holm_faults_and_determinism
+    assert rows["fx-hedge"]["accepted"] and rows["fx-hedge"]["p_holm"] <= HOLM_FAMILY
+E   assert (False)
+=========================== short test summary info ============================
+FAILED tests/test_execskill_alf_v1_smoke.py::test_s0_refuses_bad_card_pin_view_or_sealed_alias[card-task card]
+FAILED tests/test_execskill_alf_v1_smoke.py::test_s0_refuses_bad_card_pin_view_or_sealed_alias[views-pre-reset]
+FAILED tests/test_execskill_alf_v1_smoke.py::test_s0_refuses_bad_card_pin_view_or_sealed_alias[pool_pin-differs from its pin]
+FAILED tests/test_execskill_alf_v1_smoke.py::test_s0_refuses_bad_card_pin_view_or_sealed_alias[alias-separate]
+FAILED tests/test_execskill_cli.py::test_cli_rehearsal_runs_the_trimmed_smoke_end_to_end_as_an_engineering_fixture[default]
+FAILED tests/test_execskill_cli.py::test_cli_rehearsal_runs_the_trimmed_smoke_end_to_end_as_an_engineering_fixture[main]
+FAILED tests/test_execskill_cli.py::test_make_fixtures_is_wired - ValueError:...
+FAILED tests/test_execskill_detectors.py::test_det1_masked_views_hide_answers_run_status_and_step_count
+FAILED tests/test_execskill_detectors.py::test_det2_det3_residual_metrics_and_jaccard_on_the_full_hold_half
+FAILED tests/test_execskill_detectors.py::test_det4_all_failures_run_50_steps_yet_a_landmark_detector_can_be_accepted
+FAILED tests/test_execskill_detectors.py::test_det5_landmark_task_excludes_early_ends_and_hides_terminal_text
+FAILED tests/test_execskill_detectors.py::test_det6_room_split_sealing_holm_faults_and_determinism
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! KeyboardInterrupt !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+<repo-root>/skillopt/execskill/sandbox/client.py:388: KeyboardInterrupt
+(to show a full traceback on KeyboardInterrupt use --full-trace)
+12 failed, 386 passed in 636.24s (0:10:36)

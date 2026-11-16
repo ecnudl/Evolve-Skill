@@ -19,7 +19,7 @@ SCREENED_MARKER = '[diagnostic withheld by public-text screen]'
 
 def enabled(configuration, bench='zebralogic'):
     return (configuration in (CONFIGURATION, 'zebra-pc-v15')
-            or (configuration == 'main-v6' and bench == 'zebralogic'))
+            or (configuration in ('main-v6', 'main-v7', 'main-v8', 'main-v9', 'main-v10') and bench == 'zebralogic'))
 
 
 def sha256(value):

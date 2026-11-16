@@ -1,0 +1,27 @@
+{
+  "alfworld": {
+    "home": "alfworld",
+    "route": "alfworld",
+    "text": "Compare the supplied constraints carefully."
+  },
+  "officeqa": {
+    "home": "officeqa",
+    "route": "officeqa",
+    "text": "Compare the supplied constraints carefully."
+  },
+  "searchqa": {
+    "home": "searchqa",
+    "route": "searchqa",
+    "text": "Compare the supplied constraints carefully."
+  },
+  "spreadsheetbench": {
+    "home": "spreadsheetbench",
+    "route": "spreadsheetbench",
+    "text": "Compare the supplied constraints carefully."
+  },
+  "zebralogic": {
+    "home": "zebralogic",
+    "route": "zebralogic",
+    "text": "Compare the supplied constraints carefully."
+  }
+}

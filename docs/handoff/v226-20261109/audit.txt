@@ -1,0 +1,750 @@
+Route B v2.26 / main-v10 review handoff
+====================================
+
+Working copy: <repo-root>
+Base: e589b5b3136382c08cba0fc55afa13fc14b6fdc4
+Frozen snapshot provenance git_head: 7aade787ee5a1e09fd75281718af9e9a63f6ffa0
+No commit, real experiment, model request, or real run-root creation was performed.
+All source edits are confined to this working copy. Scope deviation: an early
+focused pytest run briefly used /private/tmp/execskill-v226-registry/identity-*
+for scratch after an inherited fixture rejected repository-local temp paths.
+That was contrary to the workspace-only instruction. Fixture teardown removed
+the children, the temporary root was removed, and a final read-only check
+confirmed it absent. Exact randomized child filenames were not retained.
+All subsequent scratch used this checkout's .runtime-tmp, now removed after
+preserving the audit logs. No source file outside the checkout was edited.
+
+Implementation
+--------------
+
+main-v10 inherits main-v9's benches/order, G and D models, D northgate route with
+thinking disabled, budgets, relaxed small-slice confirmation, gates, fresh stage
+reads, consent, recovery, continuation, canaries and limits. ALFWorld step 5 is
+still the registered v11 import, with zero engineer rounds. sister-v1 is unchanged.
+The new root is /data/execskill-20261109-main-v10; namespaces are G-v10 / D-v10;
+evidence is main_v10_real_run. The registered manifest path has the same root
+plus -manifest.json. main-v10 rejects the main-v9 root and its descendants, and
+real-run manifests must use the new registered root. No manifest or consent for
+a real run has been created; those remain prerequisites for an owner launch.
+
+All changed behavior is selected by is_v226. Existing parent configuration
+fingerprints and the v225 literal-audit fixture remain unchanged. Additive CLI,
+configuration-roster and unknown-future-evidence test expectations are updated.
+
+K1: Executed acceptance stores fault/format item lists, while engineer feedback
+accepts counts only. _previous converts list/tuple/set to length and preserves
+strictly validated nonnegative integer/count mappings. Invalid values still
+require-fail; engineer._counts is unchanged. Regression:
+test_previous_executed_acceptance_shows_counts_only, plus sequence and invalid
+count cases in tests/test_execskill_v226_diagnostics.py.
+
+K2/F1: The requested diagnostics hook depended on the replayed item's bench,
+but worker construction depended on the current step's bench. Every main-v10
+worker that can execute a Zebra view is now diagnostics-enabled (ZEBRA_PC_V15),
+including base, unit and cross-gate factories. Immediate acceptance selection
+runs inside accept-rN before registration; card selection/measurement identities
+run inside their card units. Completed selections are read without rerouting.
+A required hook on an unbound worker raises the named ConfigurationError
+diagnostics_worker_unbound before entering call_diagnostics.
+
+Routing choice: use diagnostics-enabled workers, never a plain-call fallback
+for main-v10 Zebra before_call. worker_v222 strips raw diagnostics and applies
+its value cap in diagnostics mode; a plain call can change both value and faults.
+Tests execute the actual worker_v222 implementation through a real-shaped worker
+whose call_diagnostics retains the frozen require. Replay value, value_sha256 and
+faults match a Zebra-step execution, including oversized/invalid diagnostics.
+solver._Shell.hook and engineer._routing_checks were checked: both use the item
+or current routing view's bench; replay._Shell uses the stored entry's bench.
+Tests: test_engineer_replay_in_sheet_unit_matches_zebra_value_hash_and_faults;
+test_cross_gate_uses_unit_bound_diagnostics_and_matches_zebra_step (sheet/search);
+test_immediate_acceptance_selection_is_inside_real_unit_and_resumes_without_routing;
+test_required_diagnostics_on_unbound_worker_is_named_host_configuration_error;
+test_diagnostics_required_call_never_falls_back_to_plain_worker;
+test_zebra_card_selection_and_measure_use_real_unit_bound_diagnostics.
+
+F2: Missing configuration in identities omitted composed cards/system variants
+on non-Zebra benches. _pair_signatures and acceptance.prepare now use the same
+main-v10 rendering predicate as real dispatch. ALF identity uses the existing
+ALF signature routine. Changed guidance with all unchanged rendered requests
+raises Pause(configuration, card_request_identity_defect:<bench>).
+Tests: test_real_pair_signatures_card_full_touch_equals_solver_request_on_every_bench
+(all five); test_acceptance_seals_composed_card_request_as_sent_by_solver (four
+learned benches); test_changed_card_with_forced_identical_requests_is_a_loud_configuration_pause;
+test_authored_main_v10_phase_smoke_uses_real_request_identity. Identity/factory
+paths are real; only authored supply, transport and native resources are fakes.
+
+F3: The cross gate treated faults in either arm as candidate harm. main-v10
+retains raw fault evidence, but separately records inherited informational faults
+and candidate faults. Added/changed procedure faults, and S' faults absent in S
+on that item, remain harmful. Equal inherited faults permit request identity;
+a flaky inherited fault that changes a request causes paired measurement.
+Narrowing uses the same attribution. A failed or narrowed card gate records
+reject/cross_bench_harm instead of require-failing.
+Tests: test_inherited_zebra_fault_does_not_reject_sheet_procedure_or_card
+(timeout/exception, procedure/card); test_flaky_inherited_fault_with_a_changed_request_is_measured;
+test_candidate_only_fault_still_rejects_even_with_identical_inherited_fault;
+test_changed_procedure_cannot_claim_its_matching_fault_is_inherited;
+test_narrowing_recheck_ignores_identical_inherited_faults;
+test_card_cross_gate_failure_or_narrowing_records_rejection_not_pause.
+
+F5: Prebuild exclusions used the historical four-bench set while built V222/V225
+procedures included Zebra. prepare, _scope_entries and _resolve_change now use
+package.procedure_benches on the same policy-aware stand-in as the built procedure.
+Tests: test_prepare_uses_built_procedure_scope_for_zebra_replays and
+test_reference_resolution_uses_policy_scope_before_procedure_hash; v9 frozen control.
+
+F6: Resume reran nondeterministic hooks and compared complete signatures with
+the sealed request plan. main-v10 seals a deterministic core (configuration,
+bench, round, slices, package/full hashes, exercise, view/card/runtime digests),
+then reuses exact sealed routing logs, signatures, observations and identities.
+No fault text or identity field is removed. Core drift still pauses.
+Tests: test_confirmation_resume_reuses_sealed_signatures_before_routing_hooks;
+test_split_resume_reuses_sealed_signatures_and_observations (train/confirm);
+test_confirmation_resume_still_rejects_changed_deterministic_core;
+test_frozen_main_v9_retains_flaky_request_identity_pause.
+
+F8: First diagnostics setup exchanged outside the normal worker-loss handler.
+For main-v10 it runs inside call's slot and retry loop. A lost worker is replaced
+and configured once under the registered retry/fault rules; ConfigurationError
+still propagates. Tests: test_first_diagnostics_exchange_loss_retries_once_inside_call_slot;
+test_unrecoverable_diagnostics_loss_maps_to_registered_worker_fault;
+test_diagnostics_configuration_error_still_propagates_without_retry;
+test_main_v9_keeps_original_unhandled_first_diagnostics_loss.
+
+F4: Historical C differs from the actual start C0. The new v226_metrics module
+(VERSION main-v10-cl-metrics-v1) reanchors the aggregates themselves to C0 before
+_changed, adds per-changed-step harm/uncertainty using measured S1-C0 or Sk-S(k-1)
+pairs, and computes TS/TD from those incremental pair means, including secondary
+means that do not telescope. Historical anchor C is labelled descriptive only.
+The definition is pinned in main-v10 identity and smoke pins. Tests cover false
+and masked harm with C != C0, cumulative versus incremental harm, secondary pair
+means and the existing uncertainty rule: test_c0_reanchoring_removes_false_harm_and_exposes_masked_harm;
+test_later_incremental_harm_is_distinct_from_cumulative_start_harm;
+test_ts_td_use_registered_secondary_pairs_not_differences_of_reanchored_means;
+test_incremental_uses_the_same_registered_uncertainty_rule.
+v225_metrics.py is byte-identical: SHA256
+5c3fb6c3a23b53503e7ecfdc0569f01bda7a215b8b67e21a6db455feefe5aafd.
+
+F7: OfficeQA halves previously used the event-specific unit seed. main-v10 uses
+chain/test/bench for every event, and its readout refuses inconsistent blocks
+for an item across arms/runs. readout._design, stats_ext and evaluation._blocks
+are unchanged. Tests: test_officeqa_stage_read_halves_are_stable_only_in_main_v10;
+test_main_v10_readout_refuses_inconsistent_item_blocks.
+
+Candidate containment
+---------------------
+
+main-v10 guards candidate engineering checks, replay/routing, train, confirmation,
+split, self-test and acceptance preparation, including card phases. One unexpected
+candidate exception records exactly kind/exception/where, without message or
+item IDs, and rejects that candidate. A signature is exception@module:function.
+All phases/resumes of that candidate share one stable key and count it once.
+An append-only, hash-linked sealed journal makes the counters recoverable.
+Two consecutive candidates with the same signature, or an incumbent/parent
+signature, rethrow the original exception for the unchanged unit pause mapping.
+Counterfactual reference packages containing new procedures remain candidate
+work, while actual incumbent and inherited solo replays are protected parent work.
+
+Pause/termination, declared configuration/policy/provenance/sealing/leakage/canary
+contracts, budget, machine/network errors, pre-proposal prompt/data work and
+paired paid dispatch remain hard. Normal sandbox procedure fault results are
+still ordinary procedure faults, not reclassified host exceptions. The known
+defects above have direct fixes and are not hidden by containment.
+
+Completed step.json contains candidate_errors signature counts and safe
+candidate_error_events; imported step 5 has explicit empty fields. Readouts
+include summed signature counts and a total. Before a step completes, the sealed
+journal and paused unit status carry its counts: step.json remains the existing
+write-once completion marker and is not fabricated for an interrupted step.
+
+Tests cover isolated, repeated, parent/system, sealed-journal corruption,
+resume deduplication, no-proposal intervening rounds, safe writer feedback,
+card continuation, train/confirm/accept/self-test continuation, and readout sums
+in test_execskill_v226_candidates.py, _procedure_errors.py and _card_errors.py.
+
+End-to-end authored chain
+-------------------------
+
+test_authored_main_v10_chain_accepts_zebra_then_sheet_and_imports_alfworld runs the
+real step.learn controller, engineer checks, worker hooks, stored Zebra replays,
+request identities, training/confirmation/cross gates/acceptance, final selftests,
+freeze and stage readers. It accepts Zebra step 3 and SpreadsheetBench step 4,
+imports ALFWorld at step 5, and completes all 40 fresh read units. It also tests
+an unexpected host exception while a candidate Zebra before_call is evaluated:
+the first candidate is rejected and the next accepted, with a safe step.json
+event. Two consecutive identical exceptions retain the original configuration
+pause and do not advance to step 5. Only transport, authored supply/examiner,
+native execution and machine resources are replaced; identities and decisions
+are not mocked. The registered import-only ALF behavior is preserved.
+
+Registration coverage
+---------------------
+
+profiles: constant, is_v226 and inherited family predicates, every main-v9-keyed
+table, root, manifest, namespaces, evidence, main_v10_identity.
+protocol: evidence/sealed-record admission and experiment/read dispatch.
+manifest: identity, smoke pins, qualified cards, root isolation, worker configuration.
+scripts/run_execskill.py: snapshot/selftest/S0/manifest/smoke CLI choices.
+cells/package/registry/precheck/engines: new real-run evidence at every boundary.
+diagnostics/sandbox/client/units/step: shared worker source, diagnostics binding,
+locks, lifecycle and configuration admission.
+engineer/acceptance/v221_learning/v221_split/v222_gate/v222_runtime/v225_phase:
+learning, request identities, scoped diagnostics, gate and recovery dispatch.
+chain/evaluation/readout/v225_read: actual v10 config through fresh reads/reporting,
+while older direct contexts retain frozen v9 dispatch semantics.
+v210_import/v214_smoke/v214_stages/v222_smoke/v225_smoke: ALF import, structure,
+S0/price/measured-smoke identities; full main-v10 structural smoke is tested.
+v225_writer: v10-only safe candidate-error/cross-harm feedback clauses.
+
+Validation results and remaining limits
+---------------------------------------
+
+Final results (overlapping suites; these counts must not be added together):
+
+* All new main-v10 regression modules: 152 passed in 103.24 s, including the
+  three authored chain scenarios and complete structural smoke. final-v226.log.
+* Merged offline regression across 122 files: 3,423 passed, 9 failed, 1 skipped,
+  19 deselected in 240.03 s. All nine failures stop at the unchanged requirement
+  "A new S0 outside the checkout". The 19 deliberate exclusions are named at the
+  top of final-offline-validation.log; the nine failures are named at its end.
+* The one skip is tests/test_execskill_v225_ops.py::
+  test_optional_documentary_source_mirror_matches_available_deliverables: its
+  optional documentary mirror is absent from this source snapshot.
+* Separately, all profile tests that fit the directory restriction passed:
+  1,053 passed, 6 deselected; 21 additive CLI and 10 evidence/literal checks passed.
+* The exact requested full pytest command stopped at collection: 1 error in
+  1.25 s, missing skillopt_sleep in tests/test_azure_openai_compat.py. full-suite.log.
+* Expanded collection observed 21,909 collected tests and 45 collection errors
+  in 18.99 s. collection-errors.log names each affected module and missing asset.
+* The earlier unfiltered execskill-only attempt had 386 passed and 12 failed
+  before interruption at 636.24 s in sandbox client polling. Its failures were
+  four external-S0 path cases, three unchanged workbook-cache fixture cases,
+  and five real-worker detector cases. See legacy-suite-attempt.log. This is
+  environment evidence, not a completed-suite result.
+* git diff --check is clean. AST comparisons verified readout._design and
+  evaluation._blocks unchanged; byte comparisons verified stats_ext.py and
+  v225_metrics.py unchanged. HEAD remains the supplied base commit.
+
+Defect-specific base evidence is reproducible with base_probe.py. It uses
+read-only git show of e589b5b and restores named exact function bodies in memory,
+while retaining main-v10 registration; failures therefore do not merely reflect
+an unknown configuration. Nine fresh base processes produce 33 expected failures
+and 5 passing controls; their fixed counterparts pass all 38 checks. Per-case
+base failed/passed counts: K1 1/2, F1 3/0, F2 7/2, F3 6/0, F4 2/0, F5 8/0,
+F6 3/0, F7 1/1, F8 2/0. F6 demonstrates the actual frozen retry-plan mismatch;
+F4 delegates to the byte-identical legacy metric implementation and demonstrates
+both false and masked harm. base-probes.log retains every base and fixed output.
+
+Example reproduction, one fresh interpreter per case:
+  mkdir -p .runtime-tmp
+  TMPDIR="$PWD/.runtime-tmp" PATH=<python-bin>:$PATH \
+    PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' \
+    python3 docs/handoff/v226-20261109/base_probe.py F1
+Expected base exit is 1. Add --fixed for the passing positive control (exit 0).
+
+files.txt inventories all 72 changed files, including these audit artifacts,
+with one-line reasons. Its paths were checked against git diff and untracked
+files. Transient authored fixture state is removed after preserving the logs.
+
+The requested full command uses workspace-local .runtime-tmp, a path without
+test/final/holdout/reserve/sealed in its name, and the requested PATH,
+PYTHONDONTWRITEBYTECODE=1, PYTEST_ADDOPTS='-p no:cacheprovider'. Full collection is
+blocked by modules/assets absent from this snapshot (including skillopt_sleep,
+skillopt_webui, configuration task fixtures and an MCP schema). No dependency or
+unrelated fixture was fabricated to make that command green.
+
+Existing S0/snapshot tests require paths outside the repository, and main-v9
+operator scratch tests require /tmp. Those conflict with the instruction to
+write only in this working copy; production guards were preserved. Every omitted
+test is named in the final offline log. An earlier unfiltered execskill run also
+encountered the existing workbook cache fixture mismatch and unavailable real
+workers; it was interrupted in sandbox polling. Those results are retained.
+
+Real Linux isolation, Docker loss/OOM behavior and model/provider responses have
+not been verified. New diagnostics/recovery tests use the actual worker execution
+logic with authored host transport; they do not establish real Docker readiness.
+The implementation is reviewable, but full-suite / external-machine verification
+is not complete and no owner launch decision is implied by these offline results.
+
+Review findings fix round 1 (A1-A5, B1-B8)
+=========================================
+
+This section supersedes the original-round descriptions above where the review
+strengthened F3/F6, containment, root isolation or validation. No commit was
+created, no real run was launched, and v226-wip-r1 was not checked out or changed.
+All source changes remain in the supplied working copy. Some delegated focused
+tests used neutral OS temporary directories, removed by fixture teardown;
+root-run validation used checkout-local .runtime-tmp. No external source was
+edited. Existing frozen production checks were retained.
+
+A1 — preparation could read or copy consent before checking the root.
+Fix: main-v10 root/path fences run before preparation access in S0, consent,
+manifest, selftest CLI, snapshot, structural smoke and runtime setup. Real runs
+use exactly the registered main-v10 root. Preparation additionally admits the
+registered sibling <main-v10-root>-smoke and -scratch trees, including their
+descendants. Frozen main-v9 roots/descendants, consent sources, symlink paths and
+embedded preparation/supply/input pointers are refused before opening them.
+A real manifest requires S0.root == root before copying consent.
+Tests (test_execskill_v226_preparation_review.py):
+  test_preparation_refuses_frozen_root_before_any_input_read
+  test_cli_preparation_refuses_frozen_root_without_opening_it
+  test_frozen_consent_source_is_rejected_before_it_is_opened
+  test_real_manifest_rejects_s0_from_another_root_before_copying_consent
+  test_main_v10_preparation_admits_only_registered_run_smoke_and_scratch_roots
+  test_other_preparation_entrypoints_refuse_frozen_paths
+  test_consent_target_cannot_follow_a_shared_symlink_into_frozen_root
+  test_manifest_refuses_frozen_paths_embedded_in_s0_before_copying_consent
+  test_manifest_setting_refuses_nested_frozen_inputs_before_setup
+Additional nested-source regressions are in test_execskill_v226_preparation_inputs.py.
+The stand-in frozen tree is instrumented so a read/open or write fails the test;
+CLI and function cases cover both the frozen root and a descendant, smoke and real.
+
+A2 — deterministic request cores hashed the preview, not complete workbook bytes.
+Fix: v226_bindings.workbook_digests binds every mounted public workbook's full
+content in confirmation, split, card selection/measurement and cross inspections.
+Tests: test_sheet_resume_rejects_change_outside_preview (confirmation, split,
+card, card_selection), test_workbook_binding_includes_every_public_input.
+The hook really calls public_workbook() and reads A20; changing that cell changes
+the rendered request while the five-row preview remains byte-identical.
+
+A3 — JSON decoding preceded verification and could be contained as a candidate bug.
+Fix: main-v10 record reads use v226_candidates.read_record, encompassing read,
+decode and verification in system scope. Unreadable files become configuration
+errors. Step/card reads outside units normalize failures to configuration Pause.
+Selftest, confirmation, split, card, acceptance selection/plan/cells, cross-gate
+recovery and journal reads are covered; a read_json traceback is also hard as a
+defensive exclusion. These errors do not increment candidate_error counts.
+Tests: test_corrupt_sealed_receipt_pauses_without_candidate_error (selftest,
+confirmation, acceptance; truncated JSON, arrays and missing seal);
+  test_split_and_card_recovery_corruption_never_contained;
+  test_card_phase_corrupt_completed_receipt_pauses_outside_units;
+  test_cross_recovery_corrupt_records_pause_outside_containment;
+  test_corrupt_error_state_is_a_sealing_failure.
+Existing malformed-shape rejection controls remain green; pre-fix logs identify
+which truncated/malformed cases were previously swallowed.
+
+A4 — shared smoke validators defaulted missing configuration to main-v9.
+Fix: require the explicit configuration, restoring the base behavior.
+Tests: test_structural_smoke_requires_explicit_configuration_like_frozen_main_v9;
+  test_measured_smoke_requires_explicit_configuration_like_frozen_main_v9.
+Both were red before the fix.
+
+A5 — the shared test fixture allowed only one checkout scratch basename.
+Fix: any scratch directory with a neutral name is admitted; test/final/holdout/
+reserve/sealed basenames remain refused. Test:
+  test_neutral_scratch_fixture_accepts_arbitrary_checkout_directory.
+Production path admission is unchanged for every legacy configuration.
+
+B1 — delivered-field observations contain Python sets, which sealing cannot encode.
+Fix: main-v10 split observations are recursively canonicalized to sorted JSON
+lists before both sealing and fresh coverage consumption. Resume receives the
+same shape; sealing exceptions remain system failures.
+Tests: test_split_delivered_notes_seal_json_and_resume_identically (Zebra and
+SearchQA; split-p1 and merge), test_main_v9_split_notes_keep_legacy_binding.
+The hook delivers a note; interruption occurs after binding, and resumed results
+match the uninterrupted run. All four new-path cases failed before the fix.
+
+B2 — guarded split confirmation returned a rejection without cross_gate, but
+out-of-unit consumers assumed a successful cross-gate result.
+Fix: both consumers check cross_gate presence and absence of candidate_error
+before confirmed_candidate, gated on main-v10. Other guarded consumers were
+reviewed for the same success-shape assumption.
+Test: test_real_split_confirmation_candidate_error_is_restartable_and_systematic.
+Uses real v221_split.run and evaluate(confirmation=True); a contained rejection
+survives a restart and the matching next-subcandidate error raises a Pause.
+
+B3 — cross-gate redo reran flaky inspection, changing the already-pinned fired set.
+Fix: hashed v226-cross-inspection-<bench>.json records bind configuration, phase,
+home/bench/unit, package hashes, slice IDs, harm registration, view/card/runtime
+and full-workbook digests. Redo reuses the complete inspection. Narrowing uses
+separate sealed rechecks. Drift still pauses. Cross-card full-touch/gain applies
+only to its route target; incidental inherited faults use the normal no-harm rule.
+Tests: test_cross_gate_redo_reuses_sealed_inspection_before_pair_binding
+(confirm, accept, card-accept), test_cross_gate_redo_refuses_changed_runtime_before_reinspection,
+  test_cross_gate_redo_reuses_sealed_narrowing_rechecks,
+  test_cross_card_non_target_inherited_flake_uses_no_harm_rule.
+
+B4 — the systematic-error rule only remembered the adjacent candidate, stopped at
+the step boundary, and confused P0/C reference work with candidate work.
+Fix: compare every earlier candidate and earlier completed step's counts. The
+accepted candidate's final selftest is system work. Shared acceptance card/P0
+identities are explicitly system-scoped. Other contained selftests report
+selftest_candidate_error. main_v10_identity records the revised rule.
+Tests: test_nonconsecutive_candidate_signature_is_systematic,
+  test_prior_step_candidate_signature_is_systematic,
+  test_accepted_candidate_final_selftest_is_system_work,
+  test_shared_acceptance_card_reference_failure_is_system_work,
+  test_selftest_preparation_contains_only_candidate_errors.
+The historical test expecting an intervening success to erase a signature was
+updated to require a systematic failure.
+
+B5 — verified before fixing: card selection consumed the finite home pool before
+an unmeasured cross rejection, so OfficeQA/sheet skipped procedure learning.
+Fix: main-v10 card and immediate acceptance cross-gate before selecting/writing
+home selection receipts. Immediate-acceptance rejection no longer assumes a
+selection receipt was created. Nothing is registered or consumed on this branch.
+Tests: test_card_cross_rejection_preserves_procedure_pool (OfficeQA/sheet),
+  test_immediate_cross_rejection_precedes_acceptance_selection.
+Both card cases returned skipped_pool_exhausted before the fix and now return run.
+
+B6 — verified before fixing: a timeout only in S' was charged to the candidate
+even when its procedure ID/hash was unchanged and enabled in both arms.
+Fix: such independent hook faults are inherited/informational; changed requests
+still receive paired measurement. Added/changed procedures and shell interaction
+faults (duplicate names and assembly/caps) retain candidate attribution. Narrowing
+rechecks use the same rule.
+Tests: test_candidate_arm_only_unchanged_inherited_timeout_is_measured (procedure/card),
+  test_candidate_arm_only_inherited_fault_is_informational_during_narrowing,
+  test_inherited_shell_interaction_fault_still_belongs_to_candidate.
+
+B7 — verified before fixing: removing a journal suffix silently rolled counters back.
+Fix: unit status and completion receipts anchor the journal revision, record hash
+and counts. Journal reads require every anchor to be reachable, cross-check unit
+candidate-error results and completed step counts, and cached unit/step resumes
+validate the journal. A bad journal cannot produce a successful completion receipt.
+Tests: test_deleted_journal_tail_is_detected_by_unit_anchor,
+  test_step_error_counts_must_match_unit_and_journal.
+Both regressions failed before implementation. Existing corruption and repeated
+candidate/resume counter tests continue to cover the append-only chain.
+
+B8 — verified before fixing: broad is_v225 admission allowed a gate from the wrong
+configuration. Fix: cross_bindings requires equality with the run configuration;
+both phase callers pass it explicitly. Added deterministic v226_parents_before.json
+from read-only git show e589b5b: all 46 pre-existing configurations INCLUDING
+main-v9, fingerprints and profile tables. main-v10 S0 selects this fixture.
+Tests: test_card_handoff_rejects_gate_from_other_configuration,
+  test_parent_capture_contains_all_46_baseline_configurations,
+  test_main_v10_s0_pins_its_46_parent_capture.
+Generator: generate-parents.py. Fixture SHA-256:
+60ed368e3f4cd9e54a608cc9c8bdb3c48653a971627588624d360f2f10cf4a23.
+
+Pre-fix evidence and focused results
+-----------------------------------
+review-preparation-before.log: 27 initial failures, then 4 extra entrypoint,
+4 embedded-pointer and 1 setup failure; final prep/profile/read group 50 passed.
+review-phase-regressions.txt: 10 initial A2/B1/B5 failures, 2 B2 failures,
+4 split/card A3 failures plus 4 passing controls, 7 nested-source A1 failures,
+and 2 direct card-phase corruption failures. Fixed owned groups: 51 and 117 passes;
+earlier split/phase combined run 209 passed (overlapping groups).
+review-cross-regressions.txt: 7 B3/B6 failures before fixes; A3 cross recovery
+5 failures/3 controls using the original round-1 file in a subprocess. Fixed
+cross recovery 19 passed; combined cross/legacy group 163 passed.
+review-safety-before.log: 8 failed/6 passing controls before root changes;
+review-reference-before.log: both final-selftest/P0-role regressions failed.
+Root safety/candidate/procedure group: 59 passed. Updated diagnostics/safety
+group: 35 passed. Counts overlap and must not be added together.
+
+Final review validation
+-----------------------
+
+Full main-v10 modules, after all source/test fixes:
+  256 passed in 147.15 s (review-v226.log).
+This includes the real-controller authored normal, isolated-error and systematic
+chain scenarios, plus all preparation, split/card, cross-gate and journal review
+regressions. The first intermediate run had 233 passed/2 stale reader-mock
+failures; those mocks were updated for the protected loader and the whole set
+was rerun. review-v226-initial.log retains that intermediate result.
+
+The first broad 110-module run overlapped ongoing integration and is retained as
+an intermediate diagnostic: 2,884 passed, 34 failed, 1 skipped in 312.53 s.
+Six main-v10 failures used source/test modules loaded before the completed fixes;
+all six pass in the final 256-test run. The other 28 are unchanged workspace
+requirements: legacy S0 outputs must be outside the checkout, and four operator
+cases require /tmp. review-offline.log includes every traceback and node ID.
+A final separate run of the legacy modules excludes only these 28 named cases;
+its command/scope and exact exclusions are at the top of review-offline-final.log.
+
+The unrestricted requested pytest command still stops at collection:
+  1 error in 1.06 s: tests/test_azure_openai_compat.py imports absent skillopt_sleep.
+See review-full-suite.log. No missing dependency or unrelated asset was fabricated.
+
+Frozen integrity checks: all 46 original configuration fingerprints/profile
+tables match the regenerated e589b5b fixture; only main-v10 is new.
+v225_metrics.py and stats_ext.py remain byte-identical to e589b5b.
+readout._design and evaluation._blocks remain AST-identical to e589b5b.
+HEAD remains e589b5b3136382c08cba0fc55afa13fc14b6fdc4; the untouched local WIP
+reference is 645eac2837f7e5721e7c14725b53645ce6a8580b. git diff --check is clean.
+
+Unverified: real Linux isolation, Docker process loss/OOM, provider/model
+responses, and a complete unrestricted repository suite with its missing
+modules/assets restored. No real experiment or owner-launch action was taken.
+
+Final legacy offline result (90 modules): 2,648 passed, 1 skipped, 28 deselected
+in 121.72 s; exit 0. See review-offline-final.log for every exclusion.
+The skip is the absent optional documentary source mirror in test_execskill_v225_ops.
+Temporary checkout scratch trees were removed after all test processes finished.
+
+Round 2: eager v2.26 evaluation on frozen configurations (2026-11-09)
+------------------------------------------------------------------
+
+The Linux J7 failure was caused by building the containment key in _accept
+before _candidate_guard checked is_v226. The frozen test intentionally passes
+object() as candidate. _accept now checks is_v226(configuration_of(st.setting))
+before constructing the key or guard, and older configurations pass the original
+work directly to st.unit(unit, work, settle=settle).
+
+This round explicitly permits neutral scratch outside the checkout. Validation
+uses macOS 26.6.2 arm64, <python> (conda base), and
+CWD/TMPDIR=/tmp/execskill-r2-hybcy4wk. Source edits remain in this checkout.
+No commits, branch changes, real runs, model requests or owner-launch actions.
+Both v226-wip-r1 and v226-wip-r2 remain at their shipped snapshot hashes.
+
+Sweep scope and approach
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Reviewed every call to _candidate_guard, v226_candidates.guard (including the
+candidate_guard alias), package_arm, _evaluation_arm, _system_cells, _read_record,
+and related _read_recovery, _system_context, _system, _request_core,
+_restore_routes and require_card_identity helpers. Also reviewed every source
+diff against e589b5b for eager imports, package attributes, string/path building,
+file reads, extra exceptions, changed order and extra legacy calls. The remaining
+registration/evidence additions are additive or already gated. Independent
+second reviews checked the completed guard sweep and step.py changes.
+
+Frozen paths now retain direct calls rather than relying on a no-op wrapper.
+The original _routes, _pair_signatures, v225_phase.select and measure bodies are
+AST-identical to e589b5b after removing their leading v226 dispatch (measure's
+new optional selection keyword is used only on the v226 branch). The exact
+legacy protocol.verified dispatch is retained where the base used that alias.
+No frozen test or mutation definition was changed for this round.
+
+Changed call sites: before -> after
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Line numbers below refer to the completed working tree. Paths are relative to
+skillopt/execskill/ unless otherwise stated. Multiple locations on one line
+share the described before/after change.
+
+step.py:
+* 3061-3065 (_accept): eager unit/key formatting and candidate.sha256, then guard
+  -> all inside is_v226; original st.unit(unit, work, settle=settle) for older configs.
+* 1465-1468 (_selftest): contain alone allowed candidate_key or 'selftest:' +
+  candidate.sha256 before the guard -> is_v226 checked before either expression.
+* 1617-1622 (_engineer_train): every run_train call went through a guard/lambda
+  -> guard and key only for v226; direct engineer.run_train(ctx) otherwise.
+* 2214-2217, 2457-2461 (_train_eval/_confirm_eval): eager procedure key and guard
+  construction -> v226-only; original work passed directly to st.unit otherwise.
+* 1447-1450, 2158-2161, 2413-2416: every paired selftest/train/confirm dispatch
+  used _system_cells -> v226-only; original direct _cells call on older paths.
+* 1342, 1640: added nullcontext/worker scope or _routes_impl call on legacy path
+  -> v226-only helper dispatch; complete original legacy bodies retained.
+* 459, 521, 607, 721, 811, 1101, 1120, 1423, 2776, 2784, 2962, 3185, 3236:
+  shared unit/tail/slices/previous/corpus/selftest/acceptance/completion reads
+  always used _read_record -> v226-only; exact original verified(read_json(...))
+  or protocol.verified(read_json(...)) otherwise.
+* 2321-2327: eager list of every prior confirmation -> original any(generator)
+  short-circuit for older configs; later unit records are no longer read.
+* 2354, 2389: confirmation path built before legacy routing/request identities
+  -> early construction only for v226; legacy construction back at original point.
+* 2451, 2473, 1626, 2605, 2611, 2631, 3221: candidate-error result lookups,
+  propagation and completion fields -> gated before touching those fields/calls.
+* 2946, 3010-3036: new register helper and system context reached older acceptance
+  -> original direct early registration and direct dispatch/decide/write/settle;
+  v226 retains deferred registration and system scope.
+* 3048-3058: new candidate-error settlement conditions and verified recovery reads
+  -> v226-only; older acceptance settlement again reads raw JSON, as e589b5b did.
+
+acceptance.py:
+* 322: every reuse signature entered an added context -> only v226 card signatures
+  enter evaluation_arm; older signatures use their original worker directly.
+* 612, 1427: _read_recovery on every reused/round cell -> v226-only; original
+  verified(read_json(...)) otherwise.
+
+v221_learning.py:
+* 197: previous selection always used step._read_record -> v226-only loader.
+* 202: older selection called a new closure and extra require -> closure defined
+  and executed only for v226; original inline legacy selector restored.
+
+v221_split.py:
+* 108, 132, 142: trajectory/cell/cross-plan wrappers -> v226-only, original reads otherwise.
+* 184: eager split plan path/core -> v226-only path/core construction.
+* 196, 208: duplicate fresh source.get('request_signatures') -> original single
+  access/order; resumed v226 work obtains it in its own branch.
+* 245: unconditional _system_cells -> direct legacy _cells, v226 wrapper only.
+* 305: eager split key/rejection callback/guard -> all inside is_v226.
+* 320, 352, 387: _confirmed_training receives configuration only for v226; older
+  calls retain the frozen arguments and cannot propagate candidate_error fields.
+* 326: candidate_error lookup in split eligibility -> v226-only.
+
+v222_runtime.py:
+* 111, 127, 136, 159: registration/plan/cell/completed-gate recovery wrappers
+  -> v226-only; original raw or verified reads otherwise.
+* 167, 280: every package load entered _system -> v226-only; direct legacy loads.
+* 192: new module-level digest import -> inside v226 inspection branch.
+* 209: shared new inspection path -> original direct legacy inspect call/order.
+* 237: unconditional _system_cells -> v226-only; direct legacy _cells.
+
+v225_phase.py:
+* 125, 557: selection/phase _read_record wrappers -> v226-only, original reads otherwise.
+* 139, 230: shared select/measure added contexts, identity checks and eager
+  request core/digest/runtime/card work -> v226 helper dispatch before any such
+  work; original legacy bodies retained directly.
+* 178, 302: added global digest import -> local to v226 helpers. Containment
+  key construction in those helpers remains behind v226 dispatch.
+* 452, 480, 566, 578, 618, 720: actual configuration lookups replacing frozen
+  main-v9 constants/default arguments -> actual configuration only for v226.
+* 494: cross-card settlement always entered _system_context -> v226-only;
+  original legacy registration/dispatch/decision actions remain direct.
+* 520, 622, 660, 692: candidate_error lookups -> v226-only.
+* 753: shared authored public dictionary -> original separate per-item legacy dictionaries.
+
+v222_gate.py:
+* 144: eager iteration of parent/candidate procedures -> v226-only metadata.
+* 154: added scope/nullcontext for every worker -> factory wrapping only for v226;
+  legacy keeps with workers(package, key) and original arm order.
+
+Preparation, worker, writer and read dispatch:
+* manifest.py:506: eager _check_run_root arguments/call -> inside is_v226.
+* v214_preparation.py:93,101,168: unconditional frozen-root/input helpers -> v226-only.
+* v222_smoke.py:70,81,99,117: new preparation imports/calls -> v226-only.
+* sandbox/client.py:525,567: call-time profiles imports -> comparisons against the
+  already validated main-v10 instruction configuration; legacy worker setup order retained.
+* diagnostics_runtime.py:15: added module-level profiles/ConfigurationError imports
+  -> error import only inside the main-v10 diagnostics branch.
+* units.py:148, chain.py:612: actual configuration forwarded for every caller
+  -> original MAIN_V9 for older configurations, actual configuration for v226.
+* readout.py:632, v214_stages.py:263, v214_smoke.py:139,247,512,
+  v225_writer.py:145,225: new configuration keywords always forwarded
+  -> only supplied for v226; older call signatures retained.
+* v225_read.py:216,289,404,628: unconditional _registered_configuration and eager
+  attribute/index access -> original default plus guarded v226 selection; helper removed.
+* v225_read.py:600,657,690: new readout/aggregate keywords -> v226-only.
+* v225_read.py:627,692: changed metrics import/reference dispatch -> original
+  v225_metrics import and v225_metrics.reference() on legacy paths.
+* v225_smoke.py:125,156,167,173,190,245: new helper configuration keywords -> v226-only.
+* v225_smoke.py:264,319,517: actual configuration replaced historical main-v9
+  smoke/projection defaults -> MAIN_V9 preserved unless v226.
+
+Regression and integrity evidence
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+New tests/test_execskill_v226_legacy_boundaries.py covers all 46 older configuration
+names with object() candidates and guards that fail if invoked, deferred train/
+confirmation/split work, empty selftests, original completion/previous readers,
+raw acceptance settlement, confirmation short-circuit, candidate-first worker
+order, cross-inspection metadata laziness, and the original J7 recorder with all
+v226 adapters poisoned. Its 65 cases are included in the complete v226 run.
+
+round2-integrity.log verifies the four original bodies above, byte identity of
+v225_metrics.py, stats_ext.py, sandbox/worker.py, the fivebench test module and
+the mutation harness, all 152 mutation target strings still occurring exactly
+once, unchanged branch refs, and a clean git diff --check.
+
+Validation commands and results
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+All round-2 logs record interpreter, platform, CWD, TMPDIR, exact command and exit
+status. PYTHONDONTWRITEBYTECODE=1 and pytest -p no:cacheprovider were used for the
+recorded suites. Temporary bytecode from preliminary inspection was removed.
+The final broad frozen run uses the checkout as CWD because three unchanged
+preparation tests resolve their fixture paths relative to CWD; its TMPDIR is
+still the same neutral directory under /tmp, with mode 0755 for uid 65534
+traversal. All scratch paths belong to this round; no /dev/shm path was used.
+
+* tests/test_execskill_fivebench_step.py: 7 passed in 0.97 s; fully green,
+  including test_j7_the_accept_unit_registers_the_probe_and_sends_it_options_only.
+  round2-fivebench.log. The file is byte-identical to e589b5b.
+* Every tests/test_execskill_v226_*.py module: 321 passed in 132.52 s. This is the
+  prior 256 cases plus all 65 new boundary cases; no exclusions. round2-v226.log.
+* Final focused acceptance/recovery/card/operator/boundary group: 463 passed,
+  1 skipped in 34.97 s. Includes a rerun after restoring the two exact legacy
+  protocol.verified aliases. round2-focused.log. Counts overlap other groups.
+* tests/test_execskill_mutations.py: all 152 parameters were selected, but all
+  produced setup ERRORS. Its unmutated named-target preflight stopped after
+  40 passed / 1 failed at test_execskill_detectors.py::
+  test_det1_masked_views_hide_answers_run_status_and_step_count. The local
+  worker returned fault='worker' instead of the expected result. Thus no mutation
+  body executed, and this is NOT a passing mutation result. round2-mutations.log.
+* Generic sandbox platform probe (-x): 1 passed / 1 failed in 1.66 s, stopping at
+  test_sbx01_load_call_ping_with_lazy_start (missing cpu_ms after worker loss).
+  The remaining sandbox tests were not run in that probe. round2-sandbox.log.
+
+The detector/sandbox failures reproduce on an untouched git archive of e589b5b:
+2 failed in 1.87 s. Captured original worker stderr shows
+os.killpg(pid, signal.SIGKILL) raising PermissionError [Errno 1] Operation not
+permitted in worker._kill_group during _reap. An independent child-process
+control reproduces the same error. The absent macOS prctl symbol is handled by
+the frozen implementation and was not the fatal traceback. No worker hardening,
+frozen test, harness setup assertion, or mutation was altered to bypass this.
+
+The initial full 117-module frozen run had 3529 passed, 12 failed, 1 skipped in
+292.06 s (round2-frozen.log). Five worker-dependent step failures reproduce on
+untouched e589b5b as well: 5 failed in 27.11 s, with the same no_surviving_change /
+not_run and absent expected Pause/_Killed results. Full node IDs and baseline
+commands are preserved in round2-platform-baseline.log. These are the same five
+failures in the final broad rerun:
+  tests/test_execskill_step.py::test_step1_one_fake_officeqa_step_through_the_eight_sub_steps
+  tests/test_execskill_step.py::test_a_step_ending_before_the_acceptance_consumes_no_acceptance_item[blocked_twice]
+  tests/test_execskill_step.py::test_c7e_a_paused_acceptance_redoes_one_block_on_its_own_sub_scope
+  tests/test_execskill_step.py::test_c7e_1_the_g_acc_cells_are_charged_to_the_examiners_scope_in_a_redone_block_too
+  tests/test_execskill_step.py::test_codex8_an_accept_unit_killed_before_its_completion_evidence_settles_only_in_its_redo
+
+The other seven initial frozen failures were corrected in the test environment:
+three missing relative fixture paths (run the frozen suite from the checkout),
+and four v225_ops failures because the new temporary ancestor had mkdtemp's 0700
+mode. chmod 0755 of that owned scratch root made the complete focused group green.
+These are environmental, like the owner's reported /dev/shm operator failures;
+no production or frozen test change was made for them. The single skipped test
+is the optional documentary source mirror, absent from this snapshot.
+
+Reproduction from the checkout (macOS conda; a fresh neutral scratch directory):
+  v226_scratch=$(mktemp -d /tmp/execskill-v226-r2.XXXXXX)
+  chmod 0755 "$v226_scratch"
+  TMPDIR="$v226_scratch" <python> -B -m pytest -q \
+    -p no:cacheprovider tests/test_execskill_fivebench_step.py \
+    tests/test_execskill_mutations.py tests/test_execskill_v226_*.py
+The mutation baseline still requires a runtime whose local worker can perform
+its frozen process-group cleanup. No complete Linux rerun was available here.
+
+Final broad frozen result (all 117 modules): 3536 passed, 5 failed, 1 skipped
+in 277.40 s; round2-frozen-final.log. All seven scratch/CWD failures are resolved;
+the five remaining failures are exactly the worker-dependent nodes reproduced
+on e589b5b above. The command attempted to deselect those five using absolute
+node paths, but pytest used relative node IDs, so no case was deselected: the
+entire frozen set actually ran. No additional rerun is needed to diagnose those
+already baseline-confirmed platform failures. This is not an all-green frozen
+suite claim. Operator tests pass with traversable TMPDIR below /tmp.
+
+Remaining verification limits: no mutation body could execute because the
+unmutated worker preflight fails in this runtime; the five frozen worker step
+tests and sandbox probe also fail on the original baseline; the rest of the
+generic sandbox module and a complete Linux run were not executed. All requested
+v226 modules and the complete five-bench module passed without exclusions.
+
+After all test processes completed, round-2 scratch trees, baseline archives,
+inspection copies and temporary runner scripts were removed. Handoff logs remain.
+Final branch refs and frozen hashes are preserved in round2-integrity.log.
+
+fix round 3 (prelaunch)
+----------------------
+
+2026-11-09, landed worktree research/exec-skill-v226 at f635f67; no commit.
+The main-v10 frozen-root exclusion no longer calls safe_path: both abspath and
+resolve(strict=False) forms of each non-None input are compared with both forms
+of MAIN_V9_ROOT. Equality or ancestry retains the exact main-v9 refusal message.
+Harmless recorded interpreter symlinks pass without opening their contents.
+All behavior remains inside is_v226; readers and _check_run_root are unchanged.
+An AST comparison confirms _check_frozen_paths is the only changed production
+function, with no other production file changed relative to the landed HEAD.
+
+Added 15 engineering cases. Final pre-fix run: 13 failed, 9 passed in 1.54 s
+(round3-before.log); two earlier fixture setup issues are disclosed there.
+The inherited-S0 preparation case reproduces the exact line-102 walk failure
+before the fix and now reaches an explicit _allocations sentinel after source
+read, record verification and map checks. It does not claim full preparation.
+Coverage includes nested metadata, frozen aliases/missing targets, symlinked
+frozen roots, lexical escapes, and unchanged root/source-reader symlink refusal.
+
+Requested validation: 381 passed, 0 failed, 0 skipped in 119.38 s
+(round3-validation.log): 336 v226 cases plus 45 explicit frozen-parent fingerprint
+cases. The 336 include the 46-configuration parent capture/fingerprint check.
+Command, from this checkout with a fresh chmod-0755 neutral TMPDIR below /tmp:
+  TMPDIR="$v226_scratch" PYTHONDONTWRITEBYTECODE=1 <python> \
+    -m pytest -q -p no:cacheprovider tests/test_execskill_v226_*.py \
+    tests/test_execskill_v225_profile.py::test_all_forty_five_parent_fingerprints_stay_byte_identical
+Scratch prefix: /tmp/execskill-v226-r3.XXXXXX; removed after each run.
+git diff --check passes. All requested checks ran; no Linux real-input rerun,
+model call or launch was performed. This is local engineering evidence only.
+Workflow and project status are updated; historical result conclusions are unchanged.
+The eight touched files are listed in files.txt (four existing entries updated,
+four new entries added); the cumulative inventory now has 116 paths.

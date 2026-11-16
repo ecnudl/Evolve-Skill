@@ -1,0 +1,87 @@
+{
+ "chains": {
+  "D": {
+   "alfworld": {
+    "package": "alfworld-v11-accepted",
+    "procedures": [
+     {
+      "file": "alfworld/alfworld-v11-accepted/p-alfworld-1-6.procedure.json",
+      "id": "p-alfworld-1-6",
+      "record_sha256": "a93758eae5454350a6cbb1301032f4de94c05d82159edc699e72d065e530f262",
+      "sha256": "70b5837d3443bffe6d68e61234c81e9670e7ea03e56245f0332c7fbd3184675a",
+      "source_file": "skills/alfworld/alfworld-v11-accepted/p-alfworld-1-6.procedure.json"
+     },
+     {
+      "file": "alfworld/alfworld-v11-accepted/p-alfworld-1-14.procedure.json",
+      "id": "p-alfworld-1-14",
+      "record_sha256": "9ab7ff8b708e0992ffa1ecaa8a68334587e63e6523e0fe61d8960992709fa919",
+      "sha256": "cfeb6dad0e3fa24b81ae3129b92c61cbb274d93df4c2bbe03ae463547854f8f8",
+      "source_file": "skills/alfworld/alfworld-v11-accepted/p-alfworld-1-14.procedure.json"
+     },
+     {
+      "file": "alfworld/alfworld-v11-accepted/p-alfworld-1-15.procedure.json",
+      "id": "p-alfworld-1-15",
+      "record_sha256": "768778bd771e5c9470f8faf1e36e51af33418503c492e77b8db8044f02ac689c",
+      "sha256": "a137e94c664dedbc5b2a42038208181c7d7481a3dd266e58a086b84d87c01142",
+      "source_file": "skills/alfworld/alfworld-v11-accepted/p-alfworld-1-15.procedure.json"
+     }
+    ]
+   },
+   "zebralogic": {
+    "package": "main-v6-D-s3-p-zebralogic-3-3",
+    "procedures": [
+     {
+      "file": "zebralogic/main-v6-D-s3-p-zebralogic-3-3/p-zebralogic-3-3.procedure.json",
+      "id": "p-zebralogic-3-3",
+      "record_sha256": "0bb2797fe31a21c0573fd2ba9890013fac5830d145e38982d2c1432f85303119",
+      "sha256": "1367ccf9ec7f1da9ffcedc99635db4cf70d3bc4ba919583e4f5c6b613c653a3e",
+      "source_file": "skills/zebralogic/main-v6-D-s3-p-zebralogic-3-3/procedure.json"
+     }
+    ]
+   }
+  },
+  "G": {
+   "alfworld": {
+    "package": "alfworld-v11-accepted",
+    "procedures": [
+     {
+      "file": "alfworld/alfworld-v11-accepted/p-alfworld-1-6.procedure.json",
+      "id": "p-alfworld-1-6",
+      "record_sha256": "a93758eae5454350a6cbb1301032f4de94c05d82159edc699e72d065e530f262",
+      "sha256": "70b5837d3443bffe6d68e61234c81e9670e7ea03e56245f0332c7fbd3184675a",
+      "source_file": "skills/alfworld/alfworld-v11-accepted/p-alfworld-1-6.procedure.json"
+     },
+     {
+      "file": "alfworld/alfworld-v11-accepted/p-alfworld-1-14.procedure.json",
+      "id": "p-alfworld-1-14",
+      "record_sha256": "9ab7ff8b708e0992ffa1ecaa8a68334587e63e6523e0fe61d8960992709fa919",
+      "sha256": "cfeb6dad0e3fa24b81ae3129b92c61cbb274d93df4c2bbe03ae463547854f8f8",
+      "source_file": "skills/alfworld/alfworld-v11-accepted/p-alfworld-1-14.procedure.json"
+     },
+     {
+      "file": "alfworld/alfworld-v11-accepted/p-alfworld-1-15.procedure.json",
+      "id": "p-alfworld-1-15",
+      "record_sha256": "768778bd771e5c9470f8faf1e36e51af33418503c492e77b8db8044f02ac689c",
+      "sha256": "a137e94c664dedbc5b2a42038208181c7d7481a3dd266e58a086b84d87c01142",
+      "source_file": "skills/alfworld/alfworld-v11-accepted/p-alfworld-1-15.procedure.json"
+     }
+    ]
+   },
+   "zebralogic": {
+    "package": "main-v6-G-s3-p-zebralogic-3-5",
+    "procedures": [
+     {
+      "file": "zebralogic/main-v6-G-s3-p-zebralogic-3-5/p-zebralogic-3-5.procedure.json",
+      "id": "p-zebralogic-3-5",
+      "record_sha256": "55b36369be79659892f4810172d4e6504c03c9fd81d2334e74502e1fc3855cfb",
+      "sha256": "5b83b1811b82e10b02bb628f4d71e12a43e3368fca2281715bc5e1a8c52a12d6",
+      "source_file": "skills/zebralogic/main-v6-G-s3-p-zebralogic-3-5/procedure.json"
+     }
+    ]
+   }
+  }
+ },
+ "rule": "CHAIN-DECISIONS T9: only packages an earlier chain accepted at its own practice gate; never a hand-picked package, never oracle-reference",
+ "source": "SkillOpt skill-archive/ (built 2026-11-09 16:57; manifest.json lists every file sha256): the records are byte copies of its procedure records, renamed <id>.procedure.json",
+ "version": "typed-v3-archive-1"
+}

@@ -1,0 +1,4137 @@
+{
+  "captured_before_route_thinking_edit": true,
+  "client_source_sha256": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+  "configurations": {
+    "alfworld-v1": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096
+        },
+        "M": {
+          "alfworld": 1024
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096
+          },
+          "M": {
+            "alfworld": 1024
+          },
+          "backend": "elucid",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-v4.1-flash",
+            "deepseek-v4.1-flash-1017"
+          ],
+          "slots": 8,
+          "url_host": "hk.getelucid.com"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536
+          },
+          "M": {
+            "alfworld": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "alfworld-v10": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096
+        },
+        "M": {
+          "alfworld": 1024
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096
+          },
+          "M": {
+            "alfworld": 1024
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536
+          },
+          "M": {
+            "alfworld": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "alfworld-v11": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096
+        },
+        "M": {
+          "alfworld": 1024
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096
+          },
+          "M": {
+            "alfworld": 1024
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536
+          },
+          "M": {
+            "alfworld": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "alfworld-v2": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096
+        },
+        "M": {
+          "alfworld": 1024
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096
+          },
+          "M": {
+            "alfworld": 1024
+          },
+          "backend": "elucid",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-v4.1-flash",
+            "deepseek-v4.1-flash-1017"
+          ],
+          "slots": 8,
+          "url_host": "hk.getelucid.com"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536
+          },
+          "M": {
+            "alfworld": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "alfworld-v3": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096
+        },
+        "M": {
+          "alfworld": 1024
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096
+          },
+          "M": {
+            "alfworld": 1024
+          },
+          "backend": "elucid",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-v4.1-flash",
+            "deepseek-v4.1-flash-1017"
+          ],
+          "slots": 8,
+          "url_host": "hk.getelucid.com"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536
+          },
+          "M": {
+            "alfworld": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "alfworld-v4": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096
+        },
+        "M": {
+          "alfworld": 1024
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096
+          },
+          "M": {
+            "alfworld": 1024
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536
+          },
+          "M": {
+            "alfworld": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "alfworld-v5": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096
+        },
+        "M": {
+          "alfworld": 1024
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096
+          },
+          "M": {
+            "alfworld": 1024
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536
+          },
+          "M": {
+            "alfworld": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "alfworld-v6": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096
+        },
+        "M": {
+          "alfworld": 1024
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096
+          },
+          "M": {
+            "alfworld": 1024
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536
+          },
+          "M": {
+            "alfworld": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "alfworld-v7": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096
+        },
+        "M": {
+          "alfworld": 1024
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096
+          },
+          "M": {
+            "alfworld": 1024
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536
+          },
+          "M": {
+            "alfworld": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "alfworld-v8": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096
+        },
+        "M": {
+          "alfworld": 1024
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096
+          },
+          "M": {
+            "alfworld": 1024
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536
+          },
+          "M": {
+            "alfworld": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "alfworld-v9": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096
+        },
+        "M": {
+          "alfworld": 1024
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096
+          },
+          "M": {
+            "alfworld": 1024
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536
+          },
+          "M": {
+            "alfworld": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "baseline-v210": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096,
+          "livemath": 32768,
+          "officeqa": 32768,
+          "searchqa": 32768,
+          "spreadsheetbench": 65536
+        },
+        "M": {
+          "alfworld": 1024,
+          "livemath": 8192,
+          "officeqa": 8192,
+          "searchqa": 8192,
+          "spreadsheetbench": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180,
+          "livemath": 600,
+          "officeqa": 600,
+          "searchqa": 600,
+          "spreadsheetbench": 900
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096,
+            "livemath": 32768,
+            "officeqa": 32768,
+            "searchqa": 32768,
+            "spreadsheetbench": 65536
+          },
+          "M": {
+            "alfworld": 1024,
+            "livemath": 8192,
+            "officeqa": 8192,
+            "searchqa": 8192,
+            "spreadsheetbench": 16384
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180,
+            "livemath": 600,
+            "officeqa": 600,
+            "searchqa": 600,
+            "spreadsheetbench": 900
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536,
+            "livemath": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536
+          },
+          "M": {
+            "alfworld": 65536,
+            "livemath": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400,
+            "livemath": 2400,
+            "officeqa": 2400,
+            "searchqa": 2400,
+            "spreadsheetbench": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "cross-v5": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096,
+          "officeqa": 32768,
+          "searchqa": 32768,
+          "spreadsheetbench": 65536,
+          "zebralogic": 65536
+        },
+        "M": {
+          "alfworld": 1024,
+          "officeqa": 8192,
+          "searchqa": 8192,
+          "spreadsheetbench": 16384,
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180,
+          "officeqa": 600,
+          "searchqa": 600,
+          "spreadsheetbench": 900,
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096,
+            "officeqa": 32768,
+            "searchqa": 32768,
+            "spreadsheetbench": 65536,
+            "zebralogic": 65536
+          },
+          "M": {
+            "alfworld": 1024,
+            "officeqa": 8192,
+            "searchqa": 8192,
+            "spreadsheetbench": 16384,
+            "zebralogic": 16384
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180,
+            "officeqa": 600,
+            "searchqa": 600,
+            "spreadsheetbench": 900,
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536,
+            "zebralogic": 65536
+          },
+          "M": {
+            "alfworld": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536,
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400,
+            "officeqa": 2400,
+            "searchqa": 2400,
+            "spreadsheetbench": 2400,
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "default": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096,
+          "livemath": 32768,
+          "officeqa": 32768,
+          "searchqa": 32768,
+          "spreadsheetbench": 65536
+        },
+        "M": {
+          "alfworld": 1024,
+          "livemath": 8192,
+          "officeqa": 8192,
+          "searchqa": 8192,
+          "spreadsheetbench": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180,
+          "livemath": 600,
+          "officeqa": 600,
+          "searchqa": 600,
+          "spreadsheetbench": 900
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096,
+            "livemath": 32768,
+            "officeqa": 32768,
+            "searchqa": 32768,
+            "spreadsheetbench": 65536
+          },
+          "M": {
+            "alfworld": 1024,
+            "livemath": 8192,
+            "officeqa": 8192,
+            "searchqa": 8192,
+            "spreadsheetbench": 16384
+          },
+          "backend": "elucid",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180,
+            "livemath": 600,
+            "officeqa": 600,
+            "searchqa": 600,
+            "spreadsheetbench": 900
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-v4.1-flash",
+            "deepseek-v4.1-flash-1017"
+          ],
+          "slots": 8,
+          "url_host": "hk.getelucid.com"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536,
+            "livemath": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536
+          },
+          "M": {
+            "alfworld": 65536,
+            "livemath": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400,
+            "livemath": 2400,
+            "officeqa": 2400,
+            "searchqa": 2400,
+            "spreadsheetbench": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "implant-v5": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096,
+          "officeqa": 32768,
+          "searchqa": 32768,
+          "spreadsheetbench": 65536,
+          "zebralogic": 65536
+        },
+        "M": {
+          "alfworld": 1024,
+          "officeqa": 8192,
+          "searchqa": 8192,
+          "spreadsheetbench": 16384,
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180,
+          "officeqa": 600,
+          "searchqa": 600,
+          "spreadsheetbench": 900,
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096,
+            "officeqa": 32768,
+            "searchqa": 32768,
+            "spreadsheetbench": 65536,
+            "zebralogic": 65536
+          },
+          "M": {
+            "alfworld": 1024,
+            "officeqa": 8192,
+            "searchqa": 8192,
+            "spreadsheetbench": 16384,
+            "zebralogic": 16384
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180,
+            "officeqa": 600,
+            "searchqa": 600,
+            "spreadsheetbench": 900,
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536,
+            "zebralogic": 65536
+          },
+          "M": {
+            "alfworld": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536,
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400,
+            "officeqa": 2400,
+            "searchqa": 2400,
+            "spreadsheetbench": 2400,
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "main": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096,
+          "livemath": 32768,
+          "officeqa": 32768,
+          "searchqa": 32768,
+          "spreadsheetbench": 65536
+        },
+        "M": {
+          "alfworld": 1024,
+          "livemath": 8192,
+          "officeqa": 8192,
+          "searchqa": 8192,
+          "spreadsheetbench": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180,
+          "livemath": 600,
+          "officeqa": 600,
+          "searchqa": 600,
+          "spreadsheetbench": 900
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096,
+            "livemath": 32768,
+            "officeqa": 32768,
+            "searchqa": 32768,
+            "spreadsheetbench": 65536
+          },
+          "M": {
+            "alfworld": 1024,
+            "livemath": 8192,
+            "officeqa": 8192,
+            "searchqa": 8192,
+            "spreadsheetbench": 16384
+          },
+          "backend": "elucid",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180,
+            "livemath": 600,
+            "officeqa": 600,
+            "searchqa": 600,
+            "spreadsheetbench": 900
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-v4.1-flash",
+            "deepseek-v4.1-flash-1017"
+          ],
+          "slots": 8,
+          "url_host": "hk.getelucid.com"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536,
+            "livemath": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536
+          },
+          "M": {
+            "alfworld": 65536,
+            "livemath": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400,
+            "livemath": 2400,
+            "officeqa": 2400,
+            "searchqa": 2400,
+            "spreadsheetbench": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "main-v2": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096,
+          "livemath": 32768,
+          "officeqa": 32768,
+          "searchqa": 32768,
+          "spreadsheetbench": 65536
+        },
+        "M": {
+          "alfworld": 1024,
+          "livemath": 8192,
+          "officeqa": 8192,
+          "searchqa": 8192,
+          "spreadsheetbench": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180,
+          "livemath": 600,
+          "officeqa": 600,
+          "searchqa": 600,
+          "spreadsheetbench": 900
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096,
+            "livemath": 32768,
+            "officeqa": 32768,
+            "searchqa": 32768,
+            "spreadsheetbench": 65536
+          },
+          "M": {
+            "alfworld": 1024,
+            "livemath": 8192,
+            "officeqa": 8192,
+            "searchqa": 8192,
+            "spreadsheetbench": 16384
+          },
+          "backend": "elucid",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180,
+            "livemath": 600,
+            "officeqa": 600,
+            "searchqa": 600,
+            "spreadsheetbench": 900
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-v4.1-flash",
+            "deepseek-v4.1-flash-1017"
+          ],
+          "slots": 8,
+          "url_host": "hk.getelucid.com"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536,
+            "livemath": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536
+          },
+          "M": {
+            "alfworld": 65536,
+            "livemath": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400,
+            "livemath": 2400,
+            "officeqa": 2400,
+            "searchqa": 2400,
+            "spreadsheetbench": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "main-v2-1": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096,
+          "livemath": 32768,
+          "officeqa": 32768,
+          "searchqa": 32768,
+          "spreadsheetbench": 65536
+        },
+        "M": {
+          "alfworld": 1024,
+          "livemath": 8192,
+          "officeqa": 8192,
+          "searchqa": 8192,
+          "spreadsheetbench": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180,
+          "livemath": 600,
+          "officeqa": 600,
+          "searchqa": 600,
+          "spreadsheetbench": 900
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096,
+            "livemath": 32768,
+            "officeqa": 32768,
+            "searchqa": 32768,
+            "spreadsheetbench": 65536
+          },
+          "M": {
+            "alfworld": 1024,
+            "livemath": 8192,
+            "officeqa": 8192,
+            "searchqa": 8192,
+            "spreadsheetbench": 16384
+          },
+          "backend": "elucid",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180,
+            "livemath": 600,
+            "officeqa": 600,
+            "searchqa": 600,
+            "spreadsheetbench": 900
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-v4.1-flash",
+            "deepseek-v4.1-flash-1017"
+          ],
+          "slots": 8,
+          "url_host": "hk.getelucid.com"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536,
+            "livemath": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536
+          },
+          "M": {
+            "alfworld": 65536,
+            "livemath": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400,
+            "livemath": 2400,
+            "officeqa": 2400,
+            "searchqa": 2400,
+            "spreadsheetbench": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "main-v2-2": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096,
+          "livemath": 32768,
+          "officeqa": 32768,
+          "searchqa": 32768,
+          "spreadsheetbench": 65536
+        },
+        "M": {
+          "alfworld": 1024,
+          "livemath": 8192,
+          "officeqa": 8192,
+          "searchqa": 8192,
+          "spreadsheetbench": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180,
+          "livemath": 600,
+          "officeqa": 600,
+          "searchqa": 600,
+          "spreadsheetbench": 900
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096,
+            "livemath": 32768,
+            "officeqa": 32768,
+            "searchqa": 32768,
+            "spreadsheetbench": 65536
+          },
+          "M": {
+            "alfworld": 1024,
+            "livemath": 8192,
+            "officeqa": 8192,
+            "searchqa": 8192,
+            "spreadsheetbench": 16384
+          },
+          "backend": "elucid",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180,
+            "livemath": 600,
+            "officeqa": 600,
+            "searchqa": 600,
+            "spreadsheetbench": 900
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-v4.1-flash",
+            "deepseek-v4.1-flash-1017"
+          ],
+          "slots": 8,
+          "url_host": "hk.getelucid.com"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536,
+            "livemath": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536
+          },
+          "M": {
+            "alfworld": 65536,
+            "livemath": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400,
+            "livemath": 2400,
+            "officeqa": 2400,
+            "searchqa": 2400,
+            "spreadsheetbench": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "main-v2-3": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096,
+          "livemath": 32768,
+          "officeqa": 32768,
+          "searchqa": 32768,
+          "spreadsheetbench": 65536
+        },
+        "M": {
+          "alfworld": 1024,
+          "livemath": 8192,
+          "officeqa": 8192,
+          "searchqa": 8192,
+          "spreadsheetbench": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180,
+          "livemath": 600,
+          "officeqa": 600,
+          "searchqa": 600,
+          "spreadsheetbench": 900
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096,
+            "livemath": 32768,
+            "officeqa": 32768,
+            "searchqa": 32768,
+            "spreadsheetbench": 65536
+          },
+          "M": {
+            "alfworld": 1024,
+            "livemath": 8192,
+            "officeqa": 8192,
+            "searchqa": 8192,
+            "spreadsheetbench": 16384
+          },
+          "backend": "elucid",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180,
+            "livemath": 600,
+            "officeqa": 600,
+            "searchqa": 600,
+            "spreadsheetbench": 900
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-v4.1-flash",
+            "deepseek-v4.1-flash-1017"
+          ],
+          "slots": 8,
+          "url_host": "hk.getelucid.com"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536,
+            "livemath": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536
+          },
+          "M": {
+            "alfworld": 65536,
+            "livemath": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400,
+            "livemath": 2400,
+            "officeqa": 2400,
+            "searchqa": 2400,
+            "spreadsheetbench": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "main-v3": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096,
+          "livemath": 32768,
+          "officeqa": 32768,
+          "searchqa": 32768,
+          "spreadsheetbench": 65536
+        },
+        "M": {
+          "alfworld": 1024,
+          "livemath": 8192,
+          "officeqa": 8192,
+          "searchqa": 8192,
+          "spreadsheetbench": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180,
+          "livemath": 600,
+          "officeqa": 600,
+          "searchqa": 600,
+          "spreadsheetbench": 900
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096,
+            "livemath": 32768,
+            "officeqa": 32768,
+            "searchqa": 32768,
+            "spreadsheetbench": 65536
+          },
+          "M": {
+            "alfworld": 1024,
+            "livemath": 8192,
+            "officeqa": 8192,
+            "searchqa": 8192,
+            "spreadsheetbench": 16384
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180,
+            "livemath": 600,
+            "officeqa": 600,
+            "searchqa": 600,
+            "spreadsheetbench": 900
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536,
+            "livemath": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536
+          },
+          "M": {
+            "alfworld": 65536,
+            "livemath": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400,
+            "livemath": 2400,
+            "officeqa": 2400,
+            "searchqa": 2400,
+            "spreadsheetbench": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "main-v4": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096,
+          "livemath": 32768,
+          "officeqa": 32768,
+          "searchqa": 32768,
+          "spreadsheetbench": 65536
+        },
+        "M": {
+          "alfworld": 1024,
+          "livemath": 8192,
+          "officeqa": 8192,
+          "searchqa": 8192,
+          "spreadsheetbench": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180,
+          "livemath": 600,
+          "officeqa": 600,
+          "searchqa": 600,
+          "spreadsheetbench": 900
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096,
+            "livemath": 32768,
+            "officeqa": 32768,
+            "searchqa": 32768,
+            "spreadsheetbench": 65536
+          },
+          "M": {
+            "alfworld": 1024,
+            "livemath": 8192,
+            "officeqa": 8192,
+            "searchqa": 8192,
+            "spreadsheetbench": 16384
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180,
+            "livemath": 600,
+            "officeqa": 600,
+            "searchqa": 600,
+            "spreadsheetbench": 900
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536,
+            "livemath": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536
+          },
+          "M": {
+            "alfworld": 65536,
+            "livemath": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400,
+            "livemath": 2400,
+            "officeqa": 2400,
+            "searchqa": 2400,
+            "spreadsheetbench": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "main-v5": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096,
+          "officeqa": 32768,
+          "searchqa": 32768,
+          "spreadsheetbench": 65536,
+          "zebralogic": 65536
+        },
+        "M": {
+          "alfworld": 1024,
+          "officeqa": 8192,
+          "searchqa": 8192,
+          "spreadsheetbench": 16384,
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180,
+          "officeqa": 600,
+          "searchqa": 600,
+          "spreadsheetbench": 900,
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096,
+            "officeqa": 32768,
+            "searchqa": 32768,
+            "spreadsheetbench": 65536,
+            "zebralogic": 65536
+          },
+          "M": {
+            "alfworld": 1024,
+            "officeqa": 8192,
+            "searchqa": 8192,
+            "spreadsheetbench": 16384,
+            "zebralogic": 16384
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180,
+            "officeqa": 600,
+            "searchqa": 600,
+            "spreadsheetbench": 900,
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536,
+            "zebralogic": 65536
+          },
+          "M": {
+            "alfworld": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536,
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400,
+            "officeqa": 2400,
+            "searchqa": 2400,
+            "spreadsheetbench": 2400,
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "main-v6": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096,
+          "officeqa": 32768,
+          "searchqa": 32768,
+          "spreadsheetbench": 65536,
+          "zebralogic": 65536
+        },
+        "M": {
+          "alfworld": 1024,
+          "officeqa": 8192,
+          "searchqa": 8192,
+          "spreadsheetbench": 16384,
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180,
+          "officeqa": 600,
+          "searchqa": 600,
+          "spreadsheetbench": 900,
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096,
+            "officeqa": 32768,
+            "searchqa": 32768,
+            "spreadsheetbench": 65536,
+            "zebralogic": 65536
+          },
+          "M": {
+            "alfworld": 1024,
+            "officeqa": 8192,
+            "searchqa": 8192,
+            "spreadsheetbench": 16384,
+            "zebralogic": 16384
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180,
+            "officeqa": 600,
+            "searchqa": 600,
+            "spreadsheetbench": 900,
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536,
+            "zebralogic": 65536
+          },
+          "M": {
+            "alfworld": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536,
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400,
+            "officeqa": 2400,
+            "searchqa": 2400,
+            "spreadsheetbench": 2400,
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "main-v7": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096,
+          "officeqa": 32768,
+          "searchqa": 32768,
+          "spreadsheetbench": 65536,
+          "zebralogic": 65536
+        },
+        "M": {
+          "alfworld": 1024,
+          "officeqa": 8192,
+          "searchqa": 8192,
+          "spreadsheetbench": 16384,
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180,
+          "officeqa": 600,
+          "searchqa": 600,
+          "spreadsheetbench": 900,
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096,
+            "officeqa": 32768,
+            "searchqa": 32768,
+            "spreadsheetbench": 65536,
+            "zebralogic": 65536
+          },
+          "M": {
+            "alfworld": 1024,
+            "officeqa": 8192,
+            "searchqa": 8192,
+            "spreadsheetbench": 16384,
+            "zebralogic": 16384
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180,
+            "officeqa": 600,
+            "searchqa": 600,
+            "spreadsheetbench": 900,
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536,
+            "zebralogic": 65536
+          },
+          "M": {
+            "alfworld": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536,
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400,
+            "officeqa": 2400,
+            "searchqa": 2400,
+            "spreadsheetbench": 2400,
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "main-v8": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096,
+          "officeqa": 32768,
+          "searchqa": 32768,
+          "spreadsheetbench": 65536,
+          "zebralogic": 65536
+        },
+        "M": {
+          "alfworld": 1024,
+          "officeqa": 8192,
+          "searchqa": 8192,
+          "spreadsheetbench": 16384,
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180,
+          "officeqa": 600,
+          "searchqa": 600,
+          "spreadsheetbench": 900,
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096,
+            "officeqa": 32768,
+            "searchqa": 32768,
+            "spreadsheetbench": 65536,
+            "zebralogic": 65536
+          },
+          "M": {
+            "alfworld": 1024,
+            "officeqa": 8192,
+            "searchqa": 8192,
+            "spreadsheetbench": 16384,
+            "zebralogic": 16384
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180,
+            "officeqa": 600,
+            "searchqa": 600,
+            "spreadsheetbench": 900,
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536,
+            "zebralogic": 65536
+          },
+          "M": {
+            "alfworld": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536,
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400,
+            "officeqa": 2400,
+            "searchqa": 2400,
+            "spreadsheetbench": 2400,
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "recommended": {
+      "route_B": {
+        "B": {
+          "alfworld": 4096,
+          "livemath": 32768,
+          "officeqa": 32768,
+          "searchqa": 32768,
+          "spreadsheetbench": 65536
+        },
+        "M": {
+          "alfworld": 1024,
+          "livemath": 8192,
+          "officeqa": 8192,
+          "searchqa": 8192,
+          "spreadsheetbench": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "alfworld": 180,
+          "livemath": 600,
+          "officeqa": 600,
+          "searchqa": 600,
+          "spreadsheetbench": 900
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "alfworld": 4096,
+            "livemath": 32768,
+            "officeqa": 32768,
+            "searchqa": 32768,
+            "spreadsheetbench": 65536
+          },
+          "M": {
+            "alfworld": 1024,
+            "livemath": 8192,
+            "officeqa": 8192,
+            "searchqa": 8192,
+            "spreadsheetbench": 16384
+          },
+          "backend": "elucid",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 180,
+            "livemath": 600,
+            "officeqa": 600,
+            "searchqa": 600,
+            "spreadsheetbench": 900
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-v4.1-flash",
+            "deepseek-v4.1-flash-1017"
+          ],
+          "slots": 8,
+          "url_host": "hk.getelucid.com"
+        },
+        "G": {
+          "B": {
+            "alfworld": 65536,
+            "livemath": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536
+          },
+          "M": {
+            "alfworld": 65536,
+            "livemath": 65536,
+            "officeqa": 65536,
+            "searchqa": 65536,
+            "spreadsheetbench": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "alfworld": 2400,
+            "livemath": 2400,
+            "officeqa": 2400,
+            "searchqa": 2400,
+            "spreadsheetbench": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "searchqa-hp-v6": {
+      "route_B": {
+        "B": {
+          "searchqa": 32768
+        },
+        "M": {
+          "searchqa": 8192
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "searchqa": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "searchqa": 32768
+          },
+          "M": {
+            "searchqa": 8192
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "searchqa": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "searchqa": 65536
+          },
+          "M": {
+            "searchqa": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "searchqa": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "zebra-hp-g3r2": {
+      "route_B": {
+        "B": {
+          "zebralogic": 65536
+        },
+        "M": {
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 16384
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "zebra-hp-v3r4": {
+      "route_B": {
+        "B": {
+          "zebralogic": 65536
+        },
+        "M": {
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 16384
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "zebra-pc-v1": {
+      "route_B": {
+        "B": {
+          "zebralogic": 65536
+        },
+        "M": {
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 16384
+          },
+          "backend": "elucid",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-v4.1-flash",
+            "deepseek-v4.1-flash-1017"
+          ],
+          "slots": 8,
+          "url_host": "hk.getelucid.com"
+        },
+        "G": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "zebra-pc-v10": {
+      "route_B": {
+        "B": {
+          "zebralogic": 65536
+        },
+        "M": {
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 16384
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "zebra-pc-v11": {
+      "route_B": {
+        "B": {
+          "zebralogic": 65536
+        },
+        "M": {
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 16384
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "zebra-pc-v12": {
+      "route_B": {
+        "B": {
+          "zebralogic": 65536
+        },
+        "M": {
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 16384
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "zebra-pc-v13": {
+      "route_B": {
+        "B": {
+          "zebralogic": 65536
+        },
+        "M": {
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 16384
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "zebra-pc-v14": {
+      "route_B": {
+        "B": {
+          "zebralogic": 65536
+        },
+        "M": {
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 16384
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "zebra-pc-v15": {
+      "route_B": {
+        "B": {
+          "zebralogic": 65536
+        },
+        "M": {
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 16384
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "zebra-pc-v2": {
+      "route_B": {
+        "B": {
+          "zebralogic": 65536
+        },
+        "M": {
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 16384
+          },
+          "backend": "elucid",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-v4.1-flash",
+            "deepseek-v4.1-flash-1017"
+          ],
+          "slots": 8,
+          "url_host": "hk.getelucid.com"
+        },
+        "G": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "zebra-pc-v3": {
+      "route_B": {
+        "B": {
+          "zebralogic": 65536
+        },
+        "M": {
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 16384
+          },
+          "backend": "elucid",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-v4.1-flash",
+            "deepseek-v4.1-flash-1017"
+          ],
+          "slots": 8,
+          "url_host": "hk.getelucid.com"
+        },
+        "G": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "zebra-pc-v4": {
+      "route_B": {
+        "B": {
+          "zebralogic": 65536
+        },
+        "M": {
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 16384
+          },
+          "backend": "elucid",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-v4.1-flash",
+            "deepseek-v4.1-flash-1017"
+          ],
+          "slots": 8,
+          "url_host": "hk.getelucid.com"
+        },
+        "G": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "zebra-pc-v5": {
+      "route_B": {
+        "B": {
+          "zebralogic": 65536
+        },
+        "M": {
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 16384
+          },
+          "backend": "elucid",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-v4.1-flash",
+            "deepseek-v4.1-flash-1017"
+          ],
+          "slots": 8,
+          "url_host": "hk.getelucid.com"
+        },
+        "G": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "zebra-pc-v6": {
+      "route_B": {
+        "B": {
+          "zebralogic": 65536
+        },
+        "M": {
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 16384
+          },
+          "backend": "elucid",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-v4.1-flash",
+            "deepseek-v4.1-flash-1017"
+          ],
+          "slots": 8,
+          "url_host": "hk.getelucid.com"
+        },
+        "G": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "zebra-pc-v7": {
+      "route_B": {
+        "B": {
+          "zebralogic": 65536
+        },
+        "M": {
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 16384
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "zebra-pc-v8": {
+      "route_B": {
+        "B": {
+          "zebralogic": 65536
+        },
+        "M": {
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 16384
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    },
+    "zebra-pc-v9": {
+      "route_B": {
+        "B": {
+          "zebralogic": 65536
+        },
+        "M": {
+          "zebralogic": 16384
+        },
+        "backend": "northgate",
+        "branch": "N",
+        "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+        "env_path": "authored.env",
+        "longest": 256,
+        "model": "deepseek-v4-flash",
+        "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+        "read_timeout": {
+          "zebralogic": 600
+        },
+        "reasoning_effort": "none",
+        "response_model_ids": [
+          "deepseek-flash",
+          "deepseek-v4-flash"
+        ],
+        "route": "B",
+        "slots": 8,
+        "url_host": "northgate.xiaobei.top"
+      },
+      "solver": {
+        "D": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 16384
+          },
+          "backend": "northgate",
+          "branch": "N",
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": 256,
+          "model": "deepseek-v4.1-flash-1017",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 600
+          },
+          "reasoning_effort": "none",
+          "response_model_ids": [
+            "deepseek-flash",
+            "deepseek-v4-flash"
+          ],
+          "slots": 8,
+          "url_host": "northgate.xiaobei.top"
+        },
+        "G": {
+          "B": {
+            "zebralogic": 65536
+          },
+          "M": {
+            "zebralogic": 65536
+          },
+          "backend": "bigmodel",
+          "branch": null,
+          "client_source_sha": "cac82a0bf6bbb387b970340f4bd0b09752dec0701015a732028f1ab87156e3f6",
+          "env_path": "authored.env",
+          "longest": null,
+          "model": "glm-5.3",
+          "proxy": "http://httpproxy-headless.kubebrain.svc.pjlab.local:3128",
+          "read_timeout": {
+            "zebralogic": 2400
+          },
+          "reasoning_effort": "low",
+          "response_model_ids": [
+            "glm-5.3"
+          ],
+          "slots": 10,
+          "url_host": "open.bigmodel.cn"
+        }
+      }
+    }
+  }
+}

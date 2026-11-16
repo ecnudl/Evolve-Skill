@@ -1,0 +1,14 @@
+Platform: macOS-26.6.2-arm64-arm-64bit-Mach-O
+Python: <python>
+CWD/TMPDIR: /tmp/execskill-r2-hybcy4wk
+PYTHONPATH: <repo-root>
+Command: <python> -B -m pytest -q -p no:cacheprovider <repo-root>/tests/test_execskill_v226_blocks.py <repo-root>/tests/test_execskill_v226_candidates.py <repo-root>/tests/test_execskill_v226_card_errors.py <repo-root>/tests/test_execskill_v226_card_units.py <repo-root>/tests/test_execskill_v226_chain.py <repo-root>/tests/test_execskill_v226_cross_recovery.py <repo-root>/tests/test_execskill_v226_diagnostics.py <repo-root>/tests/test_execskill_v226_gate.py <repo-root>/tests/test_execskill_v226_identity.py <repo-root>/tests/test_execskill_v226_import.py <repo-root>/tests/test_execskill_v226_legacy_boundaries.py <repo-root>/tests/test_execskill_v226_metrics.py <repo-root>/tests/test_execskill_v226_preparation_inputs.py <repo-root>/tests/test_execskill_v226_preparation_review.py <repo-root>/tests/test_execskill_v226_procedure_errors.py <repo-root>/tests/test_execskill_v226_profile.py <repo-root>/tests/test_execskill_v226_read_registration.py <repo-root>/tests/test_execskill_v226_resume.py <repo-root>/tests/test_execskill_v226_review_phase.py <repo-root>/tests/test_execskill_v226_review_safety.py <repo-root>/tests/test_execskill_v226_scope.py <repo-root>/tests/test_execskill_v226_worker_recovery.py
+
+........................................................................ [ 22%]
+........................................................................ [ 44%]
+........................................................................ [ 67%]
+........................................................................ [ 89%]
+.................................                                        [100%]
+321 passed in 132.52s (0:02:12)
+
+Exit code: 0

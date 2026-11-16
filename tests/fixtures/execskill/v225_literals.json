@@ -1,0 +1,823 @@
+{
+  "brief_reported_parent_sites": 94,
+  "classifications": {
+    "frozen_artifact": 10,
+    "identity": 25,
+    "inherited_behavior": 37,
+    "overridden_behavior": 14
+  },
+  "configuration": "main-v9",
+  "counting_rule": "One entry per source line containing MAIN_V8 or an exact quoted main-v8; duplicate lines remain distinct.",
+  "current_source_lines": 86,
+  "frozen_draws": {
+    "harm_tag": "v222_gate.HARM_TAG",
+    "seed": "profiles.SEED",
+    "supply": "D1 and ALFWorld overlay by value"
+  },
+  "removed_literal_categories": {
+    "acceptance.py": "Inherited behavior uses is_v222; no remaining MAIN_V8 literal.",
+    "v221_split.py": "Gate records and calls now bind the actual run configuration, not MAIN_V8.",
+    "v222_runtime.py": "Cross records/cells bind the actual run configuration; is_v225 overrides hygiene and card work."
+  },
+  "scope_files": [
+    "scripts/run_execskill.py",
+    "skillopt/execskill/acceptance.py",
+    "skillopt/execskill/diagnostics.py",
+    "skillopt/execskill/engineer.py",
+    "skillopt/execskill/evaluation.py",
+    "skillopt/execskill/manifest.py",
+    "skillopt/execskill/profiles.py",
+    "skillopt/execskill/protocol.py",
+    "skillopt/execskill/step.py",
+    "skillopt/execskill/v210_import.py",
+    "skillopt/execskill/v214_smoke.py",
+    "skillopt/execskill/v214_stages.py",
+    "skillopt/execskill/v221_split.py",
+    "skillopt/execskill/v222_alf_views.py",
+    "skillopt/execskill/v222_cards.py",
+    "skillopt/execskill/v222_gate.py",
+    "skillopt/execskill/v222_hygiene.py",
+    "skillopt/execskill/v222_limits.py",
+    "skillopt/execskill/v222_read.py",
+    "skillopt/execskill/v222_runtime.py",
+    "skillopt/execskill/v222_smoke.py",
+    "skillopt/execskill/sandbox/client.py"
+  ],
+  "sites": [
+    {
+      "classification": "inherited_behavior",
+      "file": "scripts/run_execskill.py",
+      "function": "parser",
+      "handling": "widened explicit membership",
+      "line_at_audit": 1259,
+      "rationale": "The main-v9 runtime joins the parent behavior; every older branch remains the same.",
+      "source": "command.add_argument('--configuration', choices=(protocol.MAIN_V5, protocol.IMPLANT_V5, protocol.MAIN_V6, protocol.CROSS_V5, protocol.SEARCHQA_HP_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9),"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/diagnostics.py",
+      "function": "enabled",
+      "handling": "widened explicit membership",
+      "line_at_audit": 22,
+      "rationale": "The main-v9 runtime joins the parent behavior; every older branch remains the same.",
+      "source": "or (configuration in ('main-v6', 'main-v7', 'main-v8', 'main-v9') and bench == 'zebralogic'))"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/engineer.py",
+      "function": "payload",
+      "handling": "widened explicit membership",
+      "line_at_audit": 1111,
+      "rationale": "The main-v9 runtime joins the parent behavior; every older branch remains the same.",
+      "source": "if ctx.configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9):"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/engineer.py",
+      "function": "_build",
+      "handling": "widened explicit membership",
+      "line_at_audit": 1681,
+      "rationale": "The main-v9 runtime joins the parent behavior; every older branch remains the same.",
+      "source": "if ctx.configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9):"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/engineer.py",
+      "function": "check",
+      "handling": "widened explicit membership",
+      "line_at_audit": 2294,
+      "rationale": "The main-v9 runtime joins the parent behavior; every older branch remains the same.",
+      "source": "if v24 or ctx.configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9) else {}))"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/engineer.py",
+      "function": "_size_detail",
+      "handling": "widened explicit membership",
+      "line_at_audit": 2490,
+      "rationale": "The main-v9 runtime joins the parent behavior; every older branch remains the same.",
+      "source": "if configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9):"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/engineer.py",
+      "function": "_combined",
+      "handling": "widened explicit membership",
+      "line_at_audit": 2593,
+      "rationale": "The main-v9 runtime joins the parent behavior; every older branch remains the same.",
+      "source": "if configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9):"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/engineer.py",
+      "function": "run",
+      "handling": "widened explicit membership",
+      "line_at_audit": 2635,
+      "rationale": "The main-v9 runtime joins the parent behavior; every older branch remains the same.",
+      "source": "**({\"configuration\": ctx.configuration} if ctx.configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9) else {}))"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/engineer.py",
+      "function": "_combined_train",
+      "handling": "widened explicit membership",
+      "line_at_audit": 2690,
+      "rationale": "The main-v9 runtime joins the parent behavior; every older branch remains the same.",
+      "source": "if ctx.configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9):"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/evaluation.py",
+      "function": "sealed_cell",
+      "handling": "widened explicit membership",
+      "line_at_audit": 783,
+      "rationale": "The main-v9 runtime joins the parent behavior; every older branch remains the same.",
+      "source": "if full.get(\"configuration\") in (\"zebra-pc-v7\", \"alfworld-v4\", \"zebra-pc-v8\", \"alfworld-v5\", \"zebra-pc-v9\", \"alfworld-v6\", \"zebra-pc-v10\", \"alfworld-v7\", \"zebra-pc-v11\", \"alfworld-v8\", \"zebra-pc-v12\", \"alfworld-v9\", \"alfworld-v10\", \"alfworld-v11\", \"zebra-pc-v13\", \"zebra-hp-v3r4\", \"main-v5\", \"zebra-pc-v14\", \"zebra-pc-v15\", \"zebra-hp-g3r2\", \"implant-v5\", \"main-v6\", \"cross-v5\", \"searchqa-hp-v6\", \"main-v7\", \"main-v8\", \"main-v9\") else {}),"
+    },
+    {
+      "classification": "frozen_artifact",
+      "file": "skillopt/execskill/manifest.py",
+      "function": "role_settings",
+      "handling": "parent by value",
+      "line_at_audit": 440,
+      "rationale": "Worker bytes and existing role defaults remain main-v8; the enclosing manifest retains the actual run configuration.",
+      "source": "return {**role_settings(protocol.MAIN_V8), 'card_writer': protocol.card_writer_settings(configuration)}"
+    },
+    {
+      "classification": "frozen_artifact",
+      "file": "skillopt/execskill/manifest.py",
+      "function": "check",
+      "handling": "parent by value",
+      "line_at_audit": 546,
+      "rationale": "Worker bytes and existing role defaults remain main-v8; the enclosing manifest retains the actual run configuration.",
+      "source": "b: sandbox.worker_sha256(configuration=protocol.MAIN_V8) if protocol.is_v222(configuration)"
+    },
+    {
+      "classification": "frozen_artifact",
+      "file": "skillopt/execskill/manifest.py",
+      "function": "make",
+      "handling": "parent by value",
+      "line_at_audit": 809,
+      "rationale": "Worker bytes and existing role defaults remain main-v8; the enclosing manifest retains the actual run configuration.",
+      "source": "b: sandbox.worker_sha256(configuration=protocol.MAIN_V8) if protocol.is_v222(configuration)"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "<module>",
+      "handling": "frozen parent definition or deepcopy",
+      "line_at_audit": 18,
+      "rationale": "This literal defines or reads main-v8 itself; main-v9 has a separate dated root, namespace, evidence, identity and copied tables.",
+      "source": "MAIN_V8 = \"main-v8\""
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "is_v222",
+      "handling": "widened explicit membership",
+      "line_at_audit": 60,
+      "rationale": "Main-v9 inherits the listed family predicate and ALFWorld import-only behavior.",
+      "source": "return configuration in (MAIN_V8, MAIN_V9)"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "is_v221",
+      "handling": "widened explicit membership",
+      "line_at_audit": 64,
+      "rationale": "Main-v9 inherits the listed family predicate and ALFWorld import-only behavior.",
+      "source": "return configuration in (MAIN_V7, MAIN_V8, MAIN_V9)"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "is_v291",
+      "handling": "widened explicit membership",
+      "line_at_audit": 142,
+      "rationale": "Main-v9 inherits the listed family predicate and ALFWorld import-only behavior.",
+      "source": "return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, IMPLANT_V5, CROSS_V5, SEARCHQA_HP_V6, ZEBRA_PC_V8, ALFWORLD_V5, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "is_v292",
+      "handling": "widened explicit membership",
+      "line_at_audit": 148,
+      "rationale": "Main-v9 inherits the listed family predicate and ALFWorld import-only behavior.",
+      "source": "return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, IMPLANT_V5, CROSS_V5, SEARCHQA_HP_V6, ZEBRA_PC_V9, ALFWORLD_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "is_v293",
+      "handling": "widened explicit membership",
+      "line_at_audit": 154,
+      "rationale": "Main-v9 inherits the listed family predicate and ALFWorld import-only behavior.",
+      "source": "return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, IMPLANT_V5, CROSS_V5, SEARCHQA_HP_V6, ZEBRA_PC_V10, ALFWORLD_V7, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "is_v294",
+      "handling": "widened explicit membership",
+      "line_at_audit": 160,
+      "rationale": "Main-v9 inherits the listed family predicate and ALFWorld import-only behavior.",
+      "source": "return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, IMPLANT_V5, CROSS_V5, SEARCHQA_HP_V6, ZEBRA_PC_V11, ALFWORLD_V8, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "is_v295",
+      "handling": "widened explicit membership",
+      "line_at_audit": 166,
+      "rationale": "Main-v9 inherits the listed family predicate and ALFWorld import-only behavior.",
+      "source": "return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, IMPLANT_V5, CROSS_V5, SEARCHQA_HP_V6, ZEBRA_PC_V12, ZEBRA_PC_V13, ZEBRA_PC_V14, ZEBRA_PC_V15, ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, ALFWORLD_V9, ALFWORLD_V10, ALFWORLD_V11)"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "alfworld_format_rule",
+      "handling": "widened explicit membership",
+      "line_at_audit": 191,
+      "rationale": "Main-v9 inherits the listed family predicate and ALFWorld import-only behavior.",
+      "source": "return \"alfworld-readable-action-v2-9-6\" if is_v296(configuration) or (configuration in (MAIN_V4, MAIN_V5, MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, IMPLANT_V5, CROSS_V5) and bench == \"alfworld\") else \"alfworld-admissible-9-10\""
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "train_rounds",
+      "handling": "widened explicit membership",
+      "line_at_audit": 198,
+      "rationale": "Main-v9 inherits the listed family predicate and ALFWorld import-only behavior.",
+      "source": "return 0 if configuration in (ZEBRA_HP_V3R4, ZEBRA_HP_G3R2, IMPLANT_V5, CROSS_V5) or (configuration in (MAIN_V4, MAIN_V5, MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, IMPLANT_V5, CROSS_V5) and bench == \"alfworld\") else 10 if configuration == ZEBRA_PC_V12 else TRAIN_ROUNDS"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "is_v210",
+      "handling": "widened explicit membership",
+      "line_at_audit": 925,
+      "rationale": "Main-v9 inherits the listed family predicate and ALFWorld import-only behavior.",
+      "source": "return configuration in (BASELINE_V210, MAIN_V3, MAIN_V4, MAIN_V5, MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, IMPLANT_V5, CROSS_V5, SEARCHQA_HP_V6)"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "is_v214",
+      "handling": "widened explicit membership",
+      "line_at_audit": 997,
+      "rationale": "Main-v9 inherits the listed family predicate and ALFWorld import-only behavior.",
+      "source": "return configuration in (MAIN_V5, MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, IMPLANT_V5, CROSS_V5, SEARCHQA_HP_V6)"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "is_v218",
+      "handling": "widened explicit membership",
+      "line_at_audit": 1001,
+      "rationale": "Main-v9 inherits the listed family predicate and ALFWorld import-only behavior.",
+      "source": "return configuration in (MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9)"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "is_v211",
+      "handling": "widened explicit membership",
+      "line_at_audit": 1066,
+      "rationale": "Main-v9 inherits the listed family predicate and ALFWorld import-only behavior.",
+      "source": "return configuration in (MAIN_V4, MAIN_V5, MAIN_V6, MAIN_V7, MAIN_V8, MAIN_V9, IMPLANT_V5, CROSS_V5, SEARCHQA_HP_V6)"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "<module>",
+      "handling": "frozen parent definition or deepcopy",
+      "line_at_audit": 1558,
+      "rationale": "This literal defines or reads main-v8 itself; main-v9 has a separate dated root, namespace, evidence, identity and copied tables.",
+      "source": "MAIN_V8_ROOT = '/data/execskill-20261103-main-v8'"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "<module>",
+      "handling": "frozen parent definition or deepcopy",
+      "line_at_audit": 1559,
+      "rationale": "This literal defines or reads main-v8 itself; main-v9 has a separate dated root, namespace, evidence, identity and copied tables.",
+      "source": "MAIN_V8_MANIFEST = MAIN_V8_ROOT + '-manifest.json'"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "<module>",
+      "handling": "frozen parent definition or deepcopy",
+      "line_at_audit": 1560,
+      "rationale": "This literal defines or reads main-v8 itself; main-v9 has a separate dated root, namespace, evidence, identity and copied tables.",
+      "source": "MAIN_V8_NAMESPACES = {'G': 'G-v8', 'D': 'D-v8'}"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "<module>",
+      "handling": "frozen parent definition or deepcopy",
+      "line_at_audit": 1563,
+      "rationale": "This literal defines or reads main-v8 itself; main-v9 has a separate dated root, namespace, evidence, identity and copied tables.",
+      "source": "_table[MAIN_V8] = deepcopy(_table[MAIN_V7])"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "<module>",
+      "handling": "frozen parent definition or deepcopy",
+      "line_at_audit": 1564,
+      "rationale": "This literal defines or reads main-v8 itself; main-v9 has a separate dated root, namespace, evidence, identity and copied tables.",
+      "source": "RUN_ROOTS[MAIN_V8] = MAIN_V8_ROOT"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "<module>",
+      "handling": "frozen parent definition or deepcopy",
+      "line_at_audit": 1565,
+      "rationale": "This literal defines or reads main-v8 itself; main-v9 has a separate dated root, namespace, evidence, identity and copied tables.",
+      "source": "CHAIN_NAMESPACES[MAIN_V8] = MAIN_V8_NAMESPACES"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "<module>",
+      "handling": "frozen parent definition or deepcopy",
+      "line_at_audit": 1566,
+      "rationale": "This literal defines or reads main-v8 itself; main-v9 has a separate dated root, namespace, evidence, identity and copied tables.",
+      "source": "SUPPORTED_NAMESPACES += tuple(MAIN_V8_NAMESPACES.values())"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "<module>",
+      "handling": "frozen parent definition or deepcopy",
+      "line_at_audit": 1567,
+      "rationale": "This literal defines or reads main-v8 itself; main-v9 has a separate dated root, namespace, evidence, identity and copied tables.",
+      "source": "REAL_RUN_EVIDENCE[MAIN_V8] = 'main_v8_real_run'"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "<module>",
+      "handling": "frozen parent definition or deepcopy",
+      "line_at_audit": 1568,
+      "rationale": "This literal defines or reads main-v8 itself; main-v9 has a separate dated root, namespace, evidence, identity and copied tables.",
+      "source": "POLICY_VERSIONS[MAIN_V8] = POLICY_VERSION_V222"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "main_v8_identity",
+      "handling": "frozen parent definition or deepcopy",
+      "line_at_audit": 1575,
+      "rationale": "This literal defines or reads main-v8 itself; main-v9 has a separate dated root, namespace, evidence, identity and copied tables.",
+      "source": "found.update(configuration=MAIN_V8,"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "main_v8_identity",
+      "handling": "frozen parent definition or deepcopy",
+      "line_at_audit": 1576,
+      "rationale": "This literal defines or reads main-v8 itself; main-v9 has a separate dated root, namespace, evidence, identity and copied tables.",
+      "source": "scope_caps=deepcopy(CONFIG_STEP_CAPS[MAIN_V8]),"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "main_v8_identity",
+      "handling": "frozen parent definition or deepcopy",
+      "line_at_audit": 1577,
+      "rationale": "This literal defines or reads main-v8 itself; main-v9 has a separate dated root, namespace, evidence, identity and copied tables.",
+      "source": "caps={**CONFIGURATIONS[MAIN_V8], 'method': CONFIG_GLM_CAP[MAIN_V8]},"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "main_v8_identity",
+      "handling": "frozen parent definition or deepcopy",
+      "line_at_audit": 1579,
+      "rationale": "This literal defines or reads main-v8 itself; main-v9 has a separate dated root, namespace, evidence, identity and copied tables.",
+      "source": "read_arms=list(read_arms_of(MAIN_V8)), read_cells=deepcopy(TEST_READ_CELLS[MAIN_V8]),"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "<module>",
+      "handling": "frozen parent definition or deepcopy",
+      "line_at_audit": 1612,
+      "rationale": "This literal defines or reads main-v8 itself; main-v9 has a separate dated root, namespace, evidence, identity and copied tables.",
+      "source": "if _name.isupper() and isinstance(_table, dict) and MAIN_V8 in _table:"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/profiles.py",
+      "function": "<module>",
+      "handling": "frozen parent definition or deepcopy",
+      "line_at_audit": 1613,
+      "rationale": "This literal defines or reads main-v8 itself; main-v9 has a separate dated root, namespace, evidence, identity and copied tables.",
+      "source": "_table[MAIN_V9] = deepcopy(_table[MAIN_V8])"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/protocol.py",
+      "function": "stage_arms_max",
+      "handling": "widened explicit membership",
+      "line_at_audit": 841,
+      "rationale": "The main-v9 runtime joins the parent behavior; every older branch remains the same.",
+      "source": "if configuration in ('main-v5', 'implant-v5', 'main-v6', 'cross-v5', 'searchqa-hp-v6', 'main-v7', 'main-v8', 'main-v9'):"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/protocol.py",
+      "function": "read_arms_of",
+      "handling": "widened explicit membership",
+      "line_at_audit": 851,
+      "rationale": "The main-v9 runtime joins the parent behavior; every older branch remains the same.",
+      "source": "if configuration in ('main-v5', 'implant-v5', 'main-v6', 'cross-v5', 'searchqa-hp-v6', 'main-v7', 'main-v8', 'main-v9'):"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/protocol.py",
+      "function": "estimate_arms",
+      "handling": "widened explicit membership",
+      "line_at_audit": 864,
+      "rationale": "The main-v9 runtime joins the parent behavior; every older branch remains the same.",
+      "source": "if pilot in ('main-v5', 'implant-v5', 'main-v6', 'cross-v5', 'searchqa-hp-v6', 'main-v7', 'main-v8', 'main-v9'):"
+    },
+    {
+      "classification": "frozen_artifact",
+      "file": "skillopt/execskill/step.py",
+      "function": "training_units",
+      "handling": "parent by value",
+      "line_at_audit": 209,
+      "rationale": "Main-v9 adds card units around the unchanged parent procedure-unit order.",
+      "source": "inherited = training_units(protocol.MAIN_V8)"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/step.py",
+      "function": "run_step",
+      "handling": "widened explicit membership",
+      "line_at_audit": 2842,
+      "rationale": "Main-v9 keeps fixed ALFWorld import and inherited capacity/service selection.",
+      "source": "if configuration_of(setting) in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9) and bench == \"alfworld\":"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/step.py",
+      "function": "run_step",
+      "handling": "widened explicit membership",
+      "line_at_audit": 2847,
+      "rationale": "Main-v9 keeps fixed ALFWorld import and inherited capacity/service selection.",
+      "source": "if configuration_of(setting) in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9):"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/step.py",
+      "function": "run_unit_spec",
+      "handling": "widened explicit membership",
+      "line_at_audit": 2969,
+      "rationale": "Main-v9 keeps fixed ALFWorld import and inherited capacity/service selection.",
+      "source": "services = (None if protocol.is_v220(configuration) or protocol.is_implant_v5(configuration) or protocol.is_v213(configuration) or (configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9) and bench == \"alfworld\") else"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/v210_import.py",
+      "function": "import_step",
+      "handling": "widened explicit membership",
+      "line_at_audit": 89,
+      "rationale": "The main-v9 runtime joins the parent behavior; every older branch remains the same.",
+      "source": "require(p.configuration_of(setting) in (p.MAIN_V3, p.MAIN_V4, p.MAIN_V5, p.MAIN_V6, p.MAIN_V7, p.MAIN_V8, p.MAIN_V9, p.IMPLANT_V5, p.CROSS_V5) and chain in p.CHAINS and k == 5 and bench == \"alfworld\","
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/v214_smoke.py",
+      "function": "_options",
+      "handling": "widened explicit membership",
+      "line_at_audit": 29,
+      "rationale": "The command family admits main-v9; its smoke extensions dispatch behind is_v225.",
+      "source": "require(configuration in (CONFIGURATION, p.IMPLANT_V5, p.MAIN_V6, p.CROSS_V5, p.SEARCHQA_HP_V6, p.MAIN_V7, p.MAIN_V8, p.MAIN_V9), 'A main-v5 or implant-v5 configuration')"
+    },
+    {
+      "classification": "frozen_artifact",
+      "file": "skillopt/execskill/v214_smoke.py",
+      "function": "collect_s0",
+      "handling": "parent by value",
+      "line_at_audit": 205,
+      "rationale": "Engineer procedures keep the v2.22 worker bytes; the smoke record is bound to the actual run configuration.",
+      "source": "and tested.get('worker_sha256') == sandbox.worker_sha256(configuration=p.MAIN_V8),"
+    },
+    {
+      "classification": "frozen_artifact",
+      "file": "skillopt/execskill/v214_smoke.py",
+      "function": "selftest",
+      "handling": "parent by value",
+      "line_at_audit": 649,
+      "rationale": "Engineer procedures keep the v2.22 worker bytes; the smoke record is bound to the actual run configuration.",
+      "source": "require(worker.get('worker_sha256') == sandbox.worker_sha256(configuration=p.MAIN_V8),"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/v214_stages.py",
+      "function": "s1",
+      "handling": "widened explicit membership",
+      "line_at_audit": 31,
+      "rationale": "The main-v9 runtime joins the parent behavior; every older branch remains the same.",
+      "source": "configuration = selected if selected in (p.IMPLANT_V5, p.MAIN_V6, p.CROSS_V5, p.MAIN_V7, p.MAIN_V8, p.MAIN_V9) else v.CONFIGURATION"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/v214_stages.py",
+      "function": "s2",
+      "handling": "widened explicit membership",
+      "line_at_audit": 67,
+      "rationale": "The main-v9 runtime joins the parent behavior; every older branch remains the same.",
+      "source": "configuration = selected if selected in (p.IMPLANT_V5, p.MAIN_V6, p.CROSS_V5, p.MAIN_V7, p.MAIN_V8, p.MAIN_V9) else v.CONFIGURATION"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/v222_alf_views.py",
+      "function": "validate",
+      "handling": "historical default; explicit run configuration",
+      "line_at_audit": 55,
+      "rationale": "The public helper default remains main-v8 for old callers; main-v9 passes its configuration and shares frozen seeds and D1 draws.",
+      "source": "def validate(value, *, items, harms, decomposition, runtime, configuration=p.MAIN_V8):"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/v222_alf_views.py",
+      "function": "prepare",
+      "handling": "historical default; explicit run configuration",
+      "line_at_audit": 76,
+      "rationale": "The public helper default remains main-v8 for old callers; main-v9 passes its configuration and shares frozen seeds and D1 draws.",
+      "source": "def prepare(items, harms, decomposition, *, runtime, value=None, forbidden_paths=(), configuration=p.MAIN_V8):"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/v222_alf_views.py",
+      "function": "attach",
+      "handling": "historical default; explicit run configuration",
+      "line_at_audit": 113,
+      "rationale": "The public helper default remains main-v8 for old callers; main-v9 passes its configuration and shares frozen seeds and D1 draws.",
+      "source": "def attach(items, value, *, harms, decomposition, runtime, configuration=p.MAIN_V8):"
+    },
+    {
+      "classification": "frozen_artifact",
+      "file": "skillopt/execskill/v222_cards.py",
+      "function": "<module>",
+      "handling": "parent by value",
+      "line_at_audit": 19,
+      "rationale": "The historical decomposition fixture retains its own identity. Main-v9 has an empty initial package and uses only its fixed format block.",
+      "source": "CONFIGURATION = 'main-v8'"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/v222_gate.py",
+      "function": "harm_slices",
+      "handling": "historical default; explicit run configuration",
+      "line_at_audit": 35,
+      "rationale": "The public helper default remains main-v8 for old callers; main-v9 passes its configuration and shares frozen seeds and D1 draws.",
+      "source": "def harm_slices(practice_pools, *, seed=p.SEED, excluded=None, configuration='main-v8'):"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/v222_gate.py",
+      "function": "registration",
+      "handling": "historical default; explicit run configuration",
+      "line_at_audit": 78,
+      "rationale": "The public helper default remains main-v8 for old callers; main-v9 passes its configuration and shares frozen seeds and D1 draws.",
+      "source": "def registration(slices, *, seed=p.SEED, configuration='main-v8'):"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/v222_gate.py",
+      "function": "inspect",
+      "handling": "historical default; explicit run configuration",
+      "line_at_audit": 128,
+      "rationale": "The public helper default remains main-v8 for old callers; main-v9 passes its configuration and shares frozen seeds and D1 draws.",
+      "source": "configuration='main-v8', views=None, practice_reports=None):"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/v222_gate.py",
+      "function": "check",
+      "handling": "historical default; explicit run configuration",
+      "line_at_audit": 238,
+      "rationale": "The public helper default remains main-v8 for old callers; main-v9 passes its configuration and shares frozen seeds and D1 draws.",
+      "source": "configuration='main-v8', narrower=narrow_additions, registered_counts=None, smoke=False):"
+    },
+    {
+      "classification": "overridden_behavior",
+      "file": "skillopt/execskill/v222_hygiene.py",
+      "function": "propose",
+      "handling": "is_v225 before parent branch",
+      "line_at_audit": 22,
+      "rationale": "Main-v9 returns off_no_p0 with zero calls; this main-v8 default remains frozen.",
+      "source": "def propose(parent, *, bench, own_segments, parent_cells, whole_card=False, configuration='main-v8'):"
+    },
+    {
+      "classification": "frozen_artifact",
+      "file": "skillopt/execskill/v222_limits.py",
+      "function": "maximum_candidates",
+      "handling": "parent by value",
+      "line_at_audit": 24,
+      "rationale": "The parent arithmetic stays unchanged; v225_limits independently extends its copied schedule and caps.",
+      "source": "return p.train_rounds(p.MAIN_V8, bench) * per_round"
+    },
+    {
+      "classification": "frozen_artifact",
+      "file": "skillopt/execskill/v222_limits.py",
+      "function": "read_unit_caps",
+      "handling": "parent by value",
+      "line_at_audit": 39,
+      "rationale": "The parent arithmetic stays unchanged; v225_limits independently extends its copied schedule and caps.",
+      "source": "for bench, (cards, procedures) in p.TEST_READ_CELLS[p.MAIN_V8].items()}"
+    },
+    {
+      "classification": "frozen_artifact",
+      "file": "skillopt/execskill/v222_limits.py",
+      "function": "extend",
+      "handling": "parent by value",
+      "line_at_audit": 43,
+      "rationale": "The parent arithmetic stays unchanged; v225_limits independently extends its copied schedule and caps.",
+      "source": "child, parent = p.MAIN_V8, p.MAIN_V7"
+    },
+    {
+      "classification": "overridden_behavior",
+      "file": "skillopt/execskill/v222_read.py",
+      "function": "learned_benches",
+      "handling": "is_v225 dispatch to v225_read",
+      "line_at_audit": 38,
+      "rationale": "The old aggregated read/readout remains main-v8; main-v9 uses its real per-event layout and separate readout.",
+      "source": "return [bench for bench in p.active_benches(p.MAIN_V8) if bench in changed and bench != 'alfworld']"
+    },
+    {
+      "classification": "overridden_behavior",
+      "file": "skillopt/execskill/v222_read.py",
+      "function": "readout",
+      "handling": "is_v225 dispatch to v225_read",
+      "line_at_audit": 131,
+      "rationale": "The old aggregated read/readout remains main-v8; main-v9 uses its real per-event layout and separate readout.",
+      "source": "return p.record('readout', evidence, {'configuration': p.MAIN_V8, 'evidence_kind': r.EVIDENCE_KIND,"
+    },
+    {
+      "classification": "overridden_behavior",
+      "file": "skillopt/execskill/v222_read.py",
+      "function": "readout",
+      "handling": "is_v225 dispatch to v225_read",
+      "line_at_audit": 135,
+      "rationale": "The old aggregated read/readout remains main-v8; main-v9 uses its real per-event layout and separate readout.",
+      "source": "'stages': r.stage_table(units, stages, configuration=p.MAIN_V8),"
+    },
+    {
+      "classification": "overridden_behavior",
+      "file": "skillopt/execskill/v222_read.py",
+      "function": "readout",
+      "handling": "is_v225 dispatch to v225_read",
+      "line_at_audit": 136,
+      "rationale": "The old aggregated read/readout remains main-v8; main-v9 uses its real per-event layout and separate readout.",
+      "source": "'stage_questions': r.stage_questions(units, stages, configuration=p.MAIN_V8),"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/v222_smoke.py",
+      "function": "prepare_practice",
+      "handling": "historical default; explicit run configuration",
+      "line_at_audit": 93,
+      "rationale": "Preparation and cross-probe validation preserve the caller configuration while retaining frozen D1 supply and probe sources.",
+      "source": "configuration = imported.get('registration', {}).get('configuration', p.MAIN_V8)"
+    },
+    {
+      "classification": "overridden_behavior",
+      "file": "skillopt/execskill/v222_smoke.py",
+      "function": "work",
+      "handling": "is_v225 dispatch to v225_smoke",
+      "line_at_audit": 287,
+      "rationale": "Main-v9 never enters the parent decomposition or structural smoke; the shared cross probe is explicitly passed the run configuration.",
+      "source": "runtime=cards.historical_runtime(local.runtime[bench]), configuration=p.MAIN_V8),"
+    },
+    {
+      "classification": "overridden_behavior",
+      "file": "skillopt/execskill/v222_smoke.py",
+      "function": "work",
+      "handling": "is_v225 dispatch to v225_smoke",
+      "line_at_audit": 289,
+      "rationale": "Main-v9 never enters the parent decomposition or structural smoke; the shared cross probe is explicitly passed the run configuration.",
+      "source": "runtime=local.runtime[bench], configuration=p.MAIN_V8)}"
+    },
+    {
+      "classification": "overridden_behavior",
+      "file": "skillopt/execskill/v222_smoke.py",
+      "function": "decomposition",
+      "handling": "is_v225 dispatch to v225_smoke",
+      "line_at_audit": 295,
+      "rationale": "Main-v9 never enters the parent decomposition or structural smoke; the shared cross probe is explicitly passed the run configuration.",
+      "source": "identity={'unit': name}, work=work, evidence=setting.evidence, configuration=p.MAIN_V8,"
+    },
+    {
+      "classification": "overridden_behavior",
+      "file": "skillopt/execskill/v222_smoke.py",
+      "function": "decomposition",
+      "handling": "is_v225 dispatch to v225_smoke",
+      "line_at_audit": 297,
+      "rationale": "Main-v9 never enters the parent decomposition or structural smoke; the shared cross probe is explicitly passed the run configuration.",
+      "source": "value = {'configuration': p.MAIN_V8, 'chain': chain, 'benches': results,"
+    },
+    {
+      "classification": "overridden_behavior",
+      "file": "skillopt/execskill/v222_smoke.py",
+      "function": "check_decomposition",
+      "handling": "is_v225 dispatch to v225_smoke",
+      "line_at_audit": 325,
+      "rationale": "Main-v9 never enters the parent decomposition or structural smoke; the shared cross probe is explicitly passed the run configuration.",
+      "source": "require(value.get('configuration') == p.MAIN_V8 and set(value.get('benches', {})) == set(cards.BENCHES)"
+    },
+    {
+      "classification": "overridden_behavior",
+      "file": "skillopt/execskill/v222_smoke.py",
+      "function": "_cross_probe_case",
+      "handling": "is_v225 dispatch to v225_smoke",
+      "line_at_audit": 369,
+      "rationale": "Main-v9 never enters the parent decomposition or structural smoke; the shared cross probe is explicitly passed the run configuration.",
+      "source": "configuration = p.MAIN_V9 if p.is_v225(p.configuration_of(setting)) else p.MAIN_V8"
+    },
+    {
+      "classification": "overridden_behavior",
+      "file": "skillopt/execskill/v222_smoke.py",
+      "function": "s2",
+      "handling": "is_v225 dispatch to v225_smoke",
+      "line_at_audit": 452,
+      "rationale": "Main-v9 never enters the parent decomposition or structural smoke; the shared cross probe is explicitly passed the run configuration.",
+      "source": "work=work, evidence=setting.evidence, configuration=p.MAIN_V8,"
+    },
+    {
+      "classification": "overridden_behavior",
+      "file": "skillopt/execskill/v222_smoke.py",
+      "function": "structural_smoke",
+      "handling": "is_v225 dispatch to v225_smoke",
+      "line_at_audit": 487,
+      "rationale": "Main-v9 never enters the parent decomposition or structural smoke; the shared cross probe is explicitly passed the run configuration.",
+      "source": "return {'configuration': p.MAIN_V8, 'passed': inherited['passed'] and segment['passed'],"
+    },
+    {
+      "classification": "overridden_behavior",
+      "file": "skillopt/execskill/v222_smoke.py",
+      "function": "check_structural",
+      "handling": "is_v225 dispatch to v225_smoke",
+      "line_at_audit": 493,
+      "rationale": "Main-v9 never enters the parent decomposition or structural smoke; the shared cross probe is explicitly passed the run configuration.",
+      "source": "require(value.get('configuration') == p.MAIN_V8 and value.get('passed') is True"
+    },
+    {
+      "classification": "identity",
+      "file": "skillopt/execskill/v222_smoke.py",
+      "function": "_check_probe_case",
+      "handling": "historical default; explicit run configuration",
+      "line_at_audit": 505,
+      "rationale": "Preparation and cross-probe validation preserve the caller configuration while retaining frozen D1 supply and probe sources.",
+      "source": "def _check_probe_case(probe, supply, *, configuration=p.MAIN_V8):"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/sandbox/client.py",
+      "function": "worker_sha256",
+      "handling": "widened explicit membership",
+      "line_at_audit": 133,
+      "rationale": "The main-v9 runtime joins the parent behavior; every older branch remains the same.",
+      "source": "source = (INSTRUCTION_WORKER_FILE if configuration in ('main-v8', 'main-v9') else"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/sandbox/client.py",
+      "function": "__init__",
+      "handling": "widened explicit membership",
+      "line_at_audit": 468,
+      "rationale": "The main-v9 runtime joins the parent behavior; every older branch remains the same.",
+      "source": "require(instruction_configuration in (None, \"main-v8\", \"main-v9\"), \"Unknown instruction worker configuration\")"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/sandbox/client.py",
+      "function": "__init__",
+      "handling": "widened explicit membership",
+      "line_at_audit": 471,
+      "rationale": "The main-v9 runtime joins the parent behavior; every older branch remains the same.",
+      "source": "require(mixed_policy_bundle != \"main-v8-instruction-segments\" or instruction_configuration in (\"main-v8\", \"main-v9\"),"
+    },
+    {
+      "classification": "inherited_behavior",
+      "file": "skillopt/execskill/sandbox/client.py",
+      "function": "__init__",
+      "handling": "widened explicit membership",
+      "line_at_audit": 473,
+      "rationale": "The main-v9 runtime joins the parent behavior; every older branch remains the same.",
+      "source": "if instruction_configuration in (\"main-v8\", \"main-v9\"):"
+    }
+  ],
+  "source_gate": "1579 matching registered entries; three prohibited-name source entries not opened"
+}

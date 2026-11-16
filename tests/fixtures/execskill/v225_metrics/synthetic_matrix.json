@@ -1,0 +1,35 @@
+{
+  "evidence": "engineering_fixture",
+  "bench_order": [
+    "searchqa",
+    "officeqa",
+    "zebralogic",
+    "spreadsheetbench",
+    "alfworld"
+  ],
+  "arms": [
+    "B",
+    "C0",
+    "C",
+    "S1",
+    "S2",
+    "S3",
+    "S4",
+    "S5",
+    "I",
+    "C_end"
+  ],
+  "items": 12,
+  "score_rule": "pass iff (item + bench_index) % 12 < 2 + arm_index",
+  "package_changed": [
+    false,
+    true,
+    false,
+    true,
+    false
+  ],
+  "same_request_arms": [
+    "S1",
+    "C0"
+  ]
+}

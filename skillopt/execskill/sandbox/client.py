@@ -84,6 +84,7 @@ NAME = re.compile(re.escape(PREFIX) + r"(?:[a-z0-9]{1,8}-[0-9a-f]{12}-)?[0-9a-f]
 DOCKER_ENV = {"PATH": "/usr/bin:/bin"}
 WORKER_FILE = Path(__file__).with_name("worker.py")
 DIAGNOSTICS_WORKER_FILE = Path(__file__).with_name('worker_v215.py')
+INSTRUCTION_WORKER_FILE = Path(__file__).with_name('worker_v222.py')
 DIAGNOSTICS_ENVELOPE_BYTES = 16_384
 INPUT_FILE = "input.xlsx"  # the one file of the read-only /input mount (§2.5, ``solver._inputs_dir``)
 POLICY_FILE = Path(policy.__file__)
@@ -129,7 +130,8 @@ KINDS = tuple(LIMITS)
 
 def worker_sha256(configuration=None):
     """The sha256 of the pinned worker file (the manifest's ``sandbox.worker_sha256``)."""
-    source = DIAGNOSTICS_WORKER_FILE if configuration in ('zebra-pc-v14', 'zebra-pc-v15') else WORKER_FILE
+    source = (INSTRUCTION_WORKER_FILE if configuration in ('main-v8', 'main-v9', 'main-v10') else
+              DIAGNOSTICS_WORKER_FILE if configuration in ('zebra-pc-v14', 'zebra-pc-v15') else WORKER_FILE)
     return hashlib.sha256(source.read_bytes()).hexdigest()
 
 
@@ -399,9 +401,10 @@ def _entries(package):
     """The load entries of a package: any object with ``sha256`` and ``procedures`` whose items carry ``id``,
     ``source`` and ``hooks`` (the entry points the host may call) -- ``package.Package`` or a detector/generator
     bundle."""
-    entries = [{"id": p.id, "source": p.source, "hooks": list(p.hooks)} for p in package.procedures]
+    procedures = [p for p in package.procedures if getattr(p, 'policy_version', None) != policy.POLICY_VERSION_V225]
+    entries = [{"id": p.id, "source": p.source, "hooks": list(p.hooks)} for p in procedures]
     # E3: carry a v2.3 procedure's policy through every replay/solver sandbox; old frames stay unchanged.
-    for entry, procedure in zip(entries, package.procedures):
+    for entry, procedure in zip(entries, procedures):
         version = getattr(procedure, "policy_version", policy.POLICY_VERSION)
         if version != policy.POLICY_VERSION:
             entry["policy_version"] = version
@@ -419,13 +422,15 @@ def _load_request(package, entries, limits, *, mixed_policy_bundle=None):
     to validate an individual procedure's source.
     """
     versions = {e.get("policy_version", policy.POLICY_VERSION) for e in entries}
-    version = (policy.POLICY_VERSION_V29 if policy.POLICY_VERSION_V29 in versions else
+    version = (policy.POLICY_VERSION_V222 if policy.POLICY_VERSION_V222 in versions else
+               policy.POLICY_VERSION_V29 if policy.POLICY_VERSION_V29 in versions else
                policy.POLICY_VERSION_V28 if policy.POLICY_VERSION_V28 in versions else
                policy.POLICY_VERSION_V25 if policy.POLICY_VERSION_V25 in versions else
                policy.POLICY_VERSION_V24 if policy.POLICY_VERSION_V24 in versions else
                policy.POLICY_VERSION_V23 if policy.POLICY_VERSION_V23 in versions else policy.POLICY_VERSION)
-    mixed = mixed_policy_bundle == "main-v3-alfworld-v11" and {
-        policy.POLICY_VERSION_V23, policy.POLICY_VERSION_V29} <= versions
+    mixed = (mixed_policy_bundle == "main-v3-alfworld-v11" and {
+        policy.POLICY_VERSION_V23, policy.POLICY_VERSION_V29} <= versions) or (
+        mixed_policy_bundle == "main-v8-instruction-segments" and policy.POLICY_VERSION_V222 in versions)
     return {"op": "load", "package_sha256": package.sha256,
             "policy_sha256": policy.policy_sha256(version=version),
             **({"policy_version": version} if version != policy.POLICY_VERSION else {}),
@@ -453,16 +458,24 @@ class Worker:
     def __init__(self, *, docker=None, limits=None, hashseed=0, live=None, per_call=None, scratch=None, image=IMAGE,
                  tag=None, cleanup_grace_seconds=0, cleanup_events=None,
                  ready_timeout_seconds=SANDBOX_READY_SECONDS, start_events=None, mixed_policy_bundle=None,
-                 diagnostics_configuration=None):
+                 diagnostics_configuration=None, instruction_configuration=None):
         require(hashseed in (0, 1) and (limits is None or set(limits) <= set(KINDS))
                 and (tag is None or (type(tag) is str and TAG.fullmatch(tag) is not None)), "Invalid worker settings")
         require(_cleanup_grace_valid(cleanup_grace_seconds)
                 and (cleanup_events is None or type(cleanup_events) is list), "Invalid sandbox cleanup grace or events")
         require(_cleanup_grace_valid(ready_timeout_seconds) and ready_timeout_seconds > 0
                 and (start_events is None or type(start_events) is list), "Invalid sandbox ready timeout or events")
-        require(mixed_policy_bundle in (None, "main-v3-alfworld-v11"), "Unknown mixed-policy import bundle")
+        require(instruction_configuration in (None, "main-v8", "main-v9", "main-v10"), "Unknown instruction worker configuration")
+        require(mixed_policy_bundle in (None, "main-v3-alfworld-v11", "main-v8-instruction-segments"),
+                "Unknown mixed-policy import bundle")
+        require(mixed_policy_bundle != "main-v8-instruction-segments" or instruction_configuration in ("main-v8", "main-v9", "main-v10"),
+                "Instruction mixed policies require the main-v8 worker")
+        if instruction_configuration in ("main-v8", "main-v9", "main-v10"):
+            require(mixed_policy_bundle in (None, "main-v8-instruction-segments"), "The main-v8 policy bundle is fixed")
+            mixed_policy_bundle = "main-v8-instruction-segments"
         require(diagnostics_configuration in (None, 'zebra-pc-v14', 'zebra-pc-v15'), 'Unknown diagnostic worker configuration')
         self.diagnostics_configuration = diagnostics_configuration
+        self.instruction_configuration = instruction_configuration
         self.docker = docker or Docker()
         self.limits = {**LIMITS, **(limits or {})}
         self.hashseed, self.live, self.per_call, self.image, self.tag = hashseed, live, per_call, image, tag
@@ -491,7 +504,7 @@ class Worker:
                     and not entries[0].is_symlink(),
                     "The input directory holds exactly one regular file, " + INPUT_FILE)
         self._entries = _entries(package)
-        if any(e.get("policy_version") in (policy.POLICY_VERSION_V28, policy.POLICY_VERSION_V29) for e in self._entries):
+        if any(e.get("policy_version") in (policy.POLICY_VERSION_V28, policy.POLICY_VERSION_V29, policy.POLICY_VERSION_V222) for e in self._entries):
             self.hashseed = 0
         self.package, self.kind, self.inputs_dir = package, kind, inputs_dir
         return self
@@ -509,8 +522,9 @@ class Worker:
         if not target.exists():
             target.write_bytes(source.read_bytes())
             target.chmod(0o444)
-        self._ensure()
-        self._configure_diagnostics()
+        if self.instruction_configuration != 'main-v10':
+            self._ensure()
+            self._configure_diagnostics()
         return self.call(proc_id, fn, args, timeout_s=timeout_s, diagnostics_v215=True)
 
     def _configure_diagnostics(self):
@@ -550,11 +564,14 @@ class Worker:
         self._ensure()
         if proc_id in self.rejected:
             return _fault("not_loaded", "rejected inside the sandbox: %s" % self.rejected[proc_id])
+        configure_in_call = diagnostics_v215 and self.instruction_configuration == 'main-v10'
         retried = False
         while True:
             lost = None
             with self._call_slot():
                 try:
+                    if configure_in_call:
+                        self._configure_diagnostics()
                     result = self._result(self._exchange(request, timeout_s + REPLY_GRACE_SECONDS),
                                           proc_id, fn, args_sha256,
                                           **({'diagnostics_v215': True} if diagnostics_v215 else {}))
@@ -605,7 +622,8 @@ class Worker:
     def _runner_dir(self):
         if self._runner is None:
             root = Path(tempfile.mkdtemp(prefix="execskill-runner-", dir=self.scratch))
-            worker = DIAGNOSTICS_WORKER_FILE if self.diagnostics_configuration else WORKER_FILE
+            worker = (INSTRUCTION_WORKER_FILE if self.instruction_configuration else
+                      DIAGNOSTICS_WORKER_FILE if self.diagnostics_configuration else WORKER_FILE)
             for source, name in ((worker, 'worker.py'), (POLICY_FILE, POLICY_FILE.name)):
                 (root / name).write_bytes(source.read_bytes())
                 (root / name).chmod(0o444)
@@ -667,7 +685,8 @@ class Worker:
                 answered = time.monotonic()
             if (ping.get("ok") is not True or ping.get("worker") != WORKER_PROTOCOL
                     or ping.get("worker_sha256") != worker_sha256(
-                        **({'configuration': self.diagnostics_configuration} if self.diagnostics_configuration else {}))
+                        **({'configuration': self.instruction_configuration or self.diagnostics_configuration}
+                           if self.instruction_configuration or self.diagnostics_configuration else {}))
                     or ping.get("hashseed") != str(self.hashseed)
                     or ping.get("policy_sha256") != policy.policy_sha256()):
                 raise ConfigurationError("sandbox worker identity mismatch: %s" % {

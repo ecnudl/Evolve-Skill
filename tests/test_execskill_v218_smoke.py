@@ -116,7 +116,7 @@ def test_v214_cli_preserves_defaults_and_both_older_choices(action):
     from scripts.run_execskill import parser
     command = parser()._subparsers._group_actions[0].choices['v214-'+action]
     option = next(a for a in command._actions if a.dest == 'configuration')
-    assert tuple(option.choices) == (p.MAIN_V5, p.IMPLANT_V5, CHILD, p.CROSS_V5)
+    assert tuple(option.choices) == (p.MAIN_V5, p.IMPLANT_V5, CHILD, p.CROSS_V5, p.SEARCHQA_HP_V6, p.MAIN_V7, p.MAIN_V8, p.MAIN_V9, p.MAIN_V10)
     assert option.default == p.MAIN_V5
 
 

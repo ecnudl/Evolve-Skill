@@ -1,0 +1,3 @@
+46 configurations; sha256=60ed368e3f4cd9e54a608cc9c8bdb3c48653a971627588624d360f2f10cf4a23
+Independent second git-show generation is byte-identical to the review fixture.
+SHA-256: 60ed368e3f4cd9e54a608cc9c8bdb3c48653a971627588624d360f2f10cf4a23

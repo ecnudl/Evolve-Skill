@@ -1,0 +1,260 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+_ test_manifest_refuses_frozen_paths_embedded_in_s0_before_copying_consent[preparation_file] _
+
+roots = (PosixPath('<repo-root>/.review-scratch/identity-blujrft5/main-v9'), PosixPath('<repo-root>/.review-scratch/identity-blujrft5/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10727c9d0>
+pointer = 'preparation_file'
+
+    @pytest.mark.parametrize('pointer', ['preparation_file', 'zebra_pool', 'zebra_split_manifest', 'supply_manifest'])
+    def test_manifest_refuses_frozen_paths_embedded_in_s0_before_copying_consent(roots, monkeypatch, pointer):
+        from skillopt.validator_pilot.api import digest
+        frozen, fresh = roots
+        fields = {'configuration': p.MAIN_V10, 'passed': True, 'root': str(fresh),
+                  'consent': {'owner': 'fixture'}, 'consent_sha256': digest({'owner': 'fixture'})}
+        if pointer == 'supply_manifest':
+            fields['preparation'] = {'data': {'v222_practice': {'supply_manifest': {'path': str(frozen/'pool.json')}}}}
+        else:
+            fields[pointer] = str(frozen/'pool.json')
+        checked = p.record('v214-s0', 'smoke', fields)
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: checked)
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+>           v214_smoke.make_manifest(fresh/'manifest.json', root=fresh, s0_file='unused', provenance='unused',
+                roles_repo='unused', route_b_env='unused', configuration=p.MAIN_V10)
+
+tests/test_execskill_v226_preparation_review.py:136: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:412: in make_manifest
+    allowed = evaluation.consent(root / 'shared', configuration)
+skillopt/execskill/evaluation.py:206: in consent
+    require(isinstance(value, dict) and set(value) == CONSENT_FIELDS and value["by"] == "owner"
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'No recorded owner consent to the multi-arm test read'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: No recorded owner consent to the multi-arm test read
+
+skillopt/continual_eval/core.py:32: ValueError
+
+During handling of the above exception, another exception occurred:
+
+roots = (PosixPath('<repo-root>/.review-scratch/identity-blujrft5/main-v9'), PosixPath('<repo-root>/.review-scratch/identity-blujrft5/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10727c9d0>
+pointer = 'preparation_file'
+
+    @pytest.mark.parametrize('pointer', ['preparation_file', 'zebra_pool', 'zebra_split_manifest', 'supply_manifest'])
+    def test_manifest_refuses_frozen_paths_embedded_in_s0_before_copying_consent(roots, monkeypatch, pointer):
+        from skillopt.validator_pilot.api import digest
+        frozen, fresh = roots
+        fields = {'configuration': p.MAIN_V10, 'passed': True, 'root': str(fresh),
+                  'consent': {'owner': 'fixture'}, 'consent_sha256': digest({'owner': 'fixture'})}
+        if pointer == 'supply_manifest':
+            fields['preparation'] = {'data': {'v222_practice': {'supply_manifest': {'path': str(frozen/'pool.json')}}}}
+        else:
+            fields[pointer] = str(frozen/'pool.json')
+        checked = p.record('v214-s0', 'smoke', fields)
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: checked)
+>       with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'main-v9 root is forbidden'
+E        Input: 'No recorded owner consent to the multi-arm test read'
+
+tests/test_execskill_v226_preparation_review.py:135: AssertionError
+_ test_manifest_refuses_frozen_paths_embedded_in_s0_before_copying_consent[zebra_pool] _
+
+roots = (PosixPath('<repo-root>/.review-scratch/identity-2v5kti5b/main-v9'), PosixPath('<repo-root>/.review-scratch/identity-2v5kti5b/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10727cb00>
+pointer = 'zebra_pool'
+
+    @pytest.mark.parametrize('pointer', ['preparation_file', 'zebra_pool', 'zebra_split_manifest', 'supply_manifest'])
+    def test_manifest_refuses_frozen_paths_embedded_in_s0_before_copying_consent(roots, monkeypatch, pointer):
+        from skillopt.validator_pilot.api import digest
+        frozen, fresh = roots
+        fields = {'configuration': p.MAIN_V10, 'passed': True, 'root': str(fresh),
+                  'consent': {'owner': 'fixture'}, 'consent_sha256': digest({'owner': 'fixture'})}
+        if pointer == 'supply_manifest':
+            fields['preparation'] = {'data': {'v222_practice': {'supply_manifest': {'path': str(frozen/'pool.json')}}}}
+        else:
+            fields[pointer] = str(frozen/'pool.json')
+        checked = p.record('v214-s0', 'smoke', fields)
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: checked)
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+>           v214_smoke.make_manifest(fresh/'manifest.json', root=fresh, s0_file='unused', provenance='unused',
+                roles_repo='unused', route_b_env='unused', configuration=p.MAIN_V10)
+
+tests/test_execskill_v226_preparation_review.py:136: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:412: in make_manifest
+    allowed = evaluation.consent(root / 'shared', configuration)
+skillopt/execskill/evaluation.py:206: in consent
+    require(isinstance(value, dict) and set(value) == CONSENT_FIELDS and value["by"] == "owner"
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'No recorded owner consent to the multi-arm test read'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: No recorded owner consent to the multi-arm test read
+
+skillopt/continual_eval/core.py:32: ValueError
+
+During handling of the above exception, another exception occurred:
+
+roots = (PosixPath('<repo-root>/.review-scratch/identity-2v5kti5b/main-v9'), PosixPath('<repo-root>/.review-scratch/identity-2v5kti5b/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10727cb00>
+pointer = 'zebra_pool'
+
+    @pytest.mark.parametrize('pointer', ['preparation_file', 'zebra_pool', 'zebra_split_manifest', 'supply_manifest'])
+    def test_manifest_refuses_frozen_paths_embedded_in_s0_before_copying_consent(roots, monkeypatch, pointer):
+        from skillopt.validator_pilot.api import digest
+        frozen, fresh = roots
+        fields = {'configuration': p.MAIN_V10, 'passed': True, 'root': str(fresh),
+                  'consent': {'owner': 'fixture'}, 'consent_sha256': digest({'owner': 'fixture'})}
+        if pointer == 'supply_manifest':
+            fields['preparation'] = {'data': {'v222_practice': {'supply_manifest': {'path': str(frozen/'pool.json')}}}}
+        else:
+            fields[pointer] = str(frozen/'pool.json')
+        checked = p.record('v214-s0', 'smoke', fields)
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: checked)
+>       with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'main-v9 root is forbidden'
+E        Input: 'No recorded owner consent to the multi-arm test read'
+
+tests/test_execskill_v226_preparation_review.py:135: AssertionError
+_ test_manifest_refuses_frozen_paths_embedded_in_s0_before_copying_consent[zebra_split_manifest] _
+
+roots = (PosixPath('<repo-root>/.review-scratch/identity-khoqyt50/main-v9'), PosixPath('<repo-root>/.review-scratch/identity-khoqyt50/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1071adfd0>
+pointer = 'zebra_split_manifest'
+
+    @pytest.mark.parametrize('pointer', ['preparation_file', 'zebra_pool', 'zebra_split_manifest', 'supply_manifest'])
+    def test_manifest_refuses_frozen_paths_embedded_in_s0_before_copying_consent(roots, monkeypatch, pointer):
+        from skillopt.validator_pilot.api import digest
+        frozen, fresh = roots
+        fields = {'configuration': p.MAIN_V10, 'passed': True, 'root': str(fresh),
+                  'consent': {'owner': 'fixture'}, 'consent_sha256': digest({'owner': 'fixture'})}
+        if pointer == 'supply_manifest':
+            fields['preparation'] = {'data': {'v222_practice': {'supply_manifest': {'path': str(frozen/'pool.json')}}}}
+        else:
+            fields[pointer] = str(frozen/'pool.json')
+        checked = p.record('v214-s0', 'smoke', fields)
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: checked)
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+>           v214_smoke.make_manifest(fresh/'manifest.json', root=fresh, s0_file='unused', provenance='unused',
+                roles_repo='unused', route_b_env='unused', configuration=p.MAIN_V10)
+
+tests/test_execskill_v226_preparation_review.py:136: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:412: in make_manifest
+    allowed = evaluation.consent(root / 'shared', configuration)
+skillopt/execskill/evaluation.py:206: in consent
+    require(isinstance(value, dict) and set(value) == CONSENT_FIELDS and value["by"] == "owner"
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'No recorded owner consent to the multi-arm test read'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: No recorded owner consent to the multi-arm test read
+
+skillopt/continual_eval/core.py:32: ValueError
+
+During handling of the above exception, another exception occurred:
+
+roots = (PosixPath('<repo-root>/.review-scratch/identity-khoqyt50/main-v9'), PosixPath('<repo-root>/.review-scratch/identity-khoqyt50/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1071adfd0>
+pointer = 'zebra_split_manifest'
+
+    @pytest.mark.parametrize('pointer', ['preparation_file', 'zebra_pool', 'zebra_split_manifest', 'supply_manifest'])
+    def test_manifest_refuses_frozen_paths_embedded_in_s0_before_copying_consent(roots, monkeypatch, pointer):
+        from skillopt.validator_pilot.api import digest
+        frozen, fresh = roots
+        fields = {'configuration': p.MAIN_V10, 'passed': True, 'root': str(fresh),
+                  'consent': {'owner': 'fixture'}, 'consent_sha256': digest({'owner': 'fixture'})}
+        if pointer == 'supply_manifest':
+            fields['preparation'] = {'data': {'v222_practice': {'supply_manifest': {'path': str(frozen/'pool.json')}}}}
+        else:
+            fields[pointer] = str(frozen/'pool.json')
+        checked = p.record('v214-s0', 'smoke', fields)
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: checked)
+>       with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'main-v9 root is forbidden'
+E        Input: 'No recorded owner consent to the multi-arm test read'
+
+tests/test_execskill_v226_preparation_review.py:135: AssertionError
+_ test_manifest_refuses_frozen_paths_embedded_in_s0_before_copying_consent[supply_manifest] _
+
+roots = (PosixPath('<repo-root>/.review-scratch/identity-8vttjwpg/main-v9'), PosixPath('<repo-root>/.review-scratch/identity-8vttjwpg/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107128e20>
+pointer = 'supply_manifest'
+
+    @pytest.mark.parametrize('pointer', ['preparation_file', 'zebra_pool', 'zebra_split_manifest', 'supply_manifest'])
+    def test_manifest_refuses_frozen_paths_embedded_in_s0_before_copying_consent(roots, monkeypatch, pointer):
+        from skillopt.validator_pilot.api import digest
+        frozen, fresh = roots
+        fields = {'configuration': p.MAIN_V10, 'passed': True, 'root': str(fresh),
+                  'consent': {'owner': 'fixture'}, 'consent_sha256': digest({'owner': 'fixture'})}
+        if pointer == 'supply_manifest':
+            fields['preparation'] = {'data': {'v222_practice': {'supply_manifest': {'path': str(frozen/'pool.json')}}}}
+        else:
+            fields[pointer] = str(frozen/'pool.json')
+        checked = p.record('v214-s0', 'smoke', fields)
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: checked)
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+>           v214_smoke.make_manifest(fresh/'manifest.json', root=fresh, s0_file='unused', provenance='unused',
+                roles_repo='unused', route_b_env='unused', configuration=p.MAIN_V10)
+
+tests/test_execskill_v226_preparation_review.py:136: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:412: in make_manifest
+    allowed = evaluation.consent(root / 'shared', configuration)
+skillopt/execskill/evaluation.py:206: in consent
+    require(isinstance(value, dict) and set(value) == CONSENT_FIELDS and value["by"] == "owner"
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'No recorded owner consent to the multi-arm test read'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: No recorded owner consent to the multi-arm test read
+
+skillopt/continual_eval/core.py:32: ValueError
+
+During handling of the above exception, another exception occurred:
+
+roots = (PosixPath('<repo-root>/.review-scratch/identity-8vttjwpg/main-v9'), PosixPath('<repo-root>/.review-scratch/identity-8vttjwpg/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107128e20>
+pointer = 'supply_manifest'
+
+    @pytest.mark.parametrize('pointer', ['preparation_file', 'zebra_pool', 'zebra_split_manifest', 'supply_manifest'])
+    def test_manifest_refuses_frozen_paths_embedded_in_s0_before_copying_consent(roots, monkeypatch, pointer):
+        from skillopt.validator_pilot.api import digest
+        frozen, fresh = roots
+        fields = {'configuration': p.MAIN_V10, 'passed': True, 'root': str(fresh),
+                  'consent': {'owner': 'fixture'}, 'consent_sha256': digest({'owner': 'fixture'})}
+        if pointer == 'supply_manifest':
+            fields['preparation'] = {'data': {'v222_practice': {'supply_manifest': {'path': str(frozen/'pool.json')}}}}
+        else:
+            fields[pointer] = str(frozen/'pool.json')
+        checked = p.record('v214-s0', 'smoke', fields)
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: checked)
+>       with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'main-v9 root is forbidden'
+E        Input: 'No recorded owner consent to the multi-arm test read'
+
+tests/test_execskill_v226_preparation_review.py:135: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execskill_v226_preparation_review.py::test_manifest_refuses_frozen_paths_embedded_in_s0_before_copying_consent[preparation_file]
+FAILED tests/test_execskill_v226_preparation_review.py::test_manifest_refuses_frozen_paths_embedded_in_s0_before_copying_consent[zebra_pool]
+FAILED tests/test_execskill_v226_preparation_review.py::test_manifest_refuses_frozen_paths_embedded_in_s0_before_copying_consent[zebra_split_manifest]
+FAILED tests/test_execskill_v226_preparation_review.py::test_manifest_refuses_frozen_paths_embedded_in_s0_before_copying_consent[supply_manifest]
+4 failed, 32 deselected in 1.10s

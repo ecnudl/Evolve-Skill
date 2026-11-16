@@ -144,9 +144,12 @@ def _public_text(value):
     return "" if value is None else str(value)
 
 
-def _system(bench, card_text, runtime):
+def _system(bench, card_text, runtime, *, configuration=None):
     """The frozen system prompt (backends.py:379-394) with the active bench card as the skill text."""
     if bench == zebralogic.BENCH:
+        if (profiles.is_v222(configuration) and card_text.strip()
+                and not runtime.get('v222_whole_card_fallback', False)):
+            return QA_SYSTEM + "\n\n" + GUIDANCE + card_text
         return QA_SYSTEM  # the official format and examples live only in the USER message
     guidance = ("\n\n" + GUIDANCE + card_text) if card_text.strip() else ""
     if bench in {"searchqa", "officeqa"}:
@@ -364,6 +367,10 @@ class _Shell:
                                "source_sha256": hashlib.sha256(procedure.source.encode()).hexdigest(),
                                "step": len(self.steps) if self.steps is not None else None,
                                "delivered_text": ""} if notes.audited(procedure) else {})})
+        if profiles.is_v222(self.configuration):
+            from .v222_cards import segment_metadata
+            self.notes[-1]["origin"] = procedure.origin
+            self.notes[-1]["segment"] = segment_metadata(procedure)
         for entry in notes.fault_drops(dropped, outcome_judged=modern):
             self.fault(procedure.id, hook, "note_" + entry["reason"], None, entry["detail"])
         return text, bindings
@@ -641,6 +648,11 @@ def solve(bench, public, card_text, package, call, *, runtime=None, worker=None,
     ``precheck_report``: the stored SpreadsheetBench pre-check report of the replayed cell; ``shortcut``: None, or
     ``NO_WORKBOOK`` for a SpreadsheetBench shortcut-probe cell of a package without procedures for the bench (§7.2)."""
     require(type(card_text) is str, "The card text is text")
+    if profiles.is_v225(configuration):
+        from .v225_cards import compose
+        card_text = compose(bench, card_text, package)
+        if not package.for_bench(bench):
+            worker = None
     runtime = runtime or {}
     shell = _Shell(bench, package, call, worker, withhold=withhold, restore=restore, placebo=placebo, text=text,
                    native=native, nominal=nominal_tokens, shortcut=shortcut, configuration=configuration)
@@ -673,7 +685,8 @@ def _solve(shell, bench, public, card_text, runtime, stored):
 def _solve_qa(shell, view, card_text, runtime):
     """Copy of ``backends.solve`` for SearchQA, OfficeQA and LiveMath (backends.py:377-455) with the notes and the
     ``<calc>`` round trip (§2.4)."""
-    system = _system(shell.bench, card_text, runtime)
+    system = _system(shell.bench, card_text, runtime, **({"configuration": shell.configuration}
+        if profiles.is_v222(shell.configuration) else {}))
     costs = {}
     try:
         shell.start("cell")

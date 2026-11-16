@@ -1,0 +1,70 @@
+{
+ "step": "G/s1-searchqa",
+ "decision": "reject",
+ "reason": "failed: J1",
+ "candidate_sha256": "846f3b522c962dfdc242a534cadc2fb79cbd3be97543f9e48012befa1cd3440f",
+ "candidate_file_sha256": "da73d027d5aed88852c9537ba0b346c25d208c98e493e9f2e439845aaebe0f64",
+ "parent_sha256": "af5bed0b471ecf5b9bbe2495cc17a7d7faeef9aaf06a6cfd3040c0b55bffc601",
+ "parent_file_sha256": null,
+ "rule": "practical-v2-11-pooled",
+ "A_star": 951,
+ "edits": [
+  {
+   "kind": "new",
+   "id": "p-searchqa-1-2",
+   "astar_items": 932
+  },
+  {
+   "kind": "new",
+   "id": "p-searchqa-1-3",
+   "astar_items": 405
+  }
+ ],
+ "contrasts": {
+  "S'-S": {
+   "n": 951,
+   "mean": -0.004206098843322818,
+   "ci95": [
+    -0.016824395373291272,
+    0.008412197686645636
+   ],
+   "p_t": 0.7416516003376957,
+   "up": 17,
+   "down": 21,
+   "tie": 913
+  },
+  "S'-C": {
+   "n": 951,
+   "mean": -0.008412197686645636,
+   "ci95": [
+    -0.02103049421661409,
+    0.004206098843322818
+   ],
+   "p_t": 0.9087184774235318,
+   "up": 14,
+   "down": 22,
+   "tie": 915
+  }
+ },
+ "procedures": [
+  {
+   "record_sha256": "e1d1b328d6f7b9522a9725721176bdfdc14f7cf89fcdc34f8e6ebe5844ee09e7",
+   "id": "p-searchqa-1-2",
+   "origin": "searchqa",
+   "source_bytes": 1538,
+   "source_sha256": "7fa83b8e3a7256eb3e47b138e3d0c2773c387b9ba9274bcf14219aaaba0ae113",
+   "file_sha256": "65769c2e697a2a5665ea3bae15f2110ee4d31f37cc5d1fe341dc7fd0ce56a050",
+   "description": "Finds snippets that near-verbatim echo the question wording (flashcard/quiz pages) by content-word overlap, and reports the pipe-separated fragments that follow the echoed question in those snippets, which often carry the expected answer token."
+  },
+  {
+   "record_sha256": "cb17af6ecf2dab654389cddddcb214d84f436719f2fdf0ac32eebf75a25cdefe",
+   "id": "p-searchqa-1-3",
+   "origin": "searchqa",
+   "source_bytes": 1716,
+   "source_sha256": "dd814e280231197f79513703c7ba020abad826b76848977f07acc332e0743c59",
+   "file_sha256": "8744b2f13f43dd4c18dc9ea3647d6c9c818875727f92aab38137da0361ce09f0",
+   "description": "Extracts a capitalized multi-word name-like phrase from the question, skipping phrases that begin with common function words (determiners, prepositions, question words) that are not names, and counts whole-word (word-boundary) occurrences of each surface form across the snippets, reporting only verb"
+  }
+ ],
+ "decision_record_sha256": "9518d948f17e530c477a2ed8a8a164aeb285e4f7d0c7ba485390dfeb8aebf26b"
+}

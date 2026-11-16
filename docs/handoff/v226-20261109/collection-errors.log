@@ -1,0 +1,475 @@
+==================================== ERRORS ====================================
+______________ ERROR collecting tests/test_azure_openai_compat.py ______________
+ImportError while importing test module '<repo-root>/tests/test_azure_openai_compat.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_azure_openai_compat.py:28: in <module>
+    from skillopt_sleep.__main__ import _add_common
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+_______________ ERROR collecting tests/test_backend_opencode.py ________________
+ImportError while importing test module '<repo-root>/tests/test_backend_opencode.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_backend_opencode.py:14: in <module>
+    from skillopt_sleep import cycle
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+_____________ ERROR collecting tests/test_backend_opencode_live.py _____________
+ImportError while importing test module '<repo-root>/tests/test_backend_opencode_live.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_backend_opencode_live.py:26: in <module>
+    from skillopt_sleep.backend import _NO_WINDOW, OpenCodeCliBackend, resolve_opencode_path
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+__________________ ERROR collecting tests/test_backend_pi.py ___________________
+ImportError while importing test module '<repo-root>/tests/test_backend_pi.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_backend_pi.py:8: in <module>
+    from skillopt_sleep.backend import (
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+____________ ERROR collecting tests/test_codex_cli_prompt_stdin.py _____________
+ImportError while importing test module '<repo-root>/tests/test_codex_cli_prompt_stdin.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_codex_cli_prompt_stdin.py:14: in <module>
+    from skillopt_sleep.types import TaskRecord
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+_____________ ERROR collecting tests/test_coevolution_v4_tasks.py ______________
+tests/test_coevolution_v4_tasks.py:12: in <module>
+    TASKS = build_tasks()
+skillopt/coevolution_v4/tasks.py:664: in build_tasks
+    for index, project in enumerate(_projects()):
+skillopt/coevolution_v4/tasks.py:596: in _projects
+    return [_etl(), _money(), _orders(), _validation(), _auth(), _integration(), _pipeline(), _analyzer(), _processor()]
+skillopt/coevolution_v4/tasks.py:110: in _etl
+    files = _source(name, {"policy.py": ["amount_audit.py", "comparison_policy.py", "formatting_policy.py"],
+skillopt/coevolution_v4/tasks.py:69: in _source
+    source = old._read(name, "environment/" + path)
+skillopt/validator_pilot/tasks.py:107: in _read
+    return (ASSETS / name / relative).read_text(encoding="utf-8")
+../../../miniconda3/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+../../../miniconda3/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+../../../miniconda3/lib/python3.13/pathlib/_local.py:537: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+E   FileNotFoundError: [Errno 2] No such file or directory: '<repo-root>/configs/validator_pilot/tasks/upstream/five-file-data-pipeline-type-cascade/environment/amount_audit.py'
+_______________ ERROR collecting tests/test_consolidate_split.py _______________
+ImportError while importing test module '<repo-root>/tests/test_consolidate_split.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_consolidate_split.py:12: in <module>
+    from skillopt_sleep.consolidate import _split
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+________ ERROR collecting tests/test_consolidation_edit_bookkeeping.py _________
+ImportError while importing test module '<repo-root>/tests/test_consolidation_edit_bookkeeping.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_consolidation_edit_bookkeeping.py:7: in <module>
+    from skillopt_sleep.backend import Backend
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+________________ ERROR collecting tests/test_copilot_harvest.py ________________
+ImportError while importing test module '<repo-root>/tests/test_copilot_harvest.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_copilot_harvest.py:14: in <module>
+    from skillopt_sleep.config import load_config
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+______________ ERROR collecting tests/test_copilot_tool_scope.py _______________
+ImportError while importing test module '<repo-root>/tests/test_copilot_tool_scope.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_copilot_tool_scope.py:25: in <module>
+    from skillopt_sleep import backend as backend_mod
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+_________________ ERROR collecting tests/test_devin_plugin.py __________________
+ImportError while importing test module '<repo-root>/tests/test_devin_plugin.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_devin_plugin.py:20: in <module>
+    import harvest_devin as hw  # noqa: E402
+E   ModuleNotFoundError: No module named 'harvest_devin'
+____________________ ERROR collecting tests/test_evalkit.py ____________________
+ImportError while importing test module '<repo-root>/tests/test_evalkit.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_evalkit.py:16: in <module>
+    from skillopt_sleep.evalkit import (
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+______________ ERROR collecting tests/test_gate_no_regression.py _______________
+ImportError while importing test module '<repo-root>/tests/test_gate_no_regression.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_gate_no_regression.py:9: in <module>
+    from skillopt_sleep.__main__ import _report_payload
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+________________ ERROR collecting tests/test_handoff_backend.py ________________
+ImportError while importing test module '<repo-root>/tests/test_handoff_backend.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_handoff_backend.py:12: in <module>
+    from skillopt_sleep.backend import get_backend
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+______________ ERROR collecting tests/test_harvest_copilot_cli.py ______________
+ImportError while importing test module '<repo-root>/tests/test_harvest_copilot_cli.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_harvest_copilot_cli.py:6: in <module>
+    from skillopt_sleep.harvest_copilot_cli import default_session_store, harvest_copilot_cli
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+_______________ ERROR collecting tests/test_harvest_opencode.py ________________
+ImportError while importing test module '<repo-root>/tests/test_harvest_opencode.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_harvest_opencode.py:18: in <module>
+    from skillopt_sleep.__main__ import _add_common, _cfg_from_args
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+_____________ ERROR collecting tests/test_harvest_opencode_live.py _____________
+ImportError while importing test module '<repo-root>/tests/test_harvest_opencode_live.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_harvest_opencode_live.py:16: in <module>
+    from skillopt_sleep.harvest_opencode import (
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+__________________ ERROR collecting tests/test_harvest_pi.py ___________________
+ImportError while importing test module '<repo-root>/tests/test_harvest_pi.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_harvest_pi.py:7: in <module>
+    from skillopt_sleep.harvest_pi import _redact_secrets, digest_pi_session, harvest_pi
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+_______________ ERROR collecting tests/test_holdout_integrity.py _______________
+ImportError while importing test module '<repo-root>/tests/test_holdout_integrity.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_holdout_integrity.py:3: in <module>
+    from skillopt_sleep.backend import Backend
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+____________________ ERROR collecting tests/test_judges.py _____________________
+ImportError while importing test module '<repo-root>/tests/test_judges.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_judges.py:12: in <module>
+    from skillopt_sleep.judges import KNOWN_OPS, SHAPE_OPS, score_rule_judge, validate_checks
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+__________________ ERROR collecting tests/test_mcp_schema.py ___________________
+tests/test_mcp_schema.py:19: in <module>
+    SPEC.loader.exec_module(mcp_server)
+<frozen importlib._bootstrap_external>:1019: in exec_module
+    ???
+<frozen importlib._bootstrap_external>:1156: in get_code
+    ???
+<frozen importlib._bootstrap_external>:1214: in get_data
+    ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '<repo-root>/plugins/copilot/mcp_server.py'
+_____________ ERROR collecting tests/test_model_change_warning.py ______________
+ImportError while importing test module '<repo-root>/tests/test_model_change_warning.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_model_change_warning.py:8: in <module>
+    from skillopt_sleep.cycle import _check_model_change, _make_model_key
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+________________ ERROR collecting tests/test_outcome_judges.py _________________
+ImportError while importing test module '<repo-root>/tests/test_outcome_judges.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_outcome_judges.py:5: in <module>
+    from skillopt_sleep.judges import (
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+________________ ERROR collecting tests/test_pi_integration.py _________________
+ImportError while importing test module '<repo-root>/tests/test_pi_integration.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_pi_integration.py:8: in <module>
+    from skillopt_sleep.__main__ import _add_common, _cfg_from_args
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+___________ ERROR collecting tests/test_sleep_adopt_skill_subset.py ____________
+ImportError while importing test module '<repo-root>/tests/test_sleep_adopt_skill_subset.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_sleep_adopt_skill_subset.py:17: in <module>
+    from skillopt_sleep.staging import (
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+______________ ERROR collecting tests/test_sleep_dream_metric.py _______________
+ImportError while importing test module '<repo-root>/tests/test_sleep_dream_metric.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_sleep_dream_metric.py:6: in <module>
+    from skillopt_sleep.backend import Backend, MockBackend
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+_________________ ERROR collecting tests/test_sleep_engine.py __________________
+ImportError while importing test module '<repo-root>/tests/test_sleep_engine.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_sleep_engine.py:16: in <module>
+    from skillopt_sleep.backend import MockBackend, exact_score, keyword_soft_score
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+________________ ERROR collecting tests/test_sleep_evidence.py _________________
+ImportError while importing test module '<repo-root>/tests/test_sleep_evidence.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_sleep_evidence.py:16: in <module>
+    from skillopt_sleep import prompts as prompt_registry
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+_______________ ERROR collecting tests/test_sleep_multi_skill.py _______________
+ImportError while importing test module '<repo-root>/tests/test_sleep_multi_skill.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_sleep_multi_skill.py:12: in <module>
+    from skillopt_sleep.backend import MockBackend
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+____________ ERROR collecting tests/test_sleep_scheduler_safety.py _____________
+ImportError while importing test module '<repo-root>/tests/test_sleep_scheduler_safety.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_sleep_scheduler_safety.py:10: in <module>
+    from skillopt_sleep import scheduler
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+___________ ERROR collecting tests/test_sleep_skill_group_report.py ____________
+ImportError while importing test module '<repo-root>/tests/test_sleep_skill_group_report.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_sleep_skill_group_report.py:10: in <module>
+    from skillopt_sleep.backend import MockBackend
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+______________ ERROR collecting tests/test_sleep_skill_harvest.py ______________
+ImportError while importing test module '<repo-root>/tests/test_sleep_skill_harvest.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_sleep_skill_harvest.py:13: in <module>
+    from skillopt_sleep.harvest import digest_transcript
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+_______________ ERROR collecting tests/test_sleep_skill_hint.py ________________
+ImportError while importing test module '<repo-root>/tests/test_sleep_skill_hint.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_sleep_skill_hint.py:11: in <module>
+    from skillopt_sleep.dream import dream_augment, recall_similar
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+_____________ ERROR collecting tests/test_sleep_skill_resolver.py ______________
+ImportError while importing test module '<repo-root>/tests/test_sleep_skill_resolver.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_sleep_skill_resolver.py:12: in <module>
+    from skillopt_sleep.config import load_config
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+_____________ ERROR collecting tests/test_sleep_staging_fanout.py ______________
+ImportError while importing test module '<repo-root>/tests/test_sleep_staging_fanout.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_sleep_staging_fanout.py:18: in <module>
+    from skillopt_sleep.staging import (
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+__________________ ERROR collecting tests/test_sleep_state.py __________________
+ImportError while importing test module '<repo-root>/tests/test_sleep_state.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_sleep_state.py:3: in <module>
+    from skillopt_sleep.state import SleepState
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+______________ ERROR collecting tests/test_split_hardening_2x3.py ______________
+ImportError while importing test module '<repo-root>/tests/test_split_hardening_2x3.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_split_hardening_2x3.py:21: in <module>
+    from skillopt_sleep.backend import build_backend
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+_________________ ERROR collecting tests/test_split_wiring.py __________________
+ImportError while importing test module '<repo-root>/tests/test_split_wiring.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_split_wiring.py:16: in <module>
+    from skillopt_sleep.config import DEFAULTS, load_config
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+____________ ERROR collecting tests/test_staging_redaction_azure.py ____________
+ImportError while importing test module '<repo-root>/tests/test_staging_redaction_azure.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_staging_redaction_azure.py:9: in <module>
+    from skillopt_sleep.staging import redact_secrets
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+_____________ ERROR collecting tests/test_superpowers_scenarios.py _____________
+ImportError while importing test module '<repo-root>/tests/test_superpowers_scenarios.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_superpowers_scenarios.py:11: in <module>
+    from skillopt_sleep.adapters.superpowers import (
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+________________ ERROR collecting tests/test_unmatched_edits.py ________________
+ImportError while importing test module '<repo-root>/tests/test_unmatched_edits.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_unmatched_edits.py:9: in <module>
+    from skillopt_sleep.memory import apply_edits, apply_edits_detailed, set_learned
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+___________ ERROR collecting tests/test_unmatched_edits_reporting.py ___________
+ImportError while importing test module '<repo-root>/tests/test_unmatched_edits_reporting.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_unmatched_edits_reporting.py:9: in <module>
+    from skillopt_sleep.config import load_config
+E   ModuleNotFoundError: No module named 'skillopt_sleep'
+_____________ ERROR collecting tests/test_validator_pilot_tasks.py _____________
+tests/test_validator_pilot_tasks.py:15: in <module>
+    ALL_TASKS = [task for split in t.SPLIT_TASKS for task in t.build_tasks(split)]
+skillopt/validator_pilot/tasks.py:1060: in build_tasks
+    source, ref, contract, cases = BUILDERS[name](name)
+skillopt/validator_pilot/tasks.py:190: in _etl
+    source = _combine(name, files)
+skillopt/validator_pilot/tasks.py:114: in _combine
+    source = _read(name, "environment/" + filename)
+skillopt/validator_pilot/tasks.py:107: in _read
+    return (ASSETS / name / relative).read_text(encoding="utf-8")
+../../../miniconda3/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+../../../miniconda3/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+../../../miniconda3/lib/python3.13/pathlib/_local.py:537: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+E   FileNotFoundError: [Errno 2] No such file or directory: '<repo-root>/configs/validator_pilot/tasks/upstream/five-file-data-pipeline-type-cascade/environment/amount_audit.py'
+______________ ERROR collecting tests/test_webui_build_gradio.py _______________
+ImportError while importing test module '<repo-root>/tests/test_webui_build_gradio.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_webui_build_gradio.py:19: in <module>
+    import skillopt_webui.app as app  # noqa: E402
+E   ModuleNotFoundError: No module named 'skillopt_webui'
+______________ ERROR collecting tests/test_webui_env_preflight.py ______________
+ImportError while importing test module '<repo-root>/tests/test_webui_env_preflight.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniconda3/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_webui_env_preflight.py:6: in <module>
+    from skillopt_webui import app as webui_app
+E   ModuleNotFoundError: No module named 'skillopt_webui'
+=========================== short test summary info ============================
+ERROR tests/test_azure_openai_compat.py
+ERROR tests/test_backend_opencode.py
+ERROR tests/test_backend_opencode_live.py
+ERROR tests/test_backend_pi.py
+ERROR tests/test_codex_cli_prompt_stdin.py
+ERROR tests/test_coevolution_v4_tasks.py - FileNotFoundError: [Errno 2] No su...
+ERROR tests/test_consolidate_split.py
+ERROR tests/test_consolidation_edit_bookkeeping.py
+ERROR tests/test_copilot_harvest.py
+ERROR tests/test_copilot_tool_scope.py
+ERROR tests/test_devin_plugin.py
+ERROR tests/test_evalkit.py
+ERROR tests/test_gate_no_regression.py
+ERROR tests/test_handoff_backend.py
+ERROR tests/test_harvest_copilot_cli.py
+ERROR tests/test_harvest_opencode.py
+ERROR tests/test_harvest_opencode_live.py
+ERROR tests/test_harvest_pi.py
+ERROR tests/test_holdout_integrity.py
+ERROR tests/test_judges.py
+ERROR tests/test_mcp_schema.py - FileNotFoundError: [Errno 2] No such file or...
+ERROR tests/test_model_change_warning.py
+ERROR tests/test_outcome_judges.py
+ERROR tests/test_pi_integration.py
+ERROR tests/test_sleep_adopt_skill_subset.py
+ERROR tests/test_sleep_dream_metric.py
+ERROR tests/test_sleep_engine.py
+ERROR tests/test_sleep_evidence.py
+ERROR tests/test_sleep_multi_skill.py
+ERROR tests/test_sleep_scheduler_safety.py
+ERROR tests/test_sleep_skill_group_report.py
+ERROR tests/test_sleep_skill_harvest.py
+ERROR tests/test_sleep_skill_hint.py
+ERROR tests/test_sleep_skill_resolver.py
+ERROR tests/test_sleep_staging_fanout.py
+ERROR tests/test_sleep_state.py
+ERROR tests/test_split_hardening_2x3.py
+ERROR tests/test_split_wiring.py
+ERROR tests/test_staging_redaction_azure.py
+ERROR tests/test_superpowers_scenarios.py
+ERROR tests/test_unmatched_edits.py
+ERROR tests/test_unmatched_edits_reporting.py
+ERROR tests/test_validator_pilot_tasks.py - FileNotFoundError: [Errno 2] No s...
+ERROR tests/test_webui_build_gradio.py
+ERROR tests/test_webui_env_preflight.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 45 errors during collection !!!!!!!!!!!!!!!!!!!
+21909 tests collected, 45 errors in 18.99s

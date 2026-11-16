@@ -19,13 +19,16 @@ from .package import Package, Procedure, empty, save
 
 
 def s1(setting, chain):
+    if p.is_v220(p.configuration_of(setting)):
+        from . import v220_smoke
+        return v220_smoke.s1(setting, chain)
     first = chains.first_call(setting, chain)
     probe = None
     if chain == 'D':
         from . import v29_route_probe
         probe = v29_route_probe.measure(setting, bench=z.BENCH)
     selected = (getattr(setting, 'extra', None) or {}).get('configuration', v.CONFIGURATION)
-    configuration = selected if selected in (p.IMPLANT_V5, p.MAIN_V6, p.CROSS_V5) else v.CONFIGURATION
+    configuration = selected if selected in (p.IMPLANT_V5, p.MAIN_V6, p.CROSS_V5, p.MAIN_V7, p.MAIN_V8, p.MAIN_V9, p.MAIN_V10) else v.CONFIGURATION
     if p.is_implant_v5(configuration):
         probe = v.implant_solver_probe(first, chain, probe)
     return {'passed': first['passed'] is True and (probe is None or probe['passed'] is True),
@@ -51,8 +54,17 @@ def fixture_pools(setting, chain):
 
 
 def s2(setting, chain):
+    if p.is_v225(p.configuration_of(setting)):
+        from . import v225_smoke
+        return v225_smoke.s2(setting, chain)
+    if p.is_v222(p.configuration_of(setting)):
+        from . import v222_smoke
+        return v222_smoke.s2(setting, chain)
+    if p.is_v220(p.configuration_of(setting)):
+        from . import v220_smoke
+        return v220_smoke.s2(setting, chain)
     selected = (getattr(setting, 'extra', None) or {}).get('configuration', v.CONFIGURATION)
-    configuration = selected if selected in (p.IMPLANT_V5, p.MAIN_V6, p.CROSS_V5) else v.CONFIGURATION
+    configuration = selected if selected in (p.IMPLANT_V5, p.MAIN_V6, p.CROSS_V5, p.MAIN_V7, p.MAIN_V8, p.MAIN_V9, p.MAIN_V10) else v.CONFIGURATION
     pools, results = fixture_pools(setting, chain), {}
     for bench in p.active_benches(configuration):
         name = chain + '/v214-smoke/S2/' + bench
@@ -96,12 +108,13 @@ def s2(setting, chain):
 
 def s3(setting, chain):
     """Exactly one inherited engineer proposal, no repair or method-effect claim."""
-    configuration = p.MAIN_V6 if p.is_v218(p.configuration_of(setting)) else v.CONFIGURATION
+    configuration = p.configuration_of(setting) if p.is_v218(p.configuration_of(setting)) else v.CONFIGURATION
     name = chain + '/v214-smoke/S3'
     def work(attempt):
         endpoint = units._bounded_endpoint(units.role_endpoint(setting, chain, 'engineer', 'searchqa', 1),
                                             p.ENGINEER_MAX_TOKENS[v.CONFIGURATION])
-        system = engineer_v211.system('searchqa', train=True)
+        system = (p.engineer_prompt(configuration, 'searchqa', 'train') if p.is_v221(configuration)
+                  else engineer_v211.system('searchqa', train=True))
         request = {'request': 'propose', 'bench': 'searchqa', 'mode': 'train', 'round': 1,
             'instruction': 'Propose a helper for this authored practice example; return the registered delivery schema.',
             'authored_example': {'question': 'Which tree is described?', 'context': ['The described tree is cedar.']},
@@ -151,6 +164,14 @@ def s3(setting, chain):
 
 def projection(s2, chain, *, s3=None, bounds, configuration=v.CONFIGURATION):
     """Price every worst-case read cell from this chain's measured card usage."""
+    if p.is_v220(configuration):
+        from . import v220_smoke
+        return v220_smoke.projection(s2, chain, bounds=bounds)
+    if p.is_v222(configuration):
+        from . import v222_smoke
+        if p.is_v225(configuration):
+            from . import v225_smoke as v222_smoke
+        v222_smoke.check_measured(s2)
     require(chain in p.CHAINS and set(s2.get('benches', {})) == set(p.active_benches(configuration)),
             'SE6 needs measurements for all five benchmarks on this chain')
     if not p.is_implant_v5(configuration):
@@ -160,13 +181,27 @@ def projection(s2, chain, *, s3=None, bounds, configuration=v.CONFIGURATION):
                                       if chain == 'D' else None, **v._options(configuration)), 'Registered S1 solver bounds')
     per_cell, sizes, actual, charged = {}, {}, 0, 0
     for bench, row in s2['benches'].items():
-        measured = row['measurements']
-        if p.is_v219(configuration):
+        if p.is_v225(configuration):
+            require(set(row['arms']) == {'B','C0','C','P'}, 'Four measured main-v9 price arms')
+            prices = {}
+            for label, arm in row['arms'].items():
+                observed = arm['measurements']
+                require(observed['actual'] > 0 and arm['cells'] == row['items'], 'Positive per-cell usage')
+                prices[label] = Fraction(observed['actual'], arm['cells'])
+            per_cell[bench] = {'card': str(max(prices[b] for b in ('B','C0','C'))),
+                              'procedure': str(prices['P']), 'procedure_assumed': False}
+            measured = {'actual':sum(a['measurements']['actual'] for a in row['arms'].values()),
+                'request_bytes':{bench:max(a['measurements']['request_bytes'][bench] for a in row['arms'].values())}}
+        else:
+            measured = row['measurements']
+        if p.is_v225(configuration):
+            pass
+        elif p.is_v219(configuration):
             from . import v219_smoke
             per_cell[bench] = v219_smoke.measured_prices(row, bench)
         else:
             entry = measured.get('per_class', {}).get(bench, {}).get('card', {})
-            require(row.get('passed') is True and row.get('arms') == ['C'] and row.get('items') == v.S2_ITEMS[bench]
+            require(row.get('passed') is True and row.get('arms') == (['C0'] if p.is_v222(configuration) else ['C']) and row.get('items') == v.S2_ITEMS[bench]
                     and entry.get('cells') == v.S2_ITEMS[bench] and entry.get('tokens', 0) > 0,
                     'SE6 only uses the registered measured C practice cells')
             card = Fraction(entry['tokens'], entry['cells'])
@@ -180,6 +215,9 @@ def projection(s2, chain, *, s3=None, bounds, configuration=v.CONFIGURATION):
     numerical = {b: {**row, 'card': Fraction(row['card']), 'procedure': Fraction(row['procedure'])}
                  for b, row in per_cell.items()}
     terms = p.read_estimate_terms(numerical, ratio, configuration)
+    if p.is_v225(configuration):
+        from .v225_read import estimate_unit_terms
+        terms = estimate_unit_terms(numerical, ratio)
     estimate = math.ceil(sum(terms.values()))
     reserved = max(reservation(sizes[b], bounds['ledger_bound'][b]) for b in sizes)
     caps = budgets.chain_caps(chain, configuration)
@@ -205,7 +243,7 @@ def projection(s2, chain, *, s3=None, bounds, configuration=v.CONFIGURATION):
         'later_G_cost_factor': ('not_applicable_no_learning_run' if p.is_implant_v5(configuration)
                                 else 'runtime read_budget rechecks max(1, measured training factor)'),
         'read_scopes': read_scopes, 'solver_scopes': scope_rows,
-        'stage_packages': 0 if p.is_v219(configuration) else 4, 'solver_bounds': deepcopy(bounds), 'sealed_reads': 0,
+        'stage_packages': 5 if p.is_v225(configuration) else 0 if p.is_v219(configuration) else 4, 'solver_bounds': deepcopy(bounds), 'sealed_reads': 0,
         'method_cost': ({'model_calls': 0, 'all_role_caps': 0, 'learning': 'none'}
                         if p.is_implant_v5(configuration) else
                         {'engineer_tokens_per_call': s3['tokens'], 'other_roles': 'unmeasured; assumed',
@@ -220,6 +258,15 @@ def manifest_identity(configuration=v.CONFIGURATION):
 
 
 def sx(root, *, configuration=v.CONFIGURATION):
+    if p.is_v225(configuration):
+        from . import v225_smoke
+        return v225_smoke.structural_smoke(root, **({'configuration': configuration} if p.is_v226(configuration) else {}))
+    if p.is_v222(configuration):
+        from . import v222_smoke
+        return v222_smoke.structural_smoke(root)
+    if p.is_v221(configuration):
+        from . import v221_smoke
+        return v221_smoke.structural_smoke(root)
     if p.is_v218(configuration):
         from . import v218_split, v218_read
         stage_rows = sx(safe_path(root) / "stage-rows")

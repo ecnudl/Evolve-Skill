@@ -708,7 +708,8 @@ def sandbox_selftest(out, *, item_files, docker=None, worker=None, scratch="/tmp
                                  clock=clock, cleanup_grace_seconds=grace, cleanup_events=cleanups,
                                  ready_timeout_seconds=protocol.ready_timeout_seconds(configuration),
                                  start_events=starts if protocol.is_v292(configuration) else None,
-                                 **({'diagnostics_configuration': configuration} if protocol.is_v215(configuration) else {}))
+                                 **({'diagnostics_configuration': configuration} if protocol.is_v215(configuration) else {}),
+                                 **({'instruction_configuration': configuration} if protocol.is_v222(configuration) else {}))
     finally:
         if cleanups:
             write_json(safe_path(out) / "sandbox-cleanups.json", {"cleanups": cleanups})
@@ -717,7 +718,7 @@ def sandbox_selftest(out, *, item_files, docker=None, worker=None, scratch="/tmp
 
 
 def _sandbox_selftest(out, *, item_files, docker, worker, scratch, clock, cleanup_grace_seconds, cleanup_events,
-                      ready_timeout_seconds, start_events, diagnostics_configuration=None):
+                      ready_timeout_seconds, start_events, diagnostics_configuration=None, instruction_configuration=None):
     out = safe_path(out)
     require(not (out / SELFTEST).exists(), "A self-test is written once")
     docker = docker or sandbox.Docker()
@@ -730,13 +731,16 @@ def _sandbox_selftest(out, *, item_files, docker, worker, scratch, clock, cleanu
                                             "start_events": start_events} if start_events is not None else {})}
     if diagnostics_configuration is not None:
         worker_options['diagnostics_configuration'] = diagnostics_configuration
+    if instruction_configuration is not None:
+        worker_options['instruction_configuration'] = instruction_configuration
     pinged = (worker or sandbox.Worker)(**worker_options).start(empty, kind="cell")
     try:
         ping = pinged.ping()
     finally:
         pinged.close()
-    if diagnostics_configuration is not None:
-        require(ping.get('worker_sha256') == sandbox.worker_sha256(configuration=diagnostics_configuration),
+    selected_worker = instruction_configuration or diagnostics_configuration
+    if selected_worker is not None:
+        require(ping.get('worker_sha256') == sandbox.worker_sha256(configuration=selected_worker),
                 'The v2.15 selftest executed its diagnostics worker')
     latency = round(clock() - started, 3)
     views = view_bytes(item_files)
@@ -744,9 +748,9 @@ def _sandbox_selftest(out, *, item_files, docker, worker, scratch, clock, cleanu
                 "start_seconds": latency, "views": views["items"]}
     value = protocol.record("sandbox-selftest", "smoke", {
         "escape_rows": rows, "escape_probe_sha256": manifest._sha(ESCAPE_PROBE),
-        "worker_sha256": (sandbox.worker_sha256(configuration=diagnostics_configuration)
-                          if diagnostics_configuration is not None else sandbox.worker_sha256()),
-        **({'configuration': diagnostics_configuration} if diagnostics_configuration is not None else {}),
+        "worker_sha256": (sandbox.worker_sha256(configuration=selected_worker)
+                          if selected_worker is not None else sandbox.worker_sha256()),
+        **({'configuration': selected_worker} if selected_worker is not None else {}),
         "image": sandbox.IMAGE, "limits": {k: asdict(v) for k, v in sorted(sandbox.LIMITS.items())},
         "measured": measured, "passed": all(rows.values()),
         **({"sandbox": {key: rows for key, rows in (("cleanups", cleanup_events), ("starts", start_events)) if rows}}
@@ -1357,7 +1361,7 @@ def max_role_calls(configuration=protocol.PILOT, bench=None):
     first checks and one after each fix call, all calls but one proposal being fix calls --, the same describer calls,
     and the examiner's v1 calls plus ``TOPUP_ROUNDS`` top-up writes of ``GENERATOR_CALLS`` after each of its
     ``BAND_ROUNDS`` builds."""
-    if protocol.is_implant_v5(configuration):
+    if protocol.is_implant_v5(configuration) or protocol.is_v220(configuration):
         return {role: 0 for role in (*MAX_ROLE_CALLS, "audit_g", "audit_d")}
     if protocol.is_v214(configuration):
         selected = bench or 'spreadsheetbench'
@@ -1502,7 +1506,7 @@ def _scope_cells(chain, pilot=protocol.PILOT):
     of a step kind, one acceptance block (``SLICES`` blocks) or the whole kind; the test read; the redo reserve, the
     largest single acceptance block of the configuration's steps; the chain's solver total, every step kind, the test
     read and that block. A scope with several alternatives (the redo reserve, the solver total) takes the dearest."""
-    if protocol.is_implant_v5(pilot):
+    if protocol.is_implant_v5(pilot) or protocol.is_v220(pilot):
         read = protocol.TEST_READ_CELLS[pilot]
         redos = [{bench: cells} for bench, cells in read.items()]
         total = [{b: (c + redo.get(b, (0, 0))[0], q + redo.get(b, (0, 0))[1])

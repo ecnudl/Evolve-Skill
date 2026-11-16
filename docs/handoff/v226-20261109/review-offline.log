@@ -1,0 +1,1316 @@
+Offline modules: 110
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  7%]
+......................................................................FF [  9%]
+FFFF...................................................F................ [ 12%]
+.....FF..........F...................................................... [ 14%]
+........................................................................ [ 17%]
+........................................................................ [ 19%]
+........................................................................ [ 22%]
+........................................................................ [ 24%]
+.................................................FF..................... [ 27%]
+........................................................................ [ 29%]
+........................................................................ [ 32%]
+........................................................................ [ 34%]
+........................................................................ [ 36%]
+........................................................................ [ 39%]
+........................................................................ [ 41%]
+........................................................................ [ 44%]
+........................................................................ [ 46%]
+...........FF........FFF................................................ [ 49%]
+........................................................................ [ 51%]
+........................................................................ [ 54%]
+........................................................................ [ 56%]
+........................................................................ [ 59%]
+........................................................................ [ 61%]
+.....................F.....sFF.............................F............ [ 64%]
+F....................................................................... [ 66%]
+........................................................................ [ 69%]
+........................................................................ [ 71%]
+........................................................................ [ 73%]
+........................................................................ [ 76%]
+........................................................................ [ 78%]
+........................................................................ [ 81%]
+...................................................................FF... [ 83%]
+.............................................................FFFF....... [ 86%]
+........................................................................ [ 88%]
+........................................................................ [ 91%]
+.................................................F...............F...... [ 93%]
+.....................F.............................F.................... [ 96%]
+..............................F......................................... [ 98%]
+....F..................................                                  [100%]
+=================================== FAILURES ===================================
+_____ test_bridge_reads_practice_only_and_retains_exact_parent_allocations _____
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-ae9im9jf')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109cff620>
+
+    def test_bridge_reads_practice_only_and_retains_exact_parent_allocations(tmp_path, monkeypatch):
+>       source, path, kwargs, _ = prepared(tmp_path, monkeypatch)
+
+tests/test_execskill_v214_preparation.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+____________ test_bridge_refuses_resealed_parent_drift[allocation] _____________
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-bbk4mmd9')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109cfc520>
+mutation = 'allocation'
+
+    @pytest.mark.parametrize('mutation', ['allocation', 'protected', 'source_configuration', 'failed'])
+    def test_bridge_refuses_resealed_parent_drift(tmp_path, monkeypatch, mutation):
+>       source, path, kwargs, _ = prepared(tmp_path, monkeypatch)
+
+tests/test_execskill_v214_preparation.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+_____________ test_bridge_refuses_resealed_parent_drift[protected] _____________
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-dx5fyx6h')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x108cf4f30>
+mutation = 'protected'
+
+    @pytest.mark.parametrize('mutation', ['allocation', 'protected', 'source_configuration', 'failed'])
+    def test_bridge_refuses_resealed_parent_drift(tmp_path, monkeypatch, mutation):
+>       source, path, kwargs, _ = prepared(tmp_path, monkeypatch)
+
+tests/test_execskill_v214_preparation.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+_______ test_bridge_refuses_resealed_parent_drift[source_configuration] ________
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-65qmitti')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109cff9a0>
+mutation = 'source_configuration'
+
+    @pytest.mark.parametrize('mutation', ['allocation', 'protected', 'source_configuration', 'failed'])
+    def test_bridge_refuses_resealed_parent_drift(tmp_path, monkeypatch, mutation):
+>       source, path, kwargs, _ = prepared(tmp_path, monkeypatch)
+
+tests/test_execskill_v214_preparation.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+______________ test_bridge_refuses_resealed_parent_drift[failed] _______________
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-h47lpafa')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1099355c0>
+mutation = 'failed'
+
+    @pytest.mark.parametrize('mutation', ['allocation', 'protected', 'source_configuration', 'failed'])
+    def test_bridge_refuses_resealed_parent_drift(tmp_path, monkeypatch, mutation):
+>       source, path, kwargs, _ = prepared(tmp_path, monkeypatch)
+
+tests/test_execskill_v214_preparation.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+_____________ test_verify_refuses_changed_source_or_mixed_identity _____________
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-bp926y3h')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109937690>
+
+    def test_verify_refuses_changed_source_or_mixed_identity(tmp_path, monkeypatch):
+>       _, path, kwargs, _ = prepared(tmp_path, monkeypatch)
+
+tests/test_execskill_v214_preparation.py:89: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+__ test_main_v5_s0_manifest_keeps_mixed_allocations_import_and_neutral_zebra ___
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-2kt3ebze')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x108f02270>
+
+    def test_main_v5_s0_manifest_keeps_mixed_allocations_import_and_neutral_zebra(tmp_path, monkeypatch):
+>       checked, made, _ = setup(tmp_path, monkeypatch)
+
+tests/test_execskill_v214_smoke.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v214_smoke.py:19: in setup
+    _, source, zebra, old = prepared(root / 'inputs', monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+___ test_real_manifest_requires_both_readiness_and_checks_resealed_mismatch ____
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-0ys4yhop')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1088a56a0>
+
+    def test_real_manifest_requires_both_readiness_and_checks_resealed_mismatch(tmp_path, monkeypatch):
+>       checked, made, options = setup(tmp_path, monkeypatch)
+
+tests/test_execskill_v214_smoke.py:149: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v214_smoke.py:19: in setup
+    _, source, zebra, old = prepared(root / 'inputs', monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+____ test_manifest_check_rechecks_embedded_bounds_without_reloading_receipt ____
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-mmucry41')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10904d550>
+
+    def test_manifest_check_rechecks_embedded_bounds_without_reloading_receipt(tmp_path, monkeypatch):
+>       _, made, _ = setup(tmp_path, monkeypatch)
+
+tests/test_execskill_v214_smoke.py:169: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v214_smoke.py:19: in setup
+    _, source, zebra, old = prepared(root / 'inputs', monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+_________ test_real_manifest_accepts_both_consistent_measured_receipts _________
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-xu86rlt5')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a34cc20>
+
+    def test_real_manifest_accepts_both_consistent_measured_receipts(tmp_path, monkeypatch):
+>       _, made, options = setup(tmp_path, monkeypatch)
+
+tests/test_execskill_v214_smoke.py:298: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v214_smoke.py:19: in setup
+    _, source, zebra, old = prepared(root / 'inputs', monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+________ test_preparation_copies_main_v6_inputs_without_new_pool_reads _________
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-urz89xh2')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1099b1400>
+
+    def test_preparation_copies_main_v6_inputs_without_new_pool_reads(tmp_path, monkeypatch):
+>       _, source, kwargs, _ = prepared(tmp_path, monkeypatch)
+
+tests/test_execskill_v221_preparation.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+___ test_s0_binds_new_rule_prompts_caps_capture_and_inherited_worker_shapes ____
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-t5r_xt9j')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11cd951d0>
+
+    def test_s0_binds_new_rule_prompts_caps_capture_and_inherited_worker_shapes(tmp_path, monkeypatch):
+        from skillopt.execskill.sandbox.client import worker_sha256
+        monkeypatch.setattr(inherited, 'CHILD', CHILD)
+>       checked, made, options = inherited.setup(tmp_path, monkeypatch)
+
+tests/test_execskill_v221_preparation.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v217i_smoke.py:28: in setup
+    _, source, zebra, old = prepared(root / 'inputs', monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+_ test_insufficient_original_practice_blocks_before_measurement_and_preserves_the_parent _
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-x68ig9r3')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11dde2cf0>
+
+    def test_insufficient_original_practice_blocks_before_measurement_and_preserves_the_parent(tmp_path, monkeypatch):
+>       _, path, kwargs, _ = prepared(tmp_path, monkeypatch)
+
+tests/test_execskill_v222_preparation.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v222_preparation.py:27: in prepared
+    source, path, kwargs, options = inherited_prepared(root, monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+_ test_explicit_additional_practice_binds_exact_seeded_draws_and_reverifies_content _
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-vpgdyuhs')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109154280>
+
+    def test_explicit_additional_practice_binds_exact_seeded_draws_and_reverifies_content(tmp_path, monkeypatch):
+>       source, path, kwargs, _ = prepared(tmp_path, monkeypatch)
+
+tests/test_execskill_v222_preparation.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v222_preparation.py:27: in prepared
+    source, path, kwargs, options = inherited_prepared(root, monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+______ test_additional_supply_is_never_enabled_for_an_older_configuration ______
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-funfk04b')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109f3d1d0>
+
+    def test_additional_supply_is_never_enabled_for_an_older_configuration(tmp_path, monkeypatch):
+>       _, path, kwargs, _ = prepared(tmp_path, monkeypatch)
+
+tests/test_execskill_v222_preparation.py:118: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v222_preparation.py:27: in prepared
+    source, path, kwargs, options = inherited_prepared(root, monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+_ test_main_v8_s0_and_manifest_bind_worker_cards_supplies_consent_and_all_older_fingerprints _
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-ck4us5f6')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11dedee40>
+
+    def test_main_v8_s0_and_manifest_bind_worker_cards_supplies_consent_and_all_older_fingerprints(tmp_path, monkeypatch):
+>       inherited, source, kwargs, old = prepared(tmp_path / 'inputs', monkeypatch)
+
+tests/test_execskill_v222_preparation.py:125: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v222_preparation.py:27: in prepared
+    source, path, kwargs, options = inherited_prepared(root, monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+___ test_snapshot_copies_every_pinned_decomposition_file_and_parent_capture ____
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-jaxskt59')
+
+    def test_snapshot_copies_every_pinned_decomposition_file_and_parent_capture(tmp_path):
+        target = tmp_path / 'snapshot'
+>       v214_smoke.snapshot(target, source=manifest.REPO, git_head='a' * 40, configuration=p.MAIN_V8)
+
+tests/test_execskill_v222_preparation.py:193: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:183: in snapshot
+    manifest._check_frozen_paths(configuration, out, source)
+skillopt/execskill/v210_smoke.py:35: in snapshot
+    require(not out.exists() and not out.is_relative_to(source), "A new snapshot outside the checkout")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new snapshot outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new snapshot outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+__ test_s0_to_smoke_manifest_binds_qualified_task_cards_and_main_v9_identity ___
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-m8qihlwa')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11dd82900>
+
+    def test_s0_to_smoke_manifest_binds_qualified_task_cards_and_main_v9_identity(tmp_path, monkeypatch):
+>       inherited, source, kwargs, old = prepared(tmp_path/'inputs', monkeypatch)
+
+tests/test_execskill_v225_manifest.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v222_preparation.py:27: in prepared
+    source, path, kwargs, options = inherited_prepared(root, monkeypatch)
+tests/test_execskill_v214_preparation.py:15: in prepared
+    source, options, old = inherited_setup(root / 'parent', monkeypatch)
+tests/test_execskill_v211_manifest.py:80: in setup
+    checked = v.collect_s0(root / 's0', preparation_file=source, root=run, snapshot_root=ROOT,
+skillopt/execskill/v211_smoke.py:171: in collect_s0
+    require(not (out / S0_FILE).exists() and not out.is_relative_to(manifest.REPO),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'A new S0 outside the checkout'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: A new S0 outside the checkout
+
+skillopt/continual_eval/core.py:32: ValueError
+___ test_ops_are_self_contained_snapshot_with_optional_documentation[absent] ___
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/ops-sche096l')
+documentation = 'absent'
+
+    @pytest.mark.parametrize('documentation', ['absent', 'partial', 'mismatch'])
+    def test_ops_are_self_contained_snapshot_with_optional_documentation(tmp_path, documentation):
+        # The nested authored shared-scratch fixture must also have a traversable parent.
+        tmp_path.chmod(0o755)
+        snapshot = tmp_path / 'snapshot'
+        fixture = snapshot / 'tests/fixtures/execskill/v225_ops'
+        shutil.copytree(OPS, fixture)
+        module = snapshot / 'tests' / Path(__file__).name
+        shutil.copy2(__file__, module)
+        assert {path.name for path in snapshot.iterdir()} == {'tests'}
+        if documentation != 'absent':
+            source = snapshot.joinpath(*json.loads((OPS / 'manifest.json').read_text())['source_directory'])
+            source.mkdir(parents=True)
+            for name in ('m9-env.sh', 'patch-consent-v225.py'):
+                shutil.copy2(OPS / name, source / name)
+            assert not (source / 'commit-v225.sh').exists()
+            if documentation == 'mismatch':
+                with (source / 'm9-env.sh').open('ab') as stream:
+                    stream.write(b'\n# Authored mismatch in an available deliverable.\n')
+        env = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1', 'TMPDIR': str(tmp_path), 'PYTHONPATH': str(snapshot)}
+        env.pop('PYTEST_PLUGINS', None)
+        env.pop('PYTEST_ADDOPTS', None)
+        found = subprocess.run([sys.executable, '-B', '-m', 'pytest', '-q', '-p', 'no:cacheprovider',
+            '--basetemp=' + str(tmp_path / 'runtime'), str(module.relative_to(snapshot)),
+            '-k', 'not self_contained_snapshot'], cwd=snapshot, env=env, capture_output=True, text=True, timeout=60)
+        if documentation == 'mismatch':
+            assert found.returncode == 1, found.stdout + found.stderr
+            assert '1 failed' in found.stdout and '3 deselected' in found.stdout
+            assert 'AssertionError' in found.stdout and 'FileNotFoundError' not in found.stdout
+        else:
+>           assert found.returncode == 0, found.stdout + found.stderr
+E           AssertionError: .s............................F............F............................ [ 61%]
+E             ..............................................                           [100%]
+E             =================================== FAILURES ===================================
+E             __ test_scratch_helper_creates_sticky_shared_directory_without_requiring_root __
+E             
+E             tmp_path = PosixPath('<repo-root>/.runtime-tmp/ops-sche096l/ops-3wuoiswd')
+E             monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10986e650>
+E             
+E                 def test_scratch_helper_creates_sticky_shared_directory_without_requiring_root(tmp_path, monkeypatch):
+E                     import stat
+E                     tmp_path.chmod(0o755)
+E                     scratch = tmp_path/'shared'
+E                     scratch.mkdir(mode=0o700)
+E             >       execute_block('m9-env.sh', 'PY_SCRATCH', [scratch], monkeypatch)
+E             
+E             tests/test_execskill_v225_ops.py:246: 
+E             _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+E             tests/test_execskill_v225_ops.py:238: in execute_block
+E                 exec(compile(python_block(script, marker), '<authored-operator-helper>', 'exec'), {'__name__': 'authored_helper'})
+E             _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+E             
+E             >   ???
+E             E   AssertionError: Scratch must be below /tmp
+E             
+E             <authored-operator-helper>:8: AssertionError
+E             _ test_suite_removes_only_owned_cases_after_verified_success[passing_summary] __
+E             
+E             tmp_path = PosixPath('<repo-root>/.runtime-tmp/ops-sche096l/ops-2ng1ngrb')
+E             monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109ff4e90>
+E             capsys = <_pytest.capture.CaptureFixture object at 0x10981ff00>, code = 0
+E             last = '7 passed in 1.00s', passed = True
+E             
+E                 @pytest.mark.parametrize('code,last,passed', [
+E                     (0, '7 passed in 1.00s', True), (1, '7 passed in 1.00s', False),
+E                     (0, '1 failed, 7 passed in 1.00s', False), (0, 'truncated', False),
+E                     (2, '3 errors in 1.00s', False),
+E                 ], ids=['passing_summary', 'nonzero_exit', 'failure_summary', 'truncated_summary', 'error_summary'])
+E                 def test_suite_removes_only_owned_cases_after_verified_success(tmp_path, monkeypatch, capsys, code, last, passed):
+E                     scratch = tmp_path/'suite-authored'
+E                     cases = scratch/'cases'
+E                     cases.mkdir(parents=True)
+E                     evidence = cases/'diagnostic.json'
+E                     evidence.write_text('authored cases evidence')
+E                     sibling = scratch/'keep.json'
+E                     sibling.write_text('authored sibling evidence')
+E                     log = tmp_path/'full-suite.log'
+E                     log.write_text('earlier output\n'+last+'\n')
+E                     with pytest.raises(SystemExit) as stopped:
+E             >           execute_block('run-v225-pre.sh', 'PY_SUITE_RESULT', [log, code, scratch], monkeypatch)
+E             
+E             tests/test_execskill_v225_ops.py:330: 
+E             _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+E             tests/test_execskill_v225_ops.py:238: in execute_block
+E                 exec(compile(python_block(script, marker), '<authored-operator-helper>', 'exec'), {'__name__': 'authored_helper'})
+E             _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+E             
+E             >   ???
+E             E   AssertionError: The suite scratch identity must be retained
+E             
+E             <authored-operator-helper>:14: AssertionError
+E             =========================== short test summary info ============================
+E             FAILED tests/test_execskill_v225_ops.py::test_scratch_helper_creates_sticky_shared_directory_without_requiring_root
+E             FAILED tests/test_execskill_v225_ops.py::test_suite_removes_only_owned_cases_after_verified_success[passing_summary]
+E             2 failed, 115 passed, 1 skipped, 3 deselected in 0.58s
+E             
+E           assert 1 == 0
+E            +  where 1 = CompletedProcess(args=['<python>', '-B', '-m', 'pytest', '-q', '-p', 'no:cacheprovider', '-...ed_cases_after_verified_success[passing_summary]\n2 failed, 115 passed, 1 skipped, 3 deselected in 0.58s\n", stderr='').returncode
+
+tests/test_execskill_v225_ops.py:86: AssertionError
+__ test_ops_are_self_contained_snapshot_with_optional_documentation[partial] ___
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/ops-ek6de61g')
+documentation = 'partial'
+
+    @pytest.mark.parametrize('documentation', ['absent', 'partial', 'mismatch'])
+    def test_ops_are_self_contained_snapshot_with_optional_documentation(tmp_path, documentation):
+        # The nested authored shared-scratch fixture must also have a traversable parent.
+        tmp_path.chmod(0o755)
+        snapshot = tmp_path / 'snapshot'
+        fixture = snapshot / 'tests/fixtures/execskill/v225_ops'
+        shutil.copytree(OPS, fixture)
+        module = snapshot / 'tests' / Path(__file__).name
+        shutil.copy2(__file__, module)
+        assert {path.name for path in snapshot.iterdir()} == {'tests'}
+        if documentation != 'absent':
+            source = snapshot.joinpath(*json.loads((OPS / 'manifest.json').read_text())['source_directory'])
+            source.mkdir(parents=True)
+            for name in ('m9-env.sh', 'patch-consent-v225.py'):
+                shutil.copy2(OPS / name, source / name)
+            assert not (source / 'commit-v225.sh').exists()
+            if documentation == 'mismatch':
+                with (source / 'm9-env.sh').open('ab') as stream:
+                    stream.write(b'\n# Authored mismatch in an available deliverable.\n')
+        env = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1', 'TMPDIR': str(tmp_path), 'PYTHONPATH': str(snapshot)}
+        env.pop('PYTEST_PLUGINS', None)
+        env.pop('PYTEST_ADDOPTS', None)
+        found = subprocess.run([sys.executable, '-B', '-m', 'pytest', '-q', '-p', 'no:cacheprovider',
+            '--basetemp=' + str(tmp_path / 'runtime'), str(module.relative_to(snapshot)),
+            '-k', 'not self_contained_snapshot'], cwd=snapshot, env=env, capture_output=True, text=True, timeout=60)
+        if documentation == 'mismatch':
+            assert found.returncode == 1, found.stdout + found.stderr
+            assert '1 failed' in found.stdout and '3 deselected' in found.stdout
+            assert 'AssertionError' in found.stdout and 'FileNotFoundError' not in found.stdout
+        else:
+>           assert found.returncode == 0, found.stdout + found.stderr
+E           AssertionError: .s............................F............F............................ [ 61%]
+E             ..............................................                           [100%]
+E             =================================== FAILURES ===================================
+E             __ test_scratch_helper_creates_sticky_shared_directory_without_requiring_root __
+E             
+E             tmp_path = PosixPath('<repo-root>/.runtime-tmp/ops-ek6de61g/ops-u26y3ry2')
+E             monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107f72650>
+E             
+E                 def test_scratch_helper_creates_sticky_shared_directory_without_requiring_root(tmp_path, monkeypatch):
+E                     import stat
+E                     tmp_path.chmod(0o755)
+E                     scratch = tmp_path/'shared'
+E                     scratch.mkdir(mode=0o700)
+E             >       execute_block('m9-env.sh', 'PY_SCRATCH', [scratch], monkeypatch)
+E             
+E             tests/test_execskill_v225_ops.py:246: 
+E             _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+E             tests/test_execskill_v225_ops.py:238: in execute_block
+E                 exec(compile(python_block(script, marker), '<authored-operator-helper>', 'exec'), {'__name__': 'authored_helper'})
+E             _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+E             
+E             >   ???
+E             E   AssertionError: Scratch must be below /tmp
+E             
+E             <authored-operator-helper>:8: AssertionError
+E             _ test_suite_removes_only_owned_cases_after_verified_success[passing_summary] __
+E             
+E             tmp_path = PosixPath('<repo-root>/.runtime-tmp/ops-ek6de61g/ops-um7drcnu')
+E             monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10859ce90>
+E             capsys = <_pytest.capture.CaptureFixture object at 0x107f1ff00>, code = 0
+E             last = '7 passed in 1.00s', passed = True
+E             
+E                 @pytest.mark.parametrize('code,last,passed', [
+E                     (0, '7 passed in 1.00s', True), (1, '7 passed in 1.00s', False),
+E                     (0, '1 failed, 7 passed in 1.00s', False), (0, 'truncated', False),
+E                     (2, '3 errors in 1.00s', False),
+E                 ], ids=['passing_summary', 'nonzero_exit', 'failure_summary', 'truncated_summary', 'error_summary'])
+E                 def test_suite_removes_only_owned_cases_after_verified_success(tmp_path, monkeypatch, capsys, code, last, passed):
+E                     scratch = tmp_path/'suite-authored'
+E                     cases = scratch/'cases'
+E                     cases.mkdir(parents=True)
+E                     evidence = cases/'diagnostic.json'
+E                     evidence.write_text('authored cases evidence')
+E                     sibling = scratch/'keep.json'
+E                     sibling.write_text('authored sibling evidence')
+E                     log = tmp_path/'full-suite.log'
+E                     log.write_text('earlier output\n'+last+'\n')
+E                     with pytest.raises(SystemExit) as stopped:
+E             >           execute_block('run-v225-pre.sh', 'PY_SUITE_RESULT', [log, code, scratch], monkeypatch)
+E             
+E             tests/test_execskill_v225_ops.py:330: 
+E             _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+E             tests/test_execskill_v225_ops.py:238: in execute_block
+E                 exec(compile(python_block(script, marker), '<authored-operator-helper>', 'exec'), {'__name__': 'authored_helper'})
+E             _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+E             
+E             >   ???
+E             E   AssertionError: The suite scratch identity must be retained
+E             
+E             <authored-operator-helper>:14: AssertionError
+E             =========================== short test summary info ============================
+E             FAILED tests/test_execskill_v225_ops.py::test_scratch_helper_creates_sticky_shared_directory_without_requiring_root
+E             FAILED tests/test_execskill_v225_ops.py::test_suite_removes_only_owned_cases_after_verified_success[passing_summary]
+E             2 failed, 115 passed, 1 skipped, 3 deselected in 0.58s
+E             
+E           assert 1 == 0
+E            +  where 1 = CompletedProcess(args=['<python>', '-B', '-m', 'pytest', '-q', '-p', 'no:cacheprovider', '-...ed_cases_after_verified_success[passing_summary]\n2 failed, 115 passed, 1 skipped, 3 deselected in 0.58s\n", stderr='').returncode
+
+tests/test_execskill_v225_ops.py:86: AssertionError
+__ test_scratch_helper_creates_sticky_shared_directory_without_requiring_root __
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/ops-f75_6t8g')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11de0a890>
+
+    def test_scratch_helper_creates_sticky_shared_directory_without_requiring_root(tmp_path, monkeypatch):
+        import stat
+        tmp_path.chmod(0o755)
+        scratch = tmp_path/'shared'
+        scratch.mkdir(mode=0o700)
+>       execute_block('m9-env.sh', 'PY_SCRATCH', [scratch], monkeypatch)
+
+tests/test_execskill_v225_ops.py:246: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v225_ops.py:238: in execute_block
+    exec(compile(python_block(script, marker), '<authored-operator-helper>', 'exec'), {'__name__': 'authored_helper'})
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   AssertionError: Scratch must be below /tmp
+
+<authored-operator-helper>:8: AssertionError
+_ test_suite_removes_only_owned_cases_after_verified_success[passing_summary] __
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/ops-uipy16x8')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11ef0d6a0>
+capsys = <_pytest.capture.CaptureFixture object at 0x12d505480>, code = 0
+last = '7 passed in 1.00s', passed = True
+
+    @pytest.mark.parametrize('code,last,passed', [
+        (0, '7 passed in 1.00s', True), (1, '7 passed in 1.00s', False),
+        (0, '1 failed, 7 passed in 1.00s', False), (0, 'truncated', False),
+        (2, '3 errors in 1.00s', False),
+    ], ids=['passing_summary', 'nonzero_exit', 'failure_summary', 'truncated_summary', 'error_summary'])
+    def test_suite_removes_only_owned_cases_after_verified_success(tmp_path, monkeypatch, capsys, code, last, passed):
+        scratch = tmp_path/'suite-authored'
+        cases = scratch/'cases'
+        cases.mkdir(parents=True)
+        evidence = cases/'diagnostic.json'
+        evidence.write_text('authored cases evidence')
+        sibling = scratch/'keep.json'
+        sibling.write_text('authored sibling evidence')
+        log = tmp_path/'full-suite.log'
+        log.write_text('earlier output\n'+last+'\n')
+        with pytest.raises(SystemExit) as stopped:
+>           execute_block('run-v225-pre.sh', 'PY_SUITE_RESULT', [log, code, scratch], monkeypatch)
+
+tests/test_execskill_v225_ops.py:330: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_execskill_v225_ops.py:238: in execute_block
+    exec(compile(python_block(script, marker), '<authored-operator-helper>', 'exec'), {'__name__': 'authored_helper'})
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   AssertionError: The suite scratch identity must be retained
+
+<authored-operator-helper>:14: AssertionError
+_ test_previous_sequence_counts_are_normalized_without_relaxing_engineer[value0-2] _
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-k68elm21')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x12bd80b40>
+value = ('a', 'b'), expected = 2
+
+    @pytest.mark.parametrize('value,expected', [(('a', 'b'), 2), ({'a', 'b'}, 2)])
+    def test_previous_sequence_counts_are_normalized_without_relaxing_engineer(tmp_path, monkeypatch, value, expected):
+        st, _ = authored_step(tmp_path, empty(step='G/s0', evidence='engineering_fixture'))
+        path = st.chain_root/'s3-zebralogic'/step.STEP_FILE
+        write_json(path, {})
+        monkeypatch.setattr(step, '_read_record', lambda *_: {'decision': 'reject', 'fault_items': value, 'violating_items': 0})
+>       assert step._previous(st)['faults'] == {'fault_items': expected}
+
+tests/test_execskill_v226_diagnostics.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/step.py:1095: in _previous
+    value = _read_record(st, steps[0], "step")
+skillopt/execskill/step.py:1293: in _read_record
+    from .errors import ConfigurationError
+skillopt/execskill/v226_candidates.py:93: in read_record
+    return p.verified(value, kind) if kind is not None else value
+skillopt/execskill/protocol.py:72: in verified
+    value = verify(value, field=RECORD_HASH)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = {}, field = 'record_sha256'
+
+    def verify(value, field="record_hash"):
+        if not isinstance(value, dict):
+            raise ValueError("Expected sealed object")
+        payload = {k: v for k, v in value.items() if k != field}
+        json.dumps(payload, allow_nan=False)
+        if value.get(field) != digest(payload):
+>           raise ValueError("Evidence/version checksum mismatch")
+E           ValueError: Evidence/version checksum mismatch
+
+skillopt/coevolution_v5/core.py:60: ValueError
+_ test_previous_sequence_counts_are_normalized_without_relaxing_engineer[value1-2] _
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-dim9mfmc')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x12bd80de0>
+value = {'a', 'b'}, expected = 2
+
+    @pytest.mark.parametrize('value,expected', [(('a', 'b'), 2), ({'a', 'b'}, 2)])
+    def test_previous_sequence_counts_are_normalized_without_relaxing_engineer(tmp_path, monkeypatch, value, expected):
+        st, _ = authored_step(tmp_path, empty(step='G/s0', evidence='engineering_fixture'))
+        path = st.chain_root/'s3-zebralogic'/step.STEP_FILE
+        write_json(path, {})
+        monkeypatch.setattr(step, '_read_record', lambda *_: {'decision': 'reject', 'fault_items': value, 'violating_items': 0})
+>       assert step._previous(st)['faults'] == {'fault_items': expected}
+
+tests/test_execskill_v226_diagnostics.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/step.py:1095: in _previous
+    value = _read_record(st, steps[0], "step")
+skillopt/execskill/step.py:1293: in _read_record
+    from .errors import ConfigurationError
+skillopt/execskill/v226_candidates.py:93: in read_record
+    return p.verified(value, kind) if kind is not None else value
+skillopt/execskill/protocol.py:72: in verified
+    value = verify(value, field=RECORD_HASH)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = {}, field = 'record_sha256'
+
+    def verify(value, field="record_hash"):
+        if not isinstance(value, dict):
+            raise ValueError("Expected sealed object")
+        payload = {k: v for k, v in value.items() if k != field}
+        json.dumps(payload, allow_nan=False)
+        if value.get(field) != digest(payload):
+>           raise ValueError("Evidence/version checksum mismatch")
+E           ValueError: Evidence/version checksum mismatch
+
+skillopt/coevolution_v5/core.py:60: ValueError
+_____ test_other_preparation_entrypoints_refuse_frozen_paths[raw-manifest] _____
+
+roots = (PosixPath('<repo-root>/.runtime-tmp/identity-cyeb57gk/main-v9'), PosixPath('<repo-root>/.runtime-tmp/identity-cyeb57gk/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a3173f0>
+entry = 'raw-manifest'
+
+    @pytest.mark.parametrize('entry', ['raw-manifest', 'snapshot', 'structural'])
+    def test_other_preparation_entrypoints_refuse_frozen_paths(roots, monkeypatch, entry):
+        frozen, fresh = roots
+        from skillopt.execskill import v210_smoke
+        monkeypatch.setattr(v210_smoke, 'snapshot', lambda *_a, **_k: pytest.fail('Frozen snapshot was entered'))
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+            if entry == 'raw-manifest':
+>               manifest.make(frozen/'manifest.json', root=frozen, evidence='smoke', measured={}, configuration=p.MAIN_V10)
+
+tests/test_execskill_v226_preparation_review.py:106: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/manifest.py:737: in make
+    _check_frozen_paths(configuration, out)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False
+message = "The manifest's given fields: ['cards', 'clients', 'contracts', 'data', 'fixtures', 'provenance', 'root', 'runtime', 'sheet_qualification']"
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: The manifest's given fields: ['cards', 'clients', 'contracts', 'data', 'fixtures', 'provenance', 'root', 'runtime', 'sheet_qualification']
+
+skillopt/continual_eval/core.py:32: ValueError
+
+During handling of the above exception, another exception occurred:
+
+roots = (PosixPath('<repo-root>/.runtime-tmp/identity-cyeb57gk/main-v9'), PosixPath('<repo-root>/.runtime-tmp/identity-cyeb57gk/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a3173f0>
+entry = 'raw-manifest'
+
+    @pytest.mark.parametrize('entry', ['raw-manifest', 'snapshot', 'structural'])
+    def test_other_preparation_entrypoints_refuse_frozen_paths(roots, monkeypatch, entry):
+        frozen, fresh = roots
+        from skillopt.execskill import v210_smoke
+        monkeypatch.setattr(v210_smoke, 'snapshot', lambda *_a, **_k: pytest.fail('Frozen snapshot was entered'))
+>       with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'main-v9 root is forbidden'
+E        Input: "The manifest's given fields: ['cards', 'clients', 'contracts', 'data', 'fixtures', 'provenance', 'root', 'runtime', 'sheet_qualification']"
+
+tests/test_execskill_v226_preparation_review.py:104: AssertionError
+_______ test_other_preparation_entrypoints_refuse_frozen_paths[snapshot] _______
+
+roots = (PosixPath('<repo-root>/.runtime-tmp/identity-ycnn6jvj/main-v9'), PosixPath('<repo-root>/.runtime-tmp/identity-ycnn6jvj/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x12be43bd0>
+entry = 'snapshot'
+
+    @pytest.mark.parametrize('entry', ['raw-manifest', 'snapshot', 'structural'])
+    def test_other_preparation_entrypoints_refuse_frozen_paths(roots, monkeypatch, entry):
+        frozen, fresh = roots
+        from skillopt.execskill import v210_smoke
+        monkeypatch.setattr(v210_smoke, 'snapshot', lambda *_a, **_k: pytest.fail('Frozen snapshot was entered'))
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+            if entry == 'raw-manifest':
+                manifest.make(frozen/'manifest.json', root=frozen, evidence='smoke', measured={}, configuration=p.MAIN_V10)
+            elif entry == 'snapshot':
+>               v214_smoke.snapshot(frozen, source=fresh, git_head='unused', configuration=p.MAIN_V10)
+
+tests/test_execskill_v226_preparation_review.py:108: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:183: in snapshot
+    def snapshot(out, *, source, git_head, configuration=CONFIGURATION):
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_a = (PosixPath('<repo-root>/.runtime-tmp/identity-ycnn6jvj/main-v9'),)
+_k = {'configuration': 'main-v10', 'git_head': 'unused', 'source': PosixPath('<repo-root>/.runtime-tmp/identity-ycnn6jvj/main-v10')}
+
+>   monkeypatch.setattr(v210_smoke, 'snapshot', lambda *_a, **_k: pytest.fail('Frozen snapshot was entered'))
+E   Failed: Frozen snapshot was entered
+
+tests/test_execskill_v226_preparation_review.py:103: Failed
+______ test_other_preparation_entrypoints_refuse_frozen_paths[structural] ______
+
+roots = (PosixPath('<repo-root>/.runtime-tmp/identity-gsemck0g/main-v9'), PosixPath('<repo-root>/.runtime-tmp/identity-gsemck0g/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a315b00>
+entry = 'structural'
+
+    @pytest.mark.parametrize('entry', ['raw-manifest', 'snapshot', 'structural'])
+    def test_other_preparation_entrypoints_refuse_frozen_paths(roots, monkeypatch, entry):
+        frozen, fresh = roots
+        from skillopt.execskill import v210_smoke
+        monkeypatch.setattr(v210_smoke, 'snapshot', lambda *_a, **_k: pytest.fail('Frozen snapshot was entered'))
+>       with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execskill_v226_preparation_review.py:104: Failed
+_____ test_consent_target_cannot_follow_a_shared_symlink_into_frozen_root ______
+
+roots = (PosixPath('<repo-root>/.runtime-tmp/identity-vkfo_mp_/main-v9'), PosixPath('<repo-root>/.runtime-tmp/identity-vkfo_mp_/main-v10'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x12dbe3d20>
+
+    def test_consent_target_cannot_follow_a_shared_symlink_into_frozen_root(roots, monkeypatch):
+        frozen, fresh = roots
+        (frozen/'shared').mkdir(parents=True)
+        fresh.mkdir()
+        (fresh/'shared').symlink_to(frozen/'shared', target_is_directory=True)
+        monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Frozen symlink target was read'))
+        with pytest.raises(ValueError, match='main-v9 root is forbidden|Symlink paths are not supported'):
+>           v214_smoke.prepare_consent(fresh, p.MAIN_V10, consent_file=fresh.parent/'consent.json')
+
+tests/test_execskill_v226_preparation_review.py:120: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_smoke.py:63: in prepare_consent
+    source = safe_path(consent_file)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_ = (PosixPath('<repo-root>/.runtime-tmp/identity-vkfo_mp_/consent.json'),)
+
+>   monkeypatch.setattr(v214_smoke, 'read_json', lambda *_: pytest.fail('Frozen symlink target was read'))
+E   Failed: Frozen symlink target was read
+
+tests/test_execskill_v226_preparation_review.py:118: Failed
+_ test_alf_v6_confirmation_preparation_is_distinct_and_s0_rejects_parent_identity _
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-idqdjj5s')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x12bc964a0>
+
+    def test_alf_v6_confirmation_preparation_is_distinct_and_s0_rejects_parent_identity(tmp_path, monkeypatch):
+        from skillopt.execskill import alf_confirm_views as cv, alf_smoke
+        from tests.test_execskill_v29_confirm_views import authored_preparation
+        preparation, root, pool, runtime, calls = authored_preparation(tmp_path / 'source', monkeypatch)
+        target = tmp_path / 'v292-confirm.json'
+        result = cv.prepare(target, configuration=p.ALFWORLD_V6, preparation_file=preparation, data_root=root)
+        assert len(calls) == 80 and result['configuration'] == p.ALFWORLD_V6
+        assert result['confirm']['freshness'] == p.CONFIRM_FRESHNESS[p.ALFWORLD_V6]
+        assert cv.load_for_preparation(target, configuration=p.ALFWORLD_V6,
+            imported=alf_smoke.preparation(preparation), items=pool) == result
+        with pytest.raises(ValueError, match='configuration|configured'):
+            cv.load_for_preparation(target, configuration=p.ALFWORLD_V5,
+                imported=alf_smoke.preparation(preparation), items=pool)
+        # Check parent-identity refusal in a separate resolved OS scratch directory.
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory(prefix='alf6-s0-parent-') as outside:
+            out = Path(outside).resolve() / 's0'
+>           assert not out.is_relative_to(manifest.REPO)
+E           AssertionError: assert not True
+E            +  where True = is_relative_to(PosixPath('<repo-root>'))
+E            +    where is_relative_to = PosixPath('<repo-root>/.runtime-tmp/alf6-s0-parent-pwknxe41/s0').is_relative_to
+E            +    and   PosixPath('<repo-root>') = manifest.REPO
+
+tests/test_execskill_v292_profile.py:152: AssertionError
+_ test_alf_v7_confirmation_preparation_is_distinct_and_s0_rejects_parent_identity _
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-o_ukbl0o')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a314bb0>
+
+    def test_alf_v7_confirmation_preparation_is_distinct_and_s0_rejects_parent_identity(tmp_path, monkeypatch):
+        from skillopt.execskill import alf_confirm_views as cv, alf_smoke
+        from tests.test_execskill_v29_confirm_views import authored_preparation
+        preparation, root, pool, runtime, calls = authored_preparation(tmp_path / 'source', monkeypatch)
+        target = tmp_path / 'v293-confirm.json'
+        result = cv.prepare(target, configuration=p.ALFWORLD_V7, preparation_file=preparation, data_root=root)
+        assert len(calls) == 80 and result['configuration'] == p.ALFWORLD_V7
+        assert result['confirm']['freshness'] == p.CONFIRM_FRESHNESS[p.ALFWORLD_V7]
+        assert cv.load_for_preparation(target, configuration=p.ALFWORLD_V7,
+            imported=alf_smoke.preparation(preparation), items=pool) == result
+        parent_target = tmp_path / 'parent-confirm.json'
+        cv.prepare(parent_target, configuration=p.ALFWORLD_V6, preparation_file=preparation, data_root=root)
+        with pytest.raises(ValueError, match='configuration|configured'):
+            cv.load_for_preparation(parent_target, configuration=p.ALFWORLD_V7,
+                imported=alf_smoke.preparation(preparation), items=pool)
+        with pytest.raises(ValueError, match='configuration|configured'):
+            cv.load_for_preparation(target, configuration=p.ALFWORLD_V6,
+                imported=alf_smoke.preparation(preparation), items=pool)
+        # Check parent-identity refusal in a separate resolved OS scratch directory.
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory(prefix='alf7-s0-parent-') as outside:
+            out = Path(outside).resolve() / 's0'
+>           assert not out.is_relative_to(manifest.REPO)
+E           AssertionError: assert not True
+E            +  where True = is_relative_to(PosixPath('<repo-root>'))
+E            +    where is_relative_to = PosixPath('<repo-root>/.runtime-tmp/alf7-s0-parent-hy7tqbdr/s0').is_relative_to
+E            +    and   PosixPath('<repo-root>') = manifest.REPO
+
+tests/test_execskill_v293_profile.py:163: AssertionError
+_ test_alf_v8_confirmation_preparation_is_distinct_and_s0_rejects_parent_identity _
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-mis36qdi')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x12c8d0130>
+
+    def test_alf_v8_confirmation_preparation_is_distinct_and_s0_rejects_parent_identity(tmp_path, monkeypatch):
+        from skillopt.execskill import alf_confirm_views as cv, alf_smoke
+        from tests.test_execskill_v29_confirm_views import authored_preparation
+        preparation, root, pool, runtime, calls = authored_preparation(tmp_path / 'source', monkeypatch)
+        target = tmp_path / 'v294-confirm.json'
+        result = cv.prepare(target, configuration=p.ALFWORLD_V8, preparation_file=preparation, data_root=root)
+        assert len(calls) == 80 and result['configuration'] == p.ALFWORLD_V8
+        assert result['confirm']['freshness'] == p.CONFIRM_FRESHNESS[p.ALFWORLD_V8]
+        assert cv.load_for_preparation(target, configuration=p.ALFWORLD_V8,
+            imported=alf_smoke.preparation(preparation), items=pool) == result
+        parent_target = tmp_path / 'parent-confirm.json'
+        cv.prepare(parent_target, configuration=p.ALFWORLD_V7, preparation_file=preparation, data_root=root)
+        with pytest.raises(ValueError, match='configuration|configured'):
+            cv.load_for_preparation(parent_target, configuration=p.ALFWORLD_V8,
+                imported=alf_smoke.preparation(preparation), items=pool)
+        with pytest.raises(ValueError, match='configuration|configured'):
+            cv.load_for_preparation(target, configuration=p.ALFWORLD_V7,
+                imported=alf_smoke.preparation(preparation), items=pool)
+        # Check parent-identity refusal in a separate resolved OS scratch directory.
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory(prefix='alf8-s0-parent-') as outside:
+            out = Path(outside).resolve() / 's0'
+>           assert not out.is_relative_to(manifest.REPO)
+E           AssertionError: assert not True
+E            +  where True = is_relative_to(PosixPath('<repo-root>'))
+E            +    where is_relative_to = PosixPath('<repo-root>/.runtime-tmp/alf8-s0-parent-v73knmpo/s0').is_relative_to
+E            +    and   PosixPath('<repo-root>') = manifest.REPO
+
+tests/test_execskill_v294_profile.py:173: AssertionError
+_ test_alf_v9_confirmation_preparation_is_distinct_and_s0_rejects_parent_identity _
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-bm4auat_')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11dedcfa0>
+
+    def test_alf_v9_confirmation_preparation_is_distinct_and_s0_rejects_parent_identity(tmp_path, monkeypatch):
+        from skillopt.execskill import alf_confirm_views as cv, alf_smoke
+        from tests.test_execskill_v29_confirm_views import authored_preparation
+        preparation, root, pool, runtime, calls = authored_preparation(tmp_path / 'source', monkeypatch)
+        target = tmp_path / 'v295-confirm.json'
+        result = cv.prepare(target, configuration=p.ALFWORLD_V9, preparation_file=preparation, data_root=root)
+        assert len(calls) == 80 and result['configuration'] == p.ALFWORLD_V9
+        assert result['confirm']['freshness'] == p.CONFIRM_FRESHNESS[p.ALFWORLD_V9]
+        assert cv.load_for_preparation(target, configuration=p.ALFWORLD_V9,
+            imported=alf_smoke.preparation(preparation), items=pool) == result
+        parent_target = tmp_path / 'parent-confirm.json'
+        cv.prepare(parent_target, configuration=p.ALFWORLD_V8, preparation_file=preparation, data_root=root)
+        with pytest.raises(ValueError, match='configuration|configured'):
+            cv.load_for_preparation(parent_target, configuration=p.ALFWORLD_V9,
+                imported=alf_smoke.preparation(preparation), items=pool)
+        with pytest.raises(ValueError, match='configuration|configured'):
+            cv.load_for_preparation(target, configuration=p.ALFWORLD_V8,
+                imported=alf_smoke.preparation(preparation), items=pool)
+        # Check parent-identity refusal in a separate resolved OS scratch directory.
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory(prefix='alf9-s0-parent-') as outside:
+            out = Path(outside).resolve() / 's0'
+>           assert not out.is_relative_to(manifest.REPO)
+E           AssertionError: assert not True
+E            +  where True = is_relative_to(PosixPath('<repo-root>'))
+E            +    where is_relative_to = PosixPath('<repo-root>/.runtime-tmp/alf9-s0-parent-7ldoggi8/s0').is_relative_to
+E            +    and   PosixPath('<repo-root>') = manifest.REPO
+
+tests/test_execskill_v295_profile.py:176: AssertionError
+____ test_confirmation_preparation_rejects_parent_identity_both_directions _____
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-_xm0ome8')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x12bc964a0>
+
+    def test_confirmation_preparation_rejects_parent_identity_both_directions(tmp_path, monkeypatch):
+        from skillopt.execskill import alf_confirm_views as cv, alf_smoke
+        from tests.test_execskill_v29_confirm_views import authored_preparation
+        preparation, root, pool, runtime, calls = authored_preparation(tmp_path / 'source', monkeypatch)
+        files = {}
+        for configuration in (PARENT, CHILD):
+            path = tmp_path / (configuration + '-confirm.json')
+            files[configuration] = path
+            result = cv.prepare(path, configuration=configuration, preparation_file=preparation, data_root=root)
+            assert result['configuration'] == configuration
+            assert result['confirm']['freshness'] == p.CONFIRM_FRESHNESS[configuration]
+            assert cv.load_for_preparation(path, configuration=configuration,
+                imported=alf_smoke.preparation(preparation), items=pool) == result
+        assert len(calls) == 160
+        for expected, actual in ((CHILD, PARENT), (PARENT, CHILD)):
+            with pytest.raises(ValueError, match='configuration|configured'):
+                cv.load_for_preparation(files[actual], configuration=expected,
+                    imported=alf_smoke.preparation(preparation), items=pool)
+            out = tmp_path / ('s0-' + expected)
+            with pytest.raises(ValueError, match='configuration|configured'):
+>               alf_smoke.collect_s0(out, preparation_file=preparation,
+                    confirm_views=files[actual], configuration=expected,
+                    selftest=tmp_path / 'must-not-open', checks={'passed': True})
+
+tests/test_execskill_v296_profile.py:165: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/alf_smoke.py:223: in collect_s0
+    require(not out.is_relative_to(manifest.REPO), "Preparation artifacts live outside the repository")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'Preparation artifacts live outside the repository'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: Preparation artifacts live outside the repository
+
+skillopt/continual_eval/core.py:32: ValueError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-_xm0ome8')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x12bc964a0>
+
+    def test_confirmation_preparation_rejects_parent_identity_both_directions(tmp_path, monkeypatch):
+        from skillopt.execskill import alf_confirm_views as cv, alf_smoke
+        from tests.test_execskill_v29_confirm_views import authored_preparation
+        preparation, root, pool, runtime, calls = authored_preparation(tmp_path / 'source', monkeypatch)
+        files = {}
+        for configuration in (PARENT, CHILD):
+            path = tmp_path / (configuration + '-confirm.json')
+            files[configuration] = path
+            result = cv.prepare(path, configuration=configuration, preparation_file=preparation, data_root=root)
+            assert result['configuration'] == configuration
+            assert result['confirm']['freshness'] == p.CONFIRM_FRESHNESS[configuration]
+            assert cv.load_for_preparation(path, configuration=configuration,
+                imported=alf_smoke.preparation(preparation), items=pool) == result
+        assert len(calls) == 160
+        for expected, actual in ((CHILD, PARENT), (PARENT, CHILD)):
+            with pytest.raises(ValueError, match='configuration|configured'):
+                cv.load_for_preparation(files[actual], configuration=expected,
+                    imported=alf_smoke.preparation(preparation), items=pool)
+            out = tmp_path / ('s0-' + expected)
+>           with pytest.raises(ValueError, match='configuration|configured'):
+E           AssertionError: Regex pattern did not match.
+E            Regex: 'configuration|configured'
+E            Input: 'Preparation artifacts live outside the repository'
+
+tests/test_execskill_v296_profile.py:164: AssertionError
+____ test_confirmation_preparation_rejects_parent_identity_both_directions _____
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-m1zx6byf')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11ec2cad0>
+
+    def test_confirmation_preparation_rejects_parent_identity_both_directions(tmp_path, monkeypatch):
+        from skillopt.execskill import alf_confirm_views as cv, alf_smoke
+        from tests.test_execskill_v29_confirm_views import authored_preparation
+        preparation, root, pool, runtime, calls = authored_preparation(tmp_path / 'source', monkeypatch)
+        files = {}
+        for configuration in (PARENT, CHILD):
+            path = tmp_path / (configuration + '-confirm.json')
+            files[configuration] = path
+            result = cv.prepare(path, configuration=configuration, preparation_file=preparation, data_root=root)
+            assert result['configuration'] == configuration
+            assert result['confirm']['freshness'] == p.CONFIRM_FRESHNESS[configuration]
+            assert cv.load_for_preparation(path, configuration=configuration,
+                imported=alf_smoke.preparation(preparation), items=pool) == result
+        assert len(calls) == 160
+        for expected, actual in ((CHILD, PARENT), (PARENT, CHILD)):
+            with pytest.raises(ValueError, match='configuration|configured'):
+                cv.load_for_preparation(files[actual], configuration=expected,
+                    imported=alf_smoke.preparation(preparation), items=pool)
+            out = tmp_path / ('s0-' + expected)
+            with pytest.raises(ValueError, match='configuration|configured'):
+>               alf_smoke.collect_s0(out, preparation_file=preparation,
+                    confirm_views=files[actual], configuration=expected,
+                    selftest=tmp_path / 'must-not-open', checks={'passed': True})
+
+tests/test_execskill_v297_profile.py:176: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/alf_smoke.py:223: in collect_s0
+    require(not out.is_relative_to(manifest.REPO), "Preparation artifacts live outside the repository")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'Preparation artifacts live outside the repository'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: Preparation artifacts live outside the repository
+
+skillopt/continual_eval/core.py:32: ValueError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('<repo-root>/.runtime-tmp/identity-m1zx6byf')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11ec2cad0>
+
+    def test_confirmation_preparation_rejects_parent_identity_both_directions(tmp_path, monkeypatch):
+        from skillopt.execskill import alf_confirm_views as cv, alf_smoke
+        from tests.test_execskill_v29_confirm_views import authored_preparation
+        preparation, root, pool, runtime, calls = authored_preparation(tmp_path / 'source', monkeypatch)
+        files = {}
+        for configuration in (PARENT, CHILD):
+            path = tmp_path / (configuration + '-confirm.json')
+            files[configuration] = path
+            result = cv.prepare(path, configuration=configuration, preparation_file=preparation, data_root=root)
+            assert result['configuration'] == configuration
+            assert result['confirm']['freshness'] == p.CONFIRM_FRESHNESS[configuration]
+            assert cv.load_for_preparation(path, configuration=configuration,
+                imported=alf_smoke.preparation(preparation), items=pool) == result
+        assert len(calls) == 160
+        for expected, actual in ((CHILD, PARENT), (PARENT, CHILD)):
+            with pytest.raises(ValueError, match='configuration|configured'):
+                cv.load_for_preparation(files[actual], configuration=expected,
+                    imported=alf_smoke.preparation(preparation), items=pool)
+            out = tmp_path / ('s0-' + expected)
+>           with pytest.raises(ValueError, match='configuration|configured'):
+E           AssertionError: Regex pattern did not match.
+E            Regex: 'configuration|configured'
+E            Input: 'Preparation artifacts live outside the repository'
+
+tests/test_execskill_v297_profile.py:175: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execskill_v214_preparation.py::test_bridge_reads_practice_only_and_retains_exact_parent_allocations
+FAILED tests/test_execskill_v214_preparation.py::test_bridge_refuses_resealed_parent_drift[allocation]
+FAILED tests/test_execskill_v214_preparation.py::test_bridge_refuses_resealed_parent_drift[protected]
+FAILED tests/test_execskill_v214_preparation.py::test_bridge_refuses_resealed_parent_drift[source_configuration]
+FAILED tests/test_execskill_v214_preparation.py::test_bridge_refuses_resealed_parent_drift[failed]
+FAILED tests/test_execskill_v214_preparation.py::test_verify_refuses_changed_source_or_mixed_identity
+FAILED tests/test_execskill_v214_smoke.py::test_main_v5_s0_manifest_keeps_mixed_allocations_import_and_neutral_zebra
+FAILED tests/test_execskill_v214_smoke.py::test_real_manifest_requires_both_readiness_and_checks_resealed_mismatch
+FAILED tests/test_execskill_v214_smoke.py::test_manifest_check_rechecks_embedded_bounds_without_reloading_receipt
+FAILED tests/test_execskill_v214_smoke.py::test_real_manifest_accepts_both_consistent_measured_receipts
+FAILED tests/test_execskill_v221_preparation.py::test_preparation_copies_main_v6_inputs_without_new_pool_reads
+FAILED tests/test_execskill_v221_preparation.py::test_s0_binds_new_rule_prompts_caps_capture_and_inherited_worker_shapes
+FAILED tests/test_execskill_v222_preparation.py::test_insufficient_original_practice_blocks_before_measurement_and_preserves_the_parent
+FAILED tests/test_execskill_v222_preparation.py::test_explicit_additional_practice_binds_exact_seeded_draws_and_reverifies_content
+FAILED tests/test_execskill_v222_preparation.py::test_additional_supply_is_never_enabled_for_an_older_configuration
+FAILED tests/test_execskill_v222_preparation.py::test_main_v8_s0_and_manifest_bind_worker_cards_supplies_consent_and_all_older_fingerprints
+FAILED tests/test_execskill_v222_preparation.py::test_snapshot_copies_every_pinned_decomposition_file_and_parent_capture
+FAILED tests/test_execskill_v225_manifest.py::test_s0_to_smoke_manifest_binds_qualified_task_cards_and_main_v9_identity
+FAILED tests/test_execskill_v225_ops.py::test_ops_are_self_contained_snapshot_with_optional_documentation[absent]
+FAILED tests/test_execskill_v225_ops.py::test_ops_are_self_contained_snapshot_with_optional_documentation[partial]
+FAILED tests/test_execskill_v225_ops.py::test_scratch_helper_creates_sticky_shared_directory_without_requiring_root
+FAILED tests/test_execskill_v225_ops.py::test_suite_removes_only_owned_cases_after_verified_success[passing_summary]
+FAILED tests/test_execskill_v226_diagnostics.py::test_previous_sequence_counts_are_normalized_without_relaxing_engineer[value0-2]
+FAILED tests/test_execskill_v226_diagnostics.py::test_previous_sequence_counts_are_normalized_without_relaxing_engineer[value1-2]
+FAILED tests/test_execskill_v226_preparation_review.py::test_other_preparation_entrypoints_refuse_frozen_paths[raw-manifest]
+FAILED tests/test_execskill_v226_preparation_review.py::test_other_preparation_entrypoints_refuse_frozen_paths[snapshot]
+FAILED tests/test_execskill_v226_preparation_review.py::test_other_preparation_entrypoints_refuse_frozen_paths[structural]
+FAILED tests/test_execskill_v226_preparation_review.py::test_consent_target_cannot_follow_a_shared_symlink_into_frozen_root
+FAILED tests/test_execskill_v292_profile.py::test_alf_v6_confirmation_preparation_is_distinct_and_s0_rejects_parent_identity
+FAILED tests/test_execskill_v293_profile.py::test_alf_v7_confirmation_preparation_is_distinct_and_s0_rejects_parent_identity
+FAILED tests/test_execskill_v294_profile.py::test_alf_v8_confirmation_preparation_is_distinct_and_s0_rejects_parent_identity
+FAILED tests/test_execskill_v295_profile.py::test_alf_v9_confirmation_preparation_is_distinct_and_s0_rejects_parent_identity
+FAILED tests/test_execskill_v296_profile.py::test_confirmation_preparation_rejects_parent_identity_both_directions
+FAILED tests/test_execskill_v297_profile.py::test_confirmation_preparation_rejects_parent_identity_both_directions
+34 failed, 2884 passed, 1 skipped in 312.53s (0:05:12)

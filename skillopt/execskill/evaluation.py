@@ -200,7 +200,8 @@ def consent(shared, configuration=None):
     require(path.exists(), "No recorded owner consent to evaluate on the test sets")
     value = read_json(path)
     allowed = [read_arms_of(configuration)] if configuration is not None else sorted(
-        {read_arms_of(name) for name in CONFIGURATIONS if not profiles.is_zebra_fc(name)})
+        {read_arms_of(name) for name in CONFIGURATIONS
+         if not profiles.is_zebra_fc(name) and not profiles.is_v220(name)})
     arms = value.get("multi_arm_arms") if isinstance(value, dict) else None
     require(isinstance(value, dict) and set(value) == CONSENT_FIELDS and value["by"] == "owner"
             and value["test_evaluation"] is True and type(value["sheet_test_qualification"]) is bool
@@ -219,10 +220,20 @@ def consent(shared, configuration=None):
     if profiles.is_v219(configuration):
         require(arms == ["F", "C", "B", "cross"] and value["date"].strip(),
                 "The cross-v5 consent names F/C/B/cross in order and a nonempty date")
-    if profiles.is_v218(configuration):
+    if profiles.is_v218(configuration) and not profiles.is_v222(configuration):
         require(arms == ["F", "C", "B", "stages"] and value["date"].strip(),
                 "The main-v6 consent names F/C/B/stages in order and a nonempty date")
-    if profiles.is_v214(configuration):
+    if profiles.is_v225(configuration):
+        from .v225_read import ARMS as V225_ARMS
+        require(arms == list(V225_ARMS) and value['date'].strip(),
+                'main-v9 consent names all ten exact arms in order')
+    elif profiles.is_v222(configuration):
+        require(arms == ['B', 'C0', 'C', 'F', 'stages'] and value['date'].strip(),
+                'main-v8 consent names B/C0/C/F/stages in order')
+    if profiles.is_v220(configuration):
+        require(arms == ["F", "C"] and value["date"].strip() and value["sheet_test_qualification"] is False,
+                "The SearchQA import consent names F/C in order, a nonempty date and no sheet qualification")
+    if profiles.is_v214(configuration) and not profiles.is_v220(configuration):
         require(value["sheet_test_qualification"] is True,
                 "main-v5 read consent includes SpreadsheetBench test qualification")
     return value
@@ -241,11 +252,15 @@ def _registry(shared, bench, entry, evidence):
             write_json(path, record("test-panel", evidence, {"entry": entry}))
 
 
-def _sheet_qualification(shared, tasks, runtime, *, allowed, native, workers, evidence):
+def _sheet_qualification(shared, tasks, runtime, *, allowed, native, workers, evidence,
+                         configuration=None, run=None, unit=None, _automatic=False):
     """The test-side reference qualification, once for all chains (evaluation.py:202-224), stamped by
     ``execskill.qualify``; a paused attempt needs the owner's recorded decision. Codex finding #3 of 2026-10-22: under
     the lock, every earlier attempt's leftovers are swept first (``_swept_qualifications``: an attempt a killed
     process left), and the attempt's own artifacts go on every exit (``_qualification_cleaned``)."""
+    if profiles.is_v221(configuration):
+        return _v221_sheet_qualification(shared, tasks, runtime, allowed=allowed, native=native,
+            workers=workers, evidence=evidence, configuration=configuration, run=run, unit=unit, _automatic=_automatic)
     base = safe_path(shared) / "test"
     pointer, root = base / (SHEET_QUALIFICATION + ".json"), base / SHEET_QUALIFICATION
     with exclusive(base / (SHEET_QUALIFICATION + ".lock"), wait=True):
@@ -286,15 +301,88 @@ def _sheet_qualification(shared, tasks, runtime, *, allowed, native, workers, ev
     return found
 
 
-def _swept_qualifications(root, evidence):
+
+def _v221_sheet_qualification(shared, tasks, runtime, *, allowed, native, workers, evidence,
+                         configuration=None, run=None, unit=None, _automatic=False):
+    """The test-side reference qualification, once for all chains (evaluation.py:202-224), stamped by
+    ``execskill.qualify``; a paused attempt needs the owner's recorded decision. Codex finding #3 of 2026-10-22: under
+    the lock, every earlier attempt's leftovers are swept first (``_swept_qualifications``: an attempt a killed
+    process left), and the attempt's own artifacts go on every exit (``_qualification_cleaned``)."""
+    base = safe_path(shared) / "test"
+    pointer, root = base / (SHEET_QUALIFICATION + ".json"), base / SHEET_QUALIFICATION
+    if profiles.is_v221(configuration) and not _automatic:
+        from . import v221_recovery
+        identity = {'unit': 'shared/test/' + SHEET_QUALIFICATION}
+        def execute(_root, **_identity):
+            return _v221_sheet_qualification(shared, tasks, runtime, allowed=allowed, native=native,
+                workers=workers, evidence=evidence, configuration=configuration, run=run, unit=unit, _automatic=True)
+        return v221_recovery.run_unit(root, execute=execute, run=run, identity=identity)
+    with exclusive(base / (SHEET_QUALIFICATION + ".lock"), wait=True):
+        _swept_qualifications(root, evidence, **({'configuration': configuration} if profiles.is_v221(configuration) else {}))
+        if not pointer.exists():
+            require(allowed["sheet_test_qualification"] is True, "No owner consent to qualify the test references")
+            if profiles.is_v221(configuration):
+                from . import v221_recovery
+                attempt = v221_recovery.next_attempt(root)
+            else:
+                attempt = _next_attempt(root)
+            if attempt is None:
+                raise Pause("qualification_paused", attempts(root)[-1].name, SHEET_QUALIFICATION)
+            when = "interrupted"  # a BaseException (an interrupt) leaves this label
+            try:
+                found = qualify.qualify(tasks, attempt, runtime, side="test", native=native, workers=workers,
+                                        evidence=evidence)
+                when = "complete"
+            except Pause as pause:
+                when = "paused"
+                recovery = v221_recovery.exception_pause(pause) if profiles.is_v221(configuration) else None
+                write_json(attempt / "status.json", record("unit-status", evidence, {
+                    "status": "paused", "kind": pause.kind, "reason": pause.reason, "cell": pause.cell,
+                    **({'auto_retry_eligible': recovery is not None, **(recovery or {})}
+                       if profiles.is_v221(configuration) else {})}))
+                raise
+            except Exception as error:  # a configuration check or a crash: the attempt pauses, its type alone kept
+                when = "exception"
+                recovery = v221_recovery.exception_pause(error) if profiles.is_v221(configuration) else None
+                if attempt.is_dir():
+                    write_json(attempt / "status.json", record("unit-status", evidence, {
+                        "status": "paused", "kind": "configuration" if isinstance(error, ValueError) else "exception",
+                        "reason": type(error).__name__, "cell": None,
+                        **({'auto_retry_eligible': recovery is not None, **(recovery or {})}
+                           if profiles.is_v221(configuration) else {})}))
+                if profiles.is_v221(configuration):
+                    raise Pause((recovery or {}).get('kind', 'exception'),
+                                (recovery or {}).get('reason', type(error).__name__), unit) from error
+                raise
+            finally:
+                # isolation review 10, Codex finding #3: the scorer artifacts hold the recalculated test reference
+                # workbooks (sheet_recalc.py:579-593); only the sanitized results are read again, so they go on every
+                # exit -- after qualify's workers drained: ``run_parallel`` joins every started scoring before it
+                # returns or raises
+                if profiles.is_v221(configuration) and attempt.is_dir():
+                    write_json(attempt / 'started.json', record('unit-started', evidence, {
+                        'run': run, 'identity': {'unit': 'shared/test/' + SHEET_QUALIFICATION},
+                        'initiating_chain': unit.split('/')[0]}))
+                _qualification_cleaned(attempt, evidence, when,
+                    **({'configuration': configuration} if profiles.is_v221(configuration) else {}))
+            write_json(pointer, record("test-qualification-pointer", evidence, {
+                "attempt": attempt.name, "qualification_sha256": qualify.record_digest(found)}))
+        link = verified(read_json(pointer), "test-qualification-pointer")
+        found = qualify.load(root / link["attempt"] / "qualification.json")
+        require(qualify.record_digest(found) == link["qualification_sha256"], "The test qualification changed")
+    return found
+
+
+def _swept_qualifications(root, evidence, *, configuration=None):
     """Codex finding #3 of 2026-10-22: before any test qualification or its retry (``_sheet_qualification``, under its
     lock, so no live process is inside an attempt), each earlier attempt's leftovers -- an attempt a killed process
     left, or whose exit cleanup failed -- are deleted with a record (``_qualification_cleaned`` ``swept``); returns the
     names of the attempts swept."""
-    return [earlier.name for earlier in attempts(root) if _qualification_cleaned(earlier, evidence, "swept")]
+    return [earlier.name for earlier in attempts(root) if _qualification_cleaned(earlier, evidence, "swept",
+        **({'configuration': configuration} if profiles.is_v221(configuration) else {}))]
 
 
-def _qualification_cleaned(attempt, evidence, when):
+def _qualification_cleaned(attempt, evidence, when, *, configuration=None):
     """Codex finding #3 of 2026-10-22 (§8.1/F16; isolation review 10; registrar fixer-1): delete every entry of a
     test-side qualification attempt but its sanitized results (``QUALIFICATION_KEPT``; the scorer artifacts under
     ``host_only/`` hold the recalculated reference workbooks) and write the deletion record once
@@ -306,7 +394,8 @@ def _qualification_cleaned(attempt, evidence, when):
     attempt = safe_path(attempt)
     if not attempt.is_dir():
         return None
-    left = sorted(entry.name for entry in attempt.iterdir() if entry.name not in QUALIFICATION_KEPT)
+    kept = QUALIFICATION_KEPT | {'started.json', 'auto-recovery.json'} if profiles.is_v221(configuration) else QUALIFICATION_KEPT
+    left = sorted(entry.name for entry in attempt.iterdir() if entry.name not in kept)
     if when == "swept" and not left:
         return None
     path = attempt / (QUALIFICATION_SWEPT if when == "swept" else QUALIFICATION_DELETED)
@@ -349,6 +438,8 @@ def test_tasks(shared, pinned, bench, unit, *, run, runtime, native, workers, ev
                configuration=None):
     """The tasks a bench is read on (the evaluation unit only; evaluation.py:227-247). ``panel``: the frozen
     ``data.test_panel`` (a unit test passes a synthetic one)."""
+    require(not profiles.is_v220(configuration) or bench == 'searchqa',
+            'The SearchQA import read never opens another benchmark panel')
     allowed = consent(shared, configuration)
     if bench == "zebralogic" and panel is data.test_panel:
         from .zebralogic import test_panel as panel
@@ -363,7 +454,9 @@ def test_tasks(shared, pinned, bench, unit, *, run, runtime, native, workers, ev
     if bench != "spreadsheetbench":
         return tasks
     found = _sheet_qualification(shared, tasks, runtime, allowed=allowed, native=native, workers=workers,
-                                 evidence=evidence)
+                                 evidence=evidence,
+                                 **({'configuration': configuration, 'run': run, 'unit': unit}
+                                    if profiles.is_v221(configuration) else {}))
     require(found["side"] == "test" and found["task_hashes"] == {t["task_id"]: digest(t) for t in tasks},
             "The test qualification belongs to other items")
     if not found["qualified"]:
@@ -380,7 +473,8 @@ def prepare_test_qualification(setting, chain, *, panel=data.test_panel, pinned=
     this prerequisite too. Only sanitized qualification records survive the containment boundary.
     """
     configuration = configuration_of(setting)
-    require(profiles.is_v214(configuration), "The qualification prerequisite belongs to main-v5")
+    require(profiles.is_v214(configuration) and not profiles.is_v220(configuration),
+            "The qualification prerequisite belongs to main-v5")
     consent(setting.shared, configuration)
     base = safe_path(setting.shared) / "test"
     pointer = base / (SHEET_QUALIFICATION + ".json")
@@ -525,7 +619,7 @@ def test_plan(tasks, final, *, bench, unit, runtime, workers, reset=None, run_co
             "not_withheld": summary["not_withheld"], "sha256": digest(summary)}
 
 
-def stage_rows(chain_root, chain, order, final, start):
+def stage_rows(chain_root, chain, order, final, start, *, configuration=None):
     """v2 stage reads (``protocol.STAGE_READ``; zero calls): ``{"rows", "packages"}`` of chain ``chain`` whose steps
     ran in ``order``: rows[k] (k = 0 .. len(order)) the label of the arm that reads the package after step k -- "C"
     where it holds no procedure (k = 0 always), "F" where it is ``final``, else "S<j>", j the first step that passed it
@@ -542,6 +636,16 @@ def stage_rows(chain_root, chain, order, final, start):
         package = final if sha == final.sha256 else start if sha == start.sha256 else load(
             chain_root / "packages" / (sha + ".json"))
         require(package.sha256 == sha, "The package step %d passed on" % k)
+        if profiles.is_v222(configuration):
+            if sha == start.sha256:
+                rows.append('C')
+            elif sha == final.sha256:
+                rows.append('F')
+            else:
+                label = first.setdefault(sha, '%s%d' % (STAGE_ARM, k))
+                packages[label] = package
+                rows.append(label)
+            continue
         if not package.procedures:
             rows.append("C")
         elif sha == final.sha256:
@@ -676,9 +780,11 @@ def sealed_cell(full):
         "answered": answered(full),  # §6.3's mask: whether the provider delivered any reply in this cell
         "solver_route": full.get("solver_route"),  # {"route", "model"} (cells.py); route None on chain G
         **({key: full[key] for key in ("configuration", "keyword_hits", "applies", "returned_model", "returned_models")}
-           if full.get("configuration") in ("zebra-pc-v7", "alfworld-v4", "zebra-pc-v8", "alfworld-v5", "zebra-pc-v9", "alfworld-v6", "zebra-pc-v10", "alfworld-v7", "zebra-pc-v11", "alfworld-v8", "zebra-pc-v12", "alfworld-v9", "alfworld-v10", "alfworld-v11", "zebra-pc-v13", "zebra-hp-v3r4", "main-v5", "zebra-pc-v14", "zebra-pc-v15", "zebra-hp-g3r2", "implant-v5", "main-v6", "cross-v5") else {}),
+           if full.get("configuration") in ("zebra-pc-v7", "alfworld-v4", "zebra-pc-v8", "alfworld-v5", "zebra-pc-v9", "alfworld-v6", "zebra-pc-v10", "alfworld-v7", "zebra-pc-v11", "alfworld-v8", "zebra-pc-v12", "alfworld-v9", "alfworld-v10", "alfworld-v11", "zebra-pc-v13", "zebra-hp-v3r4", "main-v5", "zebra-pc-v14", "zebra-pc-v15", "zebra-hp-g3r2", "implant-v5", "main-v6", "cross-v5", "searchqa-hp-v6", "main-v7", "main-v8", "main-v9", "main-v10") else {}),
         **({'card_source': full['card_source']} if full.get('configuration') == 'cross-v5' else {}),
-        **({'request_reuse': full['request_reuse']} if full.get('configuration') in ('main-v6', 'cross-v5')
+        **({'cross_identity': full['cross_identity']} if profiles.is_v222(full.get('configuration')) else {}),
+        **({'searchqa_fired': full['searchqa_fired']} if profiles.is_v220(full.get('configuration')) else {}),
+        **({'request_reuse': full['request_reuse']} if profiles.uses_request_reuse(full.get('configuration'))
            and 'request_reuse' in full else {}),
         "stop": None if full["stop"] is None else {"kind": full["stop"]["kind"]}}
 
@@ -783,6 +889,8 @@ def training_duplicates(texts, training):
 
 def read_canary_sources(configuration=None):
     """The three panels not opened by S0; the main-v5 roster contains no LiveMath."""
+    if profiles.is_v220(configuration):
+        return {'searchqa': 'question'}
     if profiles.is_v214(configuration):
         return {"officeqa": "question", "zebralogic": "question", "spreadsheetbench": "instruction"}
     return READ_CANARY_SOURCES
@@ -840,6 +948,12 @@ def _canary_records(root, *, read, configuration=None):
     before it is made (refused when ``read``). ``configuration`` comes from the verified run manifest or Setting;
     without one the historical two-record validation applies, never a branch selected by record content."""
     root = safe_path(root)
+    if profiles.is_v220(configuration):
+        require((root / READ_CANARIES).is_file(), 'The isolated SearchQA read canaries are not made yet')
+        isolated = verified(read_json(root / READ_CANARIES), 'test-read-canaries')
+        require(isolated.get('configuration') == configuration and set(isolated['counts']) == {'searchqa'}
+                and isolated.get('extends') is None, 'The SearchQA import read needs isolated SearchQA canaries')
+        return _checked(isolated, configuration=configuration), None
     if is_zebra(configuration):
         require((root / READ_CANARIES).is_file(), "The isolated test read's canaries are not made yet")
         isolated = verified(read_json(root / READ_CANARIES), "test-read-canaries")
@@ -906,6 +1020,10 @@ def make_read_canaries(root, pinned, *, pools, run, evidence, panel=data.test_pa
     record (``extends``: its record hash) and names the run, the consent's hash and each panel's hash. Prints nothing;
     returns the record. ``panel``: the frozen ``data.test_panel`` (a unit test passes a synthetic one)."""
     root = safe_path(root)
+    if profiles.is_v220(configuration):
+        from . import v220_read
+        return v220_read.make_canaries(root, pinned, pools=pools, run=run, evidence=evidence,
+                                      panel=panel, configuration=configuration)
     if is_zebra(configuration):
         require(tuple(order) == ("zebralogic",), "The trusted ZebraLogic run has one benchmark")
         return _make_zebra_canaries(root, pinned, pools=pools, run=run, evidence=evidence, panel=panel, configuration=configuration)
@@ -1108,10 +1226,14 @@ def _root_texts(path):
         yield text
 
 
-def _where(relative):
+def _where(relative, configuration=None):
     """The place a hit names: the run root's first two folders (``D/s2-officeqa``, ``shared/research``), or the first
     one for a file directly below it."""
     parts = relative.parts
+    if profiles.is_v225(configuration):
+        from .v225_read import EVENTS
+        if len(parts) >= 4 and parts[0] in CHAINS and parts[1] == 'test' and parts[2] in EVENTS:
+            return '/'.join(parts[:4])
     return "/".join(parts[:2]) if len(parts) > 2 else parts[0]
 
 
@@ -1216,7 +1338,7 @@ def root_scan(root, canaries, *, workers=1, configuration=None, vanished=None):
     require(len(found) == len(paths), "Every file of the run root is scanned once")
     if vanished is not None:
         vanished.extend({"path": path} for path, indices in zip(paths, found) if indices is None)
-    hits = [{"where": _where(relative), "path": path, "canary": index}
+    hits = [{"where": _where(relative, configuration=configuration), "path": path, "canary": index}
             for (relative, _), path, indices in zip(files, paths, found) for index in (indices or ())]
     return sum(indices is not None for indices in found), hits
 
@@ -1293,7 +1415,7 @@ def _arm(arms, label, cell, task, *, configuration=None):
         require(label in v219_read.cross_labels(cell['benchmark']), 'A cross arm uses another bench card')
         expected = 'candidate'
     else:
-        expected = ARM_KINDS[label]
+        expected = 'card' if profiles.is_v222(configuration) and label == 'C0' else ARM_KINDS[label]
     require(isinstance(chosen, Arm) and chosen.kind == expected, "Arm %s has kind %s" % (label, expected))
     return chosen
 
@@ -1345,8 +1467,14 @@ def _drained(drain, context, unit, *, configuration=None):
         drain()
     except CleanupUnconfirmed as error:
         kind_ = stop_kind(error) or "exception"
+        recovery = None
+        if profiles.is_v221(configuration):
+            from . import v221_recovery
+            recovery = v221_recovery.exception_pause(error)
         if context.attempt.is_dir() and not (context.attempt / "status.json").exists():
-            _paused(context.attempt, context.evidence, kind_, "unit_drain: %s" % str(error)[:200])
+            _paused(context.attempt, context.evidence, (recovery or {}).get('kind', kind_),
+                    (recovery or {}).get('reason', "unit_drain: %s" % str(error)[:200]),
+                    **({'auto_retry_eligible': recovery is not None} if profiles.is_v221(configuration) else {}))
         raise Pause(kind_, "unit_drain", unit) from None
     finally:
         cleanups = getattr(drain, "cleanups", None) if profiles.is_v292(configuration) else None
@@ -1411,14 +1539,15 @@ def _linked(context, linked, sources, plan, staged, final, packages, *, store):
     return fallback
 
 
-def _stage_arms(stages, final):
+def _stage_arms(stages, final, *, configuration=None):
     """A stage read's rows and packages, checked (``stage_rows``): row 0 C, every row C, F or a stage arm of the
     packages, each stage package used, holding a procedure and neither F nor another stage package."""
     rows, packages = stages["rows"], stages["packages"]
     require(isinstance(rows, list) and rows and rows[0] == "C" and isinstance(packages, dict)
             and all(STAGE_LABEL.fullmatch(label) and isinstance(p, Package) for label, p in packages.items())
             and set(rows) <= {"C", "F", *packages} and set(packages) <= set(rows)
-            and all(p.procedures and p.sha256 != final.sha256 for p in packages.values())
+            and all((p.procedures or profiles.is_v222(configuration)) and p.sha256 != final.sha256
+                    for p in packages.values())
             and len({p.sha256 for p in packages.values()}) == len(packages), "The stage arms of the read")
     return rows, packages
 
@@ -1431,6 +1560,10 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
                 "The fixed g3r2 read is chain G ZebraLogic only")
     main_v5 = profiles.is_v214(run_configuration)
     cross = profiles.is_v219(run_configuration)
+    searchqa = profiles.is_v220(run_configuration)
+    if searchqa:
+        require(chain in CHAINS and bench == 'searchqa' and stages is None,
+                'The SearchQA import read is G/D SearchQA only, without stage rows')
     child = profiles.is_v210(run_configuration)
     reduced = child or profiles.is_zebra_fc(run_configuration)
     expected = read_arms_of(run_configuration) if reduced else ARMS
@@ -1449,10 +1582,26 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
         consent(shared, run_configuration)
     final, card = arms.get("F", arms["C"]).package, arms["C"].package
     require(child or final.sha256 != card.sha256, "F = C: nothing was accepted, the read is not made (§8.1)")
-    if child:
+    if searchqa:
+        require(final.procedures and final.sha256 != card.sha256,
+                'F = C: the SearchQA import read requires its nonempty treatment')
+    if child and not searchqa:
         require(not arms["B"].package.procedures, "B runs no procedure")
-    require(not card.for_bench(bench), "The card arm runs no procedure")
-    rows, packages = _stage_arms(stages, final) if stages is not None else (None, {})
+    if profiles.is_v222(run_configuration):
+        from . import v222_cards
+        require(all(v222_cards.is_segment(proc) for proc in card.procedures)
+                and not arms['C0'].package.procedures, 'main-v8 C is P0 and C0 is format-only')
+    else:
+        require(not card.for_bench(bench), "The card arm runs no procedure")
+    rows, packages = _stage_arms(stages, final, **({"configuration": run_configuration}
+                     if profiles.is_v222(run_configuration) else {})) if stages is not None else (None, {})
+    if searchqa:
+        from . import v220_import
+        require(not card.procedures and arms['F'].kind == 'candidate' and arms['C'].kind == 'card',
+                'The SearchQA read has the final package and the empty instruction-only card arm')
+        require(all(not (arm.withhold or arm.restore) and arm.placebo is None and arm.text is None
+                    for arm in arms.values()), 'The SearchQA F/C read has no arm modifiers')
+        v220_import.check_read_package(chain, final, context.searchqa_import)
     if profiles.is_implant_v5(run_configuration):
         from . import v217_implant
         require(final.procedures, "F = C: the implanted read requires its fixed programs")
@@ -1466,9 +1615,10 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
                     "Every cross arm runs the unchanged final package")
         else:
             v217_implant.check_read_packages(chain, final, stages)
-    if main_v5 and not cross:
+    if main_v5 and not cross and not searchqa:
         require(rows is not None and len(rows) == len(profiles.CONFIGURATIONS[run_configuration]["order"]) + 1
-                and rows[-1] == ("F" if final.procedures else "C")
+                and rows[-1] == (("C" if final.sha256 == card.sha256 else "F")
+                    if profiles.is_v222(run_configuration) else ("F" if final.procedures else "C"))
                 and all(label == "%s%d" % (STAGE_ARM, rows.index(label))
                         and 1 <= rows.index(label) < len(rows) - 1 for label in packages),
                 "main-v5 reads every frozen step, including its final row")
@@ -1484,16 +1634,26 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
                               **{label: p.sha256 for label, p in sorted(packages.items())}})}
     if main_v5:
         identity["packages"].update({label: p.sha256 for label, p in sorted(packages.items())})
-    if child:
+    if child and not searchqa:
         from .instruction_start import START, blank_definition
         identity.update(instruction_start=START, blank_arm=blank_definition())
     attempt = context.attempt
-    require(attempt == _next_attempt(unit_root) and not attempt.exists(),
+    if profiles.is_v221(run_configuration):
+        from . import v221_recovery
+        v221_recovery.wait_pending(unit_root, run=run, identity={'unit': unit, 'chain': chain})
+        next_directory = v221_recovery.next_attempt(unit_root)
+    else:
+        next_directory = _next_attempt(unit_root)
+    require(attempt == next_directory and not attempt.exists(),
+            "A unit attempt runs in the next authorized attempt directory" if profiles.is_v221(run_configuration) else
             "A unit attempt runs in the next attempt directory; after a pause, only with the owner's recorded decision")
     cleaned = _leftovers(unit_root, evidence)
     scan_options = {"configuration": run_configuration} if main_v5 else {}
     before = _scanned(unit_root, shared, canaries, **scan_options)
     attempt.mkdir()
+    if profiles.is_v221(run_configuration):
+        write_json(attempt / 'started.json', record('unit-started', evidence, {
+            'run': run, 'identity': {'unit': unit, 'chain': chain}}))
     if before["hits"]:
         _paused(attempt, evidence, "canary_hit", "%d canary hits before the attempt" % len(before["hits"]),
                 hits=before["hits"], cleaned=cleaned, **({"scan": before} if main_v5 else {}))
@@ -1512,12 +1672,18 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
         plan = test_plan(tasks, final, bench=bench, unit=unit, runtime=context.runtime[bench], workers=route_workers,
                          reset=reset, **({"run_configuration": run_configuration} if reduced else {}))
         request_plan = None
-        if run_configuration == 'main-v6' or cross:
+        if profiles.uses_request_reuse(run_configuration):
             from . import reuse, v218_read
             if bench in reuse.BENCHES:
                 request_plan = v218_read.plan(plan, arms, packages, bench=bench, context=context, workers=route_workers)
                 store = v218_read.Store(store, request_plan)
-        staged = (request_plan['staged'] if request_plan is not None else
+        if profiles.is_v222(run_configuration) and bench == 'alfworld':
+            # Dynamic episode requests cannot be proved interchangeable by reset routing alone.
+            staged = {'routes': {}, 'sources': {label: {t['task_id']: None for t in plan['tasks']}
+                      for label in packages}, 'derived': {label: 0 for label in packages},
+                      'sha256': digest({'rule': 'main-v8 ALFWorld arms dispatch independently'})}
+        else:
+            staged = (request_plan['staged'] if request_plan is not None else
                   stage_plan(plan, final, packages, bench=bench, runtime=context.runtime[bench],
                              workers=route_workers) if packages else None)
         by_id = {t["task_id"]: {"public": t["public"], "private": t["private"]} for t in plan["tasks"]}
@@ -1550,11 +1716,11 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
                             jobs.append(job)
                         else:
                             linked.append((job, source))
-                    elif main_v5 and bench == profiles.ZEBRA and label == "B":
+                    elif main_v5 and not profiles.is_v222(run_configuration) and bench == profiles.ZEBRA and label == "B":
                         # The Zebra shell never sends the instruction card: B's request is exactly C's.
                         blank_shares.append((cell, by_id[item], _arm(arms, label, cell, by_id[item], configuration=run_configuration)))
                     else:
-                        (shares if not cross and item in zero and label in (("F",) if reduced else ("F", "P_F", "T_F")) else jobs).append(
+                        (shares if not cross and not profiles.is_v222(run_configuration) and item in zero and label in (("F",) if reduced else ("F", "P_F", "T_F")) else jobs).append(
                             (cell, by_id[item], _arm(arms, label, cell, by_id[item], configuration=run_configuration)))
         sources = {}
         for block in sorted(set(blocks.values())):
@@ -1579,7 +1745,11 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
         deleted = _closed(store, evidence)
     except Pause as pause:
         _closed(store, evidence)
-        _paused(attempt, evidence, pause.kind, pause.reason, scan=_scanned(unit_root, shared, canaries, **scan_options),
+        recovery = v221_recovery.exception_pause(pause) if profiles.is_v221(run_configuration) else None
+        _paused(attempt, evidence, (recovery or {}).get('kind', pause.kind),
+                (recovery or {}).get('reason', pause.reason),
+                scan=_scanned(unit_root, shared, canaries, **scan_options),
+                **({'auto_retry_eligible': recovery is not None} if profiles.is_v221(run_configuration) else {}),
                 **({"before_scan": before} if main_v5 else {}))
         raise
     except Exception as error:  # a configuration check above, or an unexpected error (like a crash): the unit pauses
@@ -1588,8 +1758,11 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
         kind_ = "configuration" if isinstance(error, ValueError) else "exception"
         reason = (type(error).__name__ + (":" + str(error)[:200] if _own(error) else "")) if kind_ == "configuration" \
             else type(error).__name__
+        recovery = v221_recovery.exception_pause(error) if profiles.is_v221(run_configuration) else None
+        kind_, reason = (recovery or {}).get('kind', kind_), (recovery or {}).get('reason', reason)
         _paused(attempt, evidence, kind_, reason, stack=_stack(error),
                 scan=_scanned(unit_root, shared, canaries, **scan_options),
+                **({'auto_retry_eligible': recovery is not None} if profiles.is_v221(run_configuration) else {}),
                 **({"before_scan": before} if main_v5 else {}))
         raise Pause(kind_, reason, unit) from None
     sealed = [verified(read_json(p), "evaluation-cell") for p in sorted((attempt / "cells").glob("*.json"))]
@@ -1614,6 +1787,7 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
     write_json(attempt / "canary_scan.json", scan)
     return record("evaluation", evidence, {
         **identity, "status": "complete", "attempt": attempt.name, "counts": counts, "plan_sha256": plan["sha256"],
+        **({'automatic_retries': v221_recovery.records(unit_root)} if profiles.is_v221(run_configuration) else {}),
         "structural_zero": len(zero), "twins": sum(len(v) for v in plan["twins"].values()),
         "rooms": len(set(rooms.values())) if rooms else None, "cells": sorted(c["cell"]["id"] for c in sealed),
         "transient_deleted_sha256": deleted["manifest_sha256"], "canary_scan_sha256": scan["record_sha256"],
@@ -1624,7 +1798,7 @@ def _evaluate(unit_root, unit, *, run, shared, pinned, chain, bench, arms, conte
                               "dispatches": (sum(c['cell']['arm'] == 'B' and c['shared_with'] is None for c in sealed)
                                              if request_plan is not None else 0),
                               "reason": "Zebra shell omits the card sentence"}}
-           if main_v5 and bench == profiles.ZEBRA else {}),
+           if main_v5 and not profiles.is_v222(run_configuration) and bench == profiles.ZEBRA else {}),
         **({"stages": {"rows": rows, "plan_sha256": staged["sha256"] if staged else None,
                        "derived": staged["derived"] if staged else {},
                        "sources": {label: dict(sorted(Counter("sent" if source is None else source for source in
@@ -1707,6 +1881,9 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
     configuration (``protocol.STAGE_READ``) also the stage arms (``stage_rows``) under a consent naming them.
     Returns ``chain.EXIT_COMPLETE``, ``EXIT_AWAITING`` (a paused attempt awaits the owner's recorded decision) or
     ``EXIT_PAUSED``. ``docker`` / ``transport`` / ``panel`` / ``reset``: fakes in tests."""
+    if profiles.is_v225(manifest.get('configuration')):
+        from . import v225_read
+        return v225_read.run_unit_spec(manifest, spec=spec, docker=docker, transport=transport, panel=panel, reset=reset)
     found = read_json(spec)
     require(isinstance(found, dict) and set(found) == SPEC_FIELDS, "An evaluate-unit spec names chain, bench, "
             "package_sha256 and unit_root")
@@ -1737,7 +1914,7 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
         implanted_stages = stage_rows(implant_root, chain, order_of(setting), implant_final, implant_start)
         v217_implant.check_stage_rows(implant_root, chain, order_of(setting), implant_final,
                                      implant_start, implanted_stages)
-    if profiles.is_v214(configuration):
+    if profiles.is_v214(configuration) and not profiles.is_v220(configuration):
         from .chain import heavy
         try:
             pointer = safe_path(setting.shared) / "test" / (SHEET_QUALIFICATION + ".json")
@@ -1750,20 +1927,34 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
             return EXIT_AWAITING if pause.kind == "awaiting_owner_decision" else EXIT_PAUSED
     unit_root = read_root(setting, chain, bench)
     require(safe_path(found["unit_root"]) == unit_root, "The read unit's registered directory")
-    attempt = _next_attempt(unit_root)
+    if profiles.is_v221(configuration):
+        from . import v221_recovery
+        v221_recovery.wait_pending(unit_root, run=setting.run,
+                                    identity={'unit': '%s/test/%s' % (chain, bench), 'chain': chain})
+        attempt = v221_recovery.next_attempt(unit_root)
+    else:
+        attempt = _next_attempt(unit_root)
     if (unit_root / "unit.json").exists():
         return EXIT_COMPLETE
     if attempt is None:
         return EXIT_AWAITING
     chain_root = safe_path(setting.root) / chain
-    start = empty(step="%s/s0" % chain, evidence=setting.evidence)  # chain.run's start, which is never saved
+    start = empty(step="%s/s0" % chain, evidence=setting.evidence)  # legacy chain.run's unsaved start
+    if profiles.is_v222(configuration):
+        from . import v222_read
+        start = v222_read.start_package(setting, chain)
     # a stage read whose later steps deleted every procedure reads with F the empty start (``chain.run``)
     final = start if (STAGE_READ[configuration] or profiles.is_v210(configuration)) and found["package_sha256"] == start.sha256 else load(
         chain_root / "packages" / (found["package_sha256"] + ".json"))
     require(final.sha256 == found["package_sha256"], "The final package of the chain")
+    if profiles.is_v220(configuration):
+        from . import v220_import
+        v220_import.check_read_package(chain, final, setting.extra.get(v220_import.PIN_KEY))
     stages = (None if profiles.is_v219(configuration) else
               implanted_stages if profiles.is_implant_v5(configuration) else
-              stage_rows(chain_root, chain, order_of(setting), final, start) if STAGE_READ[configuration] else None)
+              stage_rows(chain_root, chain, order_of(setting), final, start,
+                  **({"configuration": configuration} if profiles.is_v222(configuration) else {}))
+              if STAGE_READ[configuration] else None)
     unit = "%s/test/%s" % (chain, bench)
     own = units.for_unit(setting, chain, bench, unit)
     if profiles.is_v292(configuration):
@@ -1777,7 +1968,13 @@ def run_unit_spec(manifest, *, spec, docker=None, transport=None, panel=data.tes
     route_workers = functools.partial(_route_worker, own)
     runtime = setting.runtime[bench]
     card = final if configuration == profiles.BASELINE_V210 else empty(step="%s/card" % chain, evidence=setting.evidence)
-    if profiles.is_v210(configuration):
+    if profiles.is_v222(configuration):
+        from . import v222_read
+        arms = v222_read.arms(final, start)
+    elif profiles.is_v220(configuration):
+        from . import v220_read
+        arms = v220_read.arms(final, card)
+    elif profiles.is_v210(configuration):
         arms = {"C": Arm("card", card), "B": Arm("blank", card)}
         if configuration != profiles.BASELINE_V210:
             arms = {"F": Arm("candidate", final), **arms}
@@ -2068,6 +2265,10 @@ def unseal(root, chain_root, chain, unit_roots, *, run, evidence, clock=_now, co
     score is read, unless the owner released exactly that scan, registrar decision PR-C31-3 (1b)); the first unseal
     writes the chain's marker, which names that scan and the release."""
     chain_root = safe_path(chain_root)
+    if profiles.is_v225(configuration):
+        from .chain import active_read_units
+        busy = [unit for name in CHAINS for unit in active_read_units(safe_path(root) / name, configuration)]
+        require(not busy, "Test-read units are still running: %s" % busy[:3])
     require(_ended(chain_root), "Test scores stay sealed until the chain is complete or terminated")
     if profiles.is_v214(configuration):
         require(all(_ended(safe_path(root) / name) for name in CHAINS),
@@ -2101,12 +2302,19 @@ def unseal(root, chain_root, chain, unit_roots, *, run, evidence, clock=_now, co
                           "solver_route": value.get("solver_route"),
                           **({'request_sha256': [c['request_sha256'] for c in value['calls']],
                               'request_reuse': value.get('request_reuse')}
-                             if configuration in ('main-v6', 'cross-v5') else {}),
+                             if profiles.uses_request_reuse(configuration) else {}),
+                          **({'cross_identity': value['cross_identity']} if profiles.is_v222(configuration) else {}),
+                          **({'searchqa_fired': value['searchqa_fired']} if profiles.is_v220(configuration) else {}),
                           **({'card_source': value['card_source'], 'arm_kind': value['arm_kind']}
                              if profiles.is_v219(configuration) else {})}
         for value in cells.values():  # the arm whose cell a shared cell reads: C's, or in a stage read F's or S<j>'s
             value["shared_arm"] = None if value["shared_with"] is None else arm_of[value["shared_with"]]
-        units[own["bench"]] = cells
+        if profiles.is_v225(configuration):
+            previous = units.setdefault(own['bench'], {})
+            require(not set(previous) & set(cells), 'Main-v9 events have disjoint arm cells')
+            previous.update(cells)
+        else:
+            units[own["bench"]] = cells
         if "stages" in own:
             stages[own["bench"]] = list(own["stages"]["rows"])
     marker = _marker(root, chain_root, evidence=evidence, clock=clock, scan=scan)

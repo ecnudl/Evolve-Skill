@@ -115,6 +115,16 @@ STATIC_BANS = ("meta_option", "bulletin_literal", "receptacle_literal")
 BLOCK = re.compile(r"```([A-Za-z]*)[ \t]*\n(.*?)\n[ \t]*```", re.S)
 RUN_UNIT = re.compile(r"(?P<chain>[^/]+)/s(?P<k>\d+)-(?P<bench>[a-z]+)/run")  # a run unit's label
 TRAIN_UNIT = re.compile(r"(?P<chain>[^/]+)/s(?P<k>\d+)-(?P<bench>[a-z]+)/train-r(?P<r>\d+)")  # a v2 training unit
+
+
+def _train_match(unit, configuration):
+    found = TRAIN_UNIT.fullmatch(unit)
+    if found is None and protocol.is_v225(configuration):
+        card = re.fullmatch(r'(?P<chain>[^/]+)/s(?P<k>\d+)-(?P<bench>[a-z]+)/card-train-c[1-3]', unit)
+        if card is not None:
+            # Card training precedes every procedure round, without consuming patience.
+            return {**card.groupdict(), 'r': '0'}
+    return found
 TRAIN = "train"  # v2's learning mode (``protocol.LEARNING``)
 LINT_REASONS = ("test_count", "invalid_test", "test_failed", "vacuous_test", "no_fix_claim")  # v2: advice only
 MAX_LINT = 10
@@ -608,6 +618,10 @@ class Context:
         if protocol.is_v210(self.configuration):
             from .instruction_start import active_cards
             self.card = active_cards({self.bench: self.card}, self.configuration)[self.bench]
+        if protocol.is_v225(self.configuration):
+            from .v225_cards import compose
+            self.sheet['v225_base_card'] = self.card
+            self.card = compose(self.bench, self.card, self.parent)
         require(self.bench in protocol.SUPPORTED_BENCHES and type(self.k) is int and 0 <= self.k <= 999,
                 "A known bench and step number")
         require(self.mode in ("single", TRAIN), "A known learning mode")
@@ -667,9 +681,12 @@ class Context:
                and int(RUN_UNIT.fullmatch(t["unit"])["k"]) == self.k}
         for trajectory in list(self.current) + list(self.evaluated):
             unit = str(verified(trajectory, "trajectory")["unit"])
-            run, train = RUN_UNIT.fullmatch(unit), TRAIN_UNIT.fullmatch(unit)
+            run, train = RUN_UNIT.fullmatch(unit), _train_match(unit, self.configuration)
             if train is None and protocol.is_v218(self.configuration):
-                from .v218_split import TRAIN_UNIT as SPLIT_TRAIN_UNIT
+                if protocol.is_v221(self.configuration):
+                    from .v221_split import TRAIN_UNIT as SPLIT_TRAIN_UNIT
+                else:
+                    from .v218_split import TRAIN_UNIT as SPLIT_TRAIN_UNIT
                 train = SPLIT_TRAIN_UNIT.fullmatch(unit)
             found = run or train
             require(found is not None and found["chain"] == chain and found["bench"] == self.bench
@@ -682,7 +699,9 @@ class Context:
                 v28=protocol.is_v28(self.configuration), v29=protocol.is_v29(self.configuration),
                 v291=protocol.is_v291(self.configuration),
                 v294=protocol.is_v294(self.configuration),
-                **({'v218': True} if protocol.is_v218(self.configuration) else {})) for entry in self.history),
+                **({'v218': True} if protocol.is_v218(self.configuration) else {}),
+                **({'v221': True} if protocol.is_v221(self.configuration) else {}),
+                **({'v222': True} if protocol.is_v222(self.configuration) else {})) for entry in self.history),
                 "The history holds counts and flags only")
         require(isinstance(self.lint, list) and all(_lint_entry(entry, v25=v25,
                 **({"v26": True} if protocol.is_v26(self.configuration) else {}),
@@ -709,6 +728,8 @@ class Context:
                                                       v291=protocol.is_v291(self.configuration),
                                                       v292=protocol.is_v292(self.configuration), v211=protocol.uses_v211(self.configuration, self.bench),
                                                       v215=protocol.uses_v215(self.configuration, self.bench),
+                                                      v221=protocol.is_v221(self.configuration),
+                                                      v222=protocol.is_v222(self.configuration),
                                                       current={t["cell"]: t for t in self.current}),
                 "The training feedback shows this step's run-slice items with their own references only")
         output_refs = {e["task_id"] for e in (self.training or {}).get("unfixed_examples", [])} if v24 else set()
@@ -733,11 +754,22 @@ def _verdict_fields(entry):
             and (entry["reason"] is None or _text(entry["reason"], MAX_REASON_CHARS)))
 
 
-def _history_line(entry, before, *, v24=False, v28=False, v29=False, v291=False, v294=False, v218=False):
+def _history_line(entry, before, *, v24=False, v28=False, v29=False, v291=False, v294=False, v218=False, v221=False, v222=False):
     """v2 (Codex review 2026-10-23 #4): a line of an earlier round exactly as ``step._line`` writes it -- counts,
     flags, the net, p and reason -- with its ``proposals`` (the step buffer): kind, registrar id, target, a description
     excerpt and the fate."""
     fields = HISTORY_FIELDS | ({"patience_counted"} if v24 else set())
+    if v221:
+        from . import v221_rule
+        coverage_validator = v221_rule.coverage_ok
+        if v222:
+            from .v222_feedback import coverage_ok as coverage_validator
+        for key, validator in (('rule', v221_rule.rule_ok), ('coverage', coverage_validator),
+                               ('early_acceptance', v221_rule.rule_ok)):
+            if key in entry:
+                if entry[key] is not None and not validator(entry[key]):
+                    return False
+                fields |= {key}
     if v218 and "split" in entry:
         from . import v218_split
         if not v218_split.counts_ok(entry["split"]):
@@ -829,12 +861,28 @@ def _lint_entry(entry, *, v25=False, v26=False, v27=False, v28=False, v29=False,
 
 
 def _training_ok(training, references, own, evaluated, bench, *, v24=False, v25=False, current=None, v28=False, v29=False,
-                 v291=False, v292=False, v211=False, v215=False):
+                 v291=False, v292=False, v211=False, v215=False, v221=False, v222=False):
     """v2 (Codex review 2026-10-23 #4): the last round's feedback exactly as ``step._feedback`` writes it; each
     example names one of this step's run-slice items (``own``) and that item's candidate-arm cell of the last training
     unit (``evaluated``: {cell: trajectory}), its texts within ``TRAIN_TEXT_CHARS``, and a reference only off ALFWorld
     and only the item's own (``Context.references``)."""
     fields = TRAINING_FIELDS | ({"unfixed_examples", "identical_items"} if v24 else set())
+    if v222 and isinstance(training, dict) and 'cross_gate' in training:
+        from .v222_feedback import cross_gate_ok
+        if not cross_gate_ok(training['cross_gate']):
+            return False
+        fields |= {'cross_gate'}
+    if v221 and isinstance(training, dict):
+        from . import v221_rule
+        coverage_validator = v221_rule.coverage_ok
+        if v222:
+            from .v222_feedback import coverage_ok as coverage_validator
+        for key, validator in (('rule', v221_rule.rule_ok), ('coverage', coverage_validator),
+                               ('early_acceptance', v221_rule.rule_ok)):
+            if key in training:
+                if training[key] is not None and not validator(training[key]):
+                    return False
+                fields |= {key}
     if v215 and isinstance(training, dict) and 'engineer_diagnostics' in training:
         # Context already sanitizes the optional channel with run membership.
         # This validator stays strict only about the original training evidence;
@@ -849,7 +897,8 @@ def _training_ok(training, references, own, evaluated, bench, *, v24=False, v25=
         fields |= {"confirm"}
     if v28:
         fields |= {"informational_guards"}
-        if training.get("informational_guards") != ["own_faults", "predicate_faults"]:
+        informational = ["own_faults", "predicate_faults"] + (["format"] if v221 else [])
+        if training.get("informational_guards") != informational:
             return False
     if not (isinstance(training, dict) and set(training) == fields and _verdict_fields(training)
             and training["p_sign"] is not None and type(training["need"]) is int and training["need"] >= 1
@@ -1055,10 +1104,11 @@ def payload(ctx, analyses=None):
     """The user message of the proposal call (fitted: the last trajectories are left out first); v2: with the
     round's ``analyses`` (``analyse``), fitted by ``_fit_train``."""
     user = {"request": "propose", "bench": ctx.bench, "card": ctx.card,
-            "package": [_listed(p, ctx.parent) for p in ctx.parent.procedures],
+            "package": [_listed(p, ctx.parent) for p in ctx.parent.procedures
+                        if p.policy_version != policy.POLICY_VERSION_V225],
             "trajectories": [_shown_view(kind, t, ctx.references, ctx.echo) for kind, t in shown(ctx)],
             "detectors": ctx.detectors, "previous": ctx.previous}
-    if ctx.configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6):
+    if ctx.configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9, protocol.MAIN_V10):
         from .v210_import import learning_capacity
         user["package_capacity"] = learning_capacity(ctx.parent)
     if protocol.is_v24(ctx.configuration):
@@ -1134,7 +1184,8 @@ def analyse(ctx):
         first.setdefault(entry["trajectory"]["task_id"], entry["trajectory"])
     order = [i for i in first if i not in ctx.analysed] + [i for i in first if i in ctx.analysed]
     chosen = order[:TRAIN_ANALYST_BATCH * TRAIN_ANALYST_CALLS]
-    package = [{"id": p.id, "description": p.description, "hooks": list(p.hooks)} for p in ctx.parent.procedures]
+    package = [{"id": p.id, "description": p.description, "hooks": list(p.hooks)} for p in ctx.parent.procedures
+               if p.policy_version != policy.POLICY_VERSION_V225]
     findings, shown_refs, calls = [], [], []
     for n, start in enumerate(range(0, len(chosen), TRAIN_ANALYST_BATCH), 1):
         group = [_shown_view("failures", first[i], ctx.references, ctx.echo)
@@ -1187,12 +1238,18 @@ def budget(ctx):
     """v2: the edits the incumbent already makes against the step's parent S (``MAX_CHANGES`` per step) and the
     procedures this step created."""
     made = edits(ctx.base, ctx.parent) if ctx.parent.sha256 != ctx.base.sha256 else []
+    from .v225_cards import card_edit
+    made = [e for e in made if not card_edit(e)]
     return {"max": MAX_CHANGES, "used": len(made), "edits": [{"kind": e.kind, "id": e.id} for e in made],
-            "step_procedures": [p.id for p in ctx.parent.procedures if p.id not in ctx.base.order]}
+            "step_procedures": [p.id for p in ctx.parent.procedures if p.id not in ctx.base.order
+                                and p.policy_version != policy.POLICY_VERSION_V225]}
 
 
 def _legacy_system(ctx, user):
     """The historical selector, shared by dispatch and the benchmark-aware accessor."""
+    if protocol.is_v221(ctx.configuration):
+        from . import engineer_v221
+        return engineer_v221.dispatch(ctx, user)
     if protocol.uses_v215(ctx.configuration, ctx.bench):
         from . import engineer_v215
         return engineer_v215.dispatch(ctx, user)
@@ -1300,7 +1357,11 @@ def _ask(ctx, user, purpose):
         user = diagnostics_feedback.sanitize_request(user, sink=ctx.sheet, stage='engineer_request')
     if protocol.uses_v211(ctx.configuration, ctx.bench):
         from . import engineer_v211
-        system = engineer_v211.dispatch(ctx, user)
+        if protocol.is_v221(ctx.configuration):
+            from . import engineer_v221
+            system = engineer_v221.dispatch(ctx, user)
+        else:
+            system = engineer_v211.dispatch(ctx, user)
         options = ({"max_tokens": protocol.ENGINEER_MAX_TOKENS[ctx.configuration]}
                    if ctx.mode == TRAIN and purpose in ("propose", "repropose") else {})
         rendered = engineer_v211.request_pin(ctx, user, system, purpose)
@@ -1333,9 +1394,12 @@ def _verified_run_cells(ctx):
     for trajectory in ctx.current if ctx.mode == TRAIN else ():
         verified(trajectory, "trajectory")
         unit = str(trajectory["unit"])
-        run, train = RUN_UNIT.fullmatch(unit), TRAIN_UNIT.fullmatch(unit)
+        run, train = RUN_UNIT.fullmatch(unit), _train_match(unit, ctx.configuration)
         if train is None and protocol.is_v218(ctx.configuration):
-            from .v218_split import TRAIN_UNIT as SPLIT_TRAIN_UNIT
+            if protocol.is_v221(ctx.configuration):
+                from .v221_split import TRAIN_UNIT as SPLIT_TRAIN_UNIT
+            else:
+                from .v218_split import TRAIN_UNIT as SPLIT_TRAIN_UNIT
             train = SPLIT_TRAIN_UNIT.fullmatch(unit)
         found = run or train
         if (found is not None and found["chain"] == chain and found["bench"] == ctx.bench
@@ -1471,6 +1535,8 @@ def _structure(change, parent, taken, *, train=False, benches=BENCHES):
         return "target_not_in_parent"
     if kind != "new" and target in taken:
         return "target_edited_twice"
+    if kind != 'new' and parent.get(target).policy_version == policy.POLICY_VERSION_V225:
+        return 'card_is_fixed'
     return None
 
 
@@ -1504,11 +1570,13 @@ def _new_id(ctx, n):
         ids = ctx.sheet.setdefault("ids", {})
         if n not in ids:
             taken, m = set(ctx.parent.order) | ctx.reserved | set(ids.values()), 1
-            while "%s-%s-%d-%d" % (prefix, ctx.bench, ctx.k, m) in taken:
+            while ("%s-%s-%d-%d" % (prefix, ctx.bench, ctx.k, m) in taken
+                   or protocol.is_v225(ctx.configuration) and 100 <= m <= 119):
                 m += 1
             ids[n] = "%s-%s-%d-%d" % (prefix, ctx.bench, ctx.k, m)
         return ids[n]
-    while "%s-%s-%d-%d" % (prefix, ctx.bench, ctx.k, n) in ctx.parent.order:
+    while ("%s-%s-%d-%d" % (prefix, ctx.bench, ctx.k, n) in ctx.parent.order
+           or protocol.is_v225(ctx.configuration) and 100 <= n <= 119):
         n += 1
     return "%s-%s-%d-%d" % (prefix, ctx.bench, ctx.k, n)
 
@@ -1565,7 +1633,9 @@ def _resolve_change(change, ctx):
     tests, excluded = change.entry.get("replay_tests", []), change.entry.get("excluded_benches", [])
     if not (type(tests) is list and type(excluded) is list and all(type(bench) is str for bench in excluded)):
         return
-    entries = _scope_entries(ctx, set(excluded))
+    entries = _scope_entries(ctx, set(excluded),
+                            **({'procedure': _declared_procedure(ctx)}
+                               if protocol.is_v226(ctx.configuration) else {}))
     shown = _feedback_cells(ctx)
     tasks = {value["task_id"] for value in _verified_run_cells(ctx).values()}
     for index, test in enumerate(tests, 1):
@@ -1583,10 +1653,10 @@ def _resolve_change(change, ctx):
 def _build(change, ctx):
     """C3: the procedure record and the one-change candidate."""
     if protocol.is_v26(ctx.configuration):
-        _normalize(change, benches=protocol.SUPPORTED_BENCHES if ctx.bench == "zebralogic" else BENCHES)
+        _normalize(change, benches=protocol.SUPPORTED_BENCHES if ctx.bench == "zebralogic" or protocol.is_v222(ctx.configuration) else BENCHES)
     _resolve_change(change, ctx)
     entry, parent = change.entry, ctx.parent
-    benches = protocol.SUPPORTED_BENCHES if ctx.bench == "zebralogic" else BENCHES
+    benches = protocol.SUPPORTED_BENCHES if ctx.bench == "zebralogic" or protocol.is_v222(ctx.configuration) else BENCHES
     if change.kind in CODED:
         old = parent.get(entry["revises"]) if change.kind == "revision" else None
         values = {**OPTIONAL, **{k: v for k, v in entry.items() if k in PROCEDURE_KEYS}}
@@ -1610,7 +1680,7 @@ def _build(change, ctx):
         change.target = entry["id"]
         change.benches = tuple(b for b in benches if b in entry.get("benches", []))
     result = candidate(parent, [change], step=ctx.step)
-    if ctx.configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6):
+    if ctx.configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9, protocol.MAIN_V10):
         from .v210_import import check_learning_capacity
         check_learning_capacity(result)
     return result
@@ -1910,6 +1980,13 @@ def _scope(ctx, candidate_package, procedure):
     return _scope_entries(ctx, excluded, procedure=procedure)
 
 
+def _declared_procedure(ctx):
+    """Scope metadata of the Procedure that _build will construct for this proposal."""
+    from types import SimpleNamespace
+    return SimpleNamespace(origin=ctx.bench, excluded_benches=(),
+                           policy_version=protocol.POLICY_VERSIONS[ctx.configuration])
+
+
 def _scope_entries(ctx, excluded, *, procedure=None):
     """Shared scope construction for pre-hash reference resolution and the existing replay checks."""
     out = {}
@@ -1917,7 +1994,8 @@ def _scope_entries(ctx, excluded, *, procedure=None):
     if protocol.is_v214(ctx.configuration):
         if procedure is None:
             from types import SimpleNamespace
-            procedure = SimpleNamespace(origin=ctx.bench, excluded_benches=())
+            procedure = (_declared_procedure(ctx) if protocol.is_v226(ctx.configuration)
+                         else SimpleNamespace(origin=ctx.bench, excluded_benches=()))
         allowed = procedure_input_benches(procedure, excluded=excluded)
     for trajectory in list(ctx.trajectories) + (list(ctx.current) if ctx.mode == TRAIN else []):
         if trajectory["bench"] not in excluded and (allowed is None or trajectory['bench'] in allowed):
@@ -2038,7 +2116,7 @@ def _routing_checks(procedure, ctx, *, outcomes=None, actual=None):
         for trajectory in ctx.current:
             verified(trajectory, "trajectory")
             unit = str(trajectory["unit"])
-            run, train = RUN_UNIT.fullmatch(unit), TRAIN_UNIT.fullmatch(unit)
+            run, train = RUN_UNIT.fullmatch(unit), _train_match(unit, ctx.configuration)
             found = run or train
             require(found is not None and found["chain"] == chain and found["bench"] == ctx.bench
                     and int(found["k"]) == ctx.k and (train is None or int(train["r"]) < ctx.round)
@@ -2178,7 +2256,7 @@ def check(change, ctx, taken=()):
             report["failed"] = check_id
         return passed or informational
 
-    benches = protocol.SUPPORTED_BENCHES if ctx.bench == "zebralogic" else BENCHES
+    benches = protocol.SUPPORTED_BENCHES if ctx.bench == "zebralogic" or protocol.is_v222(ctx.configuration) else BENCHES
     if v28:
         if protocol.is_v294(ctx.configuration):
             from . import inert_feedback
@@ -2223,7 +2301,7 @@ def check(change, ctx, taken=()):
             report.update(passed=True, deferred=True)
             return report
         done("C3", False, _size_detail(change, error, **({"configuration": ctx.configuration}
-             if v24 or ctx.configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6) else {}))
+             if v24 or ctx.configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9, protocol.MAIN_V10) else {}))
              if train or protocol.is_v25(ctx.configuration) else str(error)[:300])
         return report
     if train:  # v2: the step's edit budget against S (``rebase``); a change beyond it gets no fix call
@@ -2293,6 +2371,26 @@ def check(change, ctx, taken=()):
                 report["inert_causes"], report["inert_evidence"] = inert_feedback.describe(
                     change, ctx, report, effect_hooks=effect_hooks, from_replay=from_replay,
                     from_routing=from_routing, outcomes=outcomes)
+            if (protocol.is_v221(ctx.configuration) and ctx.routing_items and not no_effect
+                    and ctx.bench in ('searchqa', 'officeqa', 'zebralogic', 'spreadsheetbench')):
+                from . import engineer_v221
+                coverage = engineer_v221.inert_coverage(change, ctx)
+                report['coverage'] = coverage
+                if coverage['candidate']['touched'] < protocol.GAIN_MIN_ITEMS:
+                    report['inert'] = True
+                    from . import inert_feedback
+                    cause = 'never_fires'
+                    if protocol.is_v225(ctx.configuration):
+                        # Low request coverage does not imply a routing failure.
+                        cause = 'never_fires' if routed['C6b'][1]['fires_on'] == 0 else 'empty_notes'
+                        if 'inert_evidence' not in report:
+                            report['inert_causes'], report['inert_evidence'] = inert_feedback.describe(
+                                change, ctx, report, effect_hooks=effect_hooks, from_replay=False,
+                                from_routing=from_routing, outcomes=outcomes,
+                                coverage_empty_notes=cause == 'empty_notes')
+                    causes = set(report.get('inert_causes', ())) | {cause}
+                    report['inert_causes'] = [cause for cause in inert_feedback.CAUSES if cause in causes]
+                    report.setdefault('inert_evidence', {})['coverage'] = coverage
     elif protocol.CHECK_NON_FIRING[ctx.configuration] and not done("C6b", *_firing(procedure, ctx)):
         return report
     if not done("C4", *leak_check(change, ctx, outcomes, entries)):
@@ -2408,7 +2506,7 @@ def _size_detail(change, error, *, configuration=None):
         detail["caps"] = {"description_chars": MAX_DESCRIPTION_CHARS, "header_chars": MAX_HEADER_CHARS,
                           "source_bytes": MAX_PROCEDURE_BYTES, "package_source_bytes": MAX_PACKAGE_BYTES,
                           "max_note_chars": "1-4000 when a hook writes notes, else 0"}
-        if configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6):
+        if configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9, protocol.MAIN_V10):
             from .v210_import import LEARNED_SOURCE_BYTES, LEARNED_PROCEDURES
             detail["caps"].update(package_source_bytes=LEARNED_SOURCE_BYTES, package_procedures=LEARNED_PROCEDURES)
         if configuration is not None and protocol.is_v24(configuration):
@@ -2473,7 +2571,7 @@ def _fix(ctx, change, report, *, attempt=None, why=None):
     if protocol.is_v27(ctx.configuration):
         fixed.normalized.extend(normalizations)
     if protocol.is_v26(ctx.configuration):
-        _normalize(fixed, benches=protocol.SUPPORTED_BENCHES if ctx.bench == "zebralogic" else BENCHES)
+        _normalize(fixed, benches=protocol.SUPPORTED_BENCHES if ctx.bench == "zebralogic" or protocol.is_v222(ctx.configuration) else BENCHES)
         _resolve_change(fixed, ctx)
         fixed.trajectory_resolution = ((change.trajectory_resolution or []) + (fixed.trajectory_resolution or []))[
             :MAX_TESTS * (TRAIN_FIXES + 1)]
@@ -2511,7 +2609,7 @@ def _combined(parent, survivors, step, *, configuration=None):
     while survivors:
         try:
             result = candidate(parent, survivors, step=step)
-            if configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6):
+            if configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9, protocol.MAIN_V10):
                 from .v210_import import check_learning_capacity
                 check_learning_capacity(result)
             return result, survivors
@@ -2553,7 +2651,7 @@ def run(ctx):
             taken.add(final.target)
         outcomes.append({**final.to_json(), "attempts": attempts, "survived": survived})
     package, kept = _combined(ctx.parent, survivors, ctx.step,
-                             **({"configuration": ctx.configuration} if ctx.configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6) else {}))
+                             **({"configuration": ctx.configuration} if ctx.configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9, protocol.MAIN_V10) else {}))
     modern = protocol.NORMALIZE_STRUCTURE[ctx.configuration]
     sealed = record(protocol.ENGINEER_RECORDS[ctx.configuration], ctx.evidence, {
         "bench": ctx.bench, "k": ctx.k, "step": ctx.step, "label": ctx.label, "parent_sha256": ctx.parent.sha256,
@@ -2608,7 +2706,7 @@ def _combined_train(ctx, survivors):
     while survivors:
         try:
             result = rebase(candidate(ctx.parent, survivors, step=ctx.step), ctx.base, ctx.parent, step=ctx.step)
-            if ctx.configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6):
+            if ctx.configuration in (protocol.MAIN_V3, protocol.MAIN_V4, protocol.MAIN_V5, protocol.MAIN_V6, protocol.MAIN_V7, protocol.MAIN_V8, protocol.MAIN_V9, protocol.MAIN_V10):
                 from .v210_import import check_learning_capacity
                 check_learning_capacity(result)
             return result, survivors

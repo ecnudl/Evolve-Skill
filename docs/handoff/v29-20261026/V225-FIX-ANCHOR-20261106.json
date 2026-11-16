@@ -1,0 +1,168 @@
+{
+  "date": "2026-11-06",
+  "configuration": "main-v9",
+  "base_commit": "280dd58",
+  "evidence_kind": "offline engineering fixtures; operator-reported launch failure",
+  "incident": {
+    "source": "User report and supplied ../execskill-m9fix-dry_anchor_env.py (read, not executed)",
+    "launch_time_asia_shanghai": "2026-11-06 13:51",
+    "observation_time_asia_shanghai": "2026-11-06 14:17",
+    "paused_non_alfworld_anchor_units": "8/8 across G and D",
+    "alfworld_anchor_units": "2/10 total anchor units still preparing views; not evidence of success",
+    "failure": "configuration / ValueError after opening the panel, before the first model call or ledger reservation",
+    "remote_artifacts_read": false,
+    "remote_total_cost": "unknown"
+  },
+  "cause": "units.cell_context sets environment for main-v9. v225_read.context_for copies a validated Context and sets the B arm card to ''. cells.run_cell then used dataclasses.replace(context, environment=None), rerunning Context.__post_init__ and instruction_start.active_cards. The legitimate blank read card fails chain-level fixed-format/historical-card validation. Environment-less fixtures did not execute this rebuild.",
+  "fix": {
+    "entry_point": "skillopt/execskill/cells.py::run_cell",
+    "change": "Only when profiles.is_v225(context.configuration), shallow-copy the already constructed arm context inside the acquired environment lock, set only the copy's environment to None, and recurse. All other configurations retain the original replace expression.",
+    "why": "The wrapper only disables recursive lock acquisition; it must preserve the already selected read-arm cards/runtime. This is smaller than adding a validation exception or a new Context mode, and does not relax Context.__post_init__, active_cards, Setting validation, learning/gate/practice construction or their dataclasses.replace paths.",
+    "request_contract": "B still has an empty card, an empty package and no guidance text. C0/C complete system/user requests match their previously working environment-less requests byte for byte. Caller Context, nominal tokens, endpoints, pools and runtime remain intact.",
+    "additional_production_fixes": []
+  },
+  "audit": {
+    "events": [
+      "anchor",
+      "s1",
+      "s2",
+      "s3",
+      "s4",
+      "s5",
+      "i",
+      "c_end"
+    ],
+    "labels": [
+      "B",
+      "C0",
+      "C",
+      "S1",
+      "S2",
+      "S3",
+      "S4",
+      "S5",
+      "I",
+      "C_end"
+    ],
+    "benches": [
+      "searchqa",
+      "officeqa",
+      "zebralogic",
+      "spreadsheetbench",
+      "alfworld"
+    ],
+    "chains": {
+      "G": "glm-5.3",
+      "D": "deepseek-v4-flash"
+    },
+    "context_rebuilds": "v225_read.context_for and fresh_plan already use copies without revalidation. evaluate_unit uses the same context_for -> run_cells -> run_cell path for every event. units.for_unit/Setting replacements and units.cell_context validate before arm substitution. step.py learning/acceptance replacements remain strict. No second post-arm Context rebuild or legitimate-arm rejection was found.",
+    "alfworld": "evaluation.alfworld_reset/_with_views rebuild task dictionaries only. Episode holds, live reset/view hashes and solver session cleanup retain the selected Context; no second validation.",
+    "spreadsheetbench": "Panel qualification precedes arm substitution. Solver precheck/generation and cells._score retain Context; scoring copies runtime, adds a per-score transient directory, and holds the native pool.",
+    "zebralogic": "C/C_end retain the nonempty pinned historical Context card; historical_runtime makes solver._system omit its guidance. B alone gets an empty Context card. Do not confuse emitted guidance with stored historical card validation.",
+    "chain_D": "units.cell_context creates nominal tokens; cells._shell forwards them unchanged. manifest.make_solver/v225_client's thinking-disabled route B client does not inspect arm cards. Existing v219 cross-arm and v220 import guards do not apply to main-v9.",
+    "smoke": "Existing practice decomposition/price B arms keep a validated Context card until _shell selects blank guidance. A blanket test-unit-only Arm restriction would change that existing smoke path and was not introduced. No chain-level empty-card exception was added."
+  },
+  "files_changed": [
+    "skillopt/execskill/cells.py",
+    "skillopt/execskill/v225_read.py",
+    "tests/test_execskill_v225_anchor_environment.py",
+    "docs/handoff/v29-20261026/V225-FIX-ANCHOR-20261106.json"
+  ],
+  "tests_added": {
+    "total": 124,
+    "anchor_first_call": "30 = 3 labels x 5 benches x 2 chains; actual units.cell_context and solver, non-null environment, fake endpoint stops at first call, blank guidance assertion and full request equality against environment-less controls",
+    "evaluate_unit": "80 = 8 events x 5 benches x 2 chains; one authored item per panel, TEST_RUNS=1, 100 dispatched/sealed cells total; actual Context, solver, cell loop, qualification, view preparation and EvaluationStore; fake external resources only",
+    "legacy_environment": "4: main-v6, cross-v5, main-v7, main-v8 still reconstruct/revalidate, reach the fake call with valid cards and reject an invalid blank card",
+    "strict_chain_validation": "10 = 5 benches x blank/unregistered card; both active_cards and Context reconstruction reject invalid chain-level cards",
+    "resource_and_client_checks": "ALFWorld reset/session closure and episode ownership; spreadsheet native ownership, two qualification scores and distinct scoring directories; D nominal tokens and real RouteClient request bodies over MockTransport retain thinking.type=disabled and reasoning_effort=none",
+    "data_provenance": "Authored repository fixtures only; no downloaded or real held-out data. New tests forbid socket connect/connect_ex/bind."
+  },
+  "validation": {
+    "python": "3.10.20",
+    "pytest": "8.3.5",
+    "focused_command": "PYTHONDONTWRITEBYTECODE=1 <python> -m pytest -q tests/test_execskill_v225_anchor_environment.py --maxfail=2",
+    "focused_final_line": "124 passed in 5.05s",
+    "baseline_method": "A scratch pytest plugin loads the exact run_cell function AST from git show 280dd58:skillopt/execskill/cells.py into the module in memory. No working-tree source or historical artifact is overwritten; this function and the copy import are the only production edits.",
+    "baseline_command": "TMPDIR=/private/tmp PYTHONPATH=/private/tmp/m9fix-baseline-0oxz6m5g:. PYTHONDONTWRITEBYTECODE=1 <python> -m pytest -q -p no:cacheprovider -p m9fix_baseline tests/test_execskill_v225_anchor_environment.py::test_anchor_environment_reaches_first_call_with_identical_request tests/test_execskill_v225_anchor_environment.py::test_every_read_event_completes_with_environment > /private/tmp/m9fix-baseline-pytest.log 2>&1",
+    "baseline_final_line": "20 failed, 90 passed in 5.96s",
+    "baseline_failures": "Exactly 10 B first-call cases plus 10 anchor evaluate_unit cases fail with active-card ValueError/configuration pause. All 20 C0/C first-call controls and all 70 later-event units pass.",
+    "pytest_command": "TMPDIR=/private/tmp PYTHONDONTWRITEBYTECODE=1 <python> -m pytest -q -p no:cacheprovider tests/test_execskill_v225_*.py > /private/tmp/m9fix-v225-pytest.log 2>&1",
+    "pytest_final_line": "841 passed in 53.74s",
+    "pytest_exit_code": 0,
+    "test_files": 22,
+    "selection": "Only v225 test modules, including the new file; 717 existing plus 124 new cases. Imported helpers are not separately collected. No full selection.",
+    "scratch_logs": [
+      "/private/tmp/m9fix-v225-pytest.log",
+      "/private/tmp/m9fix-baseline-pytest.log"
+    ]
+  },
+  "limits": {
+    "network_calls": 0,
+    "real_model_calls": 0,
+    "experiment_api_cost": 0,
+    "remote_commands": 0,
+    "full_selection_run": false,
+    "commits": 0,
+    "deployment_or_restart": false,
+    "interpretation": "Engineering regression evidence only, not model accuracy, accepted Skill or independent method-effect evidence. Remote repair outcome is unverified. Leave changes uncommitted; preserve frozen protocols, fixtures, scores and failed launch receipts. Any later deployment must use a distinct repaired source snapshot and output/attempt identity."
+  },
+  "fix_rounds": [
+    {
+      "date": "2026-11-06",
+      "review": "The prior main-v9 anchor fix was confirmed; no blocker was found.",
+      "findings": [
+        {
+          "severity": "MAJOR",
+          "origin": "pre-existing",
+          "finding": "ALFWorld routing-view preparation took an episode slot without the machine-wide shared environment lock, allowing overlap with a SpreadsheetBench exclusive operation.",
+          "change": "In v225_read.evaluate_unit, only profiles.is_v225(context.configuration) with a configured context.environment wraps each ALFWorld preparation reset in context.environment(alfworld, unit). The environment lock is acquired before the episode slot and released after reset session close and episode release. The hold is per reset, including supplied reset callbacks; other configurations retain the previous path."
+        },
+        {
+          "severity": "MINOR",
+          "finding": "files_changed incorrectly included the three living documents, which are intentionally unchanged in this code tree.",
+          "change": "Removed those entries. The operator maintains the living documents in the main research tree; they were not edited in this fix round."
+        }
+      ],
+      "tests_added": {
+        "test": "tests/test_execskill_v225_anchor_environment.py::test_alfworld_preparation_lock_and_episode_order",
+        "cases": 6,
+        "configurations": [
+          "main-v9",
+          "main-v8",
+          "main-v7"
+        ],
+        "reset_outcomes": [
+          "two successful preparation resets",
+          "second reset raises after opening its session"
+        ],
+        "path": "Real v225_read.evaluate_unit -> evaluation._with_views -> evaluation.alfworld_reset; fake ALFWorld sessions and observable lock/slot contexts. Stops before cell dispatch; no model calls.",
+        "assertions": "Main-v9 uses shared ALFWorld mode and environment -> episode -> open -> reset -> close -> episode release -> environment release for each game, including failure; main-v7/main-v8 keep episode-only preparation; both holds are released before cells.",
+        "existing_tests_updated": "The existing every-read-event fixture now expects the extra per-game environment acquisition for ALFWorld preparation."
+      },
+      "files_changed_this_round": [
+        "skillopt/execskill/v225_read.py",
+        "tests/test_execskill_v225_anchor_environment.py",
+        "docs/handoff/v29-20261026/V225-FIX-ANCHOR-20261106.json"
+      ],
+      "validation": {
+        "status": "passed",
+        "pytest_command": "TMPDIR=/private/tmp PYTHONDONTWRITEBYTECODE=1 <python> -B -m pytest -q -p no:cacheprovider tests/test_execskill_v225_*.py",
+        "pytest_final_line": "847 passed in 53.80s",
+        "pytest_exit_code": 0,
+        "passed": 847,
+        "failed": 0,
+        "test_files": 22,
+        "selection": "Only tests/test_execskill_v225_*.py; 841 prior cases plus six new preparation lock-order regressions. No other pytest selection ran.",
+        "source_scope": "Only v225_read.py changed in this round; the prior cells.py anchor fix is retained without further edits. Living documents, older-configuration fixtures and pins remain unchanged."
+      },
+      "limits": {
+        "network_calls": 0,
+        "model_calls": 0,
+        "remote_commands": 0,
+        "commits": 0,
+        "living_documents_changed": false,
+        "interpretation": "Offline engineering fixtures only; no experiment or deployed repair outcome is measured."
+      }
+    }
+  ]
+}

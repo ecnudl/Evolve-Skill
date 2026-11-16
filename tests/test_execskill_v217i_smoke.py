@@ -294,7 +294,7 @@ def test_every_v214_cli_adds_implant_choice_without_changing_default(action):
     from scripts.run_execskill import parser
     commands = parser()._subparsers._group_actions[0].choices
     choice = next(a for a in commands['v214-' + action]._actions if a.dest == 'configuration')
-    assert tuple(choice.choices) == (p.MAIN_V5, CHILD, p.MAIN_V6, p.CROSS_V5) and choice.default == p.MAIN_V5
+    assert tuple(choice.choices) == (p.MAIN_V5, CHILD, p.MAIN_V6, p.CROSS_V5, p.SEARCHQA_HP_V6, p.MAIN_V7, p.MAIN_V8, p.MAIN_V9, p.MAIN_V10) and choice.default == p.MAIN_V5
     if action == 's0':
         assert any(a.dest == 'consent' for a in commands['v214-s0']._actions)
 

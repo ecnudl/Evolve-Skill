@@ -1,0 +1,699 @@
+Pre-fix regression run against f635f67, after correcting the authored fixture.
+Command: TMPDIR=<fresh /tmp/execskill-v226-r3.XXXXXX> PYTHONDONTWRITEBYTECODE=1 <python> -m pytest -q -p no:cacheprovider tests/test_execskill_v226_preparation_inputs.py
+
+Two earlier fixture-development attempts also returned 13 failed / 9 passed:
+the preparation case first lacked environment, then attempted to rewrite an
+immutable fixture. Those setup issues were corrected before this recorded run;
+below, preparation fails at the actual frozen-input walk with the symlink error.
+
+.......FFFFFFFFFFF.FF.                                                   [100%]
+=================================== FAILURES ===================================
+______ test_frozen_input_walk_allows_recorded_interpreter_symlink[False] _______
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-prddq3m3')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-prddq3m3/main-v9')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1070ee8a0>
+nested = False
+
+    @pytest.mark.parametrize('nested', [False, True])
+    def test_frozen_input_walk_allows_recorded_interpreter_symlink(tmp_path, frozen, monkeypatch, nested):
+        target = tmp_path/'python-real'
+        target.touch()
+        interpreter = tmp_path/'python'
+        interpreter.symlink_to(target)
+        value = {'environment': {'python': str(interpreter)}}
+        if nested:
+            value = {'records': [[value]]}
+        monkeypatch.setattr(manifest, 'safe_path', lambda *_: pytest.fail('Exclusion is not a reader'))
+        monkeypatch.setattr(Path, 'open', lambda *_a, **_k: pytest.fail('Metadata must not be opened'))
+>       v214_preparation._check_frozen_inputs(p.MAIN_V10, value)
+
+tests/test_execskill_v226_preparation_inputs.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_preparation.py:28: in _check_frozen_inputs
+    _check_frozen_inputs(configuration, item)
+skillopt/execskill/v214_preparation.py:28: in _check_frozen_inputs
+    _check_frozen_inputs(configuration, item)
+skillopt/execskill/v214_preparation.py:33: in _check_frozen_inputs
+    manifest._check_frozen_paths(configuration, value)
+skillopt/execskill/manifest.py:474: in _check_frozen_paths
+    previous = safe_path(protocol.MAIN_V9_ROOT)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_ = ('/private/tmp/execskill-v226-r3.qz99KL/identity-prddq3m3/main-v9',)
+
+>   monkeypatch.setattr(manifest, 'safe_path', lambda *_: pytest.fail('Exclusion is not a reader'))
+E   Failed: Exclusion is not a reader
+
+tests/test_execskill_v226_preparation_inputs.py:86: Failed
+_______ test_frozen_input_walk_allows_recorded_interpreter_symlink[True] _______
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-w0nnjcs2')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-w0nnjcs2/main-v9')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1070ef5c0>
+nested = True
+
+    @pytest.mark.parametrize('nested', [False, True])
+    def test_frozen_input_walk_allows_recorded_interpreter_symlink(tmp_path, frozen, monkeypatch, nested):
+        target = tmp_path/'python-real'
+        target.touch()
+        interpreter = tmp_path/'python'
+        interpreter.symlink_to(target)
+        value = {'environment': {'python': str(interpreter)}}
+        if nested:
+            value = {'records': [[value]]}
+        monkeypatch.setattr(manifest, 'safe_path', lambda *_: pytest.fail('Exclusion is not a reader'))
+        monkeypatch.setattr(Path, 'open', lambda *_a, **_k: pytest.fail('Metadata must not be opened'))
+>       v214_preparation._check_frozen_inputs(p.MAIN_V10, value)
+
+tests/test_execskill_v226_preparation_inputs.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_preparation.py:28: in _check_frozen_inputs
+    _check_frozen_inputs(configuration, item)
+skillopt/execskill/v214_preparation.py:31: in _check_frozen_inputs
+    _check_frozen_inputs(configuration, item)
+skillopt/execskill/v214_preparation.py:31: in _check_frozen_inputs
+    _check_frozen_inputs(configuration, item)
+skillopt/execskill/v214_preparation.py:28: in _check_frozen_inputs
+    _check_frozen_inputs(configuration, item)
+skillopt/execskill/v214_preparation.py:28: in _check_frozen_inputs
+    _check_frozen_inputs(configuration, item)
+skillopt/execskill/v214_preparation.py:33: in _check_frozen_inputs
+    manifest._check_frozen_paths(configuration, value)
+skillopt/execskill/manifest.py:474: in _check_frozen_paths
+    previous = safe_path(protocol.MAIN_V9_ROOT)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_ = ('/private/tmp/execskill-v226-r3.qz99KL/identity-w0nnjcs2/main-v9',)
+
+>   monkeypatch.setattr(manifest, 'safe_path', lambda *_: pytest.fail('Exclusion is not a reader'))
+E   Failed: Exclusion is not a reader
+
+tests/test_execskill_v226_preparation_inputs.py:86: Failed
+___________ test_frozen_input_symlink_target_is_refused[False-False] ___________
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-sgtnl_co')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-sgtnl_co/main-v9')
+nested = False, descendant = False
+
+    @pytest.mark.parametrize('nested', [False, True])
+    @pytest.mark.parametrize('descendant', [False, True])
+    def test_frozen_input_symlink_target_is_refused(tmp_path, frozen, nested, descendant):
+        alias = tmp_path/'alias'
+        # The target need not exist: exclusion must resolve with strict=False.
+        alias.symlink_to(frozen/'missing' if descendant else frozen, target_is_directory=True)
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+            if nested:
+                v214_preparation._check_frozen_inputs(p.MAIN_V10, {'records': [[str(alias)]]})
+            else:
+>               manifest._check_frozen_paths(p.MAIN_V10, alias)
+
+tests/test_execskill_v226_preparation_inputs.py:102: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/manifest.py:477: in _check_frozen_paths
+    path = safe_path(path)
+skillopt/continual_eval/core.py:38: in safe_path
+    require(not any(p.is_symlink() for p in (path, *path.parents)), "Symlink paths are not supported")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'Symlink paths are not supported'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: Symlink paths are not supported
+
+skillopt/continual_eval/core.py:32: ValueError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-sgtnl_co')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-sgtnl_co/main-v9')
+nested = False, descendant = False
+
+    @pytest.mark.parametrize('nested', [False, True])
+    @pytest.mark.parametrize('descendant', [False, True])
+    def test_frozen_input_symlink_target_is_refused(tmp_path, frozen, nested, descendant):
+        alias = tmp_path/'alias'
+        # The target need not exist: exclusion must resolve with strict=False.
+        alias.symlink_to(frozen/'missing' if descendant else frozen, target_is_directory=True)
+>       with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'main-v9 root is forbidden'
+E        Input: 'Symlink paths are not supported'
+
+tests/test_execskill_v226_preparation_inputs.py:98: AssertionError
+___________ test_frozen_input_symlink_target_is_refused[False-True] ____________
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-tl7pju3y')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-tl7pju3y/main-v9')
+nested = True, descendant = False
+
+    @pytest.mark.parametrize('nested', [False, True])
+    @pytest.mark.parametrize('descendant', [False, True])
+    def test_frozen_input_symlink_target_is_refused(tmp_path, frozen, nested, descendant):
+        alias = tmp_path/'alias'
+        # The target need not exist: exclusion must resolve with strict=False.
+        alias.symlink_to(frozen/'missing' if descendant else frozen, target_is_directory=True)
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+            if nested:
+>               v214_preparation._check_frozen_inputs(p.MAIN_V10, {'records': [[str(alias)]]})
+
+tests/test_execskill_v226_preparation_inputs.py:100: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_preparation.py:28: in _check_frozen_inputs
+    _check_frozen_inputs(configuration, item)
+skillopt/execskill/v214_preparation.py:31: in _check_frozen_inputs
+    _check_frozen_inputs(configuration, item)
+skillopt/execskill/v214_preparation.py:31: in _check_frozen_inputs
+    _check_frozen_inputs(configuration, item)
+skillopt/execskill/v214_preparation.py:33: in _check_frozen_inputs
+    manifest._check_frozen_paths(configuration, value)
+skillopt/execskill/manifest.py:477: in _check_frozen_paths
+    path = safe_path(path)
+skillopt/continual_eval/core.py:38: in safe_path
+    require(not any(p.is_symlink() for p in (path, *path.parents)), "Symlink paths are not supported")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'Symlink paths are not supported'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: Symlink paths are not supported
+
+skillopt/continual_eval/core.py:32: ValueError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-tl7pju3y')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-tl7pju3y/main-v9')
+nested = True, descendant = False
+
+    @pytest.mark.parametrize('nested', [False, True])
+    @pytest.mark.parametrize('descendant', [False, True])
+    def test_frozen_input_symlink_target_is_refused(tmp_path, frozen, nested, descendant):
+        alias = tmp_path/'alias'
+        # The target need not exist: exclusion must resolve with strict=False.
+        alias.symlink_to(frozen/'missing' if descendant else frozen, target_is_directory=True)
+>       with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'main-v9 root is forbidden'
+E        Input: 'Symlink paths are not supported'
+
+tests/test_execskill_v226_preparation_inputs.py:98: AssertionError
+___________ test_frozen_input_symlink_target_is_refused[True-False] ____________
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-0lvudjpp')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-0lvudjpp/main-v9')
+nested = False, descendant = True
+
+    @pytest.mark.parametrize('nested', [False, True])
+    @pytest.mark.parametrize('descendant', [False, True])
+    def test_frozen_input_symlink_target_is_refused(tmp_path, frozen, nested, descendant):
+        alias = tmp_path/'alias'
+        # The target need not exist: exclusion must resolve with strict=False.
+        alias.symlink_to(frozen/'missing' if descendant else frozen, target_is_directory=True)
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+            if nested:
+                v214_preparation._check_frozen_inputs(p.MAIN_V10, {'records': [[str(alias)]]})
+            else:
+>               manifest._check_frozen_paths(p.MAIN_V10, alias)
+
+tests/test_execskill_v226_preparation_inputs.py:102: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/manifest.py:477: in _check_frozen_paths
+    path = safe_path(path)
+skillopt/continual_eval/core.py:38: in safe_path
+    require(not any(p.is_symlink() for p in (path, *path.parents)), "Symlink paths are not supported")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'Symlink paths are not supported'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: Symlink paths are not supported
+
+skillopt/continual_eval/core.py:32: ValueError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-0lvudjpp')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-0lvudjpp/main-v9')
+nested = False, descendant = True
+
+    @pytest.mark.parametrize('nested', [False, True])
+    @pytest.mark.parametrize('descendant', [False, True])
+    def test_frozen_input_symlink_target_is_refused(tmp_path, frozen, nested, descendant):
+        alias = tmp_path/'alias'
+        # The target need not exist: exclusion must resolve with strict=False.
+        alias.symlink_to(frozen/'missing' if descendant else frozen, target_is_directory=True)
+>       with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'main-v9 root is forbidden'
+E        Input: 'Symlink paths are not supported'
+
+tests/test_execskill_v226_preparation_inputs.py:98: AssertionError
+____________ test_frozen_input_symlink_target_is_refused[True-True] ____________
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-shqs85ri')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-shqs85ri/main-v9')
+nested = True, descendant = True
+
+    @pytest.mark.parametrize('nested', [False, True])
+    @pytest.mark.parametrize('descendant', [False, True])
+    def test_frozen_input_symlink_target_is_refused(tmp_path, frozen, nested, descendant):
+        alias = tmp_path/'alias'
+        # The target need not exist: exclusion must resolve with strict=False.
+        alias.symlink_to(frozen/'missing' if descendant else frozen, target_is_directory=True)
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+            if nested:
+>               v214_preparation._check_frozen_inputs(p.MAIN_V10, {'records': [[str(alias)]]})
+
+tests/test_execskill_v226_preparation_inputs.py:100: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_preparation.py:28: in _check_frozen_inputs
+    _check_frozen_inputs(configuration, item)
+skillopt/execskill/v214_preparation.py:31: in _check_frozen_inputs
+    _check_frozen_inputs(configuration, item)
+skillopt/execskill/v214_preparation.py:31: in _check_frozen_inputs
+    _check_frozen_inputs(configuration, item)
+skillopt/execskill/v214_preparation.py:33: in _check_frozen_inputs
+    manifest._check_frozen_paths(configuration, value)
+skillopt/execskill/manifest.py:477: in _check_frozen_paths
+    path = safe_path(path)
+skillopt/continual_eval/core.py:38: in safe_path
+    require(not any(p.is_symlink() for p in (path, *path.parents)), "Symlink paths are not supported")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'Symlink paths are not supported'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: Symlink paths are not supported
+
+skillopt/continual_eval/core.py:32: ValueError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-shqs85ri')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-shqs85ri/main-v9')
+nested = True, descendant = True
+
+    @pytest.mark.parametrize('nested', [False, True])
+    @pytest.mark.parametrize('descendant', [False, True])
+    def test_frozen_input_symlink_target_is_refused(tmp_path, frozen, nested, descendant):
+        alias = tmp_path/'alias'
+        # The target need not exist: exclusion must resolve with strict=False.
+        alias.symlink_to(frozen/'missing' if descendant else frozen, target_is_directory=True)
+>       with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'main-v9 root is forbidden'
+E        Input: 'Symlink paths are not supported'
+
+tests/test_execskill_v226_preparation_inputs.py:98: AssertionError
+_________ test_symlinked_frozen_root_excludes_both_names[lexical-root] _________
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-3ze_einu')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-3ze_einu/main-v9')
+location = 'lexical-root'
+
+    @pytest.mark.parametrize('location', ['lexical-root', 'lexical-child', 'resolved-root', 'resolved-child'])
+    def test_symlinked_frozen_root_excludes_both_names(tmp_path, frozen, location):
+        target = tmp_path/'frozen-target'
+        target.mkdir()
+        frozen.symlink_to(target, target_is_directory=True)
+        path = frozen if location.startswith('lexical') else target
+        if location.endswith('child'):
+            path /= 'missing'
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+>           manifest._check_frozen_paths(p.MAIN_V10, path)
+
+tests/test_execskill_v226_preparation_inputs.py:114: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/manifest.py:474: in _check_frozen_paths
+    previous = safe_path(protocol.MAIN_V9_ROOT)
+skillopt/continual_eval/core.py:38: in safe_path
+    require(not any(p.is_symlink() for p in (path, *path.parents)), "Symlink paths are not supported")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'Symlink paths are not supported'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: Symlink paths are not supported
+
+skillopt/continual_eval/core.py:32: ValueError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-3ze_einu')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-3ze_einu/main-v9')
+location = 'lexical-root'
+
+    @pytest.mark.parametrize('location', ['lexical-root', 'lexical-child', 'resolved-root', 'resolved-child'])
+    def test_symlinked_frozen_root_excludes_both_names(tmp_path, frozen, location):
+        target = tmp_path/'frozen-target'
+        target.mkdir()
+        frozen.symlink_to(target, target_is_directory=True)
+        path = frozen if location.startswith('lexical') else target
+        if location.endswith('child'):
+            path /= 'missing'
+>       with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'main-v9 root is forbidden'
+E        Input: 'Symlink paths are not supported'
+
+tests/test_execskill_v226_preparation_inputs.py:113: AssertionError
+________ test_symlinked_frozen_root_excludes_both_names[lexical-child] _________
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-wi3u6c2s')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-wi3u6c2s/main-v9')
+location = 'lexical-child'
+
+    @pytest.mark.parametrize('location', ['lexical-root', 'lexical-child', 'resolved-root', 'resolved-child'])
+    def test_symlinked_frozen_root_excludes_both_names(tmp_path, frozen, location):
+        target = tmp_path/'frozen-target'
+        target.mkdir()
+        frozen.symlink_to(target, target_is_directory=True)
+        path = frozen if location.startswith('lexical') else target
+        if location.endswith('child'):
+            path /= 'missing'
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+>           manifest._check_frozen_paths(p.MAIN_V10, path)
+
+tests/test_execskill_v226_preparation_inputs.py:114: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/manifest.py:474: in _check_frozen_paths
+    previous = safe_path(protocol.MAIN_V9_ROOT)
+skillopt/continual_eval/core.py:38: in safe_path
+    require(not any(p.is_symlink() for p in (path, *path.parents)), "Symlink paths are not supported")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'Symlink paths are not supported'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: Symlink paths are not supported
+
+skillopt/continual_eval/core.py:32: ValueError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-wi3u6c2s')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-wi3u6c2s/main-v9')
+location = 'lexical-child'
+
+    @pytest.mark.parametrize('location', ['lexical-root', 'lexical-child', 'resolved-root', 'resolved-child'])
+    def test_symlinked_frozen_root_excludes_both_names(tmp_path, frozen, location):
+        target = tmp_path/'frozen-target'
+        target.mkdir()
+        frozen.symlink_to(target, target_is_directory=True)
+        path = frozen if location.startswith('lexical') else target
+        if location.endswith('child'):
+            path /= 'missing'
+>       with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'main-v9 root is forbidden'
+E        Input: 'Symlink paths are not supported'
+
+tests/test_execskill_v226_preparation_inputs.py:113: AssertionError
+________ test_symlinked_frozen_root_excludes_both_names[resolved-root] _________
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-h57rz03r')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-h57rz03r/main-v9')
+location = 'resolved-root'
+
+    @pytest.mark.parametrize('location', ['lexical-root', 'lexical-child', 'resolved-root', 'resolved-child'])
+    def test_symlinked_frozen_root_excludes_both_names(tmp_path, frozen, location):
+        target = tmp_path/'frozen-target'
+        target.mkdir()
+        frozen.symlink_to(target, target_is_directory=True)
+        path = frozen if location.startswith('lexical') else target
+        if location.endswith('child'):
+            path /= 'missing'
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+>           manifest._check_frozen_paths(p.MAIN_V10, path)
+
+tests/test_execskill_v226_preparation_inputs.py:114: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/manifest.py:474: in _check_frozen_paths
+    previous = safe_path(protocol.MAIN_V9_ROOT)
+skillopt/continual_eval/core.py:38: in safe_path
+    require(not any(p.is_symlink() for p in (path, *path.parents)), "Symlink paths are not supported")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'Symlink paths are not supported'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: Symlink paths are not supported
+
+skillopt/continual_eval/core.py:32: ValueError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-h57rz03r')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-h57rz03r/main-v9')
+location = 'resolved-root'
+
+    @pytest.mark.parametrize('location', ['lexical-root', 'lexical-child', 'resolved-root', 'resolved-child'])
+    def test_symlinked_frozen_root_excludes_both_names(tmp_path, frozen, location):
+        target = tmp_path/'frozen-target'
+        target.mkdir()
+        frozen.symlink_to(target, target_is_directory=True)
+        path = frozen if location.startswith('lexical') else target
+        if location.endswith('child'):
+            path /= 'missing'
+>       with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'main-v9 root is forbidden'
+E        Input: 'Symlink paths are not supported'
+
+tests/test_execskill_v226_preparation_inputs.py:113: AssertionError
+________ test_symlinked_frozen_root_excludes_both_names[resolved-child] ________
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-ou9r4sln')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-ou9r4sln/main-v9')
+location = 'resolved-child'
+
+    @pytest.mark.parametrize('location', ['lexical-root', 'lexical-child', 'resolved-root', 'resolved-child'])
+    def test_symlinked_frozen_root_excludes_both_names(tmp_path, frozen, location):
+        target = tmp_path/'frozen-target'
+        target.mkdir()
+        frozen.symlink_to(target, target_is_directory=True)
+        path = frozen if location.startswith('lexical') else target
+        if location.endswith('child'):
+            path /= 'missing'
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+>           manifest._check_frozen_paths(p.MAIN_V10, path)
+
+tests/test_execskill_v226_preparation_inputs.py:114: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/manifest.py:474: in _check_frozen_paths
+    previous = safe_path(protocol.MAIN_V9_ROOT)
+skillopt/continual_eval/core.py:38: in safe_path
+    require(not any(p.is_symlink() for p in (path, *path.parents)), "Symlink paths are not supported")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'Symlink paths are not supported'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: Symlink paths are not supported
+
+skillopt/continual_eval/core.py:32: ValueError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-ou9r4sln')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-ou9r4sln/main-v9')
+location = 'resolved-child'
+
+    @pytest.mark.parametrize('location', ['lexical-root', 'lexical-child', 'resolved-root', 'resolved-child'])
+    def test_symlinked_frozen_root_excludes_both_names(tmp_path, frozen, location):
+        target = tmp_path/'frozen-target'
+        target.mkdir()
+        frozen.symlink_to(target, target_is_directory=True)
+        path = frozen if location.startswith('lexical') else target
+        if location.endswith('child'):
+            path /= 'missing'
+>       with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'main-v9 root is forbidden'
+E        Input: 'Symlink paths are not supported'
+
+tests/test_execskill_v226_preparation_inputs.py:113: AssertionError
+___________ test_lexical_frozen_descendant_cannot_escape_via_symlink ___________
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-et6lgcmw')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-et6lgcmw/main-v9')
+
+    def test_lexical_frozen_descendant_cannot_escape_via_symlink(tmp_path, frozen):
+        frozen.mkdir()
+        alias = frozen/'escape'
+        alias.symlink_to(tmp_path/'outside', target_is_directory=True)
+        with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+>           manifest._check_frozen_paths(p.MAIN_V10, alias/'missing')
+
+tests/test_execskill_v226_preparation_inputs.py:122: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/manifest.py:477: in _check_frozen_paths
+    path = safe_path(path)
+skillopt/continual_eval/core.py:38: in safe_path
+    require(not any(p.is_symlink() for p in (path, *path.parents)), "Symlink paths are not supported")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'Symlink paths are not supported'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: Symlink paths are not supported
+
+skillopt/continual_eval/core.py:32: ValueError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-et6lgcmw')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-et6lgcmw/main-v9')
+
+    def test_lexical_frozen_descendant_cannot_escape_via_symlink(tmp_path, frozen):
+        frozen.mkdir()
+        alias = frozen/'escape'
+        alias.symlink_to(tmp_path/'outside', target_is_directory=True)
+>       with pytest.raises(ValueError, match='main-v9 root is forbidden'):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'main-v9 root is forbidden'
+E        Input: 'Symlink paths are not supported'
+
+tests/test_execskill_v226_preparation_inputs.py:121: AssertionError
+______________ test_run_root_retains_reader_symlink_policy[True] _______________
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-lc1we44x')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-lc1we44x/main-v9')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x104a282d0>
+into_frozen = True
+
+    @pytest.mark.parametrize('into_frozen', [False, True])
+    def test_run_root_retains_reader_symlink_policy(tmp_path, frozen, monkeypatch, into_frozen):
+        registered = tmp_path/'main-v10'
+        monkeypatch.setitem(p.RUN_ROOTS, p.MAIN_V10, str(registered))
+        registered.symlink_to(frozen if into_frozen else tmp_path/'outside', target_is_directory=True)
+        message = 'main-v9 root is forbidden' if into_frozen else 'Symlink paths are not supported'
+        with pytest.raises(ValueError, match=message):
+>           manifest._check_run_root(registered, p.MAIN_V10, 'main_v10_real_run')
+
+tests/test_execskill_v226_preparation_inputs.py:132: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/manifest.py:490: in _check_run_root
+    _check_frozen_paths(configuration, root)
+skillopt/execskill/manifest.py:477: in _check_frozen_paths
+    path = safe_path(path)
+skillopt/continual_eval/core.py:38: in safe_path
+    require(not any(p.is_symlink() for p in (path, *path.parents)), "Symlink paths are not supported")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'Symlink paths are not supported'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: Symlink paths are not supported
+
+skillopt/continual_eval/core.py:32: ValueError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-lc1we44x')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-lc1we44x/main-v9')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x104a282d0>
+into_frozen = True
+
+    @pytest.mark.parametrize('into_frozen', [False, True])
+    def test_run_root_retains_reader_symlink_policy(tmp_path, frozen, monkeypatch, into_frozen):
+        registered = tmp_path/'main-v10'
+        monkeypatch.setitem(p.RUN_ROOTS, p.MAIN_V10, str(registered))
+        registered.symlink_to(frozen if into_frozen else tmp_path/'outside', target_is_directory=True)
+        message = 'main-v9 root is forbidden' if into_frozen else 'Symlink paths are not supported'
+>       with pytest.raises(ValueError, match=message):
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'main-v9 root is forbidden'
+E        Input: 'Symlink paths are not supported'
+
+tests/test_execskill_v226_preparation_inputs.py:131: AssertionError
+_____ test_preparation_passes_recorded_interpreter_symlink_to_allocations ______
+
+tmp_path = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-p_7gvs_y')
+frozen = PosixPath('/private/tmp/execskill-v226-r3.qz99KL/identity-p_7gvs_y/main-v9')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x104900150>
+
+    def test_preparation_passes_recorded_interpreter_symlink_to_allocations(tmp_path, frozen, monkeypatch):
+        from tests.test_execskill_v214_preparation import prepared, reseal
+        source, _, kwargs, _ = prepared(tmp_path, monkeypatch)
+        target = tmp_path/'python-real'
+        target.touch()
+        interpreter = tmp_path/'python'
+        interpreter.symlink_to(target)
+        source.setdefault('environment', {})['python'] = str(interpreter)
+        path = tmp_path/'source-with-interpreter.json'
+        write_json(path, reseal(source))
+    
+        class AllocationsReached(Exception):
+            pass
+    
+        def reached(value):
+            assert value['environment']['python'] == str(interpreter)
+            raise AllocationsReached
+    
+        # Stop immediately after the real source read, verification, input walk and
+        # map validation; later practice-supply preparation is outside this regression.
+        monkeypatch.setattr(v214_preparation, '_allocations', reached)
+        with pytest.raises(AllocationsReached):
+>           v214_preparation.preparation(path, configuration=p.MAIN_V10, **kwargs)
+
+tests/test_execskill_v226_preparation_inputs.py:157: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+skillopt/execskill/v214_preparation.py:102: in preparation
+    _check_frozen_inputs(configuration, source)
+skillopt/execskill/v214_preparation.py:28: in _check_frozen_inputs
+    _check_frozen_inputs(configuration, item)
+skillopt/execskill/v214_preparation.py:28: in _check_frozen_inputs
+    _check_frozen_inputs(configuration, item)
+skillopt/execskill/v214_preparation.py:33: in _check_frozen_inputs
+    manifest._check_frozen_paths(configuration, value)
+skillopt/execskill/manifest.py:477: in _check_frozen_paths
+    path = safe_path(path)
+skillopt/continual_eval/core.py:38: in safe_path
+    require(not any(p.is_symlink() for p in (path, *path.parents)), "Symlink paths are not supported")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = False, message = 'Symlink paths are not supported'
+
+    def require(value, message):
+        if not value:
+>           raise ValueError(message)
+E           ValueError: Symlink paths are not supported
+
+skillopt/continual_eval/core.py:32: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_execskill_v226_preparation_inputs.py::test_frozen_input_walk_allows_recorded_interpreter_symlink[False]
+FAILED tests/test_execskill_v226_preparation_inputs.py::test_frozen_input_walk_allows_recorded_interpreter_symlink[True]
+FAILED tests/test_execskill_v226_preparation_inputs.py::test_frozen_input_symlink_target_is_refused[False-False]
+FAILED tests/test_execskill_v226_preparation_inputs.py::test_frozen_input_symlink_target_is_refused[False-True]
+FAILED tests/test_execskill_v226_preparation_inputs.py::test_frozen_input_symlink_target_is_refused[True-False]
+FAILED tests/test_execskill_v226_preparation_inputs.py::test_frozen_input_symlink_target_is_refused[True-True]
+FAILED tests/test_execskill_v226_preparation_inputs.py::test_symlinked_frozen_root_excludes_both_names[lexical-root]
+FAILED tests/test_execskill_v226_preparation_inputs.py::test_symlinked_frozen_root_excludes_both_names[lexical-child]
+FAILED tests/test_execskill_v226_preparation_inputs.py::test_symlinked_frozen_root_excludes_both_names[resolved-root]
+FAILED tests/test_execskill_v226_preparation_inputs.py::test_symlinked_frozen_root_excludes_both_names[resolved-child]
+FAILED tests/test_execskill_v226_preparation_inputs.py::test_lexical_frozen_descendant_cannot_escape_via_symlink
+FAILED tests/test_execskill_v226_preparation_inputs.py::test_run_root_retains_reader_symlink_policy[True]
+FAILED tests/test_execskill_v226_preparation_inputs.py::test_preparation_passes_recorded_interpreter_symlink_to_allocations
+13 failed, 9 passed in 1.54s
